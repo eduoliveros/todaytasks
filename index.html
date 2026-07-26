@@ -1403,13 +1403,24 @@
     }
   }
 
+  function isMobileBrowser(){
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  }
+
   function signInWithGoogle(){
     if(!fbAuth){ showToast("La conexión con Firebase no está disponible."); return; }
     const provider = new firebase.auth.GoogleAuthProvider();
-    fbAuth.signInWithPopup(provider).catch(err => {
-      console.error("Error al iniciar sesión", err);
-      showToast("No se pudo iniciar sesión: " + (err.message || err.code || "error desconocido") + ". Si has abierto el archivo con doble clic (file://), el inicio de sesión con Google no funciona ahí — pruébalo sirviendo el archivo por http://localhost o subiéndolo a un hosting.");
-    });
+    if(isMobileBrowser()){
+      // Popups are unreliable on mobile WebKit (iOS Safari/Chrome) due to storage-partitioning
+      // between the popup and the opener, so the result never reaches onAuthStateChanged.
+      // A full-page redirect avoids that problem.
+      fbAuth.signInWithRedirect(provider);
+    } else {
+      fbAuth.signInWithPopup(provider).catch(err => {
+        console.error("Error al iniciar sesión", err);
+        showToast("No se pudo iniciar sesión: " + (err.message || err.code || "error desconocido") + ". Si has abierto el archivo con doble clic (file://), el inicio de sesión con Google no funciona ahí — pruébalo sirviendo el archivo por http://localhost o subiéndolo a un hosting.");
+      });
+    }
   }
 
   function initFirebase(){
@@ -1429,6 +1440,12 @@
         } else {
           detachCloudSync();
         }
+      });
+      // Completes the redirect-based sign-in flow used on mobile and surfaces any error,
+      // since a redirect doesn't have a click-time promise to catch() like the popup flow does.
+      fbAuth.getRedirectResult().catch(err => {
+        console.error("Error al completar el inicio de sesión por redirect", err);
+        showToast("No se pudo iniciar sesión: " + (err.message || err.code || "error desconocido"));
       });
     }catch(err){
       console.error("No se pudo inicializar Firebase", err);
