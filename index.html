@@ -1316,52 +1316,57 @@
       });
   }
 
-  function attachCloudSync(uid, isRetry){
-    setSyncStatus("saving", isRetry ? "⏳ Reintentando conexión…" : "⏳ Comprobando la nube…");
-    cloudDocRef(uid).get().then(doc => {
-      if(doc.exists){
-        const cloudData = doc.data();
-        const useCloud = window.confirm(
-          "Hay datos guardados en la nube para tu cuenta.\n\n" +
-          "Aceptar = cargar los datos de la nube (sustituirán a los de este dispositivo).\n" +
-          "Cancelar = mantener los datos de este dispositivo y subirlos, sobrescribiendo la nube."
-        );
-        if(useCloud){
-          applyingRemoteUpdate = true;
-          state = Object.assign(defaultState(), cloudData);
-          meetingEdit = null; taskEdit = null;
-          applyingRemoteUpdate = false;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-          syncFormInputsFromState();
-          renderAll();
-          showToast("Datos cargados desde la nube.");
-        } else {
-          pushToCloud();
-        }
-      } else {
-        pushToCloud(); // first time for this account: seed the cloud with local data
+  function attachCloudSync(uid){
+    setSyncStatus("saving", "⏳ Conectando con la nube…");
+    let firstUsableSnapshotSeen = false;
+    let slowConnectionTimer = setTimeout(()=>{
+      if(!firstUsableSnapshotSeen){
+        setSyncStatus("error", "⚠ Tardando en conectar con la nube… tus cambios se guardan en local mientras tanto.");
       }
-      subscribeToCloud(uid);
-    }).catch(err => {
-      console.error("Error leyendo Firestore", err);
-      // The very first request can fail with "client is offline" as a startup race,
-      // before the transport (WebChannel/long-polling) finishes connecting. Retry once.
-      if(!isRetry && (err.code === "unavailable" || /offline/i.test(err.message||""))){
-        setTimeout(()=> attachCloudSync(uid, true), 1500);
+    }, 8000);
+
+    if(cloudUnsubscribe) cloudUnsubscribe();
+    cloudUnsubscribe = cloudDocRef(uid).onSnapshot({includeMetadataChanges: true}, doc => {
+      // Skip snapshots that are only a local guess with nothing behind them yet (not confirmed by
+      // the server and no cached copy either) — wait for the next, more informative snapshot instead
+      // of treating "no answer yet" as "no data in the cloud".
+      if(doc.metadata.fromCache && !doc.exists && !firstUsableSnapshotSeen){
         return;
       }
-      setSyncStatus("error", "⚠ No se pudo conectar con la nube");
-      // Attach the realtime listener anyway: it will pick up data as soon as connectivity returns,
-      // even though we couldn't do the one-off "merge with local" check this time.
-      subscribeToCloud(uid);
-    });
-  }
 
-  function subscribeToCloud(uid){
-    if(cloudUnsubscribe) cloudUnsubscribe();
-    cloudUnsubscribe = cloudDocRef(uid).onSnapshot(doc => {
+      if(!firstUsableSnapshotSeen){
+        firstUsableSnapshotSeen = true;
+        clearTimeout(slowConnectionTimer);
+
+        if(doc.exists){
+          const cloudData = doc.data();
+          const useCloud = window.confirm(
+            "Hay datos guardados en la nube para tu cuenta.\n\n" +
+            "Aceptar = cargar los datos de la nube (sustituirán a los de este dispositivo).\n" +
+            "Cancelar = mantener los datos de este dispositivo y subirlos, sobrescribiendo la nube."
+          );
+          if(useCloud){
+            applyingRemoteUpdate = true;
+            state = Object.assign(defaultState(), cloudData);
+            meetingEdit = null; taskEdit = null;
+            applyingRemoteUpdate = false;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            syncFormInputsFromState();
+            renderAll();
+            showToast("Datos cargados desde la nube.");
+          } else {
+            pushToCloud();
+          }
+        } else {
+          pushToCloud(); // first time for this account: seed the cloud with local data
+        }
+        setSyncStatus("", "☁ Sincronizado");
+        return;
+      }
+
+      // Subsequent snapshots: real-time updates coming from another device.
+      if(doc.metadata.hasPendingWrites) return; // echo of our own write, ignore
       if(!doc.exists) return;
-      if(doc.metadata.hasPendingWrites) return; // this is an echo of our own write, ignore
       applyingRemoteUpdate = true;
       state = Object.assign(defaultState(), doc.data());
       meetingEdit = null; taskEdit = null;
@@ -1372,6 +1377,7 @@
       setSyncStatus("", "☁ Actualizado desde otro dispositivo");
       showToast("Se han actualizado los datos desde otro dispositivo.");
     }, err => {
+      clearTimeout(slowConnectionTimer);
       console.error("Error en la escucha de Firestore", err);
       setSyncStatus("error", "⚠ Se perdió la conexión con la nube");
     });
