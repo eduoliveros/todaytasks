@@ -64,6 +64,18 @@
     padding:3px 8px;
     border-radius:20px;
   }
+  .header-stats{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .stat-chip{
+    display:flex;align-items:center;gap:6px;
+    font-size:12.5px;color:var(--ink-soft);
+    background:#F3F2ED;border:1px solid var(--line);
+    border-radius:20px;padding:5px 12px;
+    white-space:nowrap;
+  }
+  .stat-chip .stat-icon{font-size:13px;}
+  .stat-chip .stat-value{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--ink);}
+  .stat-chip.stat-meeting .stat-value{color:var(--accent-meeting);}
+  .stat-chip.stat-task .stat-value{color:var(--accent-pending);}
   .clock-wrap{display:flex;align-items:center;gap:22px;flex-wrap:wrap;}
   .clock{
     font-family:'IBM Plex Mono',monospace;
@@ -140,6 +152,16 @@
   .btn.small{padding:5px 9px;font-size:12px;border-radius:5px;}
   .btn.danger{background:var(--danger);color:#fff;}
   .btn.run{background:var(--accent-running);color:#3a2900;}
+  .btn.active{background:var(--accent-pending);color:#fff;}
+  .auth-area{display:flex;align-items:center;gap:10px;}
+  .auth-user{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft);}
+  .auth-user img{width:24px;height:24px;border-radius:50%;}
+  .sync-status{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;
+    padding:3px 9px;border-radius:20px;background:#EEF2F7;color:var(--accent-pending);
+  }
+  .sync-status.saving{color:#8a5f00;background:#FBEED2;}
+  .sync-status.error{color:var(--danger);background:#F6D9D4;}
   .btn.pause{background:var(--accent-paused);color:#fff;}
   .btn.done{background:var(--accent-done);color:#fff;}
   .btn:disabled{opacity:.35;cursor:not-allowed;}
@@ -360,12 +382,18 @@
     <h1>Tablero del día</h1>
     <span class="eyebrow">local · persistente</span>
   </div>
+  <div class="header-stats" id="headerStats"></div>
   <div class="clock-wrap">
     <div class="clock mono" id="clockDisplay">--:--</div>
+    <div class="end-config">
+      Inicio jornada
+      <input type="time" id="workStartInput">
+    </div>
     <div class="end-config">
       Fin de jornada
       <input type="time" id="workEndInput">
     </div>
+    <button class="btn secondary" id="planningModeBtn" title="Simula el reparto de tareas como si el día empezara ahora a la hora de inicio de jornada">🗺 Modo planificación</button>
     <button class="btn secondary" id="notifyBtn" title="Activa avisos de escritorio para la tarea en marcha">🔔 Avisos</button>
     <div class="end-config">
       cada
@@ -373,6 +401,9 @@
       min
     </div>
     <button class="btn secondary" id="newDayBtn" title="Borra reuniones y tareas para empezar de cero">↻ Nuevo día</button>
+    <div class="auth-area" id="authArea">
+      <button class="btn secondary" id="signInBtn">☁ Iniciar sesión con Google</button>
+    </div>
   </div>
 </header>
 
@@ -407,7 +438,7 @@
 
   <!-- RIGHT COLUMN: board -->
   <div class="board">
-    <h2>Desde ahora hasta el fin de jornada <span class="now-badge mono" id="boardNow"></span></h2>
+    <h2><span id="boardTitle">Desde ahora hasta el fin de jornada</span> <span class="now-badge mono" id="boardNow"></span></h2>
     <div id="boardContent"></div>
   </div>
 </div>
@@ -435,9 +466,13 @@
   </div>
 </div>
 
-<footer>Los datos se guardan en este navegador (localStorage) y persisten al cerrar la ventana.</footer>
+<footer>Los datos se guardan en este navegador (localStorage). Si inicias sesión, también se sincronizan en la nube.</footer>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
 <script>
 (function(){
@@ -457,10 +492,12 @@
 
   function defaultState(){
     return {
-      workEnd: 18*60, // minutes since midnight
+      workStart: 9*60, // minutes since midnight
+      workEnd: 18*60,  // minutes since midnight
       meetings: [],   // {id, title, start, end}
       tasks: [],      // {id,title,planned,order,status,runningStart,elapsedBefore,completedAt,actualDuration}
       notifyIntervalMin: 10,
+      planningMode: false,
       nextId: 1
     };
   }
@@ -477,6 +514,12 @@
       if(typeof parsed.notifyIntervalMin !== "number" || parsed.notifyIntervalMin <= 0){
         parsed.notifyIntervalMin = 10;
       }
+      if(typeof parsed.workStart !== "number"){
+        parsed.workStart = 9*60;
+      }
+      if(typeof parsed.planningMode !== "boolean"){
+        parsed.planningMode = false;
+      }
       return parsed;
     }catch(e){
       console.error("No se pudo leer el estado guardado", e);
@@ -486,6 +529,7 @@
 
   function saveState(){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    pushToCloud();
   }
 
   function newId(){
@@ -547,6 +591,7 @@
     const overflowIds = new Set();
 
     const running = state.tasks.find(t => t.status === "running");
+    const viewStart = state.planningMode ? state.workStart : now;
     let cursor;
 
     if(running){
@@ -555,7 +600,7 @@
       segmentsByTask[running.id] = [{start: running.runningStart, end: effectiveEnd}];
       cursor = effectiveEnd;
     } else {
-      cursor = now;
+      cursor = viewStart;
     }
 
     const queue = state.tasks
@@ -599,7 +644,7 @@
       cursor = pos;
     }
 
-    return {segmentsByTask, overflowIds, blocked, now};
+    return {segmentsByTask, overflowIds, blocked, now, viewStart};
   }
 
   /* ---------------- Actions: meetings ---------------- */
@@ -852,7 +897,23 @@
 
   function renderClock(){
     document.getElementById("clockDisplay").textContent = fmt(nowMinutes());
-    document.getElementById("boardNow").textContent = "ahora " + fmt(nowMinutes());
+  }
+
+  function renderHeaderStats(){
+    const el = document.getElementById("headerStats");
+    if(!el) return;
+    const meetingsTotal = state.meetings.reduce((s,m) => s + (m.end - m.start), 0);
+    const activeTasks = state.tasks.filter(t => t.status !== "completed");
+    const tasksTotal = activeTasks.reduce((s,t) => s + t.planned, 0);
+    const completedTotal = state.tasks
+      .filter(t => t.status === "completed")
+      .reduce((s,t) => s + (t.actualDuration||0), 0);
+
+    el.innerHTML = `
+      <span class="stat-chip stat-meeting"><span class="stat-icon">🗓</span>Reuniones <span class="stat-value">${fmtDur(meetingsTotal)}</span></span>
+      <span class="stat-chip stat-task"><span class="stat-icon">🗒</span>Tareas por hacer <span class="stat-value">${fmtDur(tasksTotal)}</span></span>
+      <span class="stat-chip"><span class="stat-icon">✓</span>Completado hoy <span class="stat-value">${fmtDur(completedTotal)}</span></span>
+    `;
   }
 
   function renderMeetings(){
@@ -1005,13 +1066,27 @@
   function renderBoard(schedule){
     const el = document.getElementById("boardContent");
     const now = schedule.now;
+    const viewStart = schedule.viewStart;
     const workEnd = state.workEnd;
+
+    const titleEl = document.getElementById("boardTitle");
+    const badgeEl = document.getElementById("boardNow");
+    if(titleEl){
+      titleEl.textContent = state.planningMode
+        ? "Plan completo · desde el inicio de jornada"
+        : "Desde ahora hasta el fin de jornada";
+    }
+    if(badgeEl){
+      badgeEl.textContent = state.planningMode
+        ? "inicio " + fmt(state.workStart)
+        : "ahora " + fmt(now);
+    }
 
     // build a flat list of visual events: meetings, buffers, task segments
     const events = [];
     for(const m of state.meetings){
-      if(m.end + 10 <= now) continue; // fully in the past
-      events.push({start:Math.max(m.start, now-1440), end:m.end, kind:"meeting", label:m.title});
+      if(m.end + 10 <= viewStart) continue; // fully before the view's start point
+      events.push({start:Math.max(m.start, viewStart-1440), end:m.end, kind:"meeting", label:m.title});
       events.push({start:m.end, end:m.end+10, kind:"buffer", label:"colchón"});
     }
     for(const t of state.tasks){
@@ -1022,9 +1097,9 @@
       }
     }
     events.sort((a,b)=>a.start-b.start);
-    const visible = events.filter(e => e.end > now && e.start < workEnd);
+    const visible = events.filter(e => e.end > viewStart && e.start < workEnd);
 
-    if(now >= workEnd){
+    if(!state.planningMode && now >= workEnd){
       el.innerHTML = '<div class="board-empty">La jornada laboral ha terminado. Consulta el resumen abajo.</div>';
       return;
     }
@@ -1036,7 +1111,7 @@
 
     let html = '<div class="track">';
     for(const e of visible){
-      const start = Math.max(e.start, now);
+      const start = Math.max(e.start, viewStart);
       const kindClass = e.kind === "meeting" ? "slot-meeting"
                        : e.kind === "buffer" ? "slot-buffer"
                        : "slot-task " + e.kind.replace("task-","");
@@ -1206,8 +1281,163 @@
     }
   }
 
+  /* ---------------- Cloud sync (Firebase) ---------------- */
+  const firebaseConfig = {
+    apiKey: "AIzaSyDwRdTjHp5E1U7bO5nIr7J9UyjuRvRo9fo",
+    authDomain: "todaytasks-cdc5b.firebaseapp.com",
+    projectId: "todaytasks-cdc5b",
+    storageBucket: "todaytasks-cdc5b.firebasestorage.app",
+    messagingSenderId: "428737613419",
+    appId: "1:428737613419:web:9deeed94247f31ed94eb2e"
+  };
+
+  let fbAuth = null, fbDb = null, currentUser = null, cloudUnsubscribe = null;
+  let applyingRemoteUpdate = false; // guards against feedback loops from our own writes
+
+  function cloudDocRef(uid){
+    return fbDb.collection("tableroDia").doc(uid);
+  }
+
+  function setSyncStatus(kind, text){
+    const el = document.getElementById("syncStatus");
+    if(!el) return;
+    el.className = "sync-status" + (kind ? " " + kind : "");
+    el.textContent = text;
+  }
+
+  function pushToCloud(){
+    if(!currentUser || !fbDb || applyingRemoteUpdate) return;
+    setSyncStatus("saving", "⏳ Guardando en la nube…");
+    cloudDocRef(currentUser.uid).set(state)
+      .then(()=> setSyncStatus("", "☁ Sincronizado"))
+      .catch(err => {
+        console.error("Error guardando en Firestore", err);
+        setSyncStatus("error", "⚠ Error al sincronizar");
+      });
+  }
+
+  function attachCloudSync(uid){
+    setSyncStatus("saving", "⏳ Comprobando la nube…");
+    cloudDocRef(uid).get().then(doc => {
+      if(doc.exists){
+        const cloudData = doc.data();
+        const useCloud = window.confirm(
+          "Hay datos guardados en la nube para tu cuenta.\n\n" +
+          "Aceptar = cargar los datos de la nube (sustituirán a los de este dispositivo).\n" +
+          "Cancelar = mantener los datos de este dispositivo y subirlos, sobrescribiendo la nube."
+        );
+        if(useCloud){
+          applyingRemoteUpdate = true;
+          state = Object.assign(defaultState(), cloudData);
+          meetingEdit = null; taskEdit = null;
+          applyingRemoteUpdate = false;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          syncFormInputsFromState();
+          renderAll();
+          showToast("Datos cargados desde la nube.");
+        } else {
+          pushToCloud();
+        }
+      } else {
+        pushToCloud(); // first time for this account: seed the cloud with local data
+      }
+      subscribeToCloud(uid);
+    }).catch(err => {
+      console.error("Error leyendo Firestore", err);
+      setSyncStatus("error", "⚠ No se pudo conectar con la nube");
+    });
+  }
+
+  function subscribeToCloud(uid){
+    if(cloudUnsubscribe) cloudUnsubscribe();
+    cloudUnsubscribe = cloudDocRef(uid).onSnapshot(doc => {
+      if(!doc.exists) return;
+      if(doc.metadata.hasPendingWrites) return; // this is an echo of our own write, ignore
+      applyingRemoteUpdate = true;
+      state = Object.assign(defaultState(), doc.data());
+      meetingEdit = null; taskEdit = null;
+      applyingRemoteUpdate = false;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      syncFormInputsFromState();
+      renderAll();
+      setSyncStatus("", "☁ Actualizado desde otro dispositivo");
+      showToast("Se han actualizado los datos desde otro dispositivo.");
+    }, err => {
+      console.error("Error en la escucha de Firestore", err);
+      setSyncStatus("error", "⚠ Se perdió la conexión con la nube");
+    });
+  }
+
+  function detachCloudSync(){
+    if(cloudUnsubscribe){ cloudUnsubscribe(); cloudUnsubscribe = null; }
+  }
+
+  function syncFormInputsFromState(){
+    // Reflect state values (possibly replaced by cloud data) back into the header inputs.
+    const ws = document.getElementById("workStartInput");
+    const we = document.getElementById("workEndInput");
+    const ni = document.getElementById("notifyIntervalInput");
+    if(ws) ws.value = fmt(state.workStart);
+    if(we) we.value = fmt(state.workEnd);
+    if(ni) ni.value = state.notifyIntervalMin;
+    refreshPlanningModeBtn();
+  }
+
+  function renderAuthArea(){
+    const el = document.getElementById("authArea");
+    if(!el) return;
+    if(currentUser){
+      const photo = currentUser.photoURL ? `<img src="${escapeAttr(currentUser.photoURL)}" alt="">` : "";
+      el.innerHTML = `
+        <span class="auth-user">${photo}${escapeHtml(currentUser.displayName || currentUser.email || "")}</span>
+        <span class="sync-status" id="syncStatus">☁ Conectado</span>
+        <button class="btn secondary" id="signOutBtn">Cerrar sesión</button>
+      `;
+      document.getElementById("signOutBtn").addEventListener("click", ()=>{
+        detachCloudSync();
+        fbAuth.signOut();
+      });
+    } else {
+      el.innerHTML = `<button class="btn secondary" id="signInBtn">☁ Iniciar sesión con Google</button>`;
+      document.getElementById("signInBtn").addEventListener("click", signInWithGoogle);
+    }
+  }
+
+  function signInWithGoogle(){
+    if(!fbAuth){ showToast("La conexión con Firebase no está disponible."); return; }
+    const provider = new firebase.auth.GoogleAuthProvider();
+    fbAuth.signInWithPopup(provider).catch(err => {
+      console.error("Error al iniciar sesión", err);
+      showToast("No se pudo iniciar sesión: " + (err.message || err.code || "error desconocido") + ". Si has abierto el archivo con doble clic (file://), el inicio de sesión con Google no funciona ahí — pruébalo sirviendo el archivo por http://localhost o subiéndolo a un hosting.");
+    });
+  }
+
+  function initFirebase(){
+    if(typeof firebase === "undefined"){
+      console.error("El SDK de Firebase no se cargó.");
+      return;
+    }
+    try{
+      firebase.initializeApp(firebaseConfig);
+      fbAuth = firebase.auth();
+      fbDb = firebase.firestore();
+      fbAuth.onAuthStateChanged(user => {
+        currentUser = user;
+        renderAuthArea();
+        if(user){
+          attachCloudSync(user.uid);
+        } else {
+          detachCloudSync();
+        }
+      });
+    }catch(err){
+      console.error("No se pudo inicializar Firebase", err);
+    }
+  }
+
   function renderAll(){
     renderClock();
+    renderHeaderStats();
     const schedule = computeSchedule();
     renderMeetings();
     renderTasks(schedule);
@@ -1216,8 +1446,17 @@
   }
 
   /* ---------------- Wiring ---------------- */
-  document.getElementById("workEndInput").value =
-    String(Math.floor(state.workEnd/60)).padStart(2,"0") + ":" + String(state.workEnd%60).padStart(2,"0");
+  document.getElementById("workStartInput").value = fmt(state.workStart);
+  document.getElementById("workStartInput").addEventListener("change", (e)=>{
+    const v = timeToMinutes(e.target.value);
+    if(v !== null){
+      state.workStart = v;
+      saveState();
+      renderAll();
+    }
+  });
+
+  document.getElementById("workEndInput").value = fmt(state.workEnd);
   document.getElementById("workEndInput").addEventListener("change", (e)=>{
     const v = timeToMinutes(e.target.value);
     if(v !== null){
@@ -1226,6 +1465,23 @@
       renderAll();
     }
   });
+
+  function refreshPlanningModeBtn(){
+    const btn = document.getElementById("planningModeBtn");
+    if(!btn) return;
+    btn.classList.toggle("active", state.planningMode);
+    btn.textContent = state.planningMode ? "🗺 Planificación: ON" : "🗺 Modo planificación";
+  }
+  document.getElementById("planningModeBtn").addEventListener("click", ()=>{
+    state.planningMode = !state.planningMode;
+    saveState();
+    refreshPlanningModeBtn();
+    renderAll();
+    showToast(state.planningMode
+      ? "Modo planificación activado: las tareas se reparten desde el inicio de jornada (" + fmt(state.workStart) + ")."
+      : "Modo planificación desactivado: las tareas vuelven a repartirse desde la hora actual.");
+  });
+  refreshPlanningModeBtn();
 
   document.getElementById("newDayBtn").addEventListener("click", startNewDay);
   document.getElementById("notifyBtn").addEventListener("click", requestNotificationPermission);
@@ -1241,6 +1497,14 @@
     } else {
       e.target.value = state.notifyIntervalMin; // revert invalid input
     }
+  });
+
+  document.getElementById("meetingStart").addEventListener("change", (e)=>{
+    const endInput = document.getElementById("meetingEnd");
+    if(endInput.value) return; // don't override a value the user already set
+    const start = timeToMinutes(e.target.value);
+    if(start === null) return;
+    endInput.value = fmt(start + 30);
   });
 
   document.getElementById("addMeetingBtn").addEventListener("click", ()=>{
@@ -1278,6 +1542,8 @@
   };
 
   renderAll();
+  renderAuthArea();
+  initFirebase();
   setInterval(()=>{
     // While a form is being edited, avoid a full re-render so the person doesn't lose focus/typed text.
     if(meetingEdit === null && taskEdit === null){
