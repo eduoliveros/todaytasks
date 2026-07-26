@@ -1087,7 +1087,7 @@
     for(const m of state.meetings){
       if(m.end + 10 <= viewStart) continue; // fully before the view's start point
       events.push({start:Math.max(m.start, viewStart-1440), end:m.end, kind:"meeting", label:m.title});
-      events.push({start:m.end, end:m.end+10, kind:"buffer", label:"colchón"});
+      events.push({start:m.end, end:m.end+10, kind:"buffer", label:m.title});
     }
     for(const t of state.tasks){
       if(t.status === "completed") continue;
