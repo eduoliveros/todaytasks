@@ -1316,8 +1316,8 @@
       });
   }
 
-  function attachCloudSync(uid){
-    setSyncStatus("saving", "⏳ Comprobando la nube…");
+  function attachCloudSync(uid, isRetry){
+    setSyncStatus("saving", isRetry ? "⏳ Reintentando conexión…" : "⏳ Comprobando la nube…");
     cloudDocRef(uid).get().then(doc => {
       if(doc.exists){
         const cloudData = doc.data();
@@ -1344,7 +1344,16 @@
       subscribeToCloud(uid);
     }).catch(err => {
       console.error("Error leyendo Firestore", err);
+      // The very first request can fail with "client is offline" as a startup race,
+      // before the transport (WebChannel/long-polling) finishes connecting. Retry once.
+      if(!isRetry && (err.code === "unavailable" || /offline/i.test(err.message||""))){
+        setTimeout(()=> attachCloudSync(uid, true), 1500);
+        return;
+      }
       setSyncStatus("error", "⚠ No se pudo conectar con la nube");
+      // Attach the realtime listener anyway: it will pick up data as soon as connectivity returns,
+      // even though we couldn't do the one-off "merge with local" check this time.
+      subscribeToCloud(uid);
     });
   }
 
@@ -1432,6 +1441,9 @@
       firebase.initializeApp(firebaseConfig);
       fbAuth = firebase.auth();
       fbDb = firebase.firestore();
+      // Auto-fall back to long-polling if the normal WebChannel gets blocked
+      // (common with ad-blockers/privacy extensions flagging Firestore's Listen channel).
+      fbDb.settings({ experimentalAutoDetectLongPolling: true });
       fbAuth.onAuthStateChanged(user => {
         currentUser = user;
         renderAuthArea();
