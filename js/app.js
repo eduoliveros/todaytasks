@@ -1069,7 +1069,7 @@
       <div class="focus-view">
         <div class="focus-header">
           <a href="#/" class="btn secondary focus-back">← Inicio</a>
-          <span class="badge ${t.status}">${t.status === 'running' ? 'en ejecución' : 'en pausa'}</span>
+          <span class="badge ${t.status}">${t.status === 'running' ? 'en ejecución' : (t.status === 'paused' ? 'en pausa' : 'pendiente')}</span>
         </div>
 
         <h2 class="focus-task-name">${escapeHtml(t.title)}</h2>
@@ -1110,8 +1110,11 @@
           ${t.status === 'running' ? `
             <button class="btn pause" onclick="app.pauseTask(${t.id})">⏸ Pausar</button>
             <button class="btn done" onclick="app.completeTask(${t.id})">✓ Completar</button>
-          ` : `
+          ` : t.status === 'paused' ? `
             <button class="btn run" onclick="app.resumeTask(${t.id})">▶ Reanudar</button>
+            <button class="btn done" onclick="app.completeTask(${t.id})">✓ Completar</button>
+          ` : `
+            <button class="btn run" onclick="app.startTask(${t.id})">▶ Iniciar</button>
             <button class="btn done" onclick="app.completeTask(${t.id})">✓ Completar</button>
           `}
         </div>
@@ -1322,12 +1325,15 @@
       startInterruption();
     } else if(e.key === "f" || e.key === "F"){
       const running = state.tasks.find(t => t.status === "running");
-      if(running){
+      const pendingOrPaused = state.tasks.filter(t => t.status !== "completed").sort((a,b) => a.order - b.order)[0];
+      const targetTask = running || pendingOrPaused;
+
+      if(targetTask){
         e.preventDefault();
-        if(currentView === 'task' && focusTaskId === running.id){
+        if(currentView === 'task' && focusTaskId === targetTask.id){
           window.location.hash = '#/';
         } else {
-          window.location.hash = '#/task/' + running.id;
+          window.location.hash = '#/task/' + targetTask.id;
         }
       }
     }
