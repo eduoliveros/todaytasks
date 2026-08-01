@@ -984,6 +984,18 @@
     window.location.hash = '#/';
   }
 
+  function cancelInterruption(){
+    if(!state.activeInterruption && currentView !== 'interruption') return;
+    state.activeInterruption = null;
+    saveState();
+
+    const container = document.getElementById('view-interruption');
+    if(container) container.innerHTML = "";
+
+    showToast("Interrupción cancelada.");
+    window.location.hash = '#/';
+  }
+
   function renderInterruptionView(){
     const container = document.getElementById('view-interruption');
     if(!container) return;
@@ -1027,7 +1039,10 @@
             <div class="interruption-start-meta">Iniciada a las ${fmt(state.activeInterruption.start)}</div>
           </div>
 
-          <button class="btn done interruption-finish-btn" onclick="app.completeInterruption()">✓ Finalizar interrupción</button>
+          <div style="display:flex;gap:12px;width:100%;">
+            <button class="btn done interruption-finish-btn" style="flex:2;" onclick="app.completeInterruption()">✓ Finalizar interrupción</button>
+            <button class="btn secondary" style="flex:1;border-radius:12px;font-weight:600;" onclick="app.cancelInterruption()" title="Cancelar interrupción sin guardar (Esc)">✕ Cancelar (Esc)</button>
+          </div>
         </div>
       </div>
     `;
@@ -1316,6 +1331,14 @@
   }
 
   window.addEventListener("keydown", (e) => {
+    if(e.key === "Escape" || e.key === "Esc"){
+      if(state.activeInterruption || currentView === 'interruption'){
+        e.preventDefault();
+        cancelInterruption();
+        return;
+      }
+    }
+
     const active = document.activeElement;
     const tag = active ? active.tagName.toLowerCase() : "";
     if(tag === "input" || tag === "textarea" || (active && active.isContentEditable)) return;
@@ -1342,7 +1365,7 @@
   // expose actions for inline onclick handlers
   window.app = {
     deleteMeeting, deleteTask, moveTask, startTask, pauseTask, resumeTask, completeTask, uncompleteTask,
-    startInterruption, updateInterruptionTitle, completeInterruption,
+    startInterruption, updateInterruptionTitle, completeInterruption, cancelInterruption,
     startEditMeeting, updateMeetingEditField, cancelEditMeeting, saveEditMeeting,
     startEditTask, updateTaskEditField, cancelEditTask, saveEditTask,
     armTaskDrag, taskDragStart, taskDragOver, taskDragLeave, taskDrop, taskDragEnd
