@@ -5,6 +5,8 @@
       workEnd: 18*60,  // minutes since midnight
       meetings: [],   // {id, title, start, end}
       tasks: [],      // {id,title,planned,order,status,runningStart,elapsedBefore,completedAt,actualDuration}
+      interruptions: [], // {id, title, start, end, duration}
+      activeInterruption: null, // {id, title, start}
       notifyIntervalMin: 10,
       planningMode: false,
       nextId: 1
@@ -19,6 +21,12 @@
       // basic shape guard
       if(typeof parsed.workEnd !== "number" || !Array.isArray(parsed.meetings) || !Array.isArray(parsed.tasks)){
         return defaultState();
+      }
+      if(!Array.isArray(parsed.interruptions)){
+        parsed.interruptions = [];
+      }
+      if(parsed.activeInterruption === undefined){
+        parsed.activeInterruption = null;
       }
       if(typeof parsed.notifyIntervalMin !== "number" || parsed.notifyIntervalMin <= 0){
         parsed.notifyIntervalMin = 10;

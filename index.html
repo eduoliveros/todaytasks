@@ -12,7 +12,7 @@
 
 <header class="topbar">
   <div class="brand">
-    <h1>Tablero del día <span class="app-version">v1.16</span></h1>
+    <h1>Tablero del día <span class="app-version">v1.17</span></h1>
     <span class="eyebrow" id="appModeLabel">local · persistente</span>
   </div>
   <div class="header-stats" id="headerStats"></div>
@@ -26,6 +26,7 @@
       Fin de jornada
       <input type="time" id="workEndInput">
     </div>
+    <button class="btn secondary" id="interruptionBtn" style="background:#F6D9D4;color:var(--danger);border:1px solid #F1C4BC;" title="Pausar tarea en marcha e iniciar una interrupción (Tecla 'I')">⚡ Interrupción [I]</button>
     <button class="btn secondary" id="planningModeBtn" title="Simula el reparto de tareas como si el día empezara ahora a la hora de inicio de jornada">🗺 Modo planificación</button>
     <button class="btn secondary" id="notifyBtn" title="Activa avisos de escritorio para la tarea en marcha">🔔 Avisos</button>
     <div class="end-config">
@@ -108,6 +109,7 @@
 </div><!-- /#view-main -->
 
 <div id="view-task" style="display:none"></div>
+<div id="view-interruption" style="display:none"></div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
@@ -121,6 +123,6 @@
 <script src="js/scheduler.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/notifications.js"></script>
-<script src="js/app.js?v=1.16"></script>
+<script src="js/app.js?v=1.17"></script>
 </body>
 </html>

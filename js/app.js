@@ -13,9 +13,10 @@
   let notifyState = {taskId:null, lastNotifiedAt:null};
 
   /* ---------------- Router state ---------------- */
-  let currentView = 'main';   // 'main' | 'task'
+  let currentView = 'main';   // 'main' | 'task' | 'interruption'
   let focusTaskId = null;
   let focusRefreshTimer = null;
+  let interruptionRefreshTimer = null;
   const RING_R = 85;
   const RING_C = +(2 * Math.PI * RING_R).toFixed(2); // 534.07
 
@@ -309,6 +310,8 @@
 
     state.meetings = [];
     state.tasks = [];
+    state.interruptions = [];
+    state.activeInterruption = null;
     meetingEdit = null;
     taskEdit = null;
     saveState();
@@ -329,11 +332,13 @@
     const completedTotal = state.tasks
       .filter(t => t.status === "completed")
       .reduce((s,t) => s + (t.actualDuration||0), 0);
+    const intTotal = (state.interruptions||[]).reduce((s,i) => s + (i.duration||0), 0);
 
     el.innerHTML = `
       <span class="stat-chip stat-meeting"><span class="stat-icon">🗓</span>Reuniones <span class="stat-value">${fmtDur(meetingsTotal)}</span></span>
       <span class="stat-chip stat-task"><span class="stat-icon">🗒</span>Tareas por hacer <span class="stat-value">${fmtDur(tasksTotal)}</span></span>
       <span class="stat-chip"><span class="stat-icon">✓</span>Completado hoy <span class="stat-value">${fmtDur(completedTotal)}</span></span>
+      ${intTotal > 0 ? `<span class="stat-chip"><span class="stat-icon">⚡</span>Interrupciones <span class="stat-value" style="color:var(--danger)">${fmtDur(intTotal)}</span></span>` : ''}
     `;
   }
 
@@ -879,11 +884,118 @@
 
   /* ---------------- Smart render (view-aware) ---------------- */
   function smartRender(){
-    if(currentView === 'task'){
+    if(currentView === 'interruption'){
+      renderInterruptionView();
+    } else if(currentView === 'task'){
       renderTaskFocusView();
     } else {
       renderAll();
     }
+  }
+
+  /* ---------------- Interruptions ---------------- */
+  function startInterruption(){
+    const running = state.tasks.find(t => t.status === "running");
+    if(running){
+      pauseTask(running.id);
+    }
+    if(!state.activeInterruption){
+      state.activeInterruption = {
+        id: newId(),
+        title: "",
+        start: nowMinutes()
+      };
+      saveState();
+    }
+    if(window.location.hash !== '#/interruption'){
+      window.location.hash = '#/interruption';
+    } else {
+      smartRender();
+    }
+  }
+
+  function updateInterruptionTitle(val){
+    if(state.activeInterruption){
+      state.activeInterruption.title = val;
+      saveState();
+    }
+  }
+
+  function completeInterruption(){
+    if(!state.activeInterruption) return;
+    const now = nowMinutes();
+    const start = state.activeInterruption.start;
+    const duration = Math.max(0, now - start);
+    const title = (state.activeInterruption.title || "").trim() || "Interrupción";
+
+    if(!Array.isArray(state.interruptions)){
+      state.interruptions = [];
+    }
+    state.interruptions.push({
+      id: state.activeInterruption.id,
+      title,
+      start,
+      end: now,
+      duration
+    });
+
+    state.activeInterruption = null;
+    saveState();
+    showToast(`Interrupción "${title}" finalizada (${fmtDur(duration)}).`);
+    window.location.hash = '#/';
+  }
+
+  function renderInterruptionView(){
+    const container = document.getElementById('view-interruption');
+    if(!container) return;
+
+    if(!state.activeInterruption){
+      window.location.hash = '#/';
+      return;
+    }
+
+    const now = nowMinutes();
+    const elapsed = Math.max(0, now - state.activeInterruption.start);
+
+    // If already rendered, just update time text to preserve input focus & cursor
+    const existingTimeEl = container.querySelector('.interruption-time-value');
+    if(existingTimeEl){
+      existingTimeEl.textContent = fmtDur(elapsed);
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="interruption-view">
+        <div class="interruption-card">
+          <div class="interruption-badge">⚡ Interrupción en curso</div>
+          <h2 class="interruption-heading">¿Qué ha interrumpido tu trabajo?</h2>
+          
+          <div class="interruption-input-group">
+            <input type="text"
+                   id="interruptionTitleInput"
+                   class="interruption-input"
+                   value="${escapeAttr(state.activeInterruption.title || '')}"
+                   placeholder="Escribe el motivo (ej. Llamada urgente, Duda del equipo...)"
+                   oninput="app.updateInterruptionTitle(this.value)">
+          </div>
+
+          <div class="interruption-timer-box">
+            <div class="interruption-time-label">Tiempo transcurrido</div>
+            <div class="interruption-time-value">${fmtDur(elapsed)}</div>
+            <div class="interruption-start-meta">Iniciada a las ${fmt(state.activeInterruption.start)}</div>
+          </div>
+
+          <div class="interruption-actions">
+            <button class="btn done large-btn" onclick="app.completeInterruption()">✓ Finalizar interrupción y volver</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    setTimeout(() => {
+      const input = document.getElementById('interruptionTitleInput');
+      if(input) input.focus();
+    }, 50);
   }
 
   /* ---------------- Task Focus View ---------------- */
@@ -973,10 +1085,23 @@
   function showView(view, taskId){
     const mainEl = document.getElementById('view-main');
     const taskEl = document.getElementById('view-task');
-    if(view === 'task' && taskId){
+    const interruptionEl = document.getElementById('view-interruption');
+
+    if(view === 'interruption'){
+      currentView = 'interruption';
+      if(focusRefreshTimer){ clearInterval(focusRefreshTimer); focusRefreshTimer = null; }
+      if(mainEl) mainEl.style.display = 'none';
+      if(taskEl) taskEl.style.display = 'none';
+      if(interruptionEl) interruptionEl.style.display = 'flex';
+      renderInterruptionView();
+      if(interruptionRefreshTimer) clearInterval(interruptionRefreshTimer);
+      interruptionRefreshTimer = setInterval(renderInterruptionView, 1000);
+    } else if(view === 'task' && taskId){
       focusTaskId = taskId;
       currentView = 'task';
+      if(interruptionRefreshTimer){ clearInterval(interruptionRefreshTimer); interruptionRefreshTimer = null; }
       if(mainEl) mainEl.style.display = 'none';
+      if(interruptionEl) interruptionEl.style.display = 'none';
       if(taskEl) taskEl.style.display = 'flex';
       renderTaskFocusView();
       if(focusRefreshTimer) clearInterval(focusRefreshTimer);
@@ -984,8 +1109,10 @@
     } else {
       focusTaskId = null;
       currentView = 'main';
+      if(interruptionRefreshTimer){ clearInterval(interruptionRefreshTimer); interruptionRefreshTimer = null; }
       if(mainEl) mainEl.style.display = '';
       if(taskEl) taskEl.style.display = 'none';
+      if(interruptionEl) interruptionEl.style.display = 'none';
       if(focusRefreshTimer){ clearInterval(focusRefreshTimer); focusRefreshTimer = null; }
       renderAll();
     }
@@ -993,6 +1120,14 @@
 
   function router(){
     const hash = window.location.hash || '#/';
+    if(state.activeInterruption && hash !== '#/interruption'){
+      window.location.hash = '#/interruption';
+      return;
+    }
+    if(hash === '#/interruption'){
+      showView('interruption');
+      return;
+    }
     if(hash.startsWith('#/task/')){
       const id = parseInt(hash.replace('#/task/', ''), 10);
       if(!isNaN(id)){
@@ -1091,9 +1226,25 @@
     chevron.textContent = isHidden ? "▴" : "▾";
   });
 
+  const intBtn = document.getElementById("interruptionBtn");
+  if(intBtn){
+    intBtn.addEventListener("click", startInterruption);
+  }
+
+  window.addEventListener("keydown", (e) => {
+    if(e.key === "i" || e.key === "I"){
+      const active = document.activeElement;
+      const tag = active ? active.tagName.toLowerCase() : "";
+      if(tag === "input" || tag === "textarea" || (active && active.isContentEditable)) return;
+      e.preventDefault();
+      startInterruption();
+    }
+  });
+
   // expose actions for inline onclick handlers
   window.app = {
     deleteMeeting, deleteTask, moveTask, startTask, pauseTask, resumeTask, completeTask, uncompleteTask,
+    startInterruption, updateInterruptionTitle, completeInterruption,
     startEditMeeting, updateMeetingEditField, cancelEditMeeting, saveEditMeeting,
     startEditTask, updateTaskEditField, cancelEditTask, saveEditTask,
     armTaskDrag, taskDragStart, taskDragOver, taskDragLeave, taskDrop, taskDragEnd
@@ -1105,7 +1256,7 @@
   renderAuthArea();
   initFirebase();
   setInterval(()=>{
-    if(currentView === 'task') return; // focus view has its own timer
+    if(currentView === 'task' || currentView === 'interruption') return; // focus & interruption views have their own timers
     if(meetingEdit === null && taskEdit === null){
       renderAll();
     } else {

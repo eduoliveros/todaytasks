@@ -641,3 +641,100 @@
     color: var(--ink-soft);
     opacity: 0.5;
   }
+
+  /* ---------- Interruption View ---------- */
+  #view-interruption {
+    min-height: calc(100vh - 74px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    background: #FFF8F6;
+  }
+  .interruption-view {
+    width: 100%;
+    max-width: 520px;
+  }
+  .interruption-card {
+    background: #FFFFFF;
+    border: 2px solid #F1C4BC;
+    border-radius: 16px;
+    padding: 32px 28px;
+    box-shadow: 0 12px 32px rgba(180,72,58,0.12);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 22px;
+  }
+  .interruption-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    padding: 4px 14px;
+    border-radius: 20px;
+    background: #F6D9D4;
+    color: var(--danger);
+  }
+  .interruption-heading {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0;
+  }
+  .interruption-input-group {
+    width: 100%;
+  }
+  .interruption-input {
+    width: 100%;
+    font-size: 16px;
+    padding: 12px 16px;
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    text-align: center;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+  }
+  .interruption-input:focus {
+    border-color: var(--danger);
+    outline: none;
+  }
+  .interruption-timer-box {
+    background: #FCFCFA;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 28px;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .interruption-time-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+  .interruption-time-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 38px;
+    font-weight: 700;
+    color: var(--danger);
+  }
+  .interruption-start-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .large-btn {
+    padding: 14px 28px !important;
+    font-size: 15px !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+  }
