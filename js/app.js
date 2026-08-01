@@ -309,6 +309,74 @@
     `;
   }
 
+  function renderTaskProgressBar(){
+    const container = document.getElementById("taskProgressContainer");
+    if(!container) return;
+
+    const tasks = state.tasks;
+    const total = tasks.length;
+    const completed = tasks.filter(t => t.status === "completed").length;
+    const running = tasks.filter(t => t.status === "running").length;
+    const pending = tasks.filter(t => t.status === "pending" || t.status === "paused").length;
+
+    if(total === 0){
+      container.innerHTML = `
+        <div class="progress-banner">
+          <div class="progress-header">
+            <div class="progress-header-left">
+              <span class="progress-title">Progreso de tareas</span>
+              <div class="progress-legend">
+                <span class="legend-item leg-completed"><span class="dot"></span> 0 completadas</span>
+                <span class="legend-item leg-running"><span class="dot"></span> 0 en ejecución</span>
+                <span class="legend-item leg-pending"><span class="dot"></span> 0 pendientes</span>
+              </div>
+            </div>
+            <span class="progress-total-badge">Total: <strong>0</strong> tareas</span>
+          </div>
+          <div class="progress-track empty-track">
+            <span class="empty-track-text">No hay tareas creadas todavía</span>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const pctCompleted = (completed / total) * 100;
+    const pctRunning = (running / total) * 100;
+    const pctPending = (pending / total) * 100;
+
+    const compLabel = completed > 0 ? (pctCompleted >= 12 ? `${completed} completada${completed!==1?'s':''}` : `${completed}`) : '';
+    const runLabel = running > 0 ? (pctRunning >= 12 ? `${running} en curso` : `${running}`) : '';
+    const pendLabel = pending > 0 ? (pctPending >= 12 ? `${pending} pendiente${pending!==1?'s':''}` : `${pending}`) : '';
+
+    container.innerHTML = `
+      <div class="progress-banner">
+        <div class="progress-header">
+          <div class="progress-header-left">
+            <span class="progress-title">Progreso de tareas</span>
+            <div class="progress-legend">
+              <span class="legend-item leg-completed"><span class="dot"></span> ${completed} completada${completed!==1?'s':''}</span>
+              <span class="legend-item leg-running"><span class="dot"></span> ${running} en ejecución</span>
+              <span class="legend-item leg-pending"><span class="dot"></span> ${pending} pendiente${pending!==1?'s':''}</span>
+            </div>
+          </div>
+          <span class="progress-total-badge">Total: <strong>${total}</strong> tarea${total!==1?'s':''}</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-seg seg-completed" style="width: ${pctCompleted}%" title="${completed} completada${completed!==1?'s':''} (${Math.round(pctCompleted)}%)">
+            ${compLabel ? `<span class="seg-label">${compLabel}</span>` : ''}
+          </div>
+          <div class="progress-seg seg-running" style="width: ${pctRunning}%" title="${running} en ejecución (${Math.round(pctRunning)}%)">
+            ${runLabel ? `<span class="seg-label">${runLabel}</span>` : ''}
+          </div>
+          <div class="progress-seg seg-pending" style="width: ${pctPending}%" title="${pending} pendiente${pending!==1?'s':''} (${Math.round(pctPending)}%)">
+            ${pendLabel ? `<span class="seg-label">${pendLabel}</span>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   function renderMeetings(){
     const el = document.getElementById("meetingsList");
     if(state.meetings.length === 0){
@@ -769,6 +837,7 @@
   function renderAll(){
     renderClock();
     renderHeaderStats();
+    renderTaskProgressBar();
     const schedule = computeSchedule();
     renderMeetings();
     renderTasks(schedule);
