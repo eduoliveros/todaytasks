@@ -1241,29 +1241,35 @@
   });
 
   function handleMeetingSubmit(){
-    const title = document.getElementById("meetingTitle").value.trim();
+    const titleEl = document.getElementById("meetingTitle");
+    const title = titleEl.value.trim();
     const start = document.getElementById("meetingStart").value;
     const end = document.getElementById("meetingEnd").value;
     if(!title){
       showToast("Escribe un título para la reunión.");
+      titleEl.focus();
       return;
     }
     addMeeting(title, start, end);
-    document.getElementById("meetingTitle").value = "";
+    titleEl.value = "";
     document.getElementById("meetingStart").value = "";
     document.getElementById("meetingEnd").value = "";
+    titleEl.focus();
   }
 
   function handleTaskSubmit(){
-    const title = document.getElementById("taskTitle").value.trim();
+    const titleEl = document.getElementById("taskTitle");
+    const title = titleEl.value.trim();
     const dur = document.getElementById("taskDuration").value;
     if(!title){
       showToast("Escribe un título para la tarea.");
+      titleEl.focus();
       return;
     }
     addTask(title, dur);
-    document.getElementById("taskTitle").value = "";
+    titleEl.value = "";
     document.getElementById("taskDuration").value = "";
+    titleEl.focus();
   }
 
   document.getElementById("addMeetingBtn").addEventListener("click", handleMeetingSubmit);
