@@ -5,51 +5,11 @@
   const { nowMinutes, fmt, fmtDur, fmtRemaining, timeToMinutes } = window.TodayTasksUtils;
 
   /* ---------------- State ---------------- */
-  let state = loadState();
+  let state = window.TodayTasksState.loadState(STORAGE_KEY);
 
   /* Transient (non-persisted) inline-edit state */
   let meetingEdit = null; // {id, title, start, end}
   let taskEdit = null;    // {id, title, duration}
-
-  /* Transient desktop-notification cycle for the running task */
-  let notifyState = {taskId:null, lastNotifiedAt:null};
-
-  function defaultState(){
-    return {
-      workStart: 9*60, // minutes since midnight
-      workEnd: 18*60,  // minutes since midnight
-      meetings: [],   // {id, title, start, end}
-      tasks: [],      // {id,title,planned,order,status,runningStart,elapsedBefore,completedAt,actualDuration}
-      notifyIntervalMin: 10,
-      planningMode: false,
-      nextId: 1
-    };
-  }
-
-  function loadState(){
-    try{
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if(!raw) return defaultState();
-      const parsed = JSON.parse(raw);
-      // basic shape guard
-      if(typeof parsed.workEnd !== "number" || !Array.isArray(parsed.meetings) || !Array.isArray(parsed.tasks)){
-        return defaultState();
-      }
-      if(typeof parsed.notifyIntervalMin !== "number" || parsed.notifyIntervalMin <= 0){
-        parsed.notifyIntervalMin = 10;
-      }
-      if(typeof parsed.workStart !== "number"){
-        parsed.workStart = 9*60;
-      }
-      if(typeof parsed.planningMode !== "boolean"){
-        parsed.planningMode = false;
-      }
-      return parsed;
-    }catch(e){
-      console.error("No se pudo leer el estado guardado", e);
-      return defaultState();
-    }
-  }
 
   function saveState(){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -63,84 +23,8 @@
   }
 
 
-  /* ---------------- Blocked intervals from meetings ---------------- */
-  function blockedIntervals(){
-    const raw = state.meetings.map(m => ({start:m.start, end:m.end+10}))
-                               .sort((a,b)=>a.start-b.start);
-    const merged = [];
-    for(const iv of raw){
-      if(merged.length && iv.start <= merged[merged.length-1].end){
-        merged[merged.length-1].end = Math.max(merged[merged.length-1].end, iv.end);
-      } else {
-        merged.push({start:iv.start, end:iv.end});
-      }
-    }
-    return merged;
-  }
-
-  /* ---------------- Scheduling engine ---------------- */
-  // Returns { segmentsByTask: {id:[{start,end}]}, overflowIds:Set }
   function computeSchedule(){
-    const now = nowMinutes();
-    const blocked = blockedIntervals();
-    const segmentsByTask = {};
-    const overflowIds = new Set();
-
-    const running = state.tasks.find(t => t.status === "running");
-    const viewStart = state.planningMode ? state.workStart : now;
-    let cursor;
-
-    if(running){
-      const plannedEnd = running.runningStart + (running.planned - (running.elapsedBefore||0));
-      const effectiveEnd = Math.max(plannedEnd, now);
-      segmentsByTask[running.id] = [{start: running.runningStart, end: effectiveEnd}];
-      cursor = effectiveEnd;
-    } else {
-      cursor = viewStart;
-    }
-
-    const queue = state.tasks
-      .filter(t => t.status === "pending" || t.status === "paused")
-      .sort((a,b) => a.order - b.order);
-
-    for(const t of queue){
-      let remaining = t.status === "paused"
-        ? Math.max(0, t.planned - (t.elapsedBefore||0))
-        : t.planned;
-
-      const segs = [];
-      let pos = cursor;
-      let guard = 0;
-
-      while(remaining > 0.01 && guard < 200){
-        guard++;
-        if(pos >= state.workEnd){
-          overflowIds.add(t.id);
-          break;
-        }
-        const activeBlock = blocked.find(b => b.start <= pos && pos < b.end);
-        if(activeBlock){
-          pos = activeBlock.end;
-          continue;
-        }
-        const nextBlock = blocked.find(b => b.start > pos);
-        const limit = Math.min(nextBlock ? nextBlock.start : Infinity, state.workEnd);
-        const available = limit - pos;
-        if(available <= 0.01){
-          overflowIds.add(t.id);
-          break;
-        }
-        const use = Math.min(available, remaining);
-        segs.push({start: pos, end: pos+use});
-        pos += use;
-        remaining -= use;
-      }
-      if(remaining > 0.01) overflowIds.add(t.id);
-      segmentsByTask[t.id] = segs;
-      cursor = pos;
-    }
-
-    return {segmentsByTask, overflowIds, blocked, now, viewStart};
+    return window.TodayTasksScheduler.computeSchedule(state, nowMinutes);
   }
 
   /* ---------------- Actions: meetings ---------------- */
@@ -682,100 +566,9 @@
     `; }).join("") : '<div class="empty">Todo completado.</div>';
   }
 
-  function escapeHtml(str){
-    const d = document.createElement("div");
-    d.textContent = str;
-    return d.innerHTML;
-  }
-  function escapeAttr(str){
-    return String(str==null?"":str)
-      .replace(/&/g,"&amp;")
-      .replace(/"/g,"&quot;")
-      .replace(/'/g,"&#39;")
-      .replace(/</g,"&lt;")
-      .replace(/>/g,"&gt;");
-  }
-
-  let toastTimer = null;
-  function showToast(message){
-    const el = document.getElementById("toast");
-    if(!el) return;
-    el.textContent = message;
-    el.classList.add("visible");
-    if(toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(()=>{ el.classList.remove("visible"); }, 4000);
-  }
-
-  /* ---------------- Desktop notifications ---------------- */
-  const notifSupported = ("Notification" in window);
-
-  function notificationPermissionLabel(){
-    if(!notifSupported) return "no disponibles en este navegador";
-    if(Notification.permission === "granted") return "activadas";
-    if(Notification.permission === "denied") return "bloqueadas en el navegador";
-    return "desactivadas";
-  }
-  function refreshNotifyBtn(){
-    const btn = document.getElementById("notifyBtn");
-    if(!btn) return;
-    btn.textContent = "🔔 Avisos: " + notificationPermissionLabel();
-    btn.disabled = !notifSupported || Notification.permission === "denied";
-  }
-  function requestNotificationPermission(){
-    if(!notifSupported){
-      showToast("Este navegador no admite notificaciones de escritorio.");
-      return;
-    }
-    if(Notification.permission === "granted"){
-      showToast("Los avisos de escritorio ya están activados.");
-      return;
-    }
-    if(Notification.permission === "denied"){
-      showToast("Has bloqueado los avisos para esta página en el navegador; actívalos desde su configuración.");
-      return;
-    }
-    Notification.requestPermission().then(perm => {
-      refreshNotifyBtn();
-      showToast(perm === "granted"
-        ? "Avisos de escritorio activados. Recibirás uno cada 10 min mientras haya una tarea en marcha."
-        : "No se han activado los avisos; seguirás viendo el aviso dentro de la app.");
-    });
-  }
-  function sendDesktopNotification(title, body){
-    if(notifSupported && Notification.permission === "granted"){
-      try{
-        const n = new Notification(title, {body, tag:"tablero-dia-tarea"});
-        n.onclick = () => { window.focus(); };
-      }catch(err){
-        console.error("No se pudo mostrar la notificación de escritorio", err);
-      }
-    }
-    // Always mirror it inside the app too, in case desktop notifications are off/blocked.
-    showToast(title + " — " + body);
-  }
-  function checkRunningTaskNotification(){
-    const running = state.tasks.find(t=>t.status==="running");
-    if(!running){
-      if(notifyState.taskId !== null) notifyState = {taskId:null, lastNotifiedAt:null};
-      return;
-    }
-    const now = nowMinutes();
-    if(notifyState.taskId !== running.id){
-      // e.g. page was reloaded mid-run: start the 10-min cycle from now without notifying immediately.
-      notifyState = {taskId: running.id, lastNotifiedAt: now};
-      return;
-    }
-    const intervalMin = (state.notifyIntervalMin && state.notifyIntervalMin > 0) ? state.notifyIntervalMin : 10;
-    if(now - notifyState.lastNotifiedAt >= intervalMin){
-      const plannedEnd = running.runningStart + (running.planned - (running.elapsedBefore||0));
-      const rem = fmtRemaining(plannedEnd, now);
-      const body = rem.overrun
-        ? "Se ha excedido " + rem.text.replace("excedida ","") + " · fin previsto era a las " + fmt(plannedEnd)
-        : "Quedan " + rem.text.replace("quedan ","") + " · fin previsto a las " + fmt(plannedEnd);
-      sendDesktopNotification(running.title, body);
-      notifyState.lastNotifiedAt = now;
-    }
-  }
+  const { escapeHtml, escapeAttr, showToast } = window.TodayTasksUi;
+  const { refreshNotifyBtn, requestNotificationPermission, checkRunningTaskNotification } =
+    window.TodayTasksNotifications({ getState: () => state, nowMinutes, fmt, fmtRemaining, showToast });
 
   /* ---------------- Cloud sync (Firebase) ---------------- */
   const firebaseConfig = window.TodayTasksConfig.firebase;
@@ -1081,4 +874,5 @@
   }, 15000); // recompute schedule every 15s so blocks flow with real time
   setInterval(checkRunningTaskNotification, 30000); // independent of edit-pausing, always checks the running task
 })();
+
 
