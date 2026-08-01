@@ -547,7 +547,7 @@
               </div>
             ` : ""}
             ${t.status==="running" ? `
-              <a href="#/task/${t.id}" class="btn small secondary focus-link" title="Abrir vista de foco">◎ Foco</a>
+              <a href="#/task/${t.id}" class="btn small secondary focus-link" title="Abrir vista de foco (Tecla 'F')">◎ Foco [F]</a>
               <button class="btn small pause" onclick="app.pauseTask(${t.id})">⏸ Pausar</button>
               <button class="btn small done" onclick="app.completeTask(${t.id})">✓ Completar</button>
             ` : ""}
@@ -1313,12 +1313,23 @@
   }
 
   window.addEventListener("keydown", (e) => {
+    const active = document.activeElement;
+    const tag = active ? active.tagName.toLowerCase() : "";
+    if(tag === "input" || tag === "textarea" || (active && active.isContentEditable)) return;
+
     if(e.key === "i" || e.key === "I"){
-      const active = document.activeElement;
-      const tag = active ? active.tagName.toLowerCase() : "";
-      if(tag === "input" || tag === "textarea" || (active && active.isContentEditable)) return;
       e.preventDefault();
       startInterruption();
+    } else if(e.key === "f" || e.key === "F"){
+      const running = state.tasks.find(t => t.status === "running");
+      if(running){
+        e.preventDefault();
+        if(currentView === 'task' && focusTaskId === running.id){
+          window.location.hash = '#/';
+        } else {
+          window.location.hash = '#/task/' + running.id;
+        }
+      }
     }
   });
 
