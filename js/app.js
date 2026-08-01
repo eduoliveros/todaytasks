@@ -744,6 +744,77 @@
       });
   }
 
+  function backupLocalState(){
+    try {
+      localStorage.setItem(STORAGE_KEY + "_backup", JSON.stringify(state));
+    } catch(e){
+      console.warn("No se pudo guardar la copia de seguridad local", e);
+    }
+  }
+
+  function restoreLocalBackup(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY + "_backup");
+      if(!raw){
+        showToast("No se encontró ninguna copia de seguridad local reciente.");
+        return false;
+      }
+      const backupState = JSON.parse(raw);
+      state = Object.assign(defaultState(), backupState);
+      saveState();
+      syncFormInputsFromState();
+      renderAll();
+      showToast("Copia de seguridad local restaurada con éxito.");
+      return true;
+    } catch(e){
+      showToast("Error al restaurar la copia de seguridad.");
+      return false;
+    }
+  }
+
+  function mergeStates(local, remote){
+    const merged = Object.assign(defaultState(), remote);
+    
+    // Merge meetings: unique by title + start + end
+    const meetingKeys = new Set((remote.meetings || []).map(m => `${m.title}_${m.start}_${m.end}`));
+    (local.meetings || []).forEach(m => {
+      const key = `${m.title}_${m.start}_${m.end}`;
+      if(!meetingKeys.has(key)){
+        merged.meetings.push(m);
+        meetingKeys.add(key);
+      }
+    });
+    merged.meetings.sort((a,b) => a.start - b.start);
+
+    // Merge tasks: unique by title
+    const taskTitles = new Set((remote.tasks || []).map(t => (t.title || "").toLowerCase().trim()));
+    (local.tasks || []).forEach(t => {
+      const normTitle = (t.title || "").toLowerCase().trim();
+      if(!taskTitles.has(normTitle)){
+        merged.tasks.push(t);
+        taskTitles.add(normTitle);
+      }
+    });
+
+    // Merge interruptions if any
+    const intIds = new Set((remote.interruptions || []).map(i => i.id));
+    (local.interruptions || []).forEach(i => {
+      if(!intIds.has(i.id)){
+        merged.interruptions.push(i);
+        intIds.add(i.id);
+      }
+    });
+
+    // Re-assign continuous IDs
+    let maxId = 0;
+    merged.meetings.forEach(m => { if(m.id > maxId) maxId = m.id; });
+    merged.tasks.forEach(t => { if(t.id > maxId) maxId = t.id; });
+    (merged.interruptions || []).forEach(i => { if(i.id > maxId) maxId = i.id; });
+    merged.nextId = Math.max(merged.nextId || 1, maxId + 1);
+
+    return merged;
+  }
+
   function attachCloudSync(uid){
     setSyncStatus("saving", "⏳ Conectando con la nube…");
     let firstUsableSnapshotSeen = false;
@@ -755,9 +826,6 @@
 
     if(cloudUnsubscribe) cloudUnsubscribe();
     cloudUnsubscribe = cloudDocRef(uid).onSnapshot({includeMetadataChanges: true}, doc => {
-      // Skip snapshots that are only a local guess with nothing behind them yet (not confirmed by
-      // the server and no cached copy either) — wait for the next, more informative snapshot instead
-      // of treating "no answer yet" as "no data in the cloud".
       if(doc.metadata.fromCache && !doc.exists && !firstUsableSnapshotSeen){
         return;
       }
@@ -767,13 +835,24 @@
         clearTimeout(slowConnectionTimer);
 
         if(doc.exists){
-          const cloudData = doc.data();
-          const useCloud = window.confirm(
-            "Hay datos guardados en la nube para tu cuenta.\n\n" +
-            "Aceptar = cargar los datos de la nube (sustituirán a los de este dispositivo).\n" +
-            "Cancelar = mantener los datos de este dispositivo y subirlos, sobrescribiendo la nube."
-          );
-          if(useCloud){
+          const cloudData = doc.data() || {};
+          const cloudTasks = cloudData.tasks || [];
+          const cloudMeetings = cloudData.meetings || [];
+          const localTasks = state.tasks || [];
+          const localMeetings = state.meetings || [];
+
+          const cloudCount = cloudTasks.length + cloudMeetings.length;
+          const localCount = localTasks.length + localMeetings.length;
+
+          // PROTECCIÓN 1: La nube está vacía pero el equipo local tiene datos -> Subir datos locales a la nube
+          if(cloudCount === 0 && localCount > 0){
+            console.log("La nube está vacía pero el dispositivo tiene datos. Protegiendo datos locales y subiendo a la nube...");
+            pushToCloud();
+            showToast("Se han protegido y subido tus tareas de este dispositivo a la nube.");
+          }
+          // CASO 2: El equipo local está vacío pero la nube tiene datos -> Cargar automáticamente de la nube
+          else if(localCount === 0 && cloudCount > 0){
+            backupLocalState();
             applyingRemoteUpdate = true;
             state = Object.assign(defaultState(), cloudData);
             meetingEdit = null; taskEdit = null;
@@ -782,19 +861,52 @@
             syncFormInputsFromState();
             renderAll();
             showToast("Datos cargados desde la nube.");
+          }
+          // CASO 3: Ambos tienen datos -> Ofrecer combinar para no perder nada
+          else if(localCount > 0 && cloudCount > 0){
+            const msg = 
+              `Se detectaron datos en la nube y en este dispositivo:\n\n` +
+              `• Nube: ${cloudTasks.length} tarea(s), ${cloudMeetings.length} reunión(es)\n` +
+              `• Este dispositivo: ${localTasks.length} tarea(s), ${localMeetings.length} reunión(es)\n\n` +
+              `Aceptar = COMBINAR ambos (Recomendado, no pierde nada)\n` +
+              `Cancelar = Cargar solo de la nube`;
+
+            backupLocalState();
+            const doMerge = window.confirm(msg);
+            if(doMerge){
+              applyingRemoteUpdate = true;
+              state = mergeStates(state, cloudData);
+              meetingEdit = null; taskEdit = null;
+              applyingRemoteUpdate = false;
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+              syncFormInputsFromState();
+              renderAll();
+              pushToCloud();
+              showToast("Datos combinados correctamente.");
+            } else {
+              applyingRemoteUpdate = true;
+              state = Object.assign(defaultState(), cloudData);
+              meetingEdit = null; taskEdit = null;
+              applyingRemoteUpdate = false;
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+              syncFormInputsFromState();
+              renderAll();
+              showToast("Datos cargados desde la nube.");
+            }
           } else {
-            pushToCloud();
+            pushToCloud(); // ambos vacíos
           }
         } else {
-          pushToCloud(); // first time for this account: seed the cloud with local data
+          pushToCloud(); // primera vez: subir datos locales
         }
         setSyncStatus("", "☁ Sincronizado");
         return;
       }
 
-      // Subsequent snapshots: real-time updates coming from another device.
-      if(doc.metadata.hasPendingWrites) return; // echo of our own write, ignore
+      // Actualizaciones posteriores en tiempo real
+      if(doc.metadata.hasPendingWrites) return;
       if(!doc.exists) return;
+      backupLocalState();
       applyingRemoteUpdate = true;
       state = Object.assign(defaultState(), doc.data());
       meetingEdit = null; taskEdit = null;
@@ -1381,7 +1493,8 @@
     startInterruption, updateInterruptionTitle, completeInterruption, cancelInterruption,
     startEditMeeting, updateMeetingEditField, cancelEditMeeting, saveEditMeeting,
     startEditTask, updateTaskEditField, cancelEditTask, saveEditTask,
-    armTaskDrag, taskDragStart, taskDragOver, taskDragLeave, taskDrop, taskDragEnd
+    armTaskDrag, taskDragStart, taskDragOver, taskDragLeave, taskDrop, taskDragEnd,
+    restoreLocalBackup
   };
 
   window.addEventListener('hashchange', router);
