@@ -5,10 +5,9 @@
   const { nowMinutes, fmt, fmtDur, fmtRemaining, timeToMinutes } = window.TodayTasksUtils;
 
   // mm:ss format using real seconds precision for interruption timer
-  function fmtMMSS(startMinutes){
-    const nowMs = Date.now();
-    const startMs = startMinutes * 60000;
-    const totalSec = Math.max(0, Math.floor((nowMs - startMs) / 1000));
+  function fmtMMSS(startEpoch){
+    if(!startEpoch) return "00:00";
+    const totalSec = Math.max(0, Math.floor((Date.now() - startEpoch) / 1000));
     const m = Math.floor(totalSec / 60);
     const s = totalSec % 60;
     return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
@@ -929,14 +928,19 @@
     if(running){
       pauseTask(running.id);
     }
-    if(!state.activeInterruption){
-      state.activeInterruption = {
-        id: newId(),
-        title: "",
-        start: nowMinutes()
-      };
-      saveState();
-    }
+    // Always start a fresh new interruption with empty title and current timestamp
+    state.activeInterruption = {
+      id: newId(),
+      title: "",
+      start: nowMinutes(),
+      startEpoch: Date.now()
+    };
+    saveState();
+
+    // Clear old container innerHTML so the view re-renders fresh
+    const container = document.getElementById('view-interruption');
+    if(container) container.innerHTML = "";
+
     if(window.location.hash !== '#/interruption'){
       window.location.hash = '#/interruption';
     } else {
@@ -971,6 +975,11 @@
 
     state.activeInterruption = null;
     saveState();
+
+    // Clear old container innerHTML so previous DOM elements aren't reused
+    const container = document.getElementById('view-interruption');
+    if(container) container.innerHTML = "";
+
     showToast(`Interrupción "${title}" finalizada (${fmtDur(duration)}).`);
     window.location.hash = '#/';
   }
@@ -984,21 +993,18 @@
       return;
     }
 
-    // If already rendered, only patch the timer to preserve input focus & cursor position
-    const existingTimeEl = container.querySelector('.interruption-time-value');
-    if(existingTimeEl){
-      existingTimeEl.textContent = fmtMMSS(state.activeInterruption.startEpoch
-        ? state.activeInterruption.startEpoch / 60000
-        : state.activeInterruption.start);
-      return;
-    }
-
-    // Store epoch for sub-minute precision on first render
     if(!state.activeInterruption.startEpoch){
       state.activeInterruption.startEpoch = Date.now() - Math.max(0, nowMinutes() - state.activeInterruption.start) * 60000;
     }
 
-    const timerDisplay = fmtMMSS(state.activeInterruption.startEpoch / 60000);
+    // If already rendered, patch existing time element
+    const existingTimeEl = container.querySelector('.interruption-time-value');
+    if(existingTimeEl){
+      existingTimeEl.textContent = fmtMMSS(state.activeInterruption.startEpoch);
+      return;
+    }
+
+    const timerDisplay = fmtMMSS(state.activeInterruption.startEpoch);
 
     container.innerHTML = `
       <div class="interruption-view">
@@ -1028,7 +1034,7 @@
 
     setTimeout(() => {
       const input = document.getElementById('interruptionTitleInput');
-      if(input){ input.focus(); input.select(); }
+      if(input){ input.focus(); }
     }, 50);
   }
 
