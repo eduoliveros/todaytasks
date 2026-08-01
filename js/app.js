@@ -14,7 +14,8 @@
   }
 
   /* ---------------- State ---------------- */
-  let state = window.TodayTasksState.loadState(STORAGE_KEY);
+  const { defaultState, loadState } = window.TodayTasksState;
+  let state = loadState(STORAGE_KEY);
 
   /* Transient (non-persisted) inline-edit state */
   let meetingEdit = null; // {id, title, start, end}
