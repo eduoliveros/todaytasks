@@ -4,6 +4,16 @@
   const STORAGE_KEY = window.TodayTasksConfig.storageKey;
   const { nowMinutes, fmt, fmtDur, fmtRemaining, timeToMinutes } = window.TodayTasksUtils;
 
+  // mm:ss format using real seconds precision for interruption timer
+  function fmtMMSS(startMinutes){
+    const nowMs = Date.now();
+    const startMs = startMinutes * 60000;
+    const totalSec = Math.max(0, Math.floor((nowMs - startMs) / 1000));
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  }
+
   /* ---------------- State ---------------- */
   let state = window.TodayTasksState.loadState(STORAGE_KEY);
 
@@ -644,8 +654,10 @@
       </div>
     `).join("") : '<div class="empty">Ninguna todavía.</div>';
 
+    const interruptions = [...(state.interruptions || [])].sort((a,b) => a.start - b.start);
+
     const completedEl = document.getElementById("completedList");
-    completedEl.innerHTML = completed.length ? completed.map(t => {
+    const completedRows = completed.map(t => {
       const realStart = t.completedAt - t.actualDuration;
       return `
       <div class="summary-row">
@@ -654,8 +666,26 @@
         <div style="margin-top:6px">
           <button class="btn small secondary" onclick="app.uncompleteTask(${t.id})" title="Deshacer completado y volver a pendiente">↩ Reabrir</button>
         </div>
-      </div>
-    `; }).join("") : '<div class="empty">Ninguna todavía.</div>';
+      </div>`;
+    });
+
+    const interruptionRows = interruptions.map(i => `
+      <div class="summary-row summary-row-interruption">
+        <div class="row-top">
+          <span>⚡ ${escapeHtml(i.title)}</span>
+          <span class="dur" style="color:var(--danger)">${fmtDur(i.duration)}</span>
+        </div>
+        <div class="time-range" style="background:#FEF2F0;border-color:#F1C4BC;">
+          <span class="tag" style="color:var(--danger)">Inicio</span>${fmt(i.start)}
+          <span class="arrow">→</span>
+          <span class="tag" style="color:var(--danger)">Fin</span>${fmt(i.end)}
+        </div>
+      </div>`);
+
+    const allCompleted = [...completedRows, ...interruptionRows];
+    completedEl.innerHTML = allCompleted.length
+      ? allCompleted.join('')
+      : '<div class="empty">Ninguna todavía.</div>';
 
     const pendingEl = document.getElementById("pendingList");
     pendingEl.innerHTML = pending.length ? pending.map(t => {
@@ -954,47 +984,51 @@
       return;
     }
 
-    const now = nowMinutes();
-    const elapsed = Math.max(0, now - state.activeInterruption.start);
-
-    // If already rendered, just update time text to preserve input focus & cursor
+    // If already rendered, only patch the timer to preserve input focus & cursor position
     const existingTimeEl = container.querySelector('.interruption-time-value');
     if(existingTimeEl){
-      existingTimeEl.textContent = fmtDur(elapsed);
+      existingTimeEl.textContent = fmtMMSS(state.activeInterruption.startEpoch
+        ? state.activeInterruption.startEpoch / 60000
+        : state.activeInterruption.start);
       return;
     }
+
+    // Store epoch for sub-minute precision on first render
+    if(!state.activeInterruption.startEpoch){
+      state.activeInterruption.startEpoch = Date.now() - Math.max(0, nowMinutes() - state.activeInterruption.start) * 60000;
+    }
+
+    const timerDisplay = fmtMMSS(state.activeInterruption.startEpoch / 60000);
 
     container.innerHTML = `
       <div class="interruption-view">
         <div class="interruption-card">
           <div class="interruption-badge">⚡ Interrupción en curso</div>
-          <h2 class="interruption-heading">¿Qué ha interrumpido tu trabajo?</h2>
-          
+
           <div class="interruption-input-group">
             <input type="text"
                    id="interruptionTitleInput"
                    class="interruption-input"
                    value="${escapeAttr(state.activeInterruption.title || '')}"
-                   placeholder="Escribe el motivo (ej. Llamada urgente, Duda del equipo...)"
-                   oninput="app.updateInterruptionTitle(this.value)">
+                   placeholder="Motivo (ej: llamada, duda, reunión improvisada...)"
+                   oninput="app.updateInterruptionTitle(this.value)"
+                   autocomplete="off">
           </div>
 
           <div class="interruption-timer-box">
             <div class="interruption-time-label">Tiempo transcurrido</div>
-            <div class="interruption-time-value">${fmtDur(elapsed)}</div>
+            <div class="interruption-time-value">${timerDisplay}</div>
             <div class="interruption-start-meta">Iniciada a las ${fmt(state.activeInterruption.start)}</div>
           </div>
 
-          <div class="interruption-actions">
-            <button class="btn done large-btn" onclick="app.completeInterruption()">✓ Finalizar interrupción y volver</button>
-          </div>
+          <button class="btn done interruption-finish-btn" onclick="app.completeInterruption()">✓ Finalizar interrupción</button>
         </div>
       </div>
     `;
 
     setTimeout(() => {
       const input = document.getElementById('interruptionTitleInput');
-      if(input) input.focus();
+      if(input){ input.focus(); input.select(); }
     }, 50);
   }
 
