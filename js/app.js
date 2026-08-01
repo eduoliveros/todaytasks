@@ -10,6 +10,7 @@
   /* Transient (non-persisted) inline-edit state */
   let meetingEdit = null; // {id, title, start, end}
   let taskEdit = null;    // {id, title, duration}
+  let notifyState = {taskId:null, lastNotifiedAt:null};
 
   function saveState(){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -192,22 +193,42 @@
     saveState();
     renderAll();
   }
-  function firstQueuedTask(){
-    return state.tasks
-      .filter(t=>t.status==="pending"||t.status==="paused")
-      .sort((a,b)=>a.order-b.order)[0];
-  }
   function startTask(id){
-    const anyRunning = state.tasks.some(t=>t.status==="running");
-    if(anyRunning) return;
-    const first = firstQueuedTask();
-    if(!first || first.id !== id) return; // only the first task in the queue can start
-    first.status = "running";
-    first.runningStart = nowMinutes();
-    notifyState = {taskId: first.id, lastNotifiedAt: nowMinutes()};
+    const targetTask = state.tasks.find(t=>t.id===id);
+    if(!targetTask || targetTask.status==="completed") return;
+
+    const runningTask = state.tasks.find(t=>t.status==="running");
+
+    if(runningTask && runningTask.id !== id){
+      const elapsed = nowMinutes() - runningTask.runningStart;
+      runningTask.elapsedBefore = (runningTask.elapsedBefore||0) + Math.max(0, elapsed);
+      runningTask.runningStart = null;
+      runningTask.status = "paused";
+    }
+
+    const activeQueue = state.tasks
+      .filter(t => t.status !== "completed")
+      .sort((a,b) => a.order - b.order);
+
+    const otherTasks = activeQueue.filter(t => t.id !== targetTask.id && (!runningTask || t.id !== runningTask.id));
+
+    const newOrder = [targetTask];
+    if(runningTask && runningTask.id !== targetTask.id){
+      newOrder.push(runningTask);
+    }
+    newOrder.push(...otherTasks);
+
+    newOrder.forEach((t, idx) => {
+      t.order = idx + 1;
+    });
+
+    targetTask.status = "running";
+    targetTask.runningStart = nowMinutes();
+    notifyState = {taskId: targetTask.id, lastNotifiedAt: nowMinutes()};
     saveState();
     renderAll();
   }
+
   function pauseTask(id){
     const t = state.tasks.find(t=>t.id===id);
     if(!t || t.status!=="running") return;
@@ -219,17 +240,9 @@
     saveState();
     renderAll();
   }
+
   function resumeTask(id){
-    const anyRunning = state.tasks.some(t=>t.status==="running");
-    if(anyRunning) return;
-    const first = firstQueuedTask();
-    const t = state.tasks.find(t=>t.id===id);
-    if(!t || t.status!=="paused" || !first || first.id!==id) return;
-    t.status = "running";
-    t.runningStart = nowMinutes();
-    notifyState = {taskId: t.id, lastNotifiedAt: nowMinutes()};
-    saveState();
-    renderAll();
+    startTask(id);
   }
   function completeTask(id){
     const t = state.tasks.find(t=>t.id===id);
@@ -348,8 +361,7 @@
       el.innerHTML = '<div class="empty">Aún no hay tareas.</div>';
       return;
     }
-    const first = firstQueuedTask();
-    const anyRunning = state.tasks.some(t=>t.status==="running");
+
 
     el.innerHTML = active.map(t => {
       if(taskEdit && taskEdit.id === t.id){
@@ -392,8 +404,7 @@
       } else {
         startTag = null;
       }
-      const canStart = t.status === "pending" && !anyRunning && first && first.id === t.id;
-      const canResume = t.status === "paused" && !anyRunning && first && first.id === t.id;
+
       const draggableAttrs = t.status !== "running"
         ? `draggable="true" ondragstart="app.taskDragStart(event, ${t.id})" ondragover="app.taskDragOver(event)" ondragleave="app.taskDragLeave(event)" ondrop="app.taskDrop(event, ${t.id})" ondragend="app.taskDragEnd(event)"`
         : "";
@@ -419,7 +430,7 @@
           ${isOverflow ? '<div class="meta" style="color:var(--danger)">⚠ no cabe antes del fin de jornada</div>' : ""}
           <div class="task-actions">
             ${t.status==="pending" ? `
-              <button class="btn small run" ${canStart?"":"disabled"} onclick="app.startTask(${t.id})">▶ Iniciar</button>
+              <button class="btn small run" onclick="app.startTask(${t.id})">▶ Iniciar</button>
               <div class="order-controls">
                 <button class="icon-btn" title="Subir" onclick="app.moveTask(${t.id},-1)">▲</button>
                 <button class="icon-btn" title="Bajar" onclick="app.moveTask(${t.id},1)">▼</button>
@@ -430,7 +441,7 @@
               <button class="btn small done" onclick="app.completeTask(${t.id})">✓ Completar</button>
             ` : ""}
             ${t.status==="paused" ? `
-              <button class="btn small run" ${canResume?"":"disabled"} onclick="app.resumeTask(${t.id})">▶ Reanudar</button>
+              <button class="btn small run" onclick="app.resumeTask(${t.id})">▶ Reanudar</button>
               <button class="btn small done" onclick="app.completeTask(${t.id})">✓ Completar</button>
               <div class="order-controls">
                 <button class="icon-btn" title="Subir" onclick="app.moveTask(${t.id},-1)">▲</button>
