@@ -260,6 +260,22 @@
     renderAll();
   }
 
+  function uncompleteTask(id){
+    const t = state.tasks.find(t=>t.id===id);
+    if(!t || t.status !== "completed") return;
+    // restore to pending, put it at the end of the queue
+    const maxOrder = state.tasks.filter(t2=>t2.status!=="completed").reduce((m,t2)=>Math.max(m,t2.order),0);
+    t.status = "pending";
+    t.completedAt = null;
+    t.actualDuration = null;
+    t.elapsedBefore = 0;
+    t.runningStart = null;
+    t.order = maxOrder + 1;
+    saveState();
+    renderAll();
+    showToast(`"${t.title}" se ha devuelto a pendientes.`);
+  }
+
   function startNewDay(){
     const completedCount = state.tasks.filter(t=>t.status==="completed").length;
     const pendingCount = state.tasks.filter(t=>t.status!=="completed").length;
@@ -617,6 +633,9 @@
       <div class="summary-row">
         <div class="row-top"><span>${escapeHtml(t.title)}</span><span class="dur">${fmtDur(t.actualDuration)} (plan. ${fmtDur(t.planned)})</span></div>
         <div class="time-range tr-running"><span class="tag">Inicio</span>${fmt(realStart)}<span class="arrow">→</span><span class="tag">Fin</span>${fmt(t.completedAt)}</div>
+        <div style="margin-top:6px">
+          <button class="btn small secondary" onclick="app.uncompleteTask(${t.id})" title="Deshacer completado y volver a pendiente">↩ Reabrir</button>
+        </div>
       </div>
     `; }).join("") : '<div class="empty">Ninguna todavía.</div>';
 
@@ -935,7 +954,7 @@
 
   // expose actions for inline onclick handlers
   window.app = {
-    deleteMeeting, deleteTask, moveTask, startTask, pauseTask, resumeTask, completeTask,
+    deleteMeeting, deleteTask, moveTask, startTask, pauseTask, resumeTask, completeTask, uncompleteTask,
     startEditMeeting, updateMeetingEditField, cancelEditMeeting, saveEditMeeting,
     startEditTask, updateTaskEditField, cancelEditTask, saveEditTask,
     armTaskDrag, taskDragStart, taskDragOver, taskDragLeave, taskDrop, taskDragEnd
