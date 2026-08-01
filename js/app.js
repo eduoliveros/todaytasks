@@ -1240,22 +1240,57 @@
     endInput.value = fmt(start + 30);
   });
 
-  document.getElementById("addMeetingBtn").addEventListener("click", ()=>{
+  function handleMeetingSubmit(){
     const title = document.getElementById("meetingTitle").value.trim();
     const start = document.getElementById("meetingStart").value;
     const end = document.getElementById("meetingEnd").value;
+    if(!title){
+      showToast("Escribe un título para la reunión.");
+      return;
+    }
     addMeeting(title, start, end);
     document.getElementById("meetingTitle").value = "";
     document.getElementById("meetingStart").value = "";
     document.getElementById("meetingEnd").value = "";
-  });
+  }
 
-  document.getElementById("addTaskBtn").addEventListener("click", ()=>{
+  function handleTaskSubmit(){
     const title = document.getElementById("taskTitle").value.trim();
     const dur = document.getElementById("taskDuration").value;
+    if(!title){
+      showToast("Escribe un título para la tarea.");
+      return;
+    }
     addTask(title, dur);
     document.getElementById("taskTitle").value = "";
     document.getElementById("taskDuration").value = "";
+  }
+
+  document.getElementById("addMeetingBtn").addEventListener("click", handleMeetingSubmit);
+  document.getElementById("addTaskBtn").addEventListener("click", handleTaskSubmit);
+
+  ["meetingTitle", "meetingStart", "meetingEnd"].forEach(id => {
+    const el = document.getElementById(id);
+    if(el){
+      el.addEventListener("keydown", (e) => {
+        if(e.key === "Enter"){
+          e.preventDefault();
+          handleMeetingSubmit();
+        }
+      });
+    }
+  });
+
+  ["taskTitle", "taskDuration"].forEach(id => {
+    const el = document.getElementById(id);
+    if(el){
+      el.addEventListener("keydown", (e) => {
+        if(e.key === "Enter"){
+          e.preventDefault();
+          handleTaskSubmit();
+        }
+      });
+    }
   });
 
   document.getElementById("summaryToggle").addEventListener("click", ()=>{
