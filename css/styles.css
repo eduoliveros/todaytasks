@@ -45,6 +45,14 @@
   }
   .brand{display:flex;align-items:baseline;gap:10px;}
   .brand h1{font-size:20px;font-weight:700;}
+  .app-version{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    font-weight:500;
+    letter-spacing:0;
+    color:var(--ink-soft);
+    white-space:nowrap;
+  }
   .brand .eyebrow{
     font-family:'IBM Plex Mono',monospace;
     font-size:11px;
@@ -364,4 +372,3 @@
   @media (prefers-reduced-motion: reduce){
     .toast{transition:opacity .01s;}
   }
-
