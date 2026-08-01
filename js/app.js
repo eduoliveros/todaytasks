@@ -12,6 +12,13 @@
   let taskEdit = null;    // {id, title, duration}
   let notifyState = {taskId:null, lastNotifiedAt:null};
 
+  /* ---------------- Router state ---------------- */
+  let currentView = 'main';   // 'main' | 'task'
+  let focusTaskId = null;
+  let focusRefreshTimer = null;
+  const RING_R = 85;
+  const RING_C = +(2 * Math.PI * RING_R).toFixed(2); // 534.07
+
   function saveState(){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     pushToCloud();
@@ -226,7 +233,7 @@
     targetTask.runningStart = nowMinutes();
     notifyState = {taskId: targetTask.id, lastNotifiedAt: nowMinutes()};
     saveState();
-    renderAll();
+    smartRender();
   }
 
   function pauseTask(id){
@@ -238,7 +245,7 @@
     t.status = "paused";
     if(notifyState.taskId === id) notifyState = {taskId:null, lastNotifiedAt:null};
     saveState();
-    renderAll();
+    smartRender();
   }
 
   function resumeTask(id){
@@ -257,7 +264,12 @@
     t.runningStart = null;
     if(notifyState.taskId === id) notifyState = {taskId:null, lastNotifiedAt:null};
     saveState();
-    renderAll();
+    // If completing from focus view, navigate back to main
+    if(currentView === 'task' && focusTaskId === id){
+      window.location.hash = '#/';
+    } else {
+      smartRender();
+    }
   }
 
   function uncompleteTask(id){
@@ -521,6 +533,7 @@
               </div>
             ` : ""}
             ${t.status==="running" ? `
+              <a href="#/task/${t.id}" class="btn small secondary focus-link" title="Abrir vista de foco">◎ Foco</a>
               <button class="btn small pause" onclick="app.pauseTask(${t.id})">⏸ Pausar</button>
               <button class="btn small done" onclick="app.completeTask(${t.id})">✓ Completar</button>
             ` : ""}
@@ -864,6 +877,132 @@
     renderSummary(schedule);
   }
 
+  /* ---------------- Smart render (view-aware) ---------------- */
+  function smartRender(){
+    if(currentView === 'task'){
+      renderTaskFocusView();
+    } else {
+      renderAll();
+    }
+  }
+
+  /* ---------------- Task Focus View ---------------- */
+  function renderTaskFocusView(){
+    const container = document.getElementById('view-task');
+    if(!container) return;
+    const t = state.tasks.find(t => t.id === focusTaskId);
+    if(!t || (t.status !== 'running' && t.status !== 'paused')){
+      window.location.hash = '#/';
+      return;
+    }
+
+    const now = nowMinutes();
+    let elapsed = t.elapsedBefore || 0;
+    if(t.status === 'running' && t.runningStart !== null){
+      elapsed += Math.max(0, now - t.runningStart);
+    }
+    const remaining = t.planned - elapsed;  // negative = overrun
+    const overrun = remaining < 0;
+    const pct = Math.min(elapsed / t.planned, 1);
+    const dashOffset = +(RING_C * (1 - pct)).toFixed(2);
+    const plannedEnd = t.runningStart !== null
+      ? t.runningStart + (t.planned - (t.elapsedBefore || 0))
+      : null;
+
+    const ringClass = t.status === 'paused' ? 'state-paused' : (overrun ? 'state-overrun' : '');
+    const timeDisplay = overrun ? fmtDur(-remaining) : fmtDur(remaining);
+    const labelText  = overrun ? '⚠️ excedida' : t.status === 'paused' ? 'en pausa' : 'restantes';
+
+    container.innerHTML = `
+      <div class="focus-view">
+        <div class="focus-header">
+          <a href="#/" class="btn secondary focus-back">← Inicio</a>
+          <span class="badge ${t.status}">${t.status === 'running' ? 'en ejecución' : 'en pausa'}</span>
+        </div>
+
+        <h2 class="focus-task-name">${escapeHtml(t.title)}</h2>
+
+        <div class="focus-ring-wrap">
+          <svg class="focus-ring" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <circle class="ring-track" cx="100" cy="100" r="${RING_R}" stroke-width="16" fill="none"/>
+            <circle class="ring-progress ${ringClass}"
+                    cx="100" cy="100" r="${RING_R}"
+                    stroke-width="16" fill="none"
+                    stroke-dasharray="${RING_C}"
+                    stroke-dashoffset="${dashOffset}"
+                    transform="rotate(-90 100 100)"/>
+          </svg>
+          <div class="focus-ring-center">
+            <div class="ring-main-time${overrun ? ' overrun-text' : ''}">${timeDisplay}</div>
+            <div class="ring-label">${labelText}</div>
+          </div>
+        </div>
+
+        <div class="focus-meta">
+          <div class="focus-meta-item">
+            <span class="meta-label">Planificado</span>
+            <span class="meta-value">${fmtDur(t.planned)}</span>
+          </div>
+          <div class="focus-meta-item">
+            <span class="meta-label">Transcurrido</span>
+            <span class="meta-value">${fmtDur(elapsed)}</span>
+          </div>
+          ${plannedEnd !== null ? `
+          <div class="focus-meta-item">
+            <span class="meta-label">Fin previsto</span>
+            <span class="meta-value">${fmt(plannedEnd)}</span>
+          </div>` : ''}
+        </div>
+
+        <div class="focus-actions">
+          ${t.status === 'running' ? `
+            <button class="btn pause" onclick="app.pauseTask(${t.id})">⏸ Pausar</button>
+            <button class="btn done" onclick="app.completeTask(${t.id})">✓ Completar</button>
+          ` : `
+            <button class="btn run" onclick="app.resumeTask(${t.id})">▶ Reanudar</button>
+            <button class="btn done" onclick="app.completeTask(${t.id})">✓ Completar</button>
+          `}
+        </div>
+
+        <span class="focus-updated">Actualizado: ${fmt(now)}</span>
+      </div>
+    `;
+  }
+
+  /* ---------------- SPA Router ---------------- */
+  function showView(view, taskId){
+    const mainEl = document.getElementById('view-main');
+    const taskEl = document.getElementById('view-task');
+    if(view === 'task' && taskId){
+      focusTaskId = taskId;
+      currentView = 'task';
+      if(mainEl) mainEl.style.display = 'none';
+      if(taskEl) taskEl.style.display = 'flex';
+      renderTaskFocusView();
+      if(focusRefreshTimer) clearInterval(focusRefreshTimer);
+      focusRefreshTimer = setInterval(renderTaskFocusView, 10000);
+    } else {
+      focusTaskId = null;
+      currentView = 'main';
+      if(mainEl) mainEl.style.display = '';
+      if(taskEl) taskEl.style.display = 'none';
+      if(focusRefreshTimer){ clearInterval(focusRefreshTimer); focusRefreshTimer = null; }
+      renderAll();
+    }
+  }
+
+  function router(){
+    const hash = window.location.hash || '#/';
+    if(hash.startsWith('#/task/')){
+      const id = parseInt(hash.replace('#/task/', ''), 10);
+      if(!isNaN(id)){
+        showView('task', id);
+        return;
+      }
+    }
+    showView('main');
+  }
+
   /* ---------------- Wiring ---------------- */
   document.getElementById("workStartInput").value = fmt(state.workStart);
   document.getElementById("workStartInput").addEventListener("change", (e)=>{
@@ -960,18 +1099,20 @@
     armTaskDrag, taskDragStart, taskDragOver, taskDragLeave, taskDrop, taskDragEnd
   };
 
-  renderAll();
+  window.addEventListener('hashchange', router);
+
+  router();          // render whichever view matches the current URL
   renderAuthArea();
   initFirebase();
   setInterval(()=>{
-    // While a form is being edited, avoid a full re-render so the person doesn't lose focus/typed text.
+    if(currentView === 'task') return; // focus view has its own timer
     if(meetingEdit === null && taskEdit === null){
       renderAll();
     } else {
       renderClock();
     }
-  }, 15000); // recompute schedule every 15s so blocks flow with real time
-  setInterval(checkRunningTaskNotification, 30000); // independent of edit-pausing, always checks the running task
+  }, 15000);
+  setInterval(checkRunningTaskNotification, 30000);
 })();
 
 

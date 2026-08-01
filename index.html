@@ -12,7 +12,7 @@
 
 <header class="topbar">
   <div class="brand">
-    <h1>Tablero del día <span class="app-version">v1.15</span></h1>
+    <h1>Tablero del día <span class="app-version">v1.16</span></h1>
     <span class="eyebrow" id="appModeLabel">local · persistente</span>
   </div>
   <div class="header-stats" id="headerStats"></div>
@@ -40,6 +40,7 @@
   </div>
 </header>
 
+<div id="view-main">
 <div class="progress-banner-wrap">
   <div id="taskProgressContainer"></div>
 </div>
@@ -104,6 +105,9 @@
 </div>
 
 <footer>Los datos se guardan en este navegador (localStorage). Si inicias sesión, también se sincronizan en la nube.</footer>
+</div><!-- /#view-main -->
+
+<div id="view-task" style="display:none"></div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
@@ -117,6 +121,6 @@
 <script src="js/scheduler.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/notifications.js"></script>
-<script src="js/app.js?v=1.15"></script>
+<script src="js/app.js?v=1.16"></script>
 </body>
 </html>
