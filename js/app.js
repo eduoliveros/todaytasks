@@ -848,24 +848,23 @@
     }
   }
 
-  function isMobileBrowser(){
-    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  }
-
   function signInWithGoogle(){
     if(!fbAuth){ showToast("La conexión con Firebase no está disponible."); return; }
     const provider = new firebase.auth.GoogleAuthProvider();
-    if(isMobileBrowser()){
-      // Popups are unreliable on mobile WebKit (iOS Safari/Chrome) due to storage-partitioning
-      // between the popup and the opener, so the result never reaches onAuthStateChanged.
-      // A full-page redirect avoids that problem.
-      fbAuth.signInWithRedirect(provider);
-    } else {
-      fbAuth.signInWithPopup(provider).catch(err => {
+    provider.setCustomParameters({ prompt: 'select_account' });
+
+    fbAuth.signInWithPopup(provider).catch(err => {
+      console.warn("signInWithPopup falló o fue bloqueado, intentando fallback con redirect...", err);
+      if(err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-allowed'){
+        fbAuth.signInWithRedirect(provider).catch(rErr => {
+          console.error("Error en signInWithRedirect", rErr);
+          showToast("No se pudo iniciar sesión: " + (rErr.message || rErr.code || "error desconocido"));
+        });
+      } else if(err.code !== 'auth/popup-closed-by-user'){
         console.error("Error al iniciar sesión", err);
-        showToast("No se pudo iniciar sesión: " + (err.message || err.code || "error desconocido") + ". Si has abierto el archivo con doble clic (file://), el inicio de sesión con Google no funciona ahí — pruébalo sirviendo el archivo por http://localhost o subiéndolo a un hosting.");
-      });
-    }
+        showToast("No se pudo iniciar sesión: " + (err.message || err.code || "error desconocido"));
+      }
+    });
   }
 
   function initFirebase(){
@@ -877,9 +876,16 @@
       firebase.initializeApp(firebaseConfig);
       fbAuth = firebase.auth();
       fbDb = firebase.firestore();
+
+      // Persistencia local explícita para Safari iOS y PWA
+      fbAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => {
+        console.warn("No se pudo fijar la persistencia local de autenticación", err);
+      });
+
       // Auto-fall back to long-polling if the normal WebChannel gets blocked
       // (common with ad-blockers/privacy extensions flagging Firestore's Listen channel).
       fbDb.settings({ experimentalAutoDetectLongPolling: true });
+
       fbAuth.onAuthStateChanged(user => {
         currentUser = user;
         renderAuthArea();
@@ -889,11 +895,17 @@
           detachCloudSync();
         }
       });
-      // Completes the redirect-based sign-in flow used on mobile and surfaces any error,
-      // since a redirect doesn't have a click-time promise to catch() like the popup flow does.
-      fbAuth.getRedirectResult().catch(err => {
-        console.error("Error al completar el inicio de sesión por redirect", err);
-        showToast("No se pudo iniciar sesión: " + (err.message || err.code || "error desconocido"));
+
+      // Completa el flujo por redirección si se usó el fallback en navegadores estrictos
+      fbAuth.getRedirectResult().then(result => {
+        if(result && result.user){
+          showToast("Sesión iniciada con Google.");
+        }
+      }).catch(err => {
+        if(err && err.code && err.code !== 'auth/popup-closed-by-user'){
+          console.error("Error al completar el inicio de sesión por redirect", err);
+          showToast("No se pudo completar el inicio de sesión: " + (err.message || err.code));
+        }
       });
     }catch(err){
       console.error("No se pudo inicializar Firebase", err);
