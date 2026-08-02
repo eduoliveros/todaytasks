@@ -462,7 +462,7 @@
       const state = getState();
       const focusTaskId = getFocusTaskId();
       const t = state.tasks.find(t => t.id === focusTaskId);
-      if(!t || (t.status !== 'running' && t.status !== 'paused')){
+      if(!t || t.status === 'completed'){
         window.location.hash = '#/';
         return;
       }
@@ -482,7 +482,7 @@
 
       const ringClass = t.status === 'paused' ? 'state-paused' : (overrun ? 'state-overrun' : '');
       const timeDisplay = overrun ? fmtDur(-remaining) : fmtDur(remaining);
-      const labelText  = overrun ? '⚠️ excedida' : t.status === 'paused' ? 'en pausa' : 'restantes';
+      const labelText  = overrun ? '⚠️ excedida' : t.status === 'paused' ? 'en pausa' : (t.status === 'pending' ? 'sin iniciar' : 'restantes');
 
       container.innerHTML = `
         <div class="focus-view">
