@@ -275,6 +275,7 @@
       t.status = "completed";
       t.completedAt = nowMinutes();
       t.actualDuration = actual;
+      t.elapsedBefore = actual;
       t.runningStart = null;
       if(ctx.getNotifyState().taskId === id) setNotifyState({taskId:null, lastNotifiedAt:null});
       saveState();
@@ -290,15 +291,16 @@
       const t = state.tasks.find(t=>t.id===id);
       if(!t || t.status !== "completed") return;
       const maxOrder = state.tasks.filter(t2=>t2.status!=="completed").reduce((m,t2)=>Math.max(m,t2.order),0);
-      t.status = "pending";
+      const savedElapsed = t.actualDuration ?? t.elapsedBefore ?? 0;
+      t.status = savedElapsed > 0 ? "paused" : "pending";
       t.completedAt = null;
+      t.elapsedBefore = savedElapsed;
       t.actualDuration = null;
-      t.elapsedBefore = 0;
       t.runningStart = null;
       t.order = maxOrder + 1;
       saveState();
       renderAll();
-      showToast(`"${t.title}" se ha devuelto a pendientes.`);
+      showToast(`"${t.title}" se ha devuelto a ${t.status === "paused" ? "en pausa" : "pendientes"}.`);
     }
 
     /* ---------------- Interruptions ---------------- */

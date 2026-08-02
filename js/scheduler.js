@@ -37,9 +37,7 @@
       .sort((a,b) => a.order - b.order);
 
     for(const t of queue){
-      let remaining = t.status === "paused"
-        ? Math.max(0, t.planned - (t.elapsedBefore||0))
-        : t.planned;
+      let remaining = Math.max(0, t.planned - (t.elapsedBefore||0));
 
       const segs = [];
       let pos = cursor;

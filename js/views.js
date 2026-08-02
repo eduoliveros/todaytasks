@@ -221,7 +221,7 @@
                 ${t.status!=="running" ? `<span class="drag-handle" title="Arrastrar para reordenar" onmousedown="app.armTaskDrag()">⠿</span>` : ""}
                 <div>
                   <div class="title">${escapeHtml(t.title)}</div>
-                  <div class="meta">${fmtDur(t.planned)} planificados</div>
+                  <div class="meta">${fmtDur(t.planned)} planificados${(t.elapsedBefore||0)>0 ? ` · ${fmtDur(t.elapsedBefore)} realizados` : ''}</div>
                   ${startTag ? `<div class="time-range ${trClass}"><span class="tag">${startTag}</span>${startVal}<span class="arrow">→</span><span class="tag">${endTag}</span>${endVal}${remainingChip ? " "+remainingChip : ""}</div>` : '<div class="meta" style="color:var(--danger)">sin hueco antes del fin de jornada</div>'}
                   ${splitNote}
                 </div>
@@ -401,7 +401,7 @@
         }
         return `
         <div class="summary-row">
-          <div class="row-top"><span>${escapeHtml(t.title)}</span><span class="dur">${fmtDur(t.planned)} · ${t.status}</span></div>
+          <div class="row-top"><span>${escapeHtml(t.title)}</span><span class="dur">${fmtDur(t.planned)}${(t.elapsedBefore||0)>0 ? ` (${fmtDur(t.elapsedBefore)} realizados)` : ''} · ${t.status === 'paused' ? 'en pausa' : t.status}</span></div>
           ${rangeHtml}
         </div>
       `; }).join("") : '<div class="empty">Todo completado.</div>';
