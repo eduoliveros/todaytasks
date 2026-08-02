@@ -237,6 +237,24 @@
           window.location.hash = '#/task/' + targetTask.id;
         }
       }
+    } else if(e.key === "t" || e.key === "T"){
+      e.preventDefault();
+      if(routerModule.getCurrentView() !== 'main'){
+        window.location.hash = '#/';
+      }
+      setTimeout(() => {
+        const el = document.getElementById("taskTitle");
+        if(el) el.focus();
+      }, 50);
+    } else if(e.key === "r" || e.key === "R"){
+      e.preventDefault();
+      if(routerModule.getCurrentView() !== 'main'){
+        window.location.hash = '#/';
+      }
+      setTimeout(() => {
+        const el = document.getElementById("meetingTitle");
+        if(el) el.focus();
+      }, 50);
     }
   });
 
