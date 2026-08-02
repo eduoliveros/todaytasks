@@ -1,4 +1,4 @@
-window.TodayTasksNotifications = function ({ getState, nowMinutes, fmt, fmtRemaining, showToast }) {
+window.TodayTasksNotifications = function ({ getState, getNotifyState, setNotifyState, nowMinutes, fmt, fmtRemaining, showToast }) {
   const notifSupported = ("Notification" in window);
 
   function notificationPermissionLabel(){
@@ -46,26 +46,27 @@ window.TodayTasksNotifications = function ({ getState, nowMinutes, fmt, fmtRemai
     showToast(title + " — " + body);
   }
   function checkRunningTaskNotification(){
+    const ns = getNotifyState ? getNotifyState() : {taskId:null, lastNotifiedAt:null};
     const running = getState().tasks.find(t=>t.status==="running");
     if(!running){
-      if(notifyState.taskId !== null) notifyState = {taskId:null, lastNotifiedAt:null};
+      if(ns.taskId !== null) setNotifyState({taskId:null, lastNotifiedAt:null});
       return;
     }
     const now = nowMinutes();
-    if(notifyState.taskId !== running.id){
+    if(ns.taskId !== running.id){
       // e.g. page was reloaded mid-run: start the 10-min cycle from now without notifying immediately.
-      notifyState = {taskId: running.id, lastNotifiedAt: now};
+      setNotifyState({taskId: running.id, lastNotifiedAt: now});
       return;
     }
     const intervalMin = (getState().notifyIntervalMin && getState().notifyIntervalMin > 0) ? getState().notifyIntervalMin : 10;
-    if(now - notifyState.lastNotifiedAt >= intervalMin){
+    if(now - ns.lastNotifiedAt >= intervalMin){
       const plannedEnd = running.runningStart + (running.planned - (running.elapsedBefore||0));
       const rem = fmtRemaining(plannedEnd, now);
       const body = rem.overrun
         ? "Se ha excedido " + rem.text.replace("excedida ","") + " · fin previsto era a las " + fmt(plannedEnd)
         : "Quedan " + rem.text.replace("quedan ","") + " · fin previsto a las " + fmt(plannedEnd);
       sendDesktopNotification(running.title, body);
-      notifyState.lastNotifiedAt = now;
+      setNotifyState({taskId: running.id, lastNotifiedAt: now});
     }
   }
 

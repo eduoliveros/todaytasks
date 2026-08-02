@@ -78,7 +78,15 @@
   routerModule = window.TodayTasksRouter(ctx);
 
   const { refreshNotifyBtn, requestNotificationPermission, checkRunningTaskNotification } =
-    window.TodayTasksNotifications({ getState: () => state, nowMinutes, fmt, fmtRemaining, showToast });
+    window.TodayTasksNotifications({
+      getState: () => state,
+      getNotifyState: () => notifyState,
+      setNotifyState: (v) => { notifyState = v; },
+      nowMinutes,
+      fmt,
+      fmtRemaining,
+      showToast
+    });
 
   /* ---------------- Wiring ---------------- */
   document.getElementById("workStartInput").value = fmt(state.workStart);
