@@ -426,6 +426,7 @@
   }
   .leg-completed .dot { background: var(--accent-done); }
   .leg-running .dot { background: var(--accent-running); }
+  .leg-paused .dot { background: var(--accent-paused); }
   .leg-pending .dot { background: var(--accent-pending); }
 
   .progress-total-badge {
@@ -479,6 +480,10 @@
   .seg-running {
     background: var(--accent-running);
     color: #3a2900;
+  }
+  .seg-paused {
+    background: var(--accent-paused);
+    color: #ffffff;
   }
   .seg-pending {
     background: var(--accent-pending);

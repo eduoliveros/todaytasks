@@ -43,7 +43,8 @@
       const total = tasks.length;
       const completed = tasks.filter(t => t.status === "completed").length;
       const running = tasks.filter(t => t.status === "running").length;
-      const pending = tasks.filter(t => t.status === "pending" || t.status === "paused").length;
+      const paused = tasks.filter(t => t.status !== "completed" && t.status !== "running" && (t.status === "paused" || (t.elapsedBefore || 0) > 0)).length;
+      const unstarted = tasks.filter(t => t.status === "pending" && (!t.elapsedBefore || t.elapsedBefore === 0)).length;
 
       if(total === 0){
         container.innerHTML = `
@@ -54,7 +55,8 @@
                 <div class="progress-legend">
                   <span class="legend-item leg-completed"><span class="dot"></span> 0 completadas</span>
                   <span class="legend-item leg-running"><span class="dot"></span> 0 en ejecución</span>
-                  <span class="legend-item leg-pending"><span class="dot"></span> 0 pendientes</span>
+                  <span class="legend-item leg-paused"><span class="dot"></span> 0 en pausa</span>
+                  <span class="legend-item leg-pending"><span class="dot"></span> 0 sin iniciar</span>
                 </div>
               </div>
               <span class="progress-total-badge">Total: <strong>0</strong> tareas</span>
@@ -69,11 +71,13 @@
 
       const pctCompleted = (completed / total) * 100;
       const pctRunning = (running / total) * 100;
-      const pctPending = (pending / total) * 100;
+      const pctPaused = (paused / total) * 100;
+      const pctUnstarted = (unstarted / total) * 100;
 
-      const compLabel = completed > 0 ? (pctCompleted >= 12 ? `${completed} completada${completed!==1?'s':''}` : `${completed}`) : '';
-      const runLabel = running > 0 ? (pctRunning >= 12 ? `${running} en curso` : `${running}`) : '';
-      const pendLabel = pending > 0 ? (pctPending >= 12 ? `${pending} pendiente${pending!==1?'s':''}` : `${pending}`) : '';
+      const compLabel = completed > 0 ? (pctCompleted >= 10 ? `${completed} completada${completed!==1?'s':''}` : `${completed}`) : '';
+      const runLabel = running > 0 ? (pctRunning >= 10 ? `${running} en curso` : `${running}`) : '';
+      const pauseLabel = paused > 0 ? (pctPaused >= 10 ? `${paused} en pausa` : `${paused}`) : '';
+      const unstartedLabel = unstarted > 0 ? (pctUnstarted >= 10 ? `${unstarted} sin iniciar` : `${unstarted}`) : '';
 
       container.innerHTML = `
         <div class="progress-banner">
@@ -83,7 +87,8 @@
               <div class="progress-legend">
                 <span class="legend-item leg-completed"><span class="dot"></span> ${completed} completada${completed!==1?'s':''}</span>
                 <span class="legend-item leg-running"><span class="dot"></span> ${running} en ejecución</span>
-                <span class="legend-item leg-pending"><span class="dot"></span> ${pending} pendiente${pending!==1?'s':''}</span>
+                <span class="legend-item leg-paused"><span class="dot"></span> ${paused} en pausa</span>
+                <span class="legend-item leg-pending"><span class="dot"></span> ${unstarted} sin iniciar</span>
               </div>
             </div>
             <span class="progress-total-badge">Total: <strong>${total}</strong> tarea${total!==1?'s':''}</span>
@@ -95,8 +100,11 @@
             <div class="progress-seg seg-running" style="width: ${pctRunning}%" title="${running} en ejecución (${Math.round(pctRunning)}%)">
               ${runLabel ? `<span class="seg-label">${runLabel}</span>` : ''}
             </div>
-            <div class="progress-seg seg-pending" style="width: ${pctPending}%" title="${pending} pendiente${pending!==1?'s':''} (${Math.round(pctPending)}%)">
-              ${pendLabel ? `<span class="seg-label">${pendLabel}</span>` : ''}
+            <div class="progress-seg seg-paused" style="width: ${pctPaused}%" title="${paused} en pausa (${Math.round(pctPaused)}%)">
+              ${pauseLabel ? `<span class="seg-label">${pauseLabel}</span>` : ''}
+            </div>
+            <div class="progress-seg seg-pending" style="width: ${pctUnstarted}%" title="${unstarted} sin iniciar (${Math.round(pctUnstarted)}%)">
+              ${unstartedLabel ? `<span class="seg-label">${unstartedLabel}</span>` : ''}
             </div>
           </div>
         </div>
