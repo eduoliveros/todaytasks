@@ -3,35 +3,59 @@ window.TodayTasksNotifications = function ({ getState, getNotifyState, setNotify
 
   function notificationPermissionLabel(){
     if(!notifSupported) return "no disponibles en este navegador";
+    if(window.location.protocol === "file:"){
+      return Notification.permission === "granted" ? "activadas" : "no disponibles en archivo local (file://)";
+    }
     if(Notification.permission === "granted") return "activadas";
-    if(Notification.permission === "denied") return "bloqueadas en el navegador";
+    if(Notification.permission === "denied") return "bloqueadas en navegador (icono 🔒)";
     return "desactivadas";
   }
+
   function refreshNotifyBtn(){
     const btn = document.getElementById("notifyBtn");
     if(!btn) return;
     btn.textContent = "🔔 Avisos: " + notificationPermissionLabel();
-    btn.disabled = !notifSupported || Notification.permission === "denied";
+    btn.disabled = !notifSupported;
   }
+
   function requestNotificationPermission(){
     if(!notifSupported){
       showToast("Este navegador no admite notificaciones de escritorio.");
       return;
     }
+    if(window.location.protocol === "file:"){
+      showToast("Las notificaciones de escritorio son bloqueadas por el navegador en archivos locales (file://). Sirve la app en http://localhost o activa servidor web local. Los avisos internos visuales seguirán funcionando.");
+      return;
+    }
     if(Notification.permission === "granted"){
-      showToast("Los avisos de escritorio ya están activados.");
+      showToast("Los avisos de escritorio ya están activados. Recibirás avisos durante las tareas.");
       return;
     }
     if(Notification.permission === "denied"){
-      showToast("Has bloqueado los avisos para esta página en el navegador; actívalos desde su configuración.");
+      showToast("Las notificaciones están bloqueadas en tu navegador. Haz clic en el icono del candado 🔒 junto a la URL para permitirlas.");
       return;
     }
-    Notification.requestPermission().then(perm => {
-      refreshNotifyBtn();
-      showToast(perm === "granted"
-        ? "Avisos de escritorio activados. Recibirás uno cada 10 min mientras haya una tarea en marcha."
-        : "No se han activado los avisos; seguirás viendo el aviso dentro de la app.");
-    });
+    try{
+      const req = Notification.requestPermission();
+      if(req && typeof req.then === "function"){
+        req.then(perm => {
+          refreshNotifyBtn();
+          if(perm === "granted"){
+            showToast("Avisos de escritorio activados.");
+          } else if(perm === "denied"){
+            showToast("Notificaciones denegadas en el navegador. Puedes activarlas desde los ajustes del sitio (icono 🔒).");
+          } else {
+            showToast("No se activaron los avisos de escritorio; se usarán los avisos visuales de la app.");
+          }
+        }).catch(err => {
+          console.warn("Error al solicitar permiso de notificación:", err);
+          showToast("No se pudo solicitar permisos de notificación en este contexto.");
+        });
+      }
+    }catch(err){
+      console.warn("Excepción al solicitar permisos de notificación:", err);
+      showToast("No se pudieron solicitar permisos de notificación.");
+    }
   }
   function sendDesktopNotification(title, body){
     if(notifSupported && Notification.permission === "granted"){
