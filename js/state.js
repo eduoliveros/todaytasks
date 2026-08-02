@@ -8,6 +8,7 @@
       interruptions: [], // {id, title, start, end, duration}
       activeInterruption: null, // {id, title, start}
       notifyIntervalMin: 10,
+      notifyEnabled: true,
       planningMode: false,
       nextId: 1
     };
@@ -30,6 +31,9 @@
       }
       if(typeof parsed.notifyIntervalMin !== "number" || parsed.notifyIntervalMin <= 0){
         parsed.notifyIntervalMin = 10;
+      }
+      if(typeof parsed.notifyEnabled !== "boolean"){
+        parsed.notifyEnabled = true;
       }
       if(typeof parsed.workStart !== "number"){
         parsed.workStart = 9*60;

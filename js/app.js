@@ -82,6 +82,7 @@
       getState: () => state,
       getNotifyState: () => notifyState,
       setNotifyState: (v) => { notifyState = v; },
+      saveState,
       nowMinutes,
       fmt,
       fmtRemaining,
