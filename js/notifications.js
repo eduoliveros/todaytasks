@@ -4,11 +4,11 @@ window.TodayTasksNotifications = function ({ getState, getNotifyState, setNotify
   function notificationPermissionLabel(){
     if(!notifSupported) return "no disponibles en este navegador";
     if(window.location.protocol === "file:"){
-      return Notification.permission === "granted" ? "activadas" : "no disponibles en archivo local (file://)";
+      return Notification.permission === "granted" ? "activados" : "no disponibles en archivo local (file://)";
     }
-    if(Notification.permission === "granted") return "activadas";
-    if(Notification.permission === "denied") return "bloqueadas en navegador (icono 🔒)";
-    return "desactivadas";
+    if(Notification.permission === "granted") return "activados";
+    if(Notification.permission === "denied") return "bloqueados en navegador (icono 🔒)";
+    return "desactivados";
   }
 
   function refreshNotifyBtn(){
