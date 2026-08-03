@@ -2,7 +2,9 @@
   "use strict";
 
   const { getTodayStr, formatDateFriendly, diffDays, fmtDur } = window.TodayTasksUtils;
-  const { escapeHtml, escapeAttr, showToast } = window.TodayTasksUi;
+  // TodayTasksUi is loaded after this file, so access lazily
+  function escapeHtml(s) { return window.TodayTasksUi.escapeHtml(s); }
+  function escapeAttr(s) { return window.TodayTasksUi.escapeAttr(s); }
 
   // Active series toggles for the chart
   let seriesToggles = {
