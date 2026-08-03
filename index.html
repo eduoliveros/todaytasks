@@ -12,49 +12,78 @@
 <body>
 
 <header class="topbar">
-  <div class="brand">
-    <h1>Tablero del día <span class="app-version">v1.36</span></h1>
-    <span class="eyebrow" id="appModeLabel">local · persistente</span>
+  <!-- Barra superior: logo + switcher + pestañas -->
+  <div class="topbar-title-row">
+    <div class="brand">
+      <h1>Tablero del día <span class="app-version">v1.37</span></h1>
+      <div class="env-switcher" id="envSwitcher">
+        <button class="env-btn active" data-env="work" id="envBtnWork" title="Cambiar a ambiente de Trabajo (Tecla 'E')">
+          <span class="env-icon">💼</span>
+          <span class="env-label">Trabajo</span>
+        </button>
+        <button class="env-btn" data-env="personal" id="envBtnPersonal" title="Cambiar a ambiente Personal (Tecla 'E')">
+          <span class="env-icon">🏠</span>
+          <span class="env-label">Personal</span>
+        </button>
+      </div>
+    </div>
+    <nav class="header-tabs" role="tablist">
+      <button class="header-tab active" data-tab="entorno" role="tab" aria-selected="true" aria-controls="htab-entorno" title="Cambiar a panel Entorno (Atajo: Alt+1)">
+        🏙 Entorno <span class="tab-kbd">[Alt+1]</span>
+      </button>
+      <button class="header-tab" data-tab="tiempo" role="tab" aria-selected="false" aria-controls="htab-tiempo" title="Cambiar a panel Tiempo (Atajo: Alt+2)">
+        🕐 Tiempo <span class="tab-kbd">[Alt+2]</span>
+      </button>
+      <button class="header-tab" data-tab="config" role="tab" aria-selected="false" aria-controls="htab-config" title="Cambiar a panel Configuración (Atajo: Alt+3)">
+        ⚙️ Configuración <span class="tab-kbd">[Alt+3]</span>
+      </button>
+    </nav>
   </div>
-  <div class="env-switcher" id="envSwitcher">
-    <button class="env-btn active" data-env="work" id="envBtnWork" title="Cambiar a ambiente de Trabajo (Tecla 'E')">
-      <span class="env-icon">💼</span>
-      <span class="env-label">Trabajo</span>
-    </button>
-    <button class="env-btn" data-env="personal" id="envBtnPersonal" title="Cambiar a ambiente Personal (Tecla 'E')">
-      <span class="env-icon">🏠</span>
-      <span class="env-label">Personal</span>
-    </button>
-  </div>
-  <div class="header-stats" id="headerStats"></div>
-  <div class="clock-wrap">
-    <div class="clock mono" id="clockDisplay">--:--</div>
-    <div class="end-config">
-      Fecha
-      <input type="date" id="datePickerInput" title="Seleccionar día concreto para planificar o consultar">
+
+  <!-- Paneles de pestaña -->
+  <div class="header-tab-panels">
+
+    <!-- Panel: Entorno -->
+    <div class="header-tab-panel active" id="htab-entorno" role="tabpanel">
+      <span class="eyebrow" id="appModeLabel">local · persistente</span>
+      <div class="auth-area" id="authArea">
+        <button class="btn secondary" id="signInBtn">☁ Iniciar sesión con Google</button>
+      </div>
+      <div class="header-stats" id="headerStats"></div>
     </div>
-    <button class="btn secondary" id="todayBtn" style="display:none" title="Volver al día actual (quitar planificación personalizada)">📅 Hoy</button>
-    <a href="#/history" class="btn secondary" id="historyLinkBtn" title="Ver gráfica evolutiva y métricas de 40 días (Tecla 'H')">📊 Histórico [H]</a>
-    <div class="end-config">
-      Inicio jornada
-      <input type="time" id="workStartInput">
+
+    <!-- Panel: Tiempo -->
+    <div class="header-tab-panel" id="htab-tiempo" role="tabpanel">
+      <div class="clock mono" id="clockDisplay">--:--</div>
+      <div class="end-config">
+        Fecha
+        <input type="date" id="datePickerInput" title="Seleccionar día concreto para planificar o consultar">
+      </div>
+      <button class="btn secondary" id="todayBtn" style="display:none" title="Volver al día actual (quitar planificación personalizada)">📅 Hoy</button>
+      <a href="#/history" class="btn secondary" id="historyLinkBtn" title="Ver gráfica evolutiva y métricas de 40 días (Tecla 'H')">📊 Histórico [H]</a>
+      <button class="btn secondary" id="interruptionBtn" style="background:#F6D9D4;color:var(--danger);border:1px solid #F1C4BC;" title="Pausar tarea en marcha e iniciar una interrupción (Tecla 'I')">⚡ Interrupción [I]</button>
+      <button class="btn secondary" id="planningModeBtn" title="Simula el reparto de tareas como si el día empezara ahora a la hora de inicio de jornada">🗺 Modo planificación</button>
     </div>
-    <div class="end-config">
-      Fin de jornada
-      <input type="time" id="workEndInput">
+
+    <!-- Panel: Configuración -->
+    <div class="header-tab-panel" id="htab-config" role="tabpanel">
+      <div class="end-config">
+        Inicio jornada
+        <input type="time" id="workStartInput">
+      </div>
+      <div class="end-config">
+        Fin de jornada
+        <input type="time" id="workEndInput">
+      </div>
+      <button class="btn secondary" id="notifyBtn" title="Activa avisos de escritorio para la tarea en marcha">🔔 Avisos</button>
+      <div class="end-config">
+        cada
+        <input type="number" id="notifyIntervalInput" min="1" style="width:56px">
+        min
+      </div>
+      <button class="btn secondary" id="newDayBtn" title="Borra reuniones y tareas del día seleccionado para empezar de cero">↻ Nuevo día</button>
     </div>
-    <button class="btn secondary" id="interruptionBtn" style="background:#F6D9D4;color:var(--danger);border:1px solid #F1C4BC;" title="Pausar tarea en marcha e iniciar una interrupción (Tecla 'I')">⚡ Interrupción [I]</button>
-    <button class="btn secondary" id="planningModeBtn" title="Simula el reparto de tareas como si el día empezara ahora a la hora de inicio de jornada">🗺 Modo planificación</button>
-    <button class="btn secondary" id="notifyBtn" title="Activa avisos de escritorio para la tarea en marcha">🔔 Avisos</button>
-    <div class="end-config">
-      cada
-      <input type="number" id="notifyIntervalInput" min="1" style="width:56px">
-      min
-    </div>
-    <button class="btn secondary" id="newDayBtn" title="Borra reuniones y tareas del día seleccionado para empezar de cero">↻ Nuevo día</button>
-    <div class="auth-area" id="authArea">
-      <button class="btn secondary" id="signInBtn">☁ Iniciar sesión con Google</button>
-    </div>
+
   </div>
 </header>
 

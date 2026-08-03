@@ -90,6 +90,30 @@
     });
 
   /* ---------------- Wiring ---------------- */
+
+  function switchHeaderTab(target){
+    const tabs = document.querySelectorAll('.header-tab');
+    const panels = document.querySelectorAll('.header-tab-panel');
+    tabs.forEach(function(t){
+      const isTarget = t.dataset.tab === target;
+      t.classList.toggle('active', isTarget);
+      t.setAttribute('aria-selected', isTarget ? 'true' : 'false');
+    });
+    panels.forEach(function(p){
+      p.classList.toggle('active', p.id === 'htab-' + target);
+    });
+  }
+
+  /* --- Header tab switching --- */
+  (function(){
+    const tabs = document.querySelectorAll('.header-tab');
+    tabs.forEach(function(tab){
+      tab.addEventListener('click', function(){
+        switchHeaderTab(tab.dataset.tab);
+      });
+    });
+  })();
+
   document.getElementById("workStartInput").value = fmt(state.workStart);
   document.getElementById("workStartInput").addEventListener("change", (e)=>{
     const v = timeToMinutes(e.target.value);
@@ -228,6 +252,18 @@
     intBtn.addEventListener("click", actionsModule.startInterruption);
   }
 
+  const historyLinkBtn = document.getElementById("historyLinkBtn");
+  if(historyLinkBtn){
+    historyLinkBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if(routerModule.getCurrentView() === 'history'){
+        window.location.hash = '#/';
+      } else {
+        window.location.hash = '#/history';
+      }
+    });
+  }
+
   const envBtnWork = document.getElementById("envBtnWork");
   const envBtnPersonal = document.getElementById("envBtnPersonal");
   if(envBtnWork) envBtnWork.addEventListener("click", () => actionsModule.switchEnvironment("work"));
@@ -242,11 +278,23 @@
       }
     }
 
+    // Alt + 1, Alt + 2, Alt + 3 for switching header tabs from anywhere
+    if(e.altKey && (e.key === "1" || e.key === "2" || e.key === "3")){
+      e.preventDefault();
+      const tabMap = { "1": "entorno", "2": "tiempo", "3": "config" };
+      switchHeaderTab(tabMap[e.key]);
+      return;
+    }
+
     const active = document.activeElement;
     const tag = active ? active.tagName.toLowerCase() : "";
     if(tag === "input" || tag === "textarea" || (active && active.isContentEditable)) return;
 
-    if(e.key === "e" || e.key === "E"){
+    if(e.key === "1" || e.key === "2" || e.key === "3"){
+      e.preventDefault();
+      const tabMap = { "1": "entorno", "2": "tiempo", "3": "config" };
+      switchHeaderTab(tabMap[e.key]);
+    } else if(e.key === "e" || e.key === "E"){
       e.preventDefault();
       const nextEnv = state.activeEnv === "work" ? "personal" : "work";
       actionsModule.switchEnvironment(nextEnv);
