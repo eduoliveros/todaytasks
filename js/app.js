@@ -77,7 +77,7 @@
   cloudModule = window.TodayTasksCloud(ctx);
   routerModule = window.TodayTasksRouter(ctx);
 
-  const { refreshNotifyBtn, requestNotificationPermission, checkRunningTaskNotification } =
+  const { refreshNotifyBtn, requestNotificationPermission, checkRunningTaskNotification, checkMeetingNotifications } =
     window.TodayTasksNotifications({
       getState: () => state,
       getNotifyState: () => notifyState,
@@ -443,6 +443,8 @@
   cloudModule.renderAuthArea();
   cloudModule.initFirebase();
 
+  checkMeetingNotifications();
+
   setInterval(()=>{
     if(routerModule.getCurrentView() === 'task' || routerModule.getCurrentView() === 'interruption' || routerModule.getCurrentView() === 'history') return;
     if(meetingEdit === null && taskEdit === null){
@@ -452,6 +454,9 @@
     }
   }, 15000);
 
-  setInterval(checkRunningTaskNotification, 30000);
+  setInterval(()=>{
+    checkRunningTaskNotification();
+    checkMeetingNotifications();
+  }, 15000);
 })();
 

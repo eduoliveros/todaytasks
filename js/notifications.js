@@ -98,10 +98,10 @@ window.TodayTasksNotifications = function ({ getState, getNotifyState, setNotify
     }
   }
 
-  function sendDesktopNotification(title, body){
+  function sendDesktopNotification(title, body, tag = "tablero-dia-tarea"){
     if(isNotifyActive()){
       try{
-        const n = new Notification(title, {body, tag:"tablero-dia-tarea"});
+        const n = new Notification(title, {body, tag});
         n.onclick = () => { window.focus(); };
       }catch(err){
         console.error("No se pudo mostrar la notificación de escritorio", err);
@@ -137,7 +137,54 @@ window.TodayTasksNotifications = function ({ getState, getNotifyState, setNotify
     }
   }
 
+  const notifiedMeetingKeys = new Set();
 
-  return { refreshNotifyBtn, requestNotificationPermission: toggleNotificationPermission, toggleNotificationPermission, checkRunningTaskNotification };
+  function checkMeetingNotifications(){
+    const state = getState();
+    const todayStr = window.TodayTasksUtils ? window.TodayTasksUtils.getTodayStr() : null;
+    if(!todayStr || !state || !state.environments) return;
+
+    const envKey = state.activeEnv || "work";
+    const envObj = state.environments[envKey];
+    const dayObj = (envObj && envObj.days) ? envObj.days[todayStr] : null;
+    if(!dayObj || !Array.isArray(dayObj.meetings)) return;
+
+    const now = nowMinutes();
+    const meetings = dayObj.meetings;
+
+    meetings.forEach(m => {
+      if(!m || typeof m.start !== "number") return;
+
+      // 1. Notificación 2 minutos antes de la reunión
+      const key2min = `${todayStr}_${m.id}_2min_${m.start}`;
+      if(now >= (m.start - 2) && now < m.start){
+        if(!notifiedMeetingKeys.has(key2min)){
+          notifiedMeetingKeys.add(key2min);
+          const title = `⏰ Reunión en 2 min: ${m.title}`;
+          const body = `Empieza a las ${fmt(m.start)} (duración hasta las ${fmt(m.end)}).`;
+          sendDesktopNotification(title, body, `meeting-2min-${m.id}`);
+        }
+      }
+
+      // 2. Notificación en la hora exacta de la reunión
+      const keyStart = `${todayStr}_${m.id}_start_${m.start}`;
+      if(now >= m.start && now < (m.start + 2)){
+        if(!notifiedMeetingKeys.has(keyStart)){
+          notifiedMeetingKeys.add(keyStart);
+          const title = `🔔 Reunión ahora: ${m.title}`;
+          const body = `La reunión "${m.title}" comienza ahora (${fmt(m.start)} - ${fmt(m.end)}).`;
+          sendDesktopNotification(title, body, `meeting-start-${m.id}`);
+        }
+      }
+    });
+  }
+
+  return {
+    refreshNotifyBtn,
+    requestNotificationPermission: toggleNotificationPermission,
+    toggleNotificationPermission,
+    checkRunningTaskNotification,
+    checkMeetingNotifications
+  };
 };
 

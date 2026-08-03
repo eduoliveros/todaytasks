@@ -141,7 +141,10 @@
           <div class="top">
             <div>
               <div class="title">${escapeHtml(m.title)}</div>
-              <div class="time-range tr-meeting"><span class="tag">Inicio</span>${fmt(m.start)}<span class="arrow">→</span><span class="tag">Fin</span>${fmt(m.end)}</div>
+              <div class="time-range tr-meeting">
+                <span class="tag">Inicio</span>${fmt(m.start)}<span class="arrow">→</span><span class="tag">Fin</span>${fmt(m.end)}
+                <span class="tag" style="margin-left:4px;background:rgba(79,70,229,0.08);color:#4F46E5;border-color:rgba(79,70,229,0.2);" title="Avisos: 2 min antes (${fmt(m.start-2)}) y a la hora (${fmt(m.start)})">🔔 2m y a la hora</span>
+              </div>
               <div class="meta">colchón hasta ${fmt(m.end+10)}</div>
             </div>
             <div style="display:flex;align-items:center;gap:2px;">
