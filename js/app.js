@@ -217,6 +217,11 @@
     intBtn.addEventListener("click", actionsModule.startInterruption);
   }
 
+  const envBtnWork = document.getElementById("envBtnWork");
+  const envBtnPersonal = document.getElementById("envBtnPersonal");
+  if(envBtnWork) envBtnWork.addEventListener("click", () => actionsModule.switchEnvironment("work"));
+  if(envBtnPersonal) envBtnPersonal.addEventListener("click", () => actionsModule.switchEnvironment("personal"));
+
   window.addEventListener("keydown", (e) => {
     if(e.key === "Escape" || e.key === "Esc"){
       if(state.activeInterruption || routerModule.getCurrentView() === 'interruption'){
@@ -230,7 +235,11 @@
     const tag = active ? active.tagName.toLowerCase() : "";
     if(tag === "input" || tag === "textarea" || (active && active.isContentEditable)) return;
 
-    if(e.key === "i" || e.key === "I"){
+    if(e.key === "e" || e.key === "E"){
+      e.preventDefault();
+      const nextEnv = state.activeEnv === "work" ? "personal" : "work";
+      actionsModule.switchEnvironment(nextEnv);
+    } else if(e.key === "i" || e.key === "I"){
       e.preventDefault();
       actionsModule.startInterruption();
     } else if(e.key === "f" || e.key === "F"){
@@ -269,6 +278,7 @@
 
   // expose actions for inline onclick handlers
   window.app = {
+    switchEnvironment: actionsModule.switchEnvironment,
     deleteMeeting: actionsModule.deleteMeeting,
     deleteTask: actionsModule.deleteTask,
     moveTask: actionsModule.moveTask,

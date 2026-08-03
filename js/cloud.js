@@ -2,7 +2,7 @@
   "use strict";
 
   const { escapeHtml, escapeAttr, showToast } = window.TodayTasksUi;
-  const { defaultState } = window.TodayTasksState;
+  const { defaultState, wrapState } = window.TodayTasksState;
 
   window.TodayTasksCloud = function(ctx){
     const {
@@ -52,7 +52,7 @@
           return false;
         }
         const backupState = JSON.parse(raw);
-        setState(Object.assign(defaultState(), backupState));
+        setState(wrapState(backupState));
         saveState();
         syncFormInputsFromState();
         renderAll();
@@ -64,43 +64,80 @@
       }
     }
 
-    function mergeStates(local, remote){
-      const merged = Object.assign(defaultState(), remote);
-      
-      const meetingKeys = new Set((remote.meetings || []).map(m => `${m.title}_${m.start}_${m.end}`));
-      (local.meetings || []).forEach(m => {
-        const key = `${m.title}_${m.start}_${m.end}`;
-        if(!meetingKeys.has(key)){
-          merged.meetings.push(m);
-          meetingKeys.add(key);
-        }
-      });
-      merged.meetings.sort((a,b) => a.start - b.start);
+    function mergeStates(localRaw, remoteRaw){
+      const local = wrapState(localRaw);
+      const remote = wrapState(remoteRaw);
+      const merged = defaultState();
 
-      const taskTitles = new Set((remote.tasks || []).map(t => (t.title || "").toLowerCase().trim()));
-      (local.tasks || []).forEach(t => {
-        const normTitle = (t.title || "").toLowerCase().trim();
-        if(!taskTitles.has(normTitle)){
-          merged.tasks.push(t);
-          taskTitles.add(normTitle);
-        }
-      });
+      merged.activeEnv = local.activeEnv || remote.activeEnv || 'work';
 
-      const intIds = new Set((remote.interruptions || []).map(i => i.id));
-      (local.interruptions || []).forEach(i => {
-        if(!intIds.has(i.id)){
-          merged.interruptions.push(i);
-          intIds.add(i.id);
-        }
+      ['work', 'personal'].forEach(envKey => {
+        const localEnv = (local.environments && local.environments[envKey]) || {};
+        const remoteEnv = (remote.environments && remote.environments[envKey]) || {};
+        const mergedEnv = merged.environments[envKey];
+
+        mergedEnv.workStart = remoteEnv.workStart !== undefined ? remoteEnv.workStart : (localEnv.workStart !== undefined ? localEnv.workStart : mergedEnv.workStart);
+        mergedEnv.workEnd = remoteEnv.workEnd !== undefined ? remoteEnv.workEnd : (localEnv.workEnd !== undefined ? localEnv.workEnd : mergedEnv.workEnd);
+        mergedEnv.planningMode = remoteEnv.planningMode !== undefined ? remoteEnv.planningMode : (localEnv.planningMode || false);
+        mergedEnv.activeInterruption = remoteEnv.activeInterruption || localEnv.activeInterruption || null;
+
+        // Merge meetings
+        const meetingKeys = new Set((remoteEnv.meetings || []).map(m => `${m.title}_${m.start}_${m.end}`));
+        mergedEnv.meetings = [...(remoteEnv.meetings || [])];
+        (localEnv.meetings || []).forEach(m => {
+          const key = `${m.title}_${m.start}_${m.end}`;
+          if(!meetingKeys.has(key)){
+            mergedEnv.meetings.push(m);
+            meetingKeys.add(key);
+          }
+        });
+        mergedEnv.meetings.sort((a,b) => a.start - b.start);
+
+        // Merge tasks
+        const taskTitles = new Set((remoteEnv.tasks || []).map(t => (t.title || "").toLowerCase().trim()));
+        mergedEnv.tasks = [...(remoteEnv.tasks || [])];
+        (localEnv.tasks || []).forEach(t => {
+          const normTitle = (t.title || "").toLowerCase().trim();
+          if(!taskTitles.has(normTitle)){
+            mergedEnv.tasks.push(t);
+            taskTitles.add(normTitle);
+          }
+        });
+
+        // Merge interruptions
+        const intIds = new Set((remoteEnv.interruptions || []).map(i => i.id));
+        mergedEnv.interruptions = [...(remoteEnv.interruptions || [])];
+        (localEnv.interruptions || []).forEach(i => {
+          if(!intIds.has(i.id)){
+            mergedEnv.interruptions.push(i);
+            intIds.add(i.id);
+          }
+        });
       });
 
       let maxId = 0;
-      merged.meetings.forEach(m => { if(m.id > maxId) maxId = m.id; });
-      merged.tasks.forEach(t => { if(t.id > maxId) maxId = t.id; });
-      (merged.interruptions || []).forEach(i => { if(i.id > maxId) maxId = i.id; });
-      merged.nextId = Math.max(merged.nextId || 1, maxId + 1);
+      ['work', 'personal'].forEach(envKey => {
+        const env = merged.environments[envKey];
+        (env.meetings || []).forEach(m => { if(m.id > maxId) maxId = m.id; });
+        (env.tasks || []).forEach(t => { if(t.id > maxId) maxId = t.id; });
+        (env.interruptions || []).forEach(i => { if(i.id > maxId) maxId = i.id; });
+      });
+      merged.nextId = Math.max(merged.nextId || 1, local.nextId || 1, remote.nextId || 1, maxId + 1);
 
       return merged;
+    }
+
+    function countItems(st){
+      const wrapped = wrapState(st);
+      let tasks = 0, meetings = 0;
+      ['work', 'personal'].forEach(k => {
+        const env = wrapped.environments[k];
+        if(env){
+          tasks += (env.tasks || []).length;
+          meetings += (env.meetings || []).length;
+        }
+      });
+      return { tasks, meetings, total: tasks + meetings };
     }
 
     function attachCloudSync(uid){
@@ -125,23 +162,18 @@
           if(doc.exists){
             const state = getState();
             const cloudData = doc.data() || {};
-            const cloudTasks = cloudData.tasks || [];
-            const cloudMeetings = cloudData.meetings || [];
-            const localTasks = state.tasks || [];
-            const localMeetings = state.meetings || [];
+            const cloudCounts = countItems(cloudData);
+            const localCounts = countItems(state);
 
-            const cloudCount = cloudTasks.length + cloudMeetings.length;
-            const localCount = localTasks.length + localMeetings.length;
-
-            if(cloudCount === 0 && localCount > 0){
+            if(cloudCounts.total === 0 && localCounts.total > 0){
               console.log("La nube está vacía pero el dispositivo tiene datos. Protegiendo datos locales y subiendo a la nube...");
               pushToCloud();
               showToast("Se han protegido y subido tus tareas de este dispositivo a la nube.");
             }
-            else if(localCount === 0 && cloudCount > 0){
+            else if(localCounts.total === 0 && cloudCounts.total > 0){
               backupLocalState();
               applyingRemoteUpdate = true;
-              setState(Object.assign(defaultState(), cloudData));
+              setState(wrapState(cloudData));
               setMeetingEdit(null); setTaskEdit(null);
               applyingRemoteUpdate = false;
               localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
@@ -149,11 +181,11 @@
               renderAll();
               showToast("Datos cargados desde la nube.");
             }
-            else if(localCount > 0 && cloudCount > 0){
+            else if(localCounts.total > 0 && cloudCounts.total > 0){
               const msg = 
                 `Se detectaron datos en la nube y en este dispositivo:\n\n` +
-                `• Nube: ${cloudTasks.length} tarea(s), ${cloudMeetings.length} reunión(es)\n` +
-                `• Este dispositivo: ${localTasks.length} tarea(s), ${localMeetings.length} reunión(es)\n\n` +
+                `• Nube: ${cloudCounts.tasks} tarea(s), ${cloudCounts.meetings} reunión(es)\n` +
+                `• Este dispositivo: ${localCounts.tasks} tarea(s), ${localCounts.meetings} reunión(es)\n\n` +
                 `Aceptar = COMBINAR ambos (Recomendado, no pierde nada)\n` +
                 `Cancelar = Cargar solo de la nube`;
 
@@ -171,7 +203,7 @@
                 showToast("Datos combinados correctamente.");
               } else {
                 applyingRemoteUpdate = true;
-                setState(Object.assign(defaultState(), cloudData));
+                setState(wrapState(cloudData));
                 setMeetingEdit(null); setTaskEdit(null);
                 applyingRemoteUpdate = false;
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
@@ -193,7 +225,7 @@
         if(!doc.exists) return;
         backupLocalState();
         applyingRemoteUpdate = true;
-        setState(Object.assign(defaultState(), doc.data()));
+        setState(wrapState(doc.data()));
         setMeetingEdit(null); setTaskEdit(null);
         applyingRemoteUpdate = false;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));

@@ -551,6 +551,20 @@
       `;
     }
 
+    function renderEnvSwitcher(){
+      const state = getState();
+      const activeEnv = state.activeEnv || 'work';
+      const workBtn = document.getElementById("envBtnWork");
+      const personalBtn = document.getElementById("envBtnPersonal");
+
+      if(workBtn){
+        workBtn.classList.toggle("active", activeEnv === "work");
+      }
+      if(personalBtn){
+        personalBtn.classList.toggle("active", activeEnv === "personal");
+      }
+    }
+
     function syncFormInputsFromState(){
       const state = getState();
       const ws = document.getElementById("workStartInput");
@@ -560,6 +574,7 @@
       if(we) we.value = fmt(state.workEnd);
       if(ni) ni.value = state.notifyIntervalMin;
       refreshPlanningModeBtn();
+      renderEnvSwitcher();
     }
 
     function refreshPlanningModeBtn(){
@@ -572,6 +587,7 @@
 
     function renderAll(){
       renderClock();
+      renderEnvSwitcher();
       renderHeaderStats();
       renderTaskProgressBar();
       const schedule = computeSchedule();
@@ -593,7 +609,7 @@
     }
 
     return {
-      renderClock, renderHeaderStats, renderTaskProgressBar, renderMeetings, renderTasks,
+      renderClock, renderEnvSwitcher, renderHeaderStats, renderTaskProgressBar, renderMeetings, renderTasks,
       renderBoard, renderSummary, renderInterruptionView, renderTaskFocusView,
       syncFormInputsFromState, refreshPlanningModeBtn, renderAll, smartRender
     };

@@ -378,23 +378,35 @@
       window.location.hash = '#/';
     }
 
+    function switchEnvironment(envName){
+      const state = getState();
+      if(!state.environments || !state.environments[envName]) return;
+      if(state.activeEnv === envName) return;
+      state.activeEnv = envName;
+      saveState();
+      if(ctx.syncFormInputsFromState) ctx.syncFormInputsFromState();
+      renderAll();
+      showToast(`Ambiente cambiado a ${envName === 'work' ? '💼 Trabajo' : '🏠 Personal'}`);
+    }
+
     function startNewDay(){
       const state = getState();
+      const envName = state.activeEnv === 'work' ? "Trabajo" : "Personal";
       const completedCount = state.tasks.filter(t=>t.status==="completed").length;
       const pendingCount = state.tasks.filter(t=>t.status!=="completed").length;
       const meetingsCount = state.meetings.length;
       const anyRunning = state.tasks.some(t=>t.status==="running");
 
       if(meetingsCount === 0 && state.tasks.length === 0){
-        showToast("Ya está todo vacío, listo para empezar.");
+        showToast(`El ambiente ${envName} ya está vacío, listo para empezar.`);
         return;
       }
 
-      let msg = "Vas a empezar un día nuevo. Se borrarán:\n";
+      let msg = `Vas a empezar un día nuevo en el ambiente "${envName}". Se borrarán:\n`;
       msg += "· " + meetingsCount + " reunión(es)\n";
       msg += "· " + completedCount + " tarea(s) completada(s)\n";
       msg += "· " + pendingCount + " tarea(s) pendiente(s) o en pausa" + (anyRunning ? " (incluida una en ejecución)" : "") + "\n";
-      msg += "\nEsta acción no se puede deshacer. ¿Continuar?";
+      msg += "\nEsta acción no afectará al otro ambiente. ¿Continuar?";
 
       if(!window.confirm(msg)) return;
 
@@ -406,11 +418,11 @@
       setTaskEdit(null);
       saveState();
       renderAll();
-      showToast("Día nuevo iniciado. Reuniones y tareas anteriores se han borrado.");
+      showToast(`Día nuevo iniciado en "${envName}". Reuniones y tareas anteriores se han borrado.`);
     }
 
     return {
-      addMeeting, deleteMeeting, startEditMeeting, updateMeetingEditField, cancelEditMeeting, saveEditMeeting,
+      switchEnvironment, addMeeting, deleteMeeting, startEditMeeting, updateMeetingEditField, cancelEditMeeting, saveEditMeeting,
       addTask, deleteTask, startEditTask, updateTaskEditField, cancelEditTask, saveEditTask, moveTask,
       armTaskDrag, taskDragStart, taskDragOver, taskDragLeave, taskDrop, taskDragEnd,
       startTask, pauseTask, resumeTask, completeTask, uncompleteTask,
