@@ -110,6 +110,7 @@
           }
 
           if (!Array.isArray(env.history)) env.history = [];
+          if (!Array.isArray(env.recurringMeetings)) env.recurringMeetings = [];
           if (env.activeInterruption === undefined) env.activeInterruption = null;
 
           // Ensure each day in env.days is guarded
@@ -156,7 +157,30 @@
       return rawState.environments[envKey] || rawState.environments.work;
     }
 
-    const dayPropNames = ["workStart", "workEnd", "meetings", "tasks", "interruptions", "planningMode"];
+    function getEffectiveMeetings() {
+      const dayObj = getActiveDayObj();
+      const envObj = getActiveEnvObj();
+      const dateStr = rawState.selectedDate || today;
+
+      const singleMeetings = Array.isArray(dayObj.meetings) ? dayObj.meetings : [];
+      const recurringRules = Array.isArray(envObj.recurringMeetings) ? envObj.recurringMeetings : [];
+
+      const hydratedRecurring = [];
+      recurringRules.forEach(rule => {
+        const match = window.TodayTasksUtils && window.TodayTasksUtils.matchesRecurrenceRule
+          ? window.TodayTasksUtils.matchesRecurrenceRule(rule, dateStr)
+          : null;
+        if (match) {
+          hydratedRecurring.push(match);
+        }
+      });
+
+      const combined = [...singleMeetings, ...hydratedRecurring];
+      combined.sort((a, b) => a.start - b.start);
+      return combined;
+    }
+
+    const dayPropNames = ["workStart", "workEnd", "tasks", "interruptions", "planningMode"];
     dayPropNames.forEach(prop => {
       if (!Object.prototype.hasOwnProperty.call(rawState, prop)) {
         Object.defineProperty(rawState, prop, {
@@ -172,7 +196,18 @@
       }
     });
 
-    const envPropNames = ["activeInterruption", "history"];
+    Object.defineProperty(rawState, "meetings", {
+      get() {
+        return getEffectiveMeetings();
+      },
+      set(val) {
+        getActiveDayObj().meetings = val;
+      },
+      enumerable: false,
+      configurable: true
+    });
+
+    const envPropNames = ["activeInterruption", "history", "recurringMeetings"];
     envPropNames.forEach(prop => {
       if (!Object.prototype.hasOwnProperty.call(rawState, prop)) {
         Object.defineProperty(rawState, prop, {

@@ -68,6 +68,74 @@ window.TodayTasksUtils = {
     const d1 = Date.UTC(p1[0], p1[1] - 1, p1[2]);
     const d2 = Date.UTC(p2[0], p2[1] - 1, p2[2]);
     return Math.round((d1 - d2) / (1000 * 60 * 60 * 24));
+  },
+
+  getDayOfWeek(dateStr) {
+    const parts = dateStr.split("-").map(Number);
+    const d = new Date(parts[0], parts[1] - 1, parts[2]);
+    const day = d.getDay();
+    return day === 0 ? 7 : day; // 1=Lunes ... 7=Domingo
+  },
+
+  getStartOfWeekMonday(dateStr) {
+    const parts = dateStr.split("-").map(Number);
+    const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+    const dow = d.getUTCDay() === 0 ? 7 : d.getUTCDay();
+    d.setUTCDate(d.getUTCDate() - (dow - 1));
+    return d;
+  },
+
+  diffWeeks(dateStr1, dateStr2) {
+    const mon1 = window.TodayTasksUtils.getStartOfWeekMonday(dateStr1);
+    const mon2 = window.TodayTasksUtils.getStartOfWeekMonday(dateStr2);
+    const diffMs = mon1.getTime() - mon2.getTime();
+    return Math.round(diffMs / (1000 * 60 * 60 * 24 * 7));
+  },
+
+  matchesRecurrenceRule(rule, dateStr) {
+    if (!rule || !rule.startDate || dateStr < rule.startDate) return null;
+    if (rule.endDate && dateStr > rule.endDate) return null;
+
+    if (rule.exceptions && rule.exceptions[dateStr]) {
+      const exc = rule.exceptions[dateStr];
+      if (exc.type === "cancelled") return null;
+      if (exc.type === "modified") {
+        return {
+          id: rule.id,
+          title: exc.title || rule.title,
+          start: exc.start !== undefined ? exc.start : rule.start,
+          end: exc.end !== undefined ? exc.end : rule.end,
+          isRecurring: true,
+          isModifiedInstance: true,
+          ruleId: rule.id,
+          rule
+        };
+      }
+    }
+
+    const interval = rule.interval || 1;
+    if (rule.freq === "daily") {
+      const dDiff = window.TodayTasksUtils.diffDays(dateStr, rule.startDate);
+      if (dDiff < 0 || dDiff % interval !== 0) return null;
+    } else if (rule.freq === "weekly" || rule.freq === "custom_weeks") {
+      const dow = window.TodayTasksUtils.getDayOfWeek(dateStr);
+      if (!Array.isArray(rule.daysOfWeek) || !rule.daysOfWeek.includes(dow)) return null;
+      const wDiff = window.TodayTasksUtils.diffWeeks(dateStr, rule.startDate);
+      if (wDiff < 0 || wDiff % interval !== 0) return null;
+    } else {
+      return null;
+    }
+
+    return {
+      id: rule.id,
+      title: rule.title,
+      start: rule.start,
+      end: rule.end,
+      isRecurring: true,
+      isModifiedInstance: false,
+      ruleId: rule.id,
+      rule
+    };
   }
 };
 

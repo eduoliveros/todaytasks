@@ -13,7 +13,46 @@
     const DEFAULT_TASK_DURATION = 30;
 
     /* ---------------- Actions: meetings ---------------- */
-    function addMeeting(title, startStr, endStr){
+    function showRecurringModal(title, desc, onInstance, onSeries) {
+      const modal = document.getElementById("recurringModal");
+      if (!modal) {
+        if (window.confirm(`${title}\n\n${desc}\n\nPresiona ACEPTAR para solo esta ocurrencia, o CANCELAR para toda la serie.`)) {
+          if (onInstance) onInstance();
+        } else {
+          if (onSeries) onSeries();
+        }
+        return;
+      }
+      document.getElementById("recurringModalTitle").textContent = title;
+      document.getElementById("recurringModalDesc").textContent = desc;
+
+      const btnInst = document.getElementById("recModalBtnInstance");
+      const btnSeries = document.getElementById("recModalBtnSeries");
+      const btnCancel = document.getElementById("recModalBtnCancel");
+
+      modal.style.display = "flex";
+
+      function cleanup() {
+        modal.style.display = "none";
+        btnInst.onclick = null;
+        btnSeries.onclick = null;
+        btnCancel.onclick = null;
+      }
+
+      btnInst.onclick = () => {
+        cleanup();
+        if (onInstance) onInstance();
+      };
+      btnSeries.onclick = () => {
+        cleanup();
+        if (onSeries) onSeries();
+      };
+      btnCancel.onclick = () => {
+        cleanup();
+      };
+    }
+
+    function addMeeting(title, startStr, endStr, recurringData){
       const state = getState();
       const start = timeToMinutes(startStr);
       const end = timeToMinutes(endStr);
@@ -21,25 +60,132 @@
         alert("Revisa el título y que la hora de fin sea posterior a la de inicio.");
         return;
       }
-      state.meetings.push({id:newId(), title, start, end});
-      state.meetings.sort((a,b)=>a.start-b.start);
+
+      if (recurringData && recurringData.isRecurring) {
+        if (!Array.isArray(state.recurringMeetings)) {
+          state.recurringMeetings = [];
+        }
+        state.recurringMeetings.push({
+          id: "rec_" + newId(),
+          title,
+          start,
+          end,
+          freq: recurringData.freq || "weekly",
+          interval: recurringData.interval || 1,
+          daysOfWeek: recurringData.daysOfWeek || [1],
+          startDate: state.selectedDate || window.TodayTasksUtils.getTodayStr(),
+          endDate: recurringData.endDate || null,
+          exceptions: {}
+        });
+        showToast(`Reunión recurrente "${title}" añadida 🔁`);
+      } else {
+        const envKey = state.activeEnv || "work";
+        const env = state.environments[envKey] || state.environments.work;
+        const dateStr = state.selectedDate || window.TodayTasksUtils.getTodayStr();
+        if (!env.days[dateStr]) {
+          env.days[dateStr] = { workStart: 9*60, workEnd: 18*60, meetings: [], tasks: [], interruptions: [], planningMode: false };
+        }
+        if (!Array.isArray(env.days[dateStr].meetings)) env.days[dateStr].meetings = [];
+        env.days[dateStr].meetings.push({id:newId(), title, start, end});
+        env.days[dateStr].meetings.sort((a,b)=>a.start-b.start);
+      }
+
       saveState();
       renderAll();
     }
 
+    function deleteMeetingInstance(ruleId, dateStr) {
+      const state = getState();
+      const rule = (state.recurringMeetings || []).find(r => r.id === ruleId);
+      if (rule) {
+        if (!rule.exceptions) rule.exceptions = {};
+        rule.exceptions[dateStr] = { type: "cancelled" };
+        if (getMeetingEdit() && getMeetingEdit().id === ruleId) setMeetingEdit(null);
+        saveState();
+        renderAll();
+        showToast(`Ocurrencia del ${dateStr} eliminada ✕`);
+      }
+    }
+
+    function deleteMeetingSeries(ruleId) {
+      const state = getState();
+      if (Array.isArray(state.recurringMeetings)) {
+        state.recurringMeetings = state.recurringMeetings.filter(r => r.id !== ruleId);
+      }
+      if (getMeetingEdit() && getMeetingEdit().id === ruleId) setMeetingEdit(null);
+      saveState();
+      renderAll();
+      showToast(`Serie recurrente eliminada ✕`);
+    }
+
     function deleteMeeting(id){
       const state = getState();
-      state.meetings = state.meetings.filter(m=>m.id!==id);
-      if(getMeetingEdit() && getMeetingEdit().id===id) setMeetingEdit(null);
+      const dateStr = state.selectedDate || window.TodayTasksUtils.getTodayStr();
+      const target = state.meetings.find(m => m.id === id);
+
+      if (target && target.isRecurring) {
+        const ruleId = target.ruleId || id;
+        showRecurringModal(
+          `Eliminar "${target.title}" 🔁`,
+          `¿Deseas eliminar solo la reunión del día ${dateStr} o eliminar toda la serie recurrente?`,
+          () => deleteMeetingInstance(ruleId, dateStr),
+          () => deleteMeetingSeries(ruleId)
+        );
+        return;
+      }
+
+      const envKey = state.activeEnv || "work";
+      const env = state.environments[envKey] || state.environments.work;
+      const dayObj = env.days && env.days[dateStr];
+      if (dayObj && Array.isArray(dayObj.meetings)) {
+        dayObj.meetings = dayObj.meetings.filter(m => m.id !== id);
+      }
+      if (getMeetingEdit() && getMeetingEdit().id === id) setMeetingEdit(null);
       saveState();
       renderAll();
     }
 
     function startEditMeeting(id){
       const state = getState();
+      const dateStr = state.selectedDate || window.TodayTasksUtils.getTodayStr();
       const m = state.meetings.find(m=>m.id===id);
       if(!m) return;
-      setMeetingEdit({id, title:m.title, start:fmt(m.start), end:fmt(m.end)});
+
+      if (m.isRecurring) {
+        const ruleId = m.ruleId || id;
+        showRecurringModal(
+          `Editar "${m.title}" 🔁`,
+          `¿Deseas editar solo la reunión del día ${dateStr} o editar las propiedades de toda la serie recurrente?`,
+          () => {
+            setMeetingEdit({
+              id: m.id,
+              ruleId,
+              mode: "instance",
+              dateStr,
+              title: m.title,
+              start: fmt(m.start),
+              end: fmt(m.end)
+            });
+            renderAll();
+          },
+          () => {
+            const rule = m.rule || (state.recurringMeetings || []).find(r => r.id === ruleId);
+            setMeetingEdit({
+              id: m.id,
+              ruleId,
+              mode: "series",
+              dateStr,
+              title: rule ? rule.title : m.title,
+              start: rule ? fmt(rule.start) : fmt(m.start),
+              end: rule ? fmt(rule.end) : fmt(m.end)
+            });
+            renderAll();
+          }
+        );
+        return;
+      }
+
+      setMeetingEdit({id, mode: "single", title:m.title, start:fmt(m.start), end:fmt(m.end)});
       renderAll();
     }
 
@@ -57,8 +203,6 @@
       const meetingEdit = getMeetingEdit();
       if(!meetingEdit || meetingEdit.id !== id) return;
       const state = getState();
-      const m = state.meetings.find(m=>m.id===id);
-      if(!m) return;
       const title = (meetingEdit.title||"").trim();
       const start = timeToMinutes(meetingEdit.start);
       const end = timeToMinutes(meetingEdit.end);
@@ -66,8 +210,36 @@
         alert("Revisa el título y que la hora de fin sea posterior a la de inicio.");
         return;
       }
-      m.title = title; m.start = start; m.end = end;
-      state.meetings.sort((a,b)=>a.start-b.start);
+
+      if (meetingEdit.mode === "instance") {
+        const rule = (state.recurringMeetings || []).find(r => r.id === meetingEdit.ruleId);
+        if (rule) {
+          if (!rule.exceptions) rule.exceptions = {};
+          rule.exceptions[meetingEdit.dateStr] = { type: "modified", title, start, end };
+        }
+      } else if (meetingEdit.mode === "series") {
+        const rule = (state.recurringMeetings || []).find(r => r.id === meetingEdit.ruleId);
+        if (rule) {
+          rule.title = title;
+          rule.start = start;
+          rule.end = end;
+        }
+      } else {
+        const dateStr = state.selectedDate || window.TodayTasksUtils.getTodayStr();
+        const envKey = state.activeEnv || "work";
+        const env = state.environments[envKey] || state.environments.work;
+        const dayObj = env.days && env.days[dateStr];
+        if (dayObj && Array.isArray(dayObj.meetings)) {
+          const m = dayObj.meetings.find(m => m.id === id);
+          if (m) {
+            m.title = title;
+            m.start = start;
+            m.end = end;
+            dayObj.meetings.sort((a,b)=>a.start-b.start);
+          }
+        }
+      }
+
       setMeetingEdit(null);
       saveState();
       renderAll();

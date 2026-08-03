@@ -15,7 +15,7 @@
   <!-- Barra superior: logo + switcher + pestañas -->
   <div class="topbar-title-row">
     <div class="brand">
-      <h1>Tablero del día <span class="app-version">v1.38</span></h1>
+      <h1>Tablero del día <span class="app-version">v1.39</span></h1>
       <div class="env-switcher" id="envSwitcher">
         <button class="env-btn active" data-env="work" id="envBtnWork" title="Cambiar a ambiente de Trabajo (Tecla 'E')">
           <span class="env-icon">💼</span>
@@ -105,7 +105,43 @@
         <input type="time" id="meetingEnd" style="flex:1">
         <button class="btn" id="addMeetingBtn">Añadir</button>
       </div>
-      <div id="meetingsList"></div>
+      <div style="margin-top:6px;">
+        <label style="font-size:0.85rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
+          <input type="checkbox" id="isRecurringCheckbox"> Repetir reunión 🔁
+        </label>
+      </div>
+      <div id="recurringFormOptions" style="display:none;margin-top:8px;padding:10px;background:rgba(79,70,229,0.04);border:1px solid rgba(79,70,229,0.15);border-radius:6px;font-size:0.85rem;">
+        <div class="row" style="margin-bottom:6px;">
+          <label style="flex:1;">Frecuencia:
+            <select id="recFreq" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;">
+              <option value="daily">Diaria</option>
+              <option value="weekly" selected>Semanal</option>
+              <option value="custom_weeks">Cada N semanas</option>
+            </select>
+          </label>
+          <label style="flex:1;">Intervalo:
+            <input type="number" id="recInterval" value="1" min="1" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;" title="Número de días o semanas entre repeticiones">
+          </label>
+        </div>
+        <div id="recDaysWrap" style="margin-bottom:6px;">
+          <div style="font-weight:500;margin-bottom:2px;">Días de repetición:</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;">
+            <label><input type="checkbox" class="rec-day-cb" value="1" checked> L</label>
+            <label><input type="checkbox" class="rec-day-cb" value="2"> M</label>
+            <label><input type="checkbox" class="rec-day-cb" value="3"> X</label>
+            <label><input type="checkbox" class="rec-day-cb" value="4"> J</label>
+            <label><input type="checkbox" class="rec-day-cb" value="5"> V</label>
+            <label><input type="checkbox" class="rec-day-cb" value="6"> S</label>
+            <label><input type="checkbox" class="rec-day-cb" value="7"> D</label>
+          </div>
+        </div>
+        <div>
+          <label>Fecha límite (opcional):
+            <input type="date" id="recEndDate" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;">
+          </label>
+        </div>
+      </div>
+      <div id="meetingsList" style="margin-top:10px;"></div>
     </div>
 
     <div class="panel">
@@ -159,6 +195,18 @@
 <div id="view-history" style="display:none"></div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<div id="recurringModal" class="modal-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+  <div class="modal-box" style="background:#fff;padding:22px;border-radius:10px;max-width:420px;width:90%;box-shadow:0 12px 28px rgba(0,0,0,0.25);font-family:inherit;">
+    <h3 id="recurringModalTitle" style="margin-top:0;margin-bottom:8px;font-size:1.1rem;color:#1f2937;">Gestionar reunión recurrente 🔁</h3>
+    <p id="recurringModalDesc" style="font-size:0.9rem;color:#4b5563;margin-bottom:16px;line-height:1.4;">¿Deseas aplicar esta acción solo a esta ocurrencia puntual o a toda la serie recurrente?</p>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button class="btn secondary" id="recModalBtnInstance" style="text-align:left;padding:10px 14px;"><strong>Solo esta ocurrencia</strong><br><small style="color:#6b7280;">Aplica solo al día seleccionado</small></button>
+      <button class="btn" id="recModalBtnSeries" style="text-align:left;padding:10px 14px;"><strong>Toda la serie recurrente</strong><br><small style="color:rgba(255,255,255,0.85);">Afecta a todas las repeticiones pasadas y futuras</small></button>
+      <button class="btn secondary" id="recModalBtnCancel" style="background:#f3f4f6;color:#374151;border:none;margin-top:4px;">Cancelar</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>

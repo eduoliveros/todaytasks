@@ -180,6 +180,14 @@
     endInput.value = fmt(start + 30);
   });
 
+  const isRecurringCb = document.getElementById("isRecurringCheckbox");
+  if (isRecurringCb) {
+    isRecurringCb.addEventListener("change", (e) => {
+      const opts = document.getElementById("recurringFormOptions");
+      if (opts) opts.style.display = e.target.checked ? "block" : "none";
+    });
+  }
+
   function handleMeetingSubmit(){
     const titleEl = document.getElementById("meetingTitle");
     const title = titleEl.value.trim();
@@ -190,10 +198,26 @@
       titleEl.focus();
       return;
     }
-    actionsModule.addMeeting(title, start, end);
+
+    let recurringData = null;
+    if (isRecurringCb && isRecurringCb.checked) {
+      const freq = document.getElementById("recFreq").value;
+      const interval = parseInt(document.getElementById("recInterval").value, 10) || 1;
+      const dayCbs = document.querySelectorAll(".rec-day-cb:checked");
+      const daysOfWeek = Array.from(dayCbs).map(cb => parseInt(cb.value, 10));
+      const endDate = document.getElementById("recEndDate").value || null;
+      recurringData = { isRecurring: true, freq, interval, daysOfWeek, endDate };
+    }
+
+    actionsModule.addMeeting(title, start, end, recurringData);
     titleEl.value = "";
     document.getElementById("meetingStart").value = "";
     document.getElementById("meetingEnd").value = "";
+    if (isRecurringCb) {
+      isRecurringCb.checked = false;
+      const opts = document.getElementById("recurringFormOptions");
+      if (opts) opts.style.display = "none";
+    }
     titleEl.focus();
   }
 
