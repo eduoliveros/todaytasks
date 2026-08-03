@@ -382,10 +382,49 @@
       const state = getState();
       if(!state.environments || !state.environments[envName]) return;
       if(state.activeEnv === envName) return;
+
+      const currentView = ctx.getCurrentView ? ctx.getCurrentView() : 'main';
+      const wasInterruption = state.activeInterruption || currentView === 'interruption';
+      const wasFocus = currentView === 'task';
+
+      // 1. Si hay una interrupción activa, finalizarla en el ambiente actual antes de cambiar
+      if(state.activeInterruption){
+        const now = nowMinutes();
+        const start = state.activeInterruption.start;
+        const duration = Math.max(0, now - start);
+        const title = (state.activeInterruption.title || "").trim() || "Interrupción";
+
+        if(!Array.isArray(state.interruptions)){
+          state.interruptions = [];
+        }
+        state.interruptions.push({
+          id: state.activeInterruption.id,
+          title,
+          start,
+          end: now,
+          duration
+        });
+
+        state.activeInterruption = null;
+        const container = document.getElementById('view-interruption');
+        if(container) container.innerHTML = "";
+        showToast(`Interrupción "${title}" finalizada (${fmtDur(duration)}).`);
+      }
+
+      // 2. Cambiar ambiente activo
       state.activeEnv = envName;
       saveState();
+
       if(ctx.syncFormInputsFromState) ctx.syncFormInputsFromState();
-      renderAll();
+
+      // 3. Si estábamos en vista focus o interrupción, ir a la vista general (#/)
+      if(wasFocus || wasInterruption || (window.location.hash !== '' && window.location.hash !== '#/')){
+        window.location.hash = '#/';
+        renderAll();
+      } else {
+        renderAll();
+      }
+
       showToast(`Ambiente cambiado a ${envName === 'work' ? '💼 Trabajo' : '🏠 Personal'}`);
     }
 
