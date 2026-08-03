@@ -14,21 +14,36 @@
       const taskEl = document.getElementById('view-task');
       const interruptionEl = document.getElementById('view-interruption');
 
+      const historyEl = document.getElementById('view-history');
+
       if(view === 'interruption'){
         currentView = 'interruption';
         if(focusRefreshTimer){ clearInterval(focusRefreshTimer); focusRefreshTimer = null; }
         if(mainEl) mainEl.style.display = 'none';
         if(taskEl) taskEl.style.display = 'none';
+        if(historyEl) historyEl.style.display = 'none';
         if(interruptionEl) interruptionEl.style.display = 'flex';
         renderInterruptionView();
         if(interruptionRefreshTimer) clearInterval(interruptionRefreshTimer);
         interruptionRefreshTimer = setInterval(renderInterruptionView, 1000);
+      } else if(view === 'history'){
+        currentView = 'history';
+        if(focusRefreshTimer){ clearInterval(focusRefreshTimer); focusRefreshTimer = null; }
+        if(interruptionRefreshTimer){ clearInterval(interruptionRefreshTimer); interruptionRefreshTimer = null; }
+        if(mainEl) mainEl.style.display = 'none';
+        if(taskEl) taskEl.style.display = 'none';
+        if(interruptionEl) interruptionEl.style.display = 'none';
+        if(historyEl) historyEl.style.display = 'block';
+        if(window.TodayTasksHistory && window.TodayTasksHistory.renderHistoryView){
+          window.TodayTasksHistory.renderHistoryView(ctx);
+        }
       } else if(view === 'task' && taskId){
         focusTaskId = taskId;
         currentView = 'task';
         if(interruptionRefreshTimer){ clearInterval(interruptionRefreshTimer); interruptionRefreshTimer = null; }
         if(mainEl) mainEl.style.display = 'none';
         if(interruptionEl) interruptionEl.style.display = 'none';
+        if(historyEl) historyEl.style.display = 'none';
         if(taskEl) taskEl.style.display = 'flex';
         renderTaskFocusView();
         if(focusRefreshTimer) clearInterval(focusRefreshTimer);
@@ -40,6 +55,7 @@
         if(mainEl) mainEl.style.display = '';
         if(taskEl) taskEl.style.display = 'none';
         if(interruptionEl) interruptionEl.style.display = 'none';
+        if(historyEl) historyEl.style.display = 'none';
         if(focusRefreshTimer){ clearInterval(focusRefreshTimer); focusRefreshTimer = null; }
         renderAll();
       }
@@ -54,6 +70,10 @@
       }
       if(hash === '#/interruption'){
         showView('interruption');
+        return;
+      }
+      if(hash === '#/history'){
+        showView('history');
         return;
       }
       if(hash.startsWith('#/task/')){

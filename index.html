@@ -13,7 +13,7 @@
 
 <header class="topbar">
   <div class="brand">
-    <h1>Tablero del día <span class="app-version">v1.35</span></h1>
+    <h1>Tablero del día <span class="app-version">v1.36</span></h1>
     <span class="eyebrow" id="appModeLabel">local · persistente</span>
   </div>
   <div class="env-switcher" id="envSwitcher">
@@ -30,6 +30,12 @@
   <div class="clock-wrap">
     <div class="clock mono" id="clockDisplay">--:--</div>
     <div class="end-config">
+      Fecha
+      <input type="date" id="datePickerInput" title="Seleccionar día concreto para planificar o consultar">
+    </div>
+    <button class="btn secondary" id="todayBtn" style="display:none" title="Volver al día actual (quitar planificación personalizada)">📅 Hoy</button>
+    <a href="#/history" class="btn secondary" id="historyLinkBtn" title="Ver gráfica evolutiva y métricas de 40 días (Tecla 'H')">📊 Histórico [H]</a>
+    <div class="end-config">
       Inicio jornada
       <input type="time" id="workStartInput">
     </div>
@@ -45,7 +51,7 @@
       <input type="number" id="notifyIntervalInput" min="1" style="width:56px">
       min
     </div>
-    <button class="btn secondary" id="newDayBtn" title="Borra reuniones y tareas para empezar de cero">↻ Nuevo día</button>
+    <button class="btn secondary" id="newDayBtn" title="Borra reuniones y tareas del día seleccionado para empezar de cero">↻ Nuevo día</button>
     <div class="auth-area" id="authArea">
       <button class="btn secondary" id="signInBtn">☁ Iniciar sesión con Google</button>
     </div>
@@ -121,6 +127,7 @@
 
 <div id="view-task" style="display:none"></div>
 <div id="view-interruption" style="display:none"></div>
+<div id="view-history" style="display:none"></div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
@@ -130,6 +137,7 @@
 
 <script src="js/config.js"></script>
 <script src="js/utils.js"></script>
+<script src="js/history.js"></script>
 <script src="js/state.js"></script>
 <script src="js/scheduler.js"></script>
 <script src="js/ui.js"></script>
@@ -138,6 +146,6 @@
 <script src="js/views.js"></script>
 <script src="js/cloud.js"></script>
 <script src="js/router.js"></script>
-<script src="js/app.js?v=1.35"></script>
+<script src="js/app.js?v=1.36"></script>
 </body>
 </html>

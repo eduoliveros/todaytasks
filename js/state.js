@@ -1,32 +1,36 @@
 (function () {
-  function defaultEnvState(envKey) {
-    if (envKey === "personal") {
-      return {
-        name: "Personal",
-        workStart: 18 * 60, // 18:00
-        workEnd: 23 * 60,   // 23:00
-        meetings: [],
-        tasks: [],
-        interruptions: [],
-        activeInterruption: null,
-        planningMode: false
-      };
-    }
+  const { getTodayStr } = window.TodayTasksUtils;
+
+  function defaultDayState(envKey) {
+    const isPersonal = envKey === "personal";
     return {
-      name: "Trabajo",
-      workStart: 9 * 60,  // 09:00
-      workEnd: 18 * 60,   // 18:00
+      workStart: isPersonal ? 18 * 60 : 9 * 60,
+      workEnd: isPersonal ? 23 * 60 : 18 * 60,
       meetings: [],
       tasks: [],
       interruptions: [],
-      activeInterruption: null,
       planningMode: false
     };
   }
 
+  function defaultEnvState(envKey) {
+    const today = getTodayStr();
+    const isPersonal = envKey === "personal";
+    return {
+      name: isPersonal ? "Personal" : "Trabajo",
+      days: {
+        [today]: defaultDayState(envKey)
+      },
+      history: [],
+      activeInterruption: null
+    };
+  }
+
   function defaultState() {
+    const today = getTodayStr();
     const raw = {
       activeEnv: "work",
+      selectedDate: today,
       environments: {
         work: defaultEnvState("work"),
         personal: defaultEnvState("personal")
@@ -43,22 +47,28 @@
       rawState = {};
     }
 
+    const today = getTodayStr();
+
+    if (typeof rawState.selectedDate !== "string" || !rawState.selectedDate) {
+      rawState.selectedDate = today;
+    }
+
     if (typeof rawState.activeEnv !== "string" || !["work", "personal"].includes(rawState.activeEnv)) {
       rawState.activeEnv = "work";
     }
 
     if (!rawState.environments || typeof rawState.environments !== "object") {
-      // Legacy migration from single-environment shape
-      const workEnv = {
-        name: "Trabajo",
+      // Legacy migration from single environment without days map
+      const workEnv = defaultEnvState("work");
+      workEnv.days[today] = {
         workStart: typeof rawState.workStart === "number" ? rawState.workStart : 9 * 60,
         workEnd: typeof rawState.workEnd === "number" ? rawState.workEnd : 18 * 60,
         meetings: Array.isArray(rawState.meetings) ? rawState.meetings : [],
         tasks: Array.isArray(rawState.tasks) ? rawState.tasks : [],
         interruptions: Array.isArray(rawState.interruptions) ? rawState.interruptions : [],
-        activeInterruption: rawState.activeInterruption || null,
         planningMode: typeof rawState.planningMode === "boolean" ? rawState.planningMode : false
       };
+      workEnv.activeInterruption = rawState.activeInterruption || null;
 
       rawState.environments = {
         work: workEnv,
@@ -73,19 +83,49 @@
       delete rawState.activeInterruption;
       delete rawState.planningMode;
     } else {
-      // Ensure work and personal exist with guards
       ["work", "personal"].forEach(key => {
         if (!rawState.environments[key] || typeof rawState.environments[key] !== "object") {
           rawState.environments[key] = defaultEnvState(key);
         } else {
           const env = rawState.environments[key];
-          if (typeof env.workStart !== "number") env.workStart = key === "personal" ? 18 * 60 : 9 * 60;
-          if (typeof env.workEnd !== "number") env.workEnd = key === "personal" ? 23 * 60 : 18 * 60;
-          if (!Array.isArray(env.meetings)) env.meetings = [];
-          if (!Array.isArray(env.tasks)) env.tasks = [];
-          if (!Array.isArray(env.interruptions)) env.interruptions = [];
+
+          // Legacy migration if env has top-level meetings/tasks instead of days map
+          if (!env.days || typeof env.days !== "object") {
+            const dayData = {
+              workStart: typeof env.workStart === "number" ? env.workStart : (key === "personal" ? 18 * 60 : 9 * 60),
+              workEnd: typeof env.workEnd === "number" ? env.workEnd : (key === "personal" ? 23 * 60 : 18 * 60),
+              meetings: Array.isArray(env.meetings) ? env.meetings : [],
+              tasks: Array.isArray(env.tasks) ? env.tasks : [],
+              interruptions: Array.isArray(env.interruptions) ? env.interruptions : [],
+              planningMode: typeof env.planningMode === "boolean" ? env.planningMode : false
+            };
+            env.days = { [today]: dayData };
+
+            delete env.workStart;
+            delete env.workEnd;
+            delete env.meetings;
+            delete env.tasks;
+            delete env.interruptions;
+            delete env.planningMode;
+          }
+
+          if (!Array.isArray(env.history)) env.history = [];
           if (env.activeInterruption === undefined) env.activeInterruption = null;
-          if (typeof env.planningMode !== "boolean") env.planningMode = false;
+
+          // Ensure each day in env.days is guarded
+          Object.keys(env.days).forEach(d => {
+            const dayObj = env.days[d];
+            if (!dayObj || typeof dayObj !== "object") {
+              env.days[d] = defaultDayState(key);
+            } else {
+              if (typeof dayObj.workStart !== "number") dayObj.workStart = key === "personal" ? 18 * 60 : 9 * 60;
+              if (typeof dayObj.workEnd !== "number") dayObj.workEnd = key === "personal" ? 23 * 60 : 18 * 60;
+              if (!Array.isArray(dayObj.meetings)) dayObj.meetings = [];
+              if (!Array.isArray(dayObj.tasks)) dayObj.tasks = [];
+              if (!Array.isArray(dayObj.interruptions)) dayObj.interruptions = [];
+              if (typeof dayObj.planningMode !== "boolean") dayObj.planningMode = false;
+            }
+          });
         }
       });
     }
@@ -100,26 +140,57 @@
       rawState.nextId = 1;
     }
 
-    // Attach dynamic non-enumerable getters/setters for active environment properties
-    const envPropNames = ["workStart", "workEnd", "meetings", "tasks", "interruptions", "activeInterruption", "planningMode"];
-    envPropNames.forEach(prop => {
+    // Dynamic non-enumerable getters/setters for active env and selected date day properties
+    function getActiveDayObj() {
+      const envKey = rawState.activeEnv || "work";
+      const env = rawState.environments[envKey] || rawState.environments.work;
+      const dateStr = rawState.selectedDate || today;
+      if (!env.days[dateStr]) {
+        env.days[dateStr] = defaultDayState(envKey);
+      }
+      return env.days[dateStr];
+    }
+
+    function getActiveEnvObj() {
+      const envKey = rawState.activeEnv || "work";
+      return rawState.environments[envKey] || rawState.environments.work;
+    }
+
+    const dayPropNames = ["workStart", "workEnd", "meetings", "tasks", "interruptions", "planningMode"];
+    dayPropNames.forEach(prop => {
       if (!Object.prototype.hasOwnProperty.call(rawState, prop)) {
         Object.defineProperty(rawState, prop, {
           get() {
-            const envKey = rawState.activeEnv || "work";
-            const env = rawState.environments[envKey] || rawState.environments.work;
-            return env[prop];
+            return getActiveDayObj()[prop];
           },
           set(val) {
-            const envKey = rawState.activeEnv || "work";
-            const env = rawState.environments[envKey] || rawState.environments.work;
-            env[prop] = val;
+            getActiveDayObj()[prop] = val;
           },
           enumerable: false,
           configurable: true
         });
       }
     });
+
+    const envPropNames = ["activeInterruption", "history"];
+    envPropNames.forEach(prop => {
+      if (!Object.prototype.hasOwnProperty.call(rawState, prop)) {
+        Object.defineProperty(rawState, prop, {
+          get() {
+            return getActiveEnvObj()[prop];
+          },
+          set(val) {
+            getActiveEnvObj()[prop] = val;
+          },
+          enumerable: false,
+          configurable: true
+        });
+      }
+    });
+
+    if (window.TodayTasksHistory && window.TodayTasksHistory.snapshotAndPrune) {
+      window.TodayTasksHistory.snapshotAndPrune(rawState);
+    }
 
     return rawState;
   }

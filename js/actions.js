@@ -428,6 +428,54 @@
       showToast(`Ambiente cambiado a ${envName === 'work' ? '💼 Trabajo' : '🏠 Personal'}`);
     }
 
+    function selectDate(dateStr){
+      if(!dateStr) return;
+      const state = getState();
+      if(state.selectedDate === dateStr) return;
+      state.selectedDate = dateStr;
+      if(window.TodayTasksHistory && window.TodayTasksHistory.snapshotAndPrune){
+        window.TodayTasksHistory.snapshotAndPrune(state);
+      }
+      saveState();
+      if(ctx.syncFormInputsFromState) ctx.syncFormInputsFromState();
+      smartRender();
+      showToast(`Viendo planificación del ${window.TodayTasksUtils.formatDateFriendly(dateStr)} (${dateStr})`);
+    }
+
+    function resetToToday(){
+      const state = getState();
+      const today = window.TodayTasksUtils.getTodayStr();
+      state.selectedDate = today;
+      if(window.TodayTasksHistory && window.TodayTasksHistory.snapshotAndPrune){
+        window.TodayTasksHistory.snapshotAndPrune(state);
+      }
+      saveState();
+      if(ctx.syncFormInputsFromState) ctx.syncFormInputsFromState();
+      smartRender();
+      showToast("Cargado el día actual (Hoy).");
+    }
+
+    function saveHistoryMetric(dateStr, metrics){
+      const state = getState();
+      if(window.TodayTasksHistory && window.TodayTasksHistory.saveHistoryMetric){
+        window.TodayTasksHistory.saveHistoryMetric(state, dateStr, metrics);
+      }
+      saveState();
+      smartRender();
+      showToast(`Mediciones guardadas para el día ${dateStr}.`);
+    }
+
+    function deleteHistoryMetric(dateStr){
+      if(!window.confirm(`¿Eliminar la medición guardada del día ${dateStr}?`)) return;
+      const state = getState();
+      if(window.TodayTasksHistory && window.TodayTasksHistory.deleteHistoryMetric){
+        window.TodayTasksHistory.deleteHistoryMetric(state, dateStr);
+      }
+      saveState();
+      smartRender();
+      showToast(`Medición del día ${dateStr} eliminada.`);
+    }
+
     function startNewDay(){
       const state = getState();
       const envName = state.activeEnv === 'work' ? "Trabajo" : "Personal";
@@ -449,6 +497,10 @@
 
       if(!window.confirm(msg)) return;
 
+      if(window.TodayTasksHistory && window.TodayTasksHistory.snapshotAndPrune){
+        window.TodayTasksHistory.snapshotAndPrune(state);
+      }
+
       state.meetings = [];
       state.tasks = [];
       state.interruptions = [];
@@ -466,7 +518,9 @@
       armTaskDrag, taskDragStart, taskDragOver, taskDragLeave, taskDrop, taskDragEnd,
       startTask, pauseTask, resumeTask, completeTask, uncompleteTask,
       startInterruption, updateInterruptionTitle, completeInterruption, cancelInterruption,
+      selectDate, resetToToday, saveHistoryMetric, deleteHistoryMetric,
       startNewDay
     };
   };
 })();
+

@@ -266,18 +266,24 @@
       const now = schedule.now;
       const viewStart = schedule.viewStart;
       const workEnd = state.workEnd;
+      const today = window.TodayTasksUtils.getTodayStr();
+      const isToday = !state.selectedDate || state.selectedDate === today;
 
       const titleEl = document.getElementById("boardTitle");
       const badgeEl = document.getElementById("boardNow");
       if(titleEl){
-        titleEl.textContent = state.planningMode
-          ? "Plan completo · desde el inicio de jornada"
-          : "Desde ahora hasta el fin de jornada";
+        if(!isToday){
+          titleEl.textContent = `Planificación para el ${window.TodayTasksUtils.formatDateFriendly(state.selectedDate)} (${state.selectedDate})`;
+        } else {
+          titleEl.textContent = state.planningMode
+            ? "Plan completo · desde el inicio de jornada"
+            : "Desde ahora hasta el fin de jornada";
+        }
       }
       if(badgeEl){
         badgeEl.textContent = state.planningMode
           ? "inicio " + fmt(state.workStart)
-          : "ahora " + fmt(now);
+          : (isToday ? "ahora " + fmt(now) : state.selectedDate);
       }
 
       const events = [];
@@ -570,9 +576,18 @@
       const ws = document.getElementById("workStartInput");
       const we = document.getElementById("workEndInput");
       const ni = document.getElementById("notifyIntervalInput");
+      const dpi = document.getElementById("datePickerInput");
+      const todayBtn = document.getElementById("todayBtn");
+      const today = window.TodayTasksUtils.getTodayStr();
+      const isToday = !state.selectedDate || state.selectedDate === today;
+
       if(ws) ws.value = fmt(state.workStart);
       if(we) we.value = fmt(state.workEnd);
       if(ni) ni.value = state.notifyIntervalMin;
+      if(dpi) dpi.value = state.selectedDate || today;
+      if(todayBtn) {
+        todayBtn.style.display = isToday ? "none" : "inline-flex";
+      }
       refreshPlanningModeBtn();
       renderEnvSwitcher();
     }

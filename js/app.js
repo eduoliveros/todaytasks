@@ -125,6 +125,17 @@
   document.getElementById("notifyBtn").addEventListener("click", requestNotificationPermission);
   refreshNotifyBtn();
 
+  const dpiEl = document.getElementById("datePickerInput");
+  if(dpiEl){
+    dpiEl.value = state.selectedDate || window.TodayTasksUtils.getTodayStr();
+    dpiEl.addEventListener("change", (e) => actionsModule.selectDate(e.target.value));
+  }
+
+  const todayBtnEl = document.getElementById("todayBtn");
+  if(todayBtnEl){
+    todayBtnEl.addEventListener("click", () => actionsModule.resetToToday());
+  }
+
   document.getElementById("notifyIntervalInput").value = state.notifyIntervalMin;
   document.getElementById("notifyIntervalInput").addEventListener("change", (e)=>{
     const v = parseInt(e.target.value, 10);
@@ -239,6 +250,13 @@
       e.preventDefault();
       const nextEnv = state.activeEnv === "work" ? "personal" : "work";
       actionsModule.switchEnvironment(nextEnv);
+    } else if(e.key === "h" || e.key === "H"){
+      e.preventDefault();
+      if(routerModule.getCurrentView() === 'history'){
+        window.location.hash = '#/';
+      } else {
+        window.location.hash = '#/history';
+      }
     } else if(e.key === "i" || e.key === "I"){
       e.preventDefault();
       actionsModule.startInterruption();
@@ -276,9 +294,68 @@
     }
   });
 
+  function toggleHistorySeries(key){
+    if(window.TodayTasksHistory){
+      window.TodayTasksHistory.toggleSeries(key);
+      if(routerModule.getCurrentView() === 'history'){
+        window.TodayTasksHistory.renderHistoryView(ctx);
+      }
+    }
+  }
+
+  function promptAddHistoryMetric(){
+    const dateStr = prompt("Introduce la fecha en formato YYYY-MM-DD:", window.TodayTasksUtils.getTodayStr());
+    if(!dateStr) return;
+    const mStr = prompt("Tiempo de Reuniones (minutos):", "0");
+    if(mStr === null) return;
+    const cStr = prompt("Tiempo de Tareas Completadas (minutos):", "0");
+    if(cStr === null) return;
+    const wStr = prompt("Tiempo Trabajado en Pendientes (minutos):", "0");
+    if(wStr === null) return;
+    const nwStr = prompt("Tiempo No Trabajado en Pendientes (minutos):", "0");
+    if(nwStr === null) return;
+    const iStr = prompt("Tiempo de Interrupciones (minutos):", "0");
+    if(iStr === null) return;
+
+    actionsModule.saveHistoryMetric(dateStr.trim(), {
+      meetingsTime: mStr,
+      completedTasksTime: cStr,
+      uncompletedTasksWorkedTime: wStr,
+      uncompletedTasksNotWorkedTime: nwStr,
+      interruptionsTime: iStr
+    });
+  }
+
+  function editHistoryMetricPrompt(dateStr){
+    const envKey = state.activeEnv || "work";
+    const env = state.environments[envKey] || {};
+    const existing = (env.history || []).find(h => h.date === dateStr) || {};
+
+    const mStr = prompt(`[${dateStr}] Tiempo de Reuniones (minutos):`, String(existing.meetingsTime || 0));
+    if(mStr === null) return;
+    const cStr = prompt(`[${dateStr}] Tiempo de Tareas Completadas (minutos):`, String(existing.completedTasksTime || 0));
+    if(cStr === null) return;
+    const wStr = prompt(`[${dateStr}] Tiempo Trabajado en Pendientes (minutos):`, String(existing.uncompletedTasksWorkedTime || 0));
+    if(wStr === null) return;
+    const nwStr = prompt(`[${dateStr}] Tiempo No Trabajado en Pendientes (minutos):`, String(existing.uncompletedTasksNotWorkedTime || 0));
+    if(nwStr === null) return;
+    const iStr = prompt(`[${dateStr}] Tiempo de Interrupciones (minutos):`, String(existing.interruptionsTime || 0));
+    if(iStr === null) return;
+
+    actionsModule.saveHistoryMetric(dateStr, {
+      meetingsTime: mStr,
+      completedTasksTime: cStr,
+      uncompletedTasksWorkedTime: wStr,
+      uncompletedTasksNotWorkedTime: nwStr,
+      interruptionsTime: iStr
+    });
+  }
+
   // expose actions for inline onclick handlers
   window.app = {
     switchEnvironment: actionsModule.switchEnvironment,
+    selectDate: actionsModule.selectDate,
+    resetToToday: actionsModule.resetToToday,
     deleteMeeting: actionsModule.deleteMeeting,
     deleteTask: actionsModule.deleteTask,
     moveTask: actionsModule.moveTask,
@@ -305,6 +382,10 @@
     taskDragLeave: actionsModule.taskDragLeave,
     taskDrop: actionsModule.taskDrop,
     taskDragEnd: actionsModule.taskDragEnd,
+    toggleHistorySeries,
+    promptAddHistoryMetric,
+    editHistoryMetricPrompt,
+    deleteHistoryMetric: actionsModule.deleteHistoryMetric,
     restoreLocalBackup: cloudModule.restoreLocalBackup
   };
 
@@ -315,7 +396,7 @@
   cloudModule.initFirebase();
 
   setInterval(()=>{
-    if(routerModule.getCurrentView() === 'task' || routerModule.getCurrentView() === 'interruption') return;
+    if(routerModule.getCurrentView() === 'task' || routerModule.getCurrentView() === 'interruption' || routerModule.getCurrentView() === 'history') return;
     if(meetingEdit === null && taskEdit === null){
       viewsModule.renderAll();
     } else {
@@ -325,3 +406,4 @@
 
   setInterval(checkRunningTaskNotification, 30000);
 })();
+

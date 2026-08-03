@@ -70,59 +70,91 @@
       const merged = defaultState();
 
       merged.activeEnv = local.activeEnv || remote.activeEnv || 'work';
+      merged.selectedDate = local.selectedDate || remote.selectedDate || window.TodayTasksUtils.getTodayStr();
 
       ['work', 'personal'].forEach(envKey => {
         const localEnv = (local.environments && local.environments[envKey]) || {};
         const remoteEnv = (remote.environments && remote.environments[envKey]) || {};
         const mergedEnv = merged.environments[envKey];
 
-        mergedEnv.workStart = remoteEnv.workStart !== undefined ? remoteEnv.workStart : (localEnv.workStart !== undefined ? localEnv.workStart : mergedEnv.workStart);
-        mergedEnv.workEnd = remoteEnv.workEnd !== undefined ? remoteEnv.workEnd : (localEnv.workEnd !== undefined ? localEnv.workEnd : mergedEnv.workEnd);
-        mergedEnv.planningMode = remoteEnv.planningMode !== undefined ? remoteEnv.planningMode : (localEnv.planningMode || false);
         mergedEnv.activeInterruption = remoteEnv.activeInterruption || localEnv.activeInterruption || null;
 
-        // Merge meetings
-        const meetingKeys = new Set((remoteEnv.meetings || []).map(m => `${m.title}_${m.start}_${m.end}`));
-        mergedEnv.meetings = [...(remoteEnv.meetings || [])];
-        (localEnv.meetings || []).forEach(m => {
-          const key = `${m.title}_${m.start}_${m.end}`;
-          if(!meetingKeys.has(key)){
-            mergedEnv.meetings.push(m);
-            meetingKeys.add(key);
-          }
-        });
-        mergedEnv.meetings.sort((a,b) => a.start - b.start);
+        // Merge days objects
+        mergedEnv.days = {};
+        const allDates = new Set([
+          ...Object.keys(localEnv.days || {}),
+          ...Object.keys(remoteEnv.days || {})
+        ]);
 
-        // Merge tasks
-        const taskTitles = new Set((remoteEnv.tasks || []).map(t => (t.title || "").toLowerCase().trim()));
-        mergedEnv.tasks = [...(remoteEnv.tasks || [])];
-        (localEnv.tasks || []).forEach(t => {
-          const normTitle = (t.title || "").toLowerCase().trim();
-          if(!taskTitles.has(normTitle)){
-            mergedEnv.tasks.push(t);
-            taskTitles.add(normTitle);
-          }
+        allDates.forEach(dateStr => {
+          const lDay = (localEnv.days && localEnv.days[dateStr]) || {};
+          const rDay = (remoteEnv.days && remoteEnv.days[dateStr]) || {};
+
+          const mMeetings = [...(rDay.meetings || [])];
+          const meetingKeys = new Set(mMeetings.map(m => `${m.title}_${m.start}_${m.end}`));
+          (lDay.meetings || []).forEach(m => {
+            const key = `${m.title}_${m.start}_${m.end}`;
+            if (!meetingKeys.has(key)) {
+              mMeetings.push(m);
+              meetingKeys.add(key);
+            }
+          });
+          mMeetings.sort((a, b) => a.start - b.start);
+
+          const mTasks = [...(rDay.tasks || [])];
+          const taskTitles = new Set(mTasks.map(t => (t.title || "").toLowerCase().trim()));
+          (lDay.tasks || []).forEach(t => {
+            const normTitle = (t.title || "").toLowerCase().trim();
+            if (!taskTitles.has(normTitle)) {
+              mTasks.push(t);
+              taskTitles.add(normTitle);
+            }
+          });
+
+          const mInts = [...(rDay.interruptions || [])];
+          const intIds = new Set(mInts.map(i => i.id));
+          (lDay.interruptions || []).forEach(i => {
+            if (!intIds.has(i.id)) {
+              mInts.push(i);
+              intIds.add(i.id);
+            }
+          });
+
+          mergedEnv.days[dateStr] = {
+            workStart: rDay.workStart !== undefined ? rDay.workStart : (lDay.workStart !== undefined ? lDay.workStart : (envKey === 'personal' ? 18 * 60 : 9 * 60)),
+            workEnd: rDay.workEnd !== undefined ? rDay.workEnd : (lDay.workEnd !== undefined ? lDay.workEnd : (envKey === 'personal' ? 23 * 60 : 18 * 60)),
+            planningMode: rDay.planningMode !== undefined ? rDay.planningMode : (lDay.planningMode || false),
+            meetings: mMeetings,
+            tasks: mTasks,
+            interruptions: mInts
+          };
         });
 
-        // Merge interruptions
-        const intIds = new Set((remoteEnv.interruptions || []).map(i => i.id));
-        mergedEnv.interruptions = [...(remoteEnv.interruptions || [])];
-        (localEnv.interruptions || []).forEach(i => {
-          if(!intIds.has(i.id)){
-            mergedEnv.interruptions.push(i);
-            intIds.add(i.id);
+        // Merge history array
+        const historyMap = new Map();
+        (remoteEnv.history || []).forEach(h => { if (h && h.date) historyMap.set(h.date, { ...h }); });
+        (localEnv.history || []).forEach(h => {
+          if (h && h.date && !historyMap.has(h.date)) {
+            historyMap.set(h.date, { ...h });
           }
         });
+        mergedEnv.history = Array.from(historyMap.values()).sort((a, b) => a.date.localeCompare(b.date));
       });
 
       let maxId = 0;
       ['work', 'personal'].forEach(envKey => {
         const env = merged.environments[envKey];
-        (env.meetings || []).forEach(m => { if(m.id > maxId) maxId = m.id; });
-        (env.tasks || []).forEach(t => { if(t.id > maxId) maxId = t.id; });
-        (env.interruptions || []).forEach(i => { if(i.id > maxId) maxId = i.id; });
+        Object.values(env.days || {}).forEach(day => {
+          (day.meetings || []).forEach(m => { if (m.id > maxId) maxId = m.id; });
+          (day.tasks || []).forEach(t => { if (t.id > maxId) maxId = t.id; });
+          (day.interruptions || []).forEach(i => { if (i.id > maxId) maxId = i.id; });
+        });
       });
       merged.nextId = Math.max(merged.nextId || 1, local.nextId || 1, remote.nextId || 1, maxId + 1);
+
+      if (window.TodayTasksHistory && window.TodayTasksHistory.snapshotAndPrune) {
+        window.TodayTasksHistory.snapshotAndPrune(merged);
+      }
 
       return merged;
     }
@@ -132,9 +164,11 @@
       let tasks = 0, meetings = 0;
       ['work', 'personal'].forEach(k => {
         const env = wrapped.environments[k];
-        if(env){
-          tasks += (env.tasks || []).length;
-          meetings += (env.meetings || []).length;
+        if(env && env.days){
+          Object.values(env.days).forEach(day => {
+            tasks += (day.tasks || []).length;
+            meetings += (day.meetings || []).length;
+          });
         }
       });
       return { tasks, meetings, total: tasks + meetings };
