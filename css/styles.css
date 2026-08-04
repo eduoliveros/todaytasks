@@ -874,6 +874,19 @@
   .summary-row-interruption {
     border-left: 3px solid #F1C4BC !important;
     background: #FFF8F6 !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+  .time-range.tr-interruption {
+    background: #FEF2F0;
+    border: 1px solid #F1C4BC;
+    border-radius: 6px;
+    padding: 4px 8px;
+    color: var(--danger);
+    width: fit-content;
+  }
+  .time-range.tr-interruption .tag {
+    color: var(--danger);
   }
 
   /* History View Styles */
@@ -1228,5 +1241,46 @@
   [data-theme="dark"] .sync-status {
     background: #232832;
     color: var(--accent-pending);
+  }
+
+  [data-theme="dark"] .summary-row-interruption {
+    background: #271E20 !important;
+    border-left-color: var(--danger) !important;
+  }
+  [data-theme="dark"] .time-range.tr-interruption {
+    background: #341F21;
+    border-color: #5C3236;
+    color: #F87171;
+  }
+  [data-theme="dark"] .time-range.tr-interruption .tag {
+    color: #F87171;
+  }
+
+  /* Dark mode overrides for interruption page */
+  [data-theme="dark"] #view-interruption {
+    background: linear-gradient(155deg, #251214 0%, #1A0D0E 100%);
+  }
+  [data-theme="dark"] .interruption-card {
+    background: #1F191A;
+    border-color: #5C3236;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  [data-theme="dark"] .interruption-badge {
+    background: #3D1C1E;
+    color: var(--danger);
+    border-color: #5C3236;
+  }
+  [data-theme="dark"] .interruption-input {
+    background: #141213;
+    border-color: var(--line);
+    color: var(--ink);
+  }
+  [data-theme="dark"] .interruption-input:focus {
+    background: #1B181A;
+    border-color: var(--danger);
+  }
+  [data-theme="dark"] .interruption-timer-box {
+    background: #2D1A1C;
+    border-color: #5C3236;
   }
 

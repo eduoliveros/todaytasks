@@ -385,10 +385,10 @@
             <span>⚡ ${escapeHtml(i.title)}</span>
             <span class="dur" style="color:var(--danger)">${fmtDur(i.duration)}</span>
           </div>
-          <div class="time-range" style="background:#FEF2F0;border-color:#F1C4BC;">
-            <span class="tag" style="color:var(--danger)">Inicio</span>${fmt(i.start)}
+          <div class="time-range tr-interruption">
+            <span class="tag">Inicio</span>${fmt(i.start)}
             <span class="arrow">→</span>
-            <span class="tag" style="color:var(--danger)">Fin</span>${fmt(i.end)}
+            <span class="tag">Fin</span>${fmt(i.end)}
           </div>
         </div>`);
 
