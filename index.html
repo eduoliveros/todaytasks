@@ -107,6 +107,18 @@
   <!-- LEFT COLUMN: forms & lists -->
   <div>
     <div class="panel">
+      <h2>Tareas</h2>
+      <div class="row">
+        <input type="text" id="taskTitle" placeholder="Título de la tarea">
+      </div>
+      <div class="row">
+        <input type="number" id="taskDuration" placeholder="Minutos (30 por defecto)" min="1" style="width:180px">
+        <button class="btn" id="addTaskBtn">Añadir</button>
+      </div>
+      <div id="tasksList"></div>
+    </div>
+
+    <div class="panel">
       <h2>Reuniones</h2>
       <div class="row">
         <input type="text" id="meetingTitle" placeholder="Título de la reunión">
@@ -153,18 +165,6 @@
         </div>
       </div>
       <div id="meetingsList" style="margin-top:10px;"></div>
-    </div>
-
-    <div class="panel">
-      <h2>Tareas</h2>
-      <div class="row">
-        <input type="text" id="taskTitle" placeholder="Título de la tarea">
-      </div>
-      <div class="row">
-        <input type="number" id="taskDuration" placeholder="Minutos (30 por defecto)" min="1" style="width:180px">
-        <button class="btn" id="addTaskBtn">Añadir</button>
-      </div>
-      <div id="tasksList"></div>
     </div>
   </div>
 
