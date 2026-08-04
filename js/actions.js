@@ -13,6 +13,16 @@
     const DEFAULT_TASK_DURATION = 30;
 
     /* ---------------- Actions: meetings ---------------- */
+    // IDs de reuniones puntuales son Number; los recurrentes son "rec_N" (string).
+    // El HTML los pasa siempre como string desde onclick='...'. Esto normaliza al tipo correcto.
+    function normalizeMeetingId(id) {
+      if (typeof id === 'string' && !id.startsWith('rec_')) {
+        const n = parseInt(id, 10);
+        return isNaN(n) ? id : n;
+      }
+      return id;
+    }
+
     function showRecurringModal(title, desc, onInstance, onSeries) {
       const modal = document.getElementById("recurringModal");
       if (!modal) {
@@ -119,6 +129,7 @@
     }
 
     function deleteMeeting(id){
+      id = normalizeMeetingId(id);
       const state = getState();
       const dateStr = state.selectedDate || window.TodayTasksUtils.getTodayStr();
       const target = state.meetings.find(m => m.id === id);
@@ -146,6 +157,7 @@
     }
 
     function startEditMeeting(id){
+      id = normalizeMeetingId(id);
       const state = getState();
       const dateStr = state.selectedDate || window.TodayTasksUtils.getTodayStr();
       const m = state.meetings.find(m=>m.id===id);
@@ -200,6 +212,7 @@
     }
 
     function saveEditMeeting(id){
+      id = normalizeMeetingId(id);
       const meetingEdit = getMeetingEdit();
       if(!meetingEdit || meetingEdit.id !== id) return;
       const state = getState();
