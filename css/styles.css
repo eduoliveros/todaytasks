@@ -1179,3 +1179,24 @@
     border: 1px solid var(--line);
   }
 
+  [data-theme="dark"] .progress-banner-wrap {
+    background: #181C23;
+    border-color: var(--line);
+  }
+  [data-theme="dark"] .progress-total-badge {
+    background: #232832;
+    color: var(--ink);
+    border-color: var(--line);
+  }
+  [data-theme="dark"] .progress-total-badge strong {
+    color: var(--ink);
+  }
+  [data-theme="dark"] .progress-track,
+  [data-theme="dark"] .progress-track.empty-track {
+    background: #232832;
+  }
+  [data-theme="dark"] .sync-status {
+    background: #232832;
+    color: var(--accent-pending);
+  }
+
