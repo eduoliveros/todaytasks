@@ -37,6 +37,7 @@
       },
       notifyIntervalMin: 10,
       notifyEnabled: true,
+      themeMode: "auto",
       nextId: 1
     };
     return wrapState(raw);
@@ -136,6 +137,9 @@
     }
     if (typeof rawState.notifyEnabled !== "boolean") {
       rawState.notifyEnabled = true;
+    }
+    if (!["auto", "light", "dark"].includes(rawState.themeMode)) {
+      rawState.themeMode = "auto";
     }
     if (typeof rawState.nextId !== "number" || rawState.nextId < 1) {
       rawState.nextId = 1;

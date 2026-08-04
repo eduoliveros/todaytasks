@@ -172,6 +172,41 @@
     }
   });
 
+  /* Theme management */
+  function applyTheme(mode){
+    const themeMode = mode || state.themeMode || "auto";
+    let activeTheme = themeMode;
+    if(themeMode === "auto"){
+      const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      activeTheme = prefersDark ? "dark" : "light";
+    }
+    if(activeTheme === "dark"){
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+    }
+  }
+
+  if(window.matchMedia){
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+      if((state.themeMode || "auto") === "auto"){
+        applyTheme("auto");
+      }
+    });
+  }
+
+  applyTheme();
+
+  const themeSelectEl = document.getElementById("themeSelect");
+  if(themeSelectEl){
+    themeSelectEl.value = state.themeMode || "auto";
+    themeSelectEl.addEventListener("change", (e)=>{
+      state.themeMode = e.target.value;
+      saveState();
+      applyTheme(state.themeMode);
+    });
+  }
+
   document.getElementById("meetingStart").addEventListener("change", (e)=>{
     const endInput = document.getElementById("meetingEnd");
     if(endInput.value) return;

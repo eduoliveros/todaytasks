@@ -585,6 +585,7 @@
       const ws = document.getElementById("workStartInput");
       const we = document.getElementById("workEndInput");
       const ni = document.getElementById("notifyIntervalInput");
+      const ts = document.getElementById("themeSelect");
       const dpi = document.getElementById("datePickerInput");
       const todayBtn = document.getElementById("todayBtn");
       const today = window.TodayTasksUtils.getTodayStr();
@@ -593,6 +594,7 @@
       if(ws) ws.value = fmt(state.workStart);
       if(we) we.value = fmt(state.workEnd);
       if(ni) ni.value = state.notifyIntervalMin;
+      if(ts) ts.value = state.themeMode || "auto";
       if(dpi) dpi.value = state.selectedDate || today;
       if(todayBtn) {
         todayBtn.style.display = isToday ? "none" : "inline-flex";

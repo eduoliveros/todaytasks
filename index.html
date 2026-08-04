@@ -18,7 +18,7 @@
   <!-- Barra superior: logo + switcher + pestañas -->
   <div class="topbar-title-row">
     <div class="brand">
-      <h1>Tablero del día <span class="app-version">v1.39</span></h1>
+      <h1>Tablero del día <span class="app-version">v1.40</span></h1>
       <div class="env-switcher" id="envSwitcher">
         <button class="env-btn active" data-env="work" id="envBtnWork" title="Cambiar a ambiente de Trabajo (Tecla 'E')">
           <span class="env-icon">💼</span>
@@ -83,6 +83,14 @@
         cada
         <input type="number" id="notifyIntervalInput" min="1" style="width:56px">
         min
+      </div>
+      <div class="end-config">
+        Tema
+        <select id="themeSelect" title="Seleccionar tema visual (Sistema, Claro u Oscuro)">
+          <option value="auto">🌓 Sistema</option>
+          <option value="light">☀️ Claro</option>
+          <option value="dark">🌙 Oscuro</option>
+        </select>
       </div>
       <button class="btn secondary" id="newDayBtn" title="Borra reuniones y tareas del día seleccionado para empezar de cero">↻ Nuevo día</button>
     </div>

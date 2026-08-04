@@ -199,7 +199,7 @@
     border-radius: 6px;
     padding: 5px 8px;
     font-size: 14px;
-    width: 88px;
+    width: 110px;
     background: #FFFFFF;
   }
   .end-config input[type="date"],
@@ -1059,5 +1059,123 @@
     text-align: center;
     color: var(--text-muted);
     font-size: 14px;
+  }
+
+  /* ---------- Dark Theme Overrides ---------- */
+  [data-theme="dark"] {
+    --bg: #121418;
+    --panel: #1B1F26;
+    --ink: #E6E8EC;
+    --ink-soft: #9EA4AF;
+    --line: #2D333F;
+    --board: #0A0F17;
+    --board-line: #1E2838;
+    --board-text: #D0D7E1;
+    --accent-running: #F0B040;
+    --accent-meeting: #C48B72;
+    --accent-buffer: #A88D70;
+    --accent-done: #5C9A71;
+    --accent-pending: #6C93C0;
+    --accent-paused: #B584B9;
+    --danger: #D9534F;
+  }
+
+  [data-theme="dark"] header.topbar,
+  [data-theme="dark"] .header-tab-panels {
+    background: #181C23;
+  }
+
+  [data-theme="dark"] .header-tab:hover {
+    background: #232832;
+    color: var(--ink);
+  }
+  [data-theme="dark"] .header-tab.active {
+    background: #181C23;
+    color: var(--ink);
+    border-bottom-color: var(--ink);
+  }
+
+  [data-theme="dark"] .stat-chip,
+  [data-theme="dark"] .end-config input,
+  [data-theme="dark"] input[type=text],
+  [data-theme="dark"] input[type=number],
+  [data-theme="dark"] input[type=time],
+  [data-theme="dark"] select {
+    background: #232832;
+    color: var(--ink);
+    border-color: var(--line);
+  }
+
+  [data-theme="dark"] .btn.secondary {
+    background: #282E3A;
+    color: var(--ink);
+    border-color: var(--line);
+  }
+  [data-theme="dark"] .btn.secondary:hover {
+    background: #333A4A;
+  }
+
+  [data-theme="dark"] .env-switcher {
+    background: #232832;
+    border-color: var(--line);
+  }
+
+  [data-theme="dark"] .env-btn:hover {
+    background: rgba(255,255,255,0.1);
+  }
+
+  [data-theme="dark"] .item {
+    background: #20242D;
+    border-color: var(--line);
+  }
+  [data-theme="dark"] .item.editing {
+    background: #1A2433;
+    border-color: var(--accent-pending);
+  }
+  [data-theme="dark"] .time-range.tr-running {
+    color: #F0B040;
+  }
+  [data-theme="dark"] .remaining-chip {
+    background: #3A2E14;
+    color: #F0B040;
+  }
+  [data-theme="dark"] .badge.pending {
+    background: #1C2838;
+    color: var(--accent-pending);
+  }
+  [data-theme="dark"] .badge.running {
+    background: #3A2E14;
+    color: #F0B040;
+  }
+  [data-theme="dark"] .badge.paused {
+    background: #331F36;
+    color: var(--accent-paused);
+  }
+
+  [data-theme="dark"] .history-chart-wrapper,
+  [data-theme="dark"] .series-pill.active {
+    background: #1B1F26;
+    border-color: var(--line);
+  }
+
+  [data-theme="dark"] .history-table th {
+    background: #232832;
+    color: var(--ink-soft);
+  }
+
+  [data-theme="dark"] .history-table tr:hover td {
+    background: #20242D;
+  }
+
+  [data-theme="dark"] .modal-content {
+    background: #1B1F26;
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+
+  [data-theme="dark"] .toast {
+    background: #282E3A;
+    color: var(--ink);
+    border: 1px solid var(--line);
   }
 
