@@ -1106,6 +1106,11 @@
     border-color: var(--line);
   }
 
+  [data-theme="dark"] .btn {
+    background: var(--ink);
+    color: #121418;
+  }
+
   [data-theme="dark"] .btn.secondary {
     background: #282E3A;
     color: var(--ink);
@@ -1116,12 +1121,37 @@
   }
 
   [data-theme="dark"] .env-switcher {
-    background: #232832;
+    background: #141820;
     border-color: var(--line);
+    padding: 3px;
+  }
+
+  [data-theme="dark"] .env-btn {
+    color: #8A92A0;
+    opacity: 0.75;
   }
 
   [data-theme="dark"] .env-btn:hover {
-    background: rgba(255,255,255,0.1);
+    color: #E6E8EC;
+    background: rgba(255, 255, 255, 0.08);
+    opacity: 1;
+  }
+
+  [data-theme="dark"] .env-btn.active {
+    opacity: 1;
+    font-weight: 700;
+  }
+
+  [data-theme="dark"] .env-btn.active[data-env="work"] {
+    background: #2563EB;
+    color: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.45);
+  }
+
+  [data-theme="dark"] .env-btn.active[data-env="personal"] {
+    background: #059669;
+    color: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.45);
   }
 
   [data-theme="dark"] .item {
