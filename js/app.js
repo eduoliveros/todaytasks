@@ -335,6 +335,27 @@
         actionsModule.cancelInterruption();
         return;
       }
+
+      const active = document.activeElement;
+      const tag = active ? active.tagName.toLowerCase() : "";
+      if(tag === "input" || tag === "textarea" || tag === "select" || (active && active.isContentEditable)){
+        e.preventDefault();
+        active.blur();
+        if(meetingEdit) actionsModule.cancelEditMeeting();
+        if(taskEdit) actionsModule.cancelEditTask();
+        return;
+      }
+
+      if(meetingEdit){
+        e.preventDefault();
+        actionsModule.cancelEditMeeting();
+        return;
+      }
+      if(taskEdit){
+        e.preventDefault();
+        actionsModule.cancelEditTask();
+        return;
+      }
     }
 
     // Alt + 1, Alt + 2, Alt + 3 for switching header tabs from anywhere
