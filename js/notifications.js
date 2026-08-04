@@ -113,27 +113,40 @@ window.TodayTasksNotifications = function ({ getState, getNotifyState, setNotify
 
   function checkRunningTaskNotification(){
     if(!isNotifyActive()) return;
-    const ns = getNotifyState ? getNotifyState() : {taskId:null, lastNotifiedAt:null};
+    const ns = getNotifyState ? getNotifyState() : {taskId:null, lastNotifiedAt:null, timeEndNotified:false};
     const running = getState().tasks.find(t=>t.status==="running");
     if(!running){
-      if(ns.taskId !== null) setNotifyState({taskId:null, lastNotifiedAt:null});
+      if(ns.taskId !== null) setNotifyState({taskId:null, lastNotifiedAt:null, timeEndNotified:false});
       return;
     }
     const now = nowMinutes();
+    const plannedEnd = running.runningStart + (running.planned - (running.elapsedBefore||0));
+
     if(ns.taskId !== running.id){
-      // e.g. page was reloaded mid-run: start the 10-min cycle from now without notifying immediately.
-      setNotifyState({taskId: running.id, lastNotifiedAt: now});
+      // e.g. page was reloaded mid-run or new task running: start cycle
+      const isAlreadyEnded = now >= plannedEnd;
+      setNotifyState({taskId: running.id, lastNotifiedAt: now, timeEndNotified: isAlreadyEnded});
       return;
     }
+
+    // 1. Notificación inmediata cuando se acaba el tiempo planificado
+    if(now >= plannedEnd && !ns.timeEndNotified){
+      const title = `⏰ ¡Tiempo planificado completado!`;
+      const body = `La tarea "${running.title}" ha alcanzado su tiempo planificado (${running.planned} min).`;
+      sendDesktopNotification(title, body, `task-time-end-${running.id}`);
+      setNotifyState({taskId: running.id, lastNotifiedAt: now, timeEndNotified: true});
+      return;
+    }
+
+    // 2. Notificaciones periódicas según el intervalo configurado (ej: cada 10 min)
     const intervalMin = (getState().notifyIntervalMin && getState().notifyIntervalMin > 0) ? getState().notifyIntervalMin : 10;
     if(now - ns.lastNotifiedAt >= intervalMin){
-      const plannedEnd = running.runningStart + (running.planned - (running.elapsedBefore||0));
       const rem = fmtRemaining(plannedEnd, now);
       const body = rem.overrun
         ? "Se ha excedido " + rem.text.replace("excedida ","") + " · fin previsto era a las " + fmt(plannedEnd)
         : "Quedan " + rem.text.replace("quedan ","") + " · fin previsto a las " + fmt(plannedEnd);
       sendDesktopNotification(running.title, body);
-      setNotifyState({taskId: running.id, lastNotifiedAt: now});
+      setNotifyState({taskId: running.id, lastNotifiedAt: now, timeEndNotified: ns.timeEndNotified || false});
     }
   }
 

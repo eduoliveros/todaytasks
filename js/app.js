@@ -21,7 +21,7 @@
   /* Transient (non-persisted) inline-edit state */
   let meetingEdit = null; // {id, title, start, end}
   let taskEdit = null;    // {id, title, duration}
-  let notifyState = {taskId:null, lastNotifiedAt:null};
+  let notifyState = {taskId:null, lastNotifiedAt:null, timeEndNotified:false};
 
   const RING_R = 85;
   const RING_C = +(2 * Math.PI * RING_R).toFixed(2); // 534.07
@@ -516,6 +516,6 @@
   setInterval(()=>{
     checkRunningTaskNotification();
     checkMeetingNotifications();
-  }, 15000);
+  }, 3000);
 })();
 

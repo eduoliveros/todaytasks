@@ -414,7 +414,8 @@
 
       targetTask.status = "running";
       targetTask.runningStart = nowMinutes();
-      setNotifyState({taskId: targetTask.id, lastNotifiedAt: nowMinutes()});
+      const plannedEnd = targetTask.runningStart + (targetTask.planned - (targetTask.elapsedBefore||0));
+      setNotifyState({taskId: targetTask.id, lastNotifiedAt: nowMinutes(), timeEndNotified: nowMinutes() >= plannedEnd});
       saveState();
       smartRender();
     }
@@ -427,7 +428,7 @@
       t.elapsedBefore = (t.elapsedBefore||0) + Math.max(0, elapsed);
       t.runningStart = null;
       t.status = "paused";
-      if(ctx.getNotifyState().taskId === id) setNotifyState({taskId:null, lastNotifiedAt:null});
+      if(ctx.getNotifyState().taskId === id) setNotifyState({taskId:null, lastNotifiedAt:null, timeEndNotified:false});
       saveState();
       smartRender();
     }
@@ -449,7 +450,7 @@
       t.actualDuration = actual;
       t.elapsedBefore = actual;
       t.runningStart = null;
-      if(ctx.getNotifyState().taskId === id) setNotifyState({taskId:null, lastNotifiedAt:null});
+      if(ctx.getNotifyState().taskId === id) setNotifyState({taskId:null, lastNotifiedAt:null, timeEndNotified:false});
       saveState();
       if(ctx.getCurrentView() === 'task' && ctx.getFocusTaskId() === id){
         window.location.hash = '#/';
