@@ -477,7 +477,13 @@
     }
 
     /* ---------------- Interruptions ---------------- */
+    let interruptionTitleTimer = null;
+
     function startInterruption(){
+      if(interruptionTitleTimer){
+        clearTimeout(interruptionTitleTimer);
+        interruptionTitleTimer = null;
+      }
       const state = getState();
       const running = state.tasks.find(t => t.status === "running");
       if(running){
@@ -505,11 +511,21 @@
       const state = getState();
       if(state.activeInterruption){
         state.activeInterruption.title = val;
-        saveState();
+        if(interruptionTitleTimer){
+          clearTimeout(interruptionTitleTimer);
+        }
+        interruptionTitleTimer = setTimeout(() => {
+          saveState();
+          interruptionTitleTimer = null;
+        }, 2000);
       }
     }
 
     function completeInterruption(){
+      if(interruptionTitleTimer){
+        clearTimeout(interruptionTitleTimer);
+        interruptionTitleTimer = null;
+      }
       const state = getState();
       if(!state.activeInterruption) return;
       const now = nowMinutes();
@@ -539,6 +555,10 @@
     }
 
     function cancelInterruption(){
+      if(interruptionTitleTimer){
+        clearTimeout(interruptionTitleTimer);
+        interruptionTitleTimer = null;
+      }
       const state = getState();
       if(!state.activeInterruption && ctx.getCurrentView() !== 'interruption') return;
       state.activeInterruption = null;
