@@ -1,0 +1,29 @@
+{
+  "name": "todaytasks",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:all": "npm test && npm run test:e2e"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eduoliveros/todaytasks.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/eduoliveros/todaytasks/issues"
+  },
+  "homepage": "https://github.com/eduoliveros/todaytasks#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "jsdom": "^30.0.1",
+    "vitest": "^4.1.10"
+  }
+}
