@@ -4,7 +4,7 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
-    await page.reload();
+    await page.goto('/');
   });
 
   test('Crear, editar, ejecutar y completar una tarea desde la UI', async ({ page }) => {
@@ -56,5 +56,31 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
     await page.click('#tasksList .icon-btn[title="Eliminar"]');
 
     await expect(tasksList).toContainText('Aún no hay tareas.');
+  });
+
+  test('Navegar entre días usando las flechas de fecha en Panel 2 Tiempo', async ({ page }) => {
+    // Cambiar al panel Tiempo
+    await page.click('button[data-tab="tiempo"]');
+
+    const datePicker = page.locator('#datePickerInput');
+    const initialDate = await datePicker.inputValue();
+    expect(initialDate).toBeTruthy();
+
+    // Click en retroceder día (flecha izquierda)
+    await page.click('#prevDayBtn');
+
+    const prevDate = await datePicker.inputValue();
+    expect(prevDate).not.toBe(initialDate);
+
+    // Botón hoy debe aparecer cuando no estamos en hoy
+    const todayBtn = page.locator('#todayBtn');
+    await expect(todayBtn).toBeVisible();
+
+    // Click en avanzar día (flecha derecha)
+    await page.click('#nextDayBtn');
+
+    const nextDate = await datePicker.inputValue();
+    expect(nextDate).toBe(initialDate);
+    await expect(todayBtn).toBeHidden();
   });
 });

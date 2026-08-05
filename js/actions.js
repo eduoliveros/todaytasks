@@ -648,6 +648,13 @@
       showToast(`Viendo planificación del ${window.TodayTasksUtils.formatDateFriendly(dateStr)} (${dateStr})`);
     }
 
+    function changeDateByDays(deltaDays){
+      const state = getState();
+      const current = state.selectedDate || window.TodayTasksUtils.getTodayStr();
+      const targetDate = window.TodayTasksUtils.addDays(current, deltaDays);
+      selectDate(targetDate);
+    }
+
     function resetToToday(){
       const state = getState();
       const today = window.TodayTasksUtils.getTodayStr();
@@ -855,7 +862,7 @@
       startTask, pauseTask, resumeTask, completeTask, uncompleteTask,
       copyTaskToDate, openCopyTaskModal,
       startInterruption, updateInterruptionTitle, completeInterruption, cancelInterruption,
-      selectDate, resetToToday, saveHistoryMetric, deleteHistoryMetric,
+      selectDate, changeDateByDays, resetToToday, saveHistoryMetric, deleteHistoryMetric,
       startNewDay
     };
   };

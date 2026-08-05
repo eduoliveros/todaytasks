@@ -156,4 +156,21 @@ describe('TodayTasksActions - Tareas', () => {
       expect(state.tasks).toHaveLength(0);
     });
   });
+
+  describe('Navegación de fechas (changeDateByDays)', () => {
+    it('avanza y retrocede días correctamente', () => {
+      const today = window.TodayTasksUtils.getTodayStr();
+      state.selectedDate = today;
+
+      // Retroceder 1 día
+      actions.changeDateByDays(-1);
+      const expectedPrev = window.TodayTasksUtils.addDays(today, -1);
+      expect(state.selectedDate).toBe(expectedPrev);
+
+      // Avanzar 2 días
+      actions.changeDateByDays(2);
+      const expectedNext = window.TodayTasksUtils.addDays(today, 1);
+      expect(state.selectedDate).toBe(expectedNext);
+    });
+  });
 });

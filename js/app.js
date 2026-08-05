@@ -155,6 +155,16 @@
     dpiEl.addEventListener("change", (e) => actionsModule.selectDate(e.target.value));
   }
 
+  const prevDayBtnEl = document.getElementById("prevDayBtn");
+  if(prevDayBtnEl){
+    prevDayBtnEl.addEventListener("click", () => actionsModule.changeDateByDays(-1));
+  }
+
+  const nextDayBtnEl = document.getElementById("nextDayBtn");
+  if(nextDayBtnEl){
+    nextDayBtnEl.addEventListener("click", () => actionsModule.changeDateByDays(1));
+  }
+
   const todayBtnEl = document.getElementById("todayBtn");
   if(todayBtnEl){
     todayBtnEl.addEventListener("click", () => actionsModule.resetToToday());
@@ -483,6 +493,7 @@
   window.app = {
     switchEnvironment: actionsModule.switchEnvironment,
     selectDate: actionsModule.selectDate,
+    changeDateByDays: actionsModule.changeDateByDays,
     resetToToday: actionsModule.resetToToday,
     deleteMeeting: actionsModule.deleteMeeting,
     deleteTask: actionsModule.deleteTask,

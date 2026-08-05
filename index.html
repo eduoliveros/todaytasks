@@ -18,7 +18,7 @@
   <!-- Barra superior: logo + switcher + pestañas -->
   <div class="topbar-title-row">
     <div class="brand">
-      <h1>Tablero del día <span class="app-version">v1.43</span></h1>
+      <h1>Tablero del día <span class="app-version">v1.44</span></h1>
       <div class="env-switcher" id="envSwitcher">
         <button class="env-btn active" data-env="work" id="envBtnWork" title="Cambiar a ambiente de Trabajo (Tecla 'E')">
           <span class="env-icon">💼</span>
@@ -60,7 +60,9 @@
       <div class="clock mono" id="clockDisplay">--:--</div>
       <div class="end-config">
         Fecha
+        <button class="btn secondary date-nav-btn" id="prevDayBtn" title="Día anterior (Atajo para retrasar 1 día)">◀</button>
         <input type="date" id="datePickerInput" title="Seleccionar día concreto para planificar o consultar">
+        <button class="btn secondary date-nav-btn" id="nextDayBtn" title="Día siguiente (Atajo para avanzar 1 día)">▶</button>
       </div>
       <button class="btn secondary" id="todayBtn" style="display:none" title="Volver al día actual (quitar planificación personalizada)">📅 Hoy</button>
       <a href="#/history" class="btn secondary" id="historyLinkBtn" title="Ver gráfica evolutiva y métricas de 40 días (Tecla 'H')">📊 Histórico [H]</a>
