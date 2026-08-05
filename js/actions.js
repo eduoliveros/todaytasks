@@ -718,11 +718,142 @@
       showToast(`Día nuevo iniciado en "${envName}". Reuniones y tareas anteriores se han borrado.`);
     }
 
+    function copyTaskToDate(taskId, targetDateStr) {
+      if (!targetDateStr) return;
+      const state = getState();
+      const currentDateStr = state.selectedDate || window.TodayTasksUtils.getTodayStr();
+
+      let originalTask = (state.tasks || []).find(t => t.id === taskId);
+      if (!originalTask) {
+        const envKey = state.activeEnv || "work";
+        const env = state.environments[envKey] || state.environments.work;
+        if (env && env.days && env.days[currentDateStr]) {
+          originalTask = (env.days[currentDateStr].tasks || []).find(t => t.id === taskId);
+        }
+      }
+
+      if (!originalTask) {
+        showToast("No se encontró la tarea a copiar.");
+        return;
+      }
+
+      const envKey = state.activeEnv || "work";
+      const env = state.environments[envKey] || state.environments.work;
+      if (!env.days) env.days = {};
+      if (!env.days[targetDateStr]) {
+        env.days[targetDateStr] = {
+          workStart: envKey === "personal" ? 18 * 60 : 9 * 60,
+          workEnd: envKey === "personal" ? 23 * 60 : 18 * 60,
+          meetings: [],
+          tasks: [],
+          interruptions: [],
+          planningMode: false
+        };
+      }
+
+      const targetDayObj = env.days[targetDateStr];
+      if (!Array.isArray(targetDayObj.tasks)) targetDayObj.tasks = [];
+
+      const maxOrder = targetDayObj.tasks.reduce((m, t) => Math.max(m, t.order || 0), 0);
+
+      const copiedTask = {
+        id: newId(),
+        title: originalTask.title,
+        planned: originalTask.planned,
+        order: maxOrder + 1,
+        status: "pending",
+        runningStart: null,
+        elapsedBefore: 0,
+        completedAt: null,
+        actualDuration: null
+      };
+
+      targetDayObj.tasks.push(copiedTask);
+
+      saveState();
+      renderAll();
+
+      const friendlyDate = window.TodayTasksUtils.formatDateFriendly ? window.TodayTasksUtils.formatDateFriendly(targetDateStr) : targetDateStr;
+      showToast(`Tarea "${originalTask.title}" copiada al ${friendlyDate} 📋`);
+    }
+
+    function openCopyTaskModal(taskId) {
+      const state = getState();
+      const today = window.TodayTasksUtils.getTodayStr();
+      const modal = document.getElementById("copyTaskModal");
+
+      let taskTitle = "";
+      let originalTask = (state.tasks || []).find(t => t.id === taskId);
+      if (!originalTask) {
+        const currentDateStr = state.selectedDate || today;
+        const envKey = state.activeEnv || "work";
+        const env = state.environments[envKey] || state.environments.work;
+        if (env && env.days && env.days[currentDateStr]) {
+          originalTask = (env.days[currentDateStr].tasks || []).find(t => t.id === taskId);
+        }
+      }
+      if (originalTask) taskTitle = originalTask.title;
+
+      if (!modal) {
+        const targetDate = prompt(`¿A qué fecha deseas copiar "${taskTitle || 'la tarea'}"? (YYYY-MM-DD)`, today);
+        if (targetDate && targetDate.trim()) copyTaskToDate(taskId, targetDate.trim());
+        return;
+      }
+
+      const titleEl = document.getElementById("copyTaskModalTitle");
+      if (titleEl) titleEl.textContent = taskTitle ? `Copiar "${taskTitle}" 📋` : "Copiar tarea 📋";
+
+      const dateInput = document.getElementById("copyTaskDateInput");
+      if (dateInput) dateInput.value = state.selectedDate && state.selectedDate !== today ? state.selectedDate : today;
+
+      const btnToday = document.getElementById("copyTaskBtnToday");
+      const btnCustom = document.getElementById("copyTaskBtnCustomDate");
+      const btnCancel = document.getElementById("copyTaskBtnCancel");
+      const todayLabel = document.getElementById("copyTaskTodayLabel");
+
+      if (todayLabel) todayLabel.textContent = `(${today})`;
+
+      modal.style.display = "flex";
+
+      function cleanup() {
+        modal.style.display = "none";
+        if (btnToday) btnToday.onclick = null;
+        if (btnCustom) btnCustom.onclick = null;
+        if (btnCancel) btnCancel.onclick = null;
+      }
+
+      if (btnToday) {
+        btnToday.onclick = () => {
+          cleanup();
+          copyTaskToDate(taskId, today);
+        };
+      }
+
+      if (btnCustom) {
+        btnCustom.onclick = () => {
+          const val = dateInput ? dateInput.value : today;
+          if (!val) {
+            alert("Selecciona una fecha válida.");
+            return;
+          }
+          cleanup();
+          copyTaskToDate(taskId, val);
+        };
+      }
+
+      if (btnCancel) {
+        btnCancel.onclick = () => {
+          cleanup();
+        };
+      }
+    }
+
     return {
       switchEnvironment, addMeeting, deleteMeeting, startEditMeeting, updateMeetingEditField, cancelEditMeeting, saveEditMeeting,
       addTask, deleteTask, startEditTask, updateTaskEditField, cancelEditTask, saveEditTask, moveTask,
       armTaskDrag, taskDragStart, taskDragOver, taskDragLeave, taskDrop, taskDragEnd,
       startTask, pauseTask, resumeTask, completeTask, uncompleteTask,
+      copyTaskToDate, openCopyTaskModal,
       startInterruption, updateInterruptionTitle, completeInterruption, cancelInterruption,
       selectDate, resetToToday, saveHistoryMetric, deleteHistoryMetric,
       startNewDay

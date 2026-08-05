@@ -237,6 +237,7 @@
               </div>
               <div style="display:flex;align-items:center;gap:6px;">
                 <span class="badge ${badgeClass}">${label}</span>
+                <button class="icon-btn" title="Copiar a otra fecha" onclick="app.openCopyTaskModal(${t.id})">📋</button>
                 <button class="icon-btn" title="Editar" onclick="app.startEditTask(${t.id})">✎</button>
                 ${t.status!=="running" ? `<button class="icon-btn" title="Eliminar" onclick="app.deleteTask(${t.id})">✕</button>` : ""}
               </div>
@@ -373,8 +374,9 @@
         <div class="summary-row">
           <div class="row-top"><span>${escapeHtml(t.title)}</span><span class="dur">${fmtDur(t.actualDuration)} (plan. ${fmtDur(t.planned)})</span></div>
           <div class="time-range tr-running"><span class="tag">Inicio</span>${fmt(realStart)}<span class="arrow">→</span><span class="tag">Fin</span>${fmt(t.completedAt)}</div>
-          <div style="margin-top:6px">
+          <div style="margin-top:6px;display:flex;gap:6px;">
             <button class="btn small secondary" onclick="app.uncompleteTask(${t.id})" title="Deshacer completado y volver a pendiente">↩ Reabrir</button>
+            <button class="btn small secondary" onclick="app.openCopyTaskModal(${t.id})" title="Copiar esta tarea a otra fecha">📋 Copiar a...</button>
           </div>
         </div>`;
       });
@@ -418,6 +420,9 @@
         <div class="summary-row">
           <div class="row-top"><span>${escapeHtml(t.title)}</span><span class="dur">${fmtDur(t.planned)}${(t.elapsedBefore||0)>0 ? ` (${fmtDur(t.elapsedBefore)} realizados)` : ''} · ${t.status === 'paused' ? 'en pausa' : t.status}</span></div>
           ${rangeHtml}
+          <div style="margin-top:6px">
+            <button class="btn small secondary" onclick="app.openCopyTaskModal(${t.id})" title="Copiar esta tarea a otra fecha">📋 Copiar a...</button>
+          </div>
         </div>
       `; }).join("") : '<div class="empty">Todo completado.</div>';
     }

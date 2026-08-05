@@ -219,6 +219,27 @@
   </div>
 </div>
 
+<div id="copyTaskModal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3 id="copyTaskModalTitle">Copiar tarea 📋</h3>
+    <p id="copyTaskModalDesc">¿A qué fecha deseas copiar esta tarea? Se creará una copia en estado pendiente con la duración completa original.</p>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <button class="btn" id="copyTaskBtnToday" style="text-align:left;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
+        <span>📅 <strong>Copiar a Hoy</strong></span>
+        <small id="copyTaskTodayLabel" style="opacity:0.85;"></small>
+      </button>
+      <div class="modal-field-group">
+        <label for="copyTaskDateInput" style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:6px;">Copiar a otra fecha:</label>
+        <div style="display:flex;gap:8px;">
+          <input type="date" id="copyTaskDateInput" style="flex:1;padding:6px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;background:var(--bg-card);color:var(--ink);">
+          <button class="btn secondary" id="copyTaskBtnCustomDate">Copiar</button>
+        </div>
+      </div>
+      <button class="btn secondary" id="copyTaskBtnCancel" style="border:none;margin-top:4px;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>

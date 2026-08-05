@@ -492,6 +492,8 @@
     resumeTask: actionsModule.resumeTask,
     completeTask: actionsModule.completeTask,
     uncompleteTask: actionsModule.uncompleteTask,
+    copyTaskToDate: actionsModule.copyTaskToDate,
+    openCopyTaskModal: actionsModule.openCopyTaskModal,
     startInterruption: actionsModule.startInterruption,
     updateInterruptionTitle: actionsModule.updateInterruptionTitle,
     completeInterruption: actionsModule.completeInterruption,
