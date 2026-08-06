@@ -15,6 +15,13 @@
     --accent-paused:#9A6B9E;
     --danger:#B4483A;
     --radius:10px;
+
+    /* Chart / Card variables */
+    --bg-card: var(--panel);
+    --border: var(--line);
+    --text-muted: var(--ink-soft);
+    --bg-body: var(--bg);
+    --primary: #4F46E5;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -1117,6 +1124,13 @@
     --accent-pending: #6C93C0;
     --accent-paused: #B584B9;
     --danger: #D9534F;
+
+    /* Chart / Card variables (Dark theme overrides) */
+    --bg-card: var(--panel);
+    --border: var(--line);
+    --text-muted: var(--ink-soft);
+    --bg-body: var(--bg);
+    --primary: #818CF8;
   }
 
   [data-theme="dark"] header.topbar,

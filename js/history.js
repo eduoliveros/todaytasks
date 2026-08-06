@@ -92,17 +92,14 @@
       // Update history entries for all available days in days object
       Object.keys(env.days).forEach(dateStr => {
         const metrics = computeMetricsFromDay(env.days[dateStr]);
-        const existing = historyMap.get(dateStr) || {};
         historyMap.set(dateStr, {
           date: dateStr,
-          meetingsTime: typeof existing.meetingsTime === "number" ? existing.meetingsTime : metrics.meetingsTime,
-          completedTasksTime: typeof existing.completedTasksTime === "number" ? existing.completedTasksTime : metrics.completedTasksTime,
-          uncompletedTasksWorkedTime: typeof existing.uncompletedTasksWorkedTime === "number" ? existing.uncompletedTasksWorkedTime : metrics.uncompletedTasksWorkedTime,
-          uncompletedTasksNotWorkedTime: typeof existing.uncompletedTasksNotWorkedTime === "number" ? existing.uncompletedTasksNotWorkedTime : metrics.uncompletedTasksNotWorkedTime,
-          interruptionsTime: typeof existing.interruptionsTime === "number" ? existing.interruptionsTime : metrics.interruptionsTime,
-          effectiveTime: (typeof existing.meetingsTime === "number" ? existing.meetingsTime : metrics.meetingsTime) +
-                         (typeof existing.completedTasksTime === "number" ? existing.completedTasksTime : metrics.completedTasksTime) +
-                         (typeof existing.uncompletedTasksWorkedTime === "number" ? existing.uncompletedTasksWorkedTime : metrics.uncompletedTasksWorkedTime)
+          meetingsTime: metrics.meetingsTime,
+          completedTasksTime: metrics.completedTasksTime,
+          uncompletedTasksWorkedTime: metrics.uncompletedTasksWorkedTime,
+          uncompletedTasksNotWorkedTime: metrics.uncompletedTasksNotWorkedTime,
+          interruptionsTime: metrics.interruptionsTime,
+          effectiveTime: metrics.meetingsTime + metrics.completedTasksTime + metrics.uncompletedTasksWorkedTime
         });
       });
 
