@@ -498,14 +498,6 @@
       }
     }
 
-    // Alt + 1, Alt + 2, Alt + 3 for switching header tabs from anywhere
-    if(e.altKey && (e.key === "1" || e.key === "2" || e.key === "3")){
-      e.preventDefault();
-      const tabMap = { "1": "entorno", "2": "tiempo", "3": "config" };
-      switchHeaderTab(tabMap[e.key]);
-      return;
-    }
-
     const active = document.activeElement;
     const tag = active ? active.tagName.toLowerCase() : "";
     if(tag === "input" || tag === "textarea" || (active && active.isContentEditable)) return;
