@@ -112,6 +112,7 @@
 
           if (!Array.isArray(env.history)) env.history = [];
           if (!Array.isArray(env.recurringMeetings)) env.recurringMeetings = [];
+          if (!Array.isArray(env.recurringTasks)) env.recurringTasks = [];
           if (env.activeInterruption === undefined) env.activeInterruption = null;
 
           // Ensure each day in env.days is guarded
@@ -211,7 +212,7 @@
       configurable: true
     });
 
-    const envPropNames = ["activeInterruption", "history", "recurringMeetings"];
+    const envPropNames = ["activeInterruption", "history", "recurringMeetings", "recurringTasks"];
     envPropNames.forEach(prop => {
       if (!Object.prototype.hasOwnProperty.call(rawState, prop)) {
         Object.defineProperty(rawState, prop, {

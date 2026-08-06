@@ -235,7 +235,7 @@
               <div style="display:flex;gap:8px;">
                 ${t.status!=="running" ? `<span class="drag-handle" title="Arrastrar para reordenar" onmousedown="app.armTaskDrag()">⠿</span>` : ""}
                 <div>
-                  <div class="title">${escapeHtml(t.title)}</div>
+                  <div class="title">${escapeHtml(t.title)}${t.isRecurring ? ' <span class="tag tag-recurring" title="Tarea recurrente">🔁</span>' : ''}</div>
                   <div class="meta">${fmtDur(t.planned)} planificados${(t.elapsedBefore||0)>0 ? ` · ${fmtDur(t.elapsedBefore)} realizados` : ''}</div>
                   ${startTag ? `<div class="time-range ${trClass}"><span class="tag">${startTag}</span>${startVal}<span class="arrow">→</span><span class="tag">${endTag}</span>${endVal}${remainingChip ? " "+remainingChip : ""}</div>` : '<div class="meta" style="color:var(--danger)">sin hueco antes del fin de jornada</div>'}
                   ${splitNote}

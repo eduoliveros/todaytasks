@@ -233,6 +233,22 @@
     });
   }
 
+  const isRecurringTaskCb = document.getElementById("isRecurringTaskCheckbox");
+  if (isRecurringTaskCb) {
+    isRecurringTaskCb.addEventListener("change", (e) => {
+      const opts = document.getElementById("recurringTaskFormOptions");
+      if (opts) opts.style.display = e.target.checked ? "block" : "none";
+    });
+  }
+
+  const recTaskFreqEl = document.getElementById("recTaskFreq");
+  if (recTaskFreqEl) {
+    recTaskFreqEl.addEventListener("change", (e) => {
+      const daysWrap = document.getElementById("recTaskDaysWrap");
+      if (daysWrap) daysWrap.style.display = e.target.value === "daily" ? "none" : "block";
+    });
+  }
+
   function handleMeetingSubmit(){
     const titleEl = document.getElementById("meetingTitle");
     const title = titleEl.value.trim();
@@ -275,9 +291,26 @@
       titleEl.focus();
       return;
     }
-    actionsModule.addTask(title, dur, toTop);
+
+    let recurringData = null;
+    const recurringTaskCb = document.getElementById("isRecurringTaskCheckbox");
+    if (recurringTaskCb && recurringTaskCb.checked) {
+      const freq = document.getElementById("recTaskFreq").value;
+      const interval = parseInt(document.getElementById("recTaskInterval").value, 10) || 1;
+      const dayCbs = document.querySelectorAll(".rec-task-day-cb:checked");
+      const daysOfWeek = Array.from(dayCbs).map(cb => parseInt(cb.value, 10));
+      const endDate = document.getElementById("recTaskEndDate").value || null;
+      recurringData = { isRecurring: true, freq, interval, daysOfWeek, endDate };
+    }
+
+    actionsModule.addTask(title, dur, toTop, recurringData);
     titleEl.value = "";
     document.getElementById("taskDuration").value = "";
+    if (recurringTaskCb) {
+      recurringTaskCb.checked = false;
+      const opts = document.getElementById("recurringTaskFormOptions");
+      if (opts) opts.style.display = "none";
+    }
     titleEl.focus();
   }
 
@@ -628,6 +661,9 @@
   };
 
   window.addEventListener('hashchange', routerModule.router);
+
+  // Materialize recurring tasks for the current day on startup
+  actionsModule.materializeRecurringTasks();
 
   routerModule.router();
   cloudModule.renderAuthArea();

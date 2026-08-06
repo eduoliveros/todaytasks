@@ -117,6 +117,42 @@
         <input type="number" id="taskDuration" placeholder="Minutos (30 por defecto)" min="1" style="width:180px">
         <button class="btn" id="addTaskBtn">Añadir</button>
       </div>
+      <div style="margin-top:6px;">
+        <label style="font-size:0.85rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
+          <input type="checkbox" id="isRecurringTaskCheckbox"> Repetir tarea 🔁
+        </label>
+      </div>
+      <div id="recurringTaskFormOptions" style="display:none;margin-top:8px;padding:10px;background:rgba(79,70,229,0.04);border:1px solid rgba(79,70,229,0.15);border-radius:6px;font-size:0.85rem;">
+        <div class="row" style="margin-bottom:6px;">
+          <label style="flex:1;">Frecuencia:
+            <select id="recTaskFreq" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;">
+              <option value="daily">Diaria</option>
+              <option value="weekly" selected>Semanal</option>
+              <option value="custom_weeks">Cada N semanas</option>
+            </select>
+          </label>
+          <label style="flex:1;">Intervalo:
+            <input type="number" id="recTaskInterval" value="1" min="1" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;" title="Número de días o semanas entre repeticiones">
+          </label>
+        </div>
+        <div id="recTaskDaysWrap" style="margin-bottom:6px;">
+          <div style="font-weight:500;margin-bottom:2px;">Días de repetición:</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;">
+            <label><input type="checkbox" class="rec-task-day-cb" value="1" checked> L</label>
+            <label><input type="checkbox" class="rec-task-day-cb" value="2"> M</label>
+            <label><input type="checkbox" class="rec-task-day-cb" value="3"> X</label>
+            <label><input type="checkbox" class="rec-task-day-cb" value="4"> J</label>
+            <label><input type="checkbox" class="rec-task-day-cb" value="5"> V</label>
+            <label><input type="checkbox" class="rec-task-day-cb" value="6"> S</label>
+            <label><input type="checkbox" class="rec-task-day-cb" value="7"> D</label>
+          </div>
+        </div>
+        <div>
+          <label>Fecha límite (opcional):
+            <input type="date" id="recTaskEndDate" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;">
+          </label>
+        </div>
+      </div>
       <div id="tasksList"></div>
     </div>
 

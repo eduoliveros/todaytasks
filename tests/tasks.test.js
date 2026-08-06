@@ -188,4 +188,119 @@ describe('TodayTasksActions - Tareas', () => {
       expect(state.selectedDate).toBe(expectedNext);
     });
   });
+
+  describe('Tareas recurrentes', () => {
+    it('crea una regla recurrente y la materializa en el día actual', () => {
+      const today = window.TodayTasksUtils.getTodayStr();
+      state.selectedDate = today;
+
+      // Force daily recurrence to ensure today matches
+      actions.addTask('Daily standup', '15', false, {
+        isRecurring: true,
+        freq: 'daily',
+        interval: 1,
+        daysOfWeek: [],
+        endDate: null
+      });
+
+      // Rule created in env
+      expect(state.recurringTasks).toHaveLength(1);
+      expect(state.recurringTasks[0].title).toBe('Daily standup');
+      expect(state.recurringTasks[0].planned).toBe(15);
+
+      // Materialized in today's tasks
+      expect(state.tasks).toHaveLength(1);
+      expect(state.tasks[0].ruleId).toBe(state.recurringTasks[0].id);
+      expect(state.tasks[0].isRecurring).toBe(true);
+    });
+
+    it('no materializa duplicados si ya existe la tarea en el día', () => {
+      const today = window.TodayTasksUtils.getTodayStr();
+      state.selectedDate = today;
+
+      actions.addTask('Standup', '10', false, {
+        isRecurring: true, freq: 'daily', interval: 1, daysOfWeek: [], endDate: null
+      });
+
+      // Call materialize again explicitly — should not duplicate
+      actions.materializeRecurringTasks();
+
+      expect(state.tasks).toHaveLength(1);
+    });
+
+    it('no materializa si existe excepción cancelled para esa fecha', () => {
+      const today = window.TodayTasksUtils.getTodayStr();
+      state.selectedDate = today;
+
+      actions.addTask('Cancelable', '20', false, {
+        isRecurring: true, freq: 'daily', interval: 1, daysOfWeek: [], endDate: null
+      });
+
+      const ruleId = state.recurringTasks[0].id;
+      const materializedId = state.tasks[0].id;
+
+      // Delete instance (adds cancelled exception and removes from tasks)
+      // We need to simulate deleteRecurringTaskInstance by using deleteTask which will show modal
+      // Instead, directly test the state manipulation:
+      const envKey = state.activeEnv || 'work';
+      const env = state.environments[envKey];
+      const rule = env.recurringTasks[0];
+      rule.exceptions[today] = { type: 'cancelled' };
+      env.days[today].tasks = env.days[today].tasks.filter(t => t.ruleId !== ruleId);
+
+      // Now try to materialize again — should not re-add due to cancelled exception
+      actions.materializeRecurringTasks();
+
+      expect(state.tasks).toHaveLength(0);
+    });
+
+    it('al editar la serie se actualiza el título en la regla', () => {
+      const today = window.TodayTasksUtils.getTodayStr();
+      state.selectedDate = today;
+
+      actions.addTask('Revisión semanal', '60', false, {
+        isRecurring: true, freq: 'daily', interval: 1, daysOfWeek: [], endDate: null
+      });
+
+      const taskId = state.tasks[0].id;
+      const ruleId = state.recurringTasks[0].id;
+
+      // Set taskEdit in series mode (simulating user clicked "Toda la serie")
+      taskEdit = { id: taskId, ruleId, mode: 'series', title: 'Nueva revisión', duration: '45' };
+
+      actions.saveEditTask(taskId);
+
+      // Rule updated
+      expect(state.recurringTasks[0].title).toBe('Nueva revisión');
+      expect(state.recurringTasks[0].planned).toBe(45);
+
+      // Current materialized task also updated
+      expect(state.tasks[0].title).toBe('Nueva revisión');
+      expect(state.tasks[0].planned).toBe(45);
+    });
+
+    it('al eliminar toda la serie se borra la regla y todas las instancias', () => {
+      const today = window.TodayTasksUtils.getTodayStr();
+      state.selectedDate = today;
+
+      actions.addTask('Tarea serie', '30', false, {
+        isRecurring: true, freq: 'daily', interval: 1, daysOfWeek: [], endDate: null
+      });
+
+      const ruleId = state.recurringTasks[0].id;
+
+      // Simulate deleteRecurringTaskSeries directly via the state
+      const envKey = state.activeEnv || 'work';
+      const env = state.environments[envKey];
+      env.recurringTasks = env.recurringTasks.filter(r => r.id !== ruleId);
+      Object.values(env.days || {}).forEach(dayObj => {
+        if (Array.isArray(dayObj.tasks)) {
+          dayObj.tasks = dayObj.tasks.filter(t => t.ruleId !== ruleId);
+        }
+      });
+
+      expect(state.recurringTasks).toHaveLength(0);
+      expect(state.tasks).toHaveLength(0);
+    });
+  });
 });

@@ -258,8 +258,98 @@
       renderAll();
     }
 
+    /* ---------------- Recurring tasks helpers ---------------- */
+    function materializeRecurringTasks() {
+      const state = getState();
+      const envKey = state.activeEnv || "work";
+      const env = state.environments[envKey] || state.environments.work;
+      const dateStr = state.selectedDate || window.TodayTasksUtils.getTodayStr();
+      const recurringTaskRules = Array.isArray(env.recurringTasks) ? env.recurringTasks : [];
+      if (recurringTaskRules.length === 0) return false;
+
+      if (!env.days[dateStr]) {
+        const isPersonal = envKey === "personal";
+        env.days[dateStr] = {
+          workStart: isPersonal ? 18 * 60 : 9 * 60,
+          workEnd: isPersonal ? 23 * 60 : 18 * 60,
+          meetings: [], tasks: [], interruptions: [], planningMode: false
+        };
+      }
+      const dayObj = env.days[dateStr];
+      if (!Array.isArray(dayObj.tasks)) dayObj.tasks = [];
+
+      let changed = false;
+      recurringTaskRules.forEach(rule => {
+        const matches = window.TodayTasksUtils && window.TodayTasksUtils.matchesRecurrenceRule
+          ? window.TodayTasksUtils.matchesRecurrenceRule(rule, dateStr)
+          : null;
+        if (!matches) return;
+
+        // Skip if cancelled exception for this date
+        if (rule.exceptions && rule.exceptions[dateStr] && rule.exceptions[dateStr].type === "cancelled") return;
+
+        // Skip if already materialized (task with this ruleId already in this day)
+        const alreadyExists = dayObj.tasks.some(t => t.ruleId === rule.id);
+        if (alreadyExists) return;
+
+        const maxOrder = dayObj.tasks.reduce((m, t) => Math.max(m, t.order || 0), 0);
+        dayObj.tasks.push({
+          id: newId(),
+          title: rule.title,
+          planned: rule.planned,
+          order: maxOrder + 1,
+          status: "pending",
+          runningStart: null,
+          elapsedBefore: 0,
+          completedAt: null,
+          actualDuration: null,
+          ruleId: rule.id,
+          isRecurring: true
+        });
+        changed = true;
+      });
+      return changed;
+    }
+
+    function deleteRecurringTaskInstance(ruleId, dateStr) {
+      const state = getState();
+      const envKey = state.activeEnv || "work";
+      const env = state.environments[envKey] || state.environments.work;
+      // Add cancelled exception to the rule
+      const rule = (env.recurringTasks || []).find(r => r.id === ruleId);
+      if (rule) {
+        if (!rule.exceptions) rule.exceptions = {};
+        rule.exceptions[dateStr] = { type: "cancelled" };
+      }
+      // Remove materialized task from this day
+      const dayObj = env.days && env.days[dateStr];
+      if (dayObj && Array.isArray(dayObj.tasks)) {
+        dayObj.tasks = dayObj.tasks.filter(t => t.ruleId !== ruleId);
+      }
+      saveState();
+      renderAll();
+    }
+
+    function deleteRecurringTaskSeries(ruleId) {
+      const state = getState();
+      const envKey = state.activeEnv || "work";
+      const env = state.environments[envKey] || state.environments.work;
+      // Remove the rule
+      if (Array.isArray(env.recurringTasks)) {
+        env.recurringTasks = env.recurringTasks.filter(r => r.id !== ruleId);
+      }
+      // Remove all materialized instances across all days
+      Object.values(env.days || {}).forEach(dayObj => {
+        if (Array.isArray(dayObj.tasks)) {
+          dayObj.tasks = dayObj.tasks.filter(t => t.ruleId !== ruleId);
+        }
+      });
+      saveState();
+      renderAll();
+    }
+
     /* ---------------- Actions: tasks ---------------- */
-    function addTask(title, durationStr, toTop = false){
+    function addTask(title, durationStr, toTop = false, recurringData = null){
       if(!title){
         alert("Indica un título para la tarea.");
         return;
@@ -270,27 +360,62 @@
         planned = DEFAULT_TASK_DURATION;
         showToast(`No indicaste duración: "${title}" se ha añadido con ${DEFAULT_TASK_DURATION} minutos por defecto.`);
       }
-      let newOrder;
-      if (toTop) {
-        state.tasks.forEach(t => {
-          t.order = (t.order || 0) + 1;
+
+      if (recurringData && recurringData.isRecurring) {
+        if (!Array.isArray(state.recurringTasks)) {
+          state.recurringTasks = [];
+        }
+        const ruleId = "rec_task_" + newId();
+        state.recurringTasks.push({
+          id: ruleId,
+          title,
+          planned,
+          freq: recurringData.freq || "weekly",
+          interval: recurringData.interval || 1,
+          daysOfWeek: recurringData.daysOfWeek || [1],
+          startDate: state.selectedDate || window.TodayTasksUtils.getTodayStr(),
+          endDate: recurringData.endDate || null,
+          exceptions: {}
         });
-        newOrder = 1;
+        materializeRecurringTasks();
+        showToast(`Tarea recurrente "${title}" añadida 🔁`);
       } else {
-        const maxOrder = state.tasks.reduce((m,t)=>Math.max(m,t.order), 0);
-        newOrder = maxOrder + 1;
+        let newOrder;
+        if (toTop) {
+          state.tasks.forEach(t => {
+            t.order = (t.order || 0) + 1;
+          });
+          newOrder = 1;
+        } else {
+          const maxOrder = state.tasks.reduce((m,t)=>Math.max(m,t.order), 0);
+          newOrder = maxOrder + 1;
+        }
+        state.tasks.push({
+          id:newId(), title, planned, order:newOrder,
+          status:"pending", runningStart:null, elapsedBefore:0,
+          completedAt:null, actualDuration:null
+        });
       }
-      state.tasks.push({
-        id:newId(), title, planned, order:newOrder,
-        status:"pending", runningStart:null, elapsedBefore:0,
-        completedAt:null, actualDuration:null
-      });
       saveState();
       renderAll();
     }
 
     function deleteTask(id){
       const state = getState();
+      const t = state.tasks.find(t => t.id === id);
+
+      if (t && t.ruleId) {
+        const ruleId = t.ruleId;
+        const dateStr = state.selectedDate || window.TodayTasksUtils.getTodayStr();
+        showRecurringModal(
+          `Eliminar "${t.title}" 🔁`,
+          `¿Deseas eliminar solo la tarea del día ${dateStr} o eliminar toda la serie recurrente?`,
+          () => deleteRecurringTaskInstance(ruleId, dateStr),
+          () => deleteRecurringTaskSeries(ruleId)
+        );
+        return;
+      }
+
       state.tasks = state.tasks.filter(t=>t.id!==id);
       if(getTaskEdit() && getTaskEdit().id===id) setTaskEdit(null);
       saveState();
@@ -301,6 +426,25 @@
       const state = getState();
       const t = state.tasks.find(t=>t.id===id);
       if(!t) return;
+
+      if (t.ruleId) {
+        const ruleId = t.ruleId;
+        const dateStr = state.selectedDate || window.TodayTasksUtils.getTodayStr();
+        showRecurringModal(
+          `Editar "${t.title}" 🔁`,
+          `¿Deseas editar solo la tarea del día ${dateStr} o editar todas las futuras ocurrencias de la serie?`,
+          () => {
+            setTaskEdit({ id, ruleId, mode: "instance", title: t.title, duration: String(t.planned) });
+            renderAll();
+          },
+          () => {
+            setTaskEdit({ id, ruleId, mode: "series", title: t.title, duration: String(t.planned) });
+            renderAll();
+          }
+        );
+        return;
+      }
+
       setTaskEdit({id, title:t.title, duration:String(t.planned)});
       renderAll();
     }
@@ -327,6 +471,19 @@
         alert("Indica un título y una duración en minutos mayor que 0.");
         return;
       }
+
+      if (taskEdit.mode === "series" && taskEdit.ruleId) {
+        // Update the rule so future materializations pick up the new title/duration
+        const envKey = state.activeEnv || "work";
+        const env = state.environments[envKey] || state.environments.work;
+        const rule = (env.recurringTasks || []).find(r => r.id === taskEdit.ruleId);
+        if (rule) {
+          rule.title = title;
+          rule.planned = planned;
+        }
+      }
+
+      // Always update the materialized task in the current day
       t.title = title; t.planned = planned;
       setTaskEdit(null);
       saveState();
@@ -651,6 +808,7 @@
       if(window.TodayTasksHistory && window.TodayTasksHistory.snapshotAndPrune){
         window.TodayTasksHistory.snapshotAndPrune(state);
       }
+      materializeRecurringTasks();
       saveState();
       if(ctx.syncFormInputsFromState) ctx.syncFormInputsFromState();
       smartRender();
@@ -671,6 +829,7 @@
       if(window.TodayTasksHistory && window.TodayTasksHistory.snapshotAndPrune){
         window.TodayTasksHistory.snapshotAndPrune(state);
       }
+      materializeRecurringTasks();
       saveState();
       if(ctx.syncFormInputsFromState) ctx.syncFormInputsFromState();
       smartRender();
@@ -872,6 +1031,7 @@
       copyTaskToDate, openCopyTaskModal,
       startInterruption, updateInterruptionTitle, completeInterruption, cancelInterruption,
       selectDate, changeDateByDays, resetToToday, saveHistoryMetric, deleteHistoryMetric,
+      materializeRecurringTasks,
       startNewDay
     };
   };
