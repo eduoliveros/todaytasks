@@ -115,6 +115,21 @@ describe('TodayTasksActions - Tareas', () => {
       expect(state.tasks.find(t => t.id === id2).order).toBe(1);
       expect(state.tasks.find(t => t.id === id1).order).toBe(2);
     });
+
+    it('añade una tarea al inicio (arriba) si se indica toTop = true', () => {
+      actions.addTask('Primera', '30');
+      actions.addTask('Segunda', '30');
+      actions.addTask('Tercera al inicio', '30', true);
+
+      expect(state.tasks).toHaveLength(3);
+      const t3 = state.tasks.find(t => t.title === 'Tercera al inicio');
+      const t1 = state.tasks.find(t => t.title === 'Primera');
+      const t2 = state.tasks.find(t => t.title === 'Segunda');
+
+      expect(t3.order).toBe(1);
+      expect(t1.order).toBe(2);
+      expect(t2.order).toBe(3);
+    });
   });
 
   describe('Ciclo de vida de ejecución de tareas', () => {

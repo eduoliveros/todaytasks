@@ -109,6 +109,7 @@ describe('TodayTasksActions - Reuniones (Simples y Recurrentes)', () => {
     });
 
     it('crea una reunión recurrente semanal (weekly) en días específicos', () => {
+      state.selectedDate = '2026-08-05'; // Miércoles
       actions.addMeeting('Reunión Lunes y Miércoles', '11:00', '12:00', {
         isRecurring: true,
         freq: 'weekly',
@@ -128,6 +129,7 @@ describe('TodayTasksActions - Reuniones (Simples y Recurrentes)', () => {
     });
 
     it('crea una reunión recurrente cada N semanas (custom_weeks)', () => {
+      state.selectedDate = '2026-08-05';
       actions.addMeeting('Sprint Review Bisemanal', '16:00', '17:00', {
         isRecurring: true,
         freq: 'custom_weeks',

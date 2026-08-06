@@ -259,7 +259,7 @@
     }
 
     /* ---------------- Actions: tasks ---------------- */
-    function addTask(title, durationStr){
+    function addTask(title, durationStr, toTop = false){
       if(!title){
         alert("Indica un título para la tarea.");
         return;
@@ -270,9 +270,18 @@
         planned = DEFAULT_TASK_DURATION;
         showToast(`No indicaste duración: "${title}" se ha añadido con ${DEFAULT_TASK_DURATION} minutos por defecto.`);
       }
-      const maxOrder = state.tasks.reduce((m,t)=>Math.max(m,t.order), 0);
+      let newOrder;
+      if (toTop) {
+        state.tasks.forEach(t => {
+          t.order = (t.order || 0) + 1;
+        });
+        newOrder = 1;
+      } else {
+        const maxOrder = state.tasks.reduce((m,t)=>Math.max(m,t.order), 0);
+        newOrder = maxOrder + 1;
+      }
       state.tasks.push({
-        id:newId(), title, planned, order:maxOrder+1,
+        id:newId(), title, planned, order:newOrder,
         status:"pending", runningStart:null, elapsedBefore:0,
         completedAt:null, actualDuration:null
       });

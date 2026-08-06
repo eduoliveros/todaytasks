@@ -18,7 +18,8 @@
   <!-- Barra superior: logo + switcher + pestañas -->
   <div class="topbar-title-row">
     <div class="brand">
-      <h1>Tablero del día <span class="app-version">v1.44</span></h1>
+      <h1>Tablero del día <span class="app-version">v1.45</span></h1>
+      <span class="db-status-badge" id="appModeLabel" title="Tipo de base de datos en uso">💾 local · persistente</span>
       <div class="env-switcher" id="envSwitcher">
         <button class="env-btn active" data-env="work" id="envBtnWork" title="Cambiar a ambiente de Trabajo (Tecla 'E')">
           <span class="env-icon">💼</span>
@@ -31,8 +32,8 @@
       </div>
     </div>
     <nav class="header-tabs" role="tablist">
-      <button class="header-tab active" data-tab="entorno" role="tab" aria-selected="true" aria-controls="htab-entorno" title="Cambiar a panel Entorno (Atajo: Alt+1)">
-        🏙 Entorno <span class="tab-kbd">[Alt+1]</span>
+      <button class="header-tab active" data-tab="entorno" role="tab" aria-selected="true" aria-controls="htab-entorno" title="Cambiar a panel Resumen (Atajo: Alt+1)">
+        📊 Resumen <span class="tab-kbd">[Alt+1]</span>
       </button>
       <button class="header-tab" data-tab="tiempo" role="tab" aria-selected="false" aria-controls="htab-tiempo" title="Cambiar a panel Tiempo (Atajo: Alt+2)">
         🕐 Tiempo <span class="tab-kbd">[Alt+2]</span>
@@ -46,12 +47,8 @@
   <!-- Paneles de pestaña -->
   <div class="header-tab-panels">
 
-    <!-- Panel: Entorno -->
+    <!-- Panel: Resumen -->
     <div class="header-tab-panel active" id="htab-entorno" role="tabpanel">
-      <span class="eyebrow" id="appModeLabel">local · persistente</span>
-      <div class="auth-area" id="authArea">
-        <button class="btn secondary" id="signInBtn">☁ Iniciar sesión con Google</button>
-      </div>
       <div class="header-stats" id="headerStats"></div>
     </div>
 
@@ -72,6 +69,9 @@
 
     <!-- Panel: Configuración -->
     <div class="header-tab-panel" id="htab-config" role="tabpanel">
+      <div class="auth-area" id="authArea">
+        <button class="btn secondary" id="signInBtn">☁ Iniciar sesión con Google</button>
+      </div>
       <div class="end-config">
         Inicio jornada
         <input type="time" id="workStartInput">

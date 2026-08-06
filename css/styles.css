@@ -62,6 +62,20 @@
     margin-left: 6px;
     letter-spacing: 0;
   }
+  .db-status-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 20px;
+    background: #EEF2F7;
+    color: var(--accent-pending);
+    border: 1px solid var(--line);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
 
   /* --- Tab navigation --- */
   .header-tabs {
@@ -185,6 +199,7 @@
   .stat-chip .stat-value { font-family: 'IBM Plex Mono', monospace; font-weight: 600; color: var(--ink); }
   .stat-chip.stat-meeting .stat-value { color: var(--accent-meeting); }
   .stat-chip.stat-task .stat-value { color: var(--accent-pending); }
+  .stat-chip.stat-free .stat-value { color: var(--accent-done, #4C7A5B); }
 
   .clock {
     font-family: 'IBM Plex Mono', monospace;
@@ -1352,6 +1367,60 @@
   [data-theme="dark"] .modal-field-group {
     background: #15181E;
     border-color: #2D3748;
+  }
+
+  /* Long press context menu for tasks positioning */
+  .task-context-menu {
+    position: absolute;
+    background: var(--panel, #ffffff);
+    border: 1px solid var(--line, #e2e0d8);
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    padding: 6px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    min-width: 190px;
+    animation: taskMenuFadeIn 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .task-menu-item {
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+    transition: background 0.1s ease, color 0.1s ease;
+  }
+  .task-menu-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+  [data-theme="dark"] .task-context-menu {
+    background: #1B1F26;
+    border-color: #2D3748;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  }
+  [data-theme="dark"] .task-menu-item {
+    color: #E2E8F0;
+  }
+  [data-theme="dark"] .task-menu-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  
+  @keyframes taskMenuFadeIn {
+    from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* Button holding feedback */
+  .btn-holding {
+    transform: scale(0.96) !important;
+    opacity: 0.85 !important;
+    background: var(--accent-pending) !important;
+    transition: transform 0.6s cubic-bezier(0.1, 0.8, 0.2, 1), opacity 0.6s ease, background-color 0.6s ease;
   }
 
 

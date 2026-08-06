@@ -266,7 +266,7 @@
     titleEl.focus();
   }
 
-  function handleTaskSubmit(){
+  function handleTaskSubmit(toTop = false){
     const titleEl = document.getElementById("taskTitle");
     const title = titleEl.value.trim();
     const dur = document.getElementById("taskDuration").value;
@@ -275,14 +275,111 @@
       titleEl.focus();
       return;
     }
-    actionsModule.addTask(title, dur);
+    actionsModule.addTask(title, dur, toTop);
     titleEl.value = "";
     document.getElementById("taskDuration").value = "";
     titleEl.focus();
   }
 
   document.getElementById("addMeetingBtn").addEventListener("click", handleMeetingSubmit);
-  document.getElementById("addTaskBtn").addEventListener("click", handleTaskSubmit);
+
+  const addTaskBtn = document.getElementById("addTaskBtn");
+  let longPressTimeout = null;
+  let isLongPress = false;
+
+  function startHolding(e) {
+    if (e.type === "mousedown" && e.button !== 0) return;
+    isLongPress = false;
+    if (addTaskBtn) addTaskBtn.classList.add("btn-holding");
+    longPressTimeout = setTimeout(() => {
+      isLongPress = true;
+      showInsertPositionMenu();
+      cancelHolding();
+    }, 600);
+  }
+
+  function cancelHolding() {
+    if (longPressTimeout) {
+      clearTimeout(longPressTimeout);
+      longPressTimeout = null;
+    }
+    if (addTaskBtn) addTaskBtn.classList.remove("btn-holding");
+  }
+
+  if (addTaskBtn) {
+    addTaskBtn.addEventListener("mousedown", startHolding);
+    addTaskBtn.addEventListener("touchstart", startHolding, { passive: true });
+    addTaskBtn.addEventListener("mouseup", cancelHolding);
+    addTaskBtn.addEventListener("mouseleave", cancelHolding);
+    addTaskBtn.addEventListener("touchend", cancelHolding);
+    addTaskBtn.addEventListener("touchcancel", cancelHolding);
+    
+    addTaskBtn.addEventListener("click", (e) => {
+      if (isLongPress) {
+        e.preventDefault();
+        e.stopPropagation();
+        isLongPress = false;
+        return;
+      }
+      handleTaskSubmit(false);
+    });
+  }
+
+  function showInsertPositionMenu() {
+    const existing = document.getElementById("addTaskPositionMenu");
+    if (existing) existing.remove();
+
+    const titleEl = document.getElementById("taskTitle");
+    const title = titleEl.value.trim();
+    if(!title){
+      showToast("Escribe un título para la tarea.");
+      titleEl.focus();
+      return;
+    }
+
+    const menu = document.createElement("div");
+    menu.id = "addTaskPositionMenu";
+    menu.className = "task-context-menu";
+
+    const optionTop = document.createElement("div");
+    optionTop.className = "task-menu-item";
+    optionTop.innerHTML = "<span>⬆️</span> <span>Añadir al inicio (arriba)</span>";
+    optionTop.addEventListener("click", () => {
+      handleTaskSubmit(true);
+      menu.remove();
+    });
+
+    const optionBottom = document.createElement("div");
+    optionBottom.className = "task-menu-item";
+    optionBottom.innerHTML = "<span>⬇️</span> <span>Añadir al final (abajo)</span>";
+    optionBottom.addEventListener("click", () => {
+      handleTaskSubmit(false);
+      menu.remove();
+    });
+
+    menu.appendChild(optionTop);
+    menu.appendChild(optionBottom);
+    document.body.appendChild(menu);
+
+    const rect = addTaskBtn.getBoundingClientRect();
+    menu.style.position = "absolute";
+    menu.style.top = `${rect.bottom + window.scrollY + 6}px`;
+
+    const menuWidth = 190;
+    let leftPos = rect.right + window.scrollX - menuWidth;
+    if (leftPos < 0) leftPos = rect.left + window.scrollX;
+    menu.style.left = `${leftPos}px`;
+
+    setTimeout(() => {
+      const clickOutside = (ev) => {
+        if (!menu.contains(ev.target) && ev.target !== addTaskBtn) {
+          menu.remove();
+          document.removeEventListener("click", clickOutside);
+        }
+      };
+      document.addEventListener("click", clickOutside);
+    }, 50);
+  }
 
   ["meetingTitle", "meetingStart", "meetingEnd"].forEach(id => {
     const el = document.getElementById(id);
@@ -302,7 +399,7 @@
       el.addEventListener("keydown", (e) => {
         if(e.key === "Enter"){
           e.preventDefault();
-          handleTaskSubmit();
+          handleTaskSubmit(e.shiftKey);
         }
       });
     }

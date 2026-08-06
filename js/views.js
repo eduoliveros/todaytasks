@@ -26,11 +26,17 @@
         .reduce((s,t) => s + (t.actualDuration||0), 0);
       const intTotal = (state.interruptions||[]).reduce((s,i) => s + (i.duration||0), 0);
 
+      const workStart = state.workStart !== undefined ? state.workStart : 9 * 60;
+      const workEnd = state.workEnd !== undefined ? state.workEnd : 18 * 60;
+      const workdayTotal = Math.max(0, workEnd - workStart);
+      const unassignedTime = Math.max(0, workdayTotal - meetingsTotal - tasksTotal);
+
       el.innerHTML = `
         <span class="stat-chip stat-meeting"><span class="stat-icon">🗓</span>Reuniones <span class="stat-value">${fmtDur(meetingsTotal)}</span></span>
         <span class="stat-chip stat-task"><span class="stat-icon">🗒</span>Tareas por hacer <span class="stat-value">${fmtDur(tasksTotal)}</span></span>
         <span class="stat-chip"><span class="stat-icon">✓</span>Completado hoy <span class="stat-value">${fmtDur(completedTotal)}</span></span>
         ${intTotal > 0 ? `<span class="stat-chip"><span class="stat-icon">⚡</span>Interrupciones <span class="stat-value" style="color:var(--danger)">${fmtDur(intTotal)}</span></span>` : ''}
+        <span class="stat-chip stat-free" title="Tiempo disponible en la jornada descontando reuniones y tareas por hacer (${fmt(workStart)} - ${fmt(workEnd)})"><span class="stat-icon">⏳</span>Tiempo no asignado <span class="stat-value">${fmtDur(unassignedTime)}</span></span>
       `;
     }
 

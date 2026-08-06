@@ -283,7 +283,7 @@
       const modeLabel = document.getElementById("appModeLabel");
       if(!el) return;
       if(currentUser){
-        if(modeLabel) modeLabel.textContent = "nube · sincronizado";
+        if(modeLabel) modeLabel.textContent = "☁️ nube · sincronizado";
         const photo = currentUser.photoURL ? `<img src="${escapeAttr(currentUser.photoURL)}" alt="">` : "";
         el.innerHTML = `
           <span class="auth-user">${photo}${escapeHtml(currentUser.displayName || currentUser.email || "")}</span>
@@ -295,7 +295,7 @@
           fbAuth.signOut();
         });
       } else {
-        if(modeLabel) modeLabel.textContent = "local · persistente";
+        if(modeLabel) modeLabel.textContent = "💾 local · persistente";
         el.innerHTML = `<button class="btn secondary" id="signInBtn">☁ Iniciar sesión con Google</button>`;
         document.getElementById("signInBtn").addEventListener("click", signInWithGoogle);
       }
