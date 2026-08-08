@@ -510,6 +510,10 @@
       e.preventDefault();
       const nextEnv = state.activeEnv === "work" ? "personal" : "work";
       actionsModule.switchEnvironment(nextEnv);
+    } else if(e.key === "d" || e.key === "D"){
+      e.preventDefault();
+      switchHeaderTab("tiempo");
+      actionsModule.resetToToday();
     } else if(e.key === "h" || e.key === "H"){
       e.preventDefault();
       if(routerModule.getCurrentView() === 'history'){

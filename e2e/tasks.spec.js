@@ -83,4 +83,23 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
     expect(nextDate).toBe(initialDate);
     await expect(todayBtn).toBeHidden();
   });
+
+  test('Pulsar la tecla "d" activa el panel Tiempo y resetea la fecha a hoy', async ({ page }) => {
+    await page.click('button[data-tab="tiempo"]');
+    const datePicker = page.locator('#datePickerInput');
+    const todayDateStr = await datePicker.inputValue();
+
+    await page.click('#prevDayBtn');
+    const prevDateStr = await datePicker.inputValue();
+    expect(prevDateStr).not.toBe(todayDateStr);
+
+    await page.click('button[data-tab="entorno"]');
+    await expect(page.locator('#htab-entorno')).toHaveClass(/active/);
+
+    await page.keyboard.press('d');
+
+    await expect(page.locator('#htab-tiempo')).toHaveClass(/active/);
+    expect(await datePicker.inputValue()).toBe(todayDateStr);
+    await expect(page.locator('#todayBtn')).toBeHidden();
+  });
 });
