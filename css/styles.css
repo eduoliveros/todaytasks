@@ -1455,3 +1455,83 @@
     border-color: rgba(129, 120, 255, 0.25);
   }
 
+  /* --- Time Popover (Option C) & Clickable duration --- */
+  .task-duration-clickable {
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+    padding: 2px 5px;
+    border-radius: 4px;
+    transition: background 0.15s ease, color 0.15s ease;
+    -webkit-tap-highlight-color: rgba(79, 70, 229, 0.2);
+    display: inline-block;
+  }
+  .task-duration-clickable:hover,
+  .task-duration-clickable:active {
+    background: rgba(79, 70, 229, 0.12);
+    color: var(--primary, #4F46E5);
+  }
+  .time-popover-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 9998;
+    display: none;
+    background: transparent;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .time-popover {
+    position: fixed;
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--border, #E2E8F0);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    padding: 12px 14px;
+    z-index: 10001;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    width: 220px;
+    animation: popoverFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes popoverFadeIn {
+    from { opacity: 0; transform: translateY(-6px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .time-popover-header {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-muted, #64748B);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .time-popover-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .time-popover-controls input {
+    flex: 1;
+    padding: 6px 8px;
+    font-size: 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    border-radius: 6px;
+    border: 1px solid var(--border, #CBD5E1);
+    background: var(--bg-body, #F8FAFC);
+    color: var(--ink, #0F172A);
+  }
+  [data-theme="dark"] .time-popover {
+    background: #1E293B;
+    border-color: #334155;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+  }
+  [data-theme="dark"] .time-popover-controls input {
+    background: #0F172A;
+    border-color: #334155;
+    color: #F8FAFC;
+  }
+
+

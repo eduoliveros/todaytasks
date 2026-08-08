@@ -1,7 +1,8 @@
 (function(){
   "use strict";
 
-  const { nowMinutes, fmt, fmtDur, fmtRemaining, timeToMinutes } = window.TodayTasksUtils;
+  const nowMinutes = () => window.TodayTasksUtils.nowMinutes();
+  const { fmt, fmtDur, fmtRemaining, timeToMinutes } = window.TodayTasksUtils;
   const { showToast } = window.TodayTasksUi;
 
   window.TodayTasksActions = function(ctx){
@@ -434,18 +435,21 @@
           `Editar "${t.title}" 🔁`,
           `¿Deseas editar solo la tarea del día ${dateStr} o editar todas las futuras ocurrencias de la serie?`,
           () => {
-            setTaskEdit({ id, ruleId, mode: "instance", title: t.title, duration: String(t.planned) });
+            const actual = window.TodayTasksUtils.getTaskElapsed(t);
+            setTaskEdit({ id, ruleId, mode: "instance", title: t.title, duration: String(t.planned), actual: String(actual) });
             renderAll();
           },
           () => {
-            setTaskEdit({ id, ruleId, mode: "series", title: t.title, duration: String(t.planned) });
+            const actual = window.TodayTasksUtils.getTaskElapsed(t);
+            setTaskEdit({ id, ruleId, mode: "series", title: t.title, duration: String(t.planned), actual: String(actual) });
             renderAll();
           }
         );
         return;
       }
 
-      setTaskEdit({id, title:t.title, duration:String(t.planned)});
+      const actual = window.TodayTasksUtils.getTaskElapsed(t);
+      setTaskEdit({id, title:t.title, duration:String(t.planned), actual:String(actual)});
       renderAll();
     }
 
@@ -461,22 +465,34 @@
 
     function saveEditTask(id){
       const taskEdit = getTaskEdit();
-      if(!taskEdit || taskEdit.id !== id) return;
+      if(!taskEdit || String(taskEdit.id) !== String(id)) return;
       const state = getState();
-      const t = state.tasks.find(t=>t.id===id);
+      const t = state.tasks.find(t => String(t.id) === String(id));
       if(!t) return;
       const title = (taskEdit.title||"").trim();
       const planned = parseInt(taskEdit.duration, 10);
+      const actual = Math.round(parseFloat(taskEdit.actual) * 10) / 10;
       if(!title || !planned || planned <= 0){
         alert("Indica un título y una duración en minutos mayor que 0.");
         return;
+      }
+
+      if(!isNaN(actual) && actual >= 0) {
+        if(t.status === "completed") {
+          t.actualDuration = actual;
+        } else {
+          t.elapsedBefore = actual;
+          if (t.status === "running") {
+            t.runningStart = nowMinutes();
+          }
+        }
       }
 
       if (taskEdit.mode === "series" && taskEdit.ruleId) {
         // Update the rule so future materializations pick up the new title/duration
         const envKey = state.activeEnv || "work";
         const env = state.environments[envKey] || state.environments.work;
-        const rule = (env.recurringTasks || []).find(r => r.id === taskEdit.ruleId);
+        const rule = (env.recurringTasks || []).find(r => String(r.id) === String(taskEdit.ruleId));
         if (rule) {
           rule.title = title;
           rule.planned = planned;
@@ -487,7 +503,26 @@
       t.title = title; t.planned = planned;
       setTaskEdit(null);
       saveState();
-      renderAll();
+      smartRender ? smartRender() : renderAll();
+    }
+
+    function updateTaskTimeFast(id, actualMin) {
+      const state = getState();
+      const t = state.tasks.find(t => String(t.id) === String(id));
+      if(!t) return;
+      const actual = Math.round(parseFloat(actualMin) * 10) / 10;
+      if(!isNaN(actual) && actual >= 0) {
+        if(t.status === "completed") {
+          t.actualDuration = actual;
+        } else {
+          t.elapsedBefore = actual;
+          if (t.status === "running") {
+            t.runningStart = nowMinutes();
+          }
+        }
+        saveState();
+        smartRender ? smartRender() : renderAll();
+      }
     }
 
     function moveTask(id, dir){
@@ -1025,7 +1060,7 @@
 
     return {
       switchEnvironment, addMeeting, deleteMeeting, startEditMeeting, updateMeetingEditField, cancelEditMeeting, saveEditMeeting,
-      addTask, deleteTask, startEditTask, updateTaskEditField, cancelEditTask, saveEditTask, moveTask,
+      addTask, deleteTask, startEditTask, updateTaskEditField, cancelEditTask, saveEditTask, updateTaskTimeFast, moveTask,
       armTaskDrag, taskDragStart, taskDragOver, taskDragLeave, taskDrop, taskDragEnd,
       startTask, pauseTask, resumeTask, completeTask, uncompleteTask,
       copyTaskToDate, openCopyTaskModal,

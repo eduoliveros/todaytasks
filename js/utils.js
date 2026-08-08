@@ -4,6 +4,16 @@ window.TodayTasksUtils = {
     return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
   },
 
+  getTaskElapsed(t) {
+    if (!t) return 0;
+    if (t.status === "completed") return Math.round((t.actualDuration || 0) * 10) / 10;
+    let elapsed = t.elapsedBefore || 0;
+    if (t.status === "running" && t.runningStart !== null) {
+      elapsed += Math.max(0, window.TodayTasksUtils.nowMinutes() - t.runningStart);
+    }
+    return Math.round(elapsed * 10) / 10;
+  },
+
   fmt(mins) {
     mins = Math.max(0, Math.round(mins));
     const h = Math.floor(mins / 60) % 24;

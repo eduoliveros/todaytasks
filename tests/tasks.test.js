@@ -303,4 +303,71 @@ describe('TodayTasksActions - Tareas', () => {
       expect(state.tasks).toHaveLength(0);
     });
   });
+
+  describe('Actualización de tiempo transcurrido / real (Opción A y Opción C)', () => {
+    it('actualiza el tiempo transcurrido en una tarea parada (pendiente o en pausa)', () => {
+      actions.addTask('Tarea Parada', '30');
+      const taskId = state.tasks[0].id;
+
+      actions.startEditTask(taskId);
+      expect(taskEdit.actual).toBe('0');
+
+      actions.updateTaskEditField('actual', '15');
+      actions.saveEditTask(taskId);
+
+      expect(state.tasks[0].elapsedBefore).toBe(15);
+      expect(window.TodayTasksUtils.getTaskElapsed(state.tasks[0])).toBe(15);
+    });
+
+    it('actualiza el tiempo transcurrido en una tarea en ejecución reiniciando runningStart para evitar acumulados erróneos', () => {
+      actions.addTask('Tarea En Ejecución', '40');
+      const taskId = state.tasks[0].id;
+
+      // Start task at minute 500
+      vi.spyOn(window.TodayTasksUtils, 'nowMinutes').mockReturnValue(500);
+      actions.startTask(taskId);
+      expect(state.tasks[0].status).toBe('running');
+      expect(state.tasks[0].runningStart).toBe(500);
+
+      // Fast forward 7 minutes (minute 507) -> elapsed is 7
+      vi.spyOn(window.TodayTasksUtils, 'nowMinutes').mockReturnValue(507);
+      expect(window.TodayTasksUtils.getTaskElapsed(state.tasks[0])).toBe(7);
+
+      // User updates elapsed time to 10 min via fast update (popover or edit)
+      actions.updateTaskTimeFast(taskId, '10');
+
+      // Verify elapsedBefore is 10 and runningStart is reset to current minute (507)
+      expect(state.tasks[0].elapsedBefore).toBe(10);
+      expect(state.tasks[0].runningStart).toBe(507);
+
+      // Total elapsed immediately after update must be 10 (NOT 17!)
+      expect(window.TodayTasksUtils.getTaskElapsed(state.tasks[0])).toBe(10);
+    });
+
+    it('redondea valores con flotantes largos a máximo 1 decimal', () => {
+      actions.addTask('Tarea Flotante', '30');
+      const taskId = state.tasks[0].id;
+
+      actions.updateTaskTimeFast(taskId, '7.5499999999999545');
+
+      expect(state.tasks[0].elapsedBefore).toBe(7.5);
+      expect(window.TodayTasksUtils.getTaskElapsed(state.tasks[0])).toBe(7.5);
+    });
+
+    it('actualiza correctamente el tiempo en una tarea completada', () => {
+      actions.addTask('Tarea Completada', '30');
+      const taskId = state.tasks[0].id;
+
+      actions.startTask(taskId);
+      actions.completeTask(taskId);
+
+      expect(state.tasks[0].status).toBe('completed');
+
+      actions.updateTaskTimeFast(taskId, '25');
+
+      expect(state.tasks[0].actualDuration).toBe(25);
+      expect(window.TodayTasksUtils.getTaskElapsed(state.tasks[0])).toBe(25);
+    });
+  });
 });
+

@@ -637,6 +637,7 @@
     saveEditMeeting: actionsModule.saveEditMeeting,
     startEditTask: actionsModule.startEditTask,
     updateTaskEditField: actionsModule.updateTaskEditField,
+    updateTaskTimeFast: actionsModule.updateTaskTimeFast,
     cancelEditTask: actionsModule.cancelEditTask,
     saveEditTask: actionsModule.saveEditTask,
     armTaskDrag: actionsModule.armTaskDrag,
@@ -649,7 +650,81 @@
     promptAddHistoryMetric,
     editHistoryMetricPrompt,
     deleteHistoryMetric: actionsModule.deleteHistoryMetric,
-    restoreLocalBackup: cloudModule.restoreLocalBackup
+    restoreLocalBackup: cloudModule.restoreLocalBackup,
+    openTimePopover: function(taskId, event) {
+      try {
+        if (event) {
+          if (typeof event.stopPropagation === 'function') event.stopPropagation();
+          if (typeof event.preventDefault === 'function') event.preventDefault();
+        }
+        this.currentPopoverTaskId = taskId;
+        const overlay = document.getElementById('timePopoverOverlay');
+        const popover = document.getElementById('timePopover');
+        const input = document.getElementById('timePopoverInput');
+        if (!overlay || !popover || !input) return;
+        
+        const currentState = state;
+        const t = currentState.tasks.find(t => String(t.id) === String(taskId));
+        if(!t) return;
+        
+        const actual = window.TodayTasksUtils.getTaskElapsed(t);
+        input.value = actual;
+        
+        overlay.style.display = 'block';
+        popover.style.display = 'flex';
+        
+        let target = null;
+        if (event) {
+          if (event.currentTarget && typeof event.currentTarget.getBoundingClientRect === 'function') {
+            target = event.currentTarget;
+          } else if (event.target && typeof event.target.getBoundingClientRect === 'function') {
+            target = event.target;
+          }
+        }
+        
+        const popWidth = 220;
+        let left = Math.max(10, (window.innerWidth - popWidth) / 2);
+        let top = Math.max(10, (window.innerHeight - 120) / 2);
+        
+        if (target) {
+          const rect = target.getBoundingClientRect();
+          if (rect && (rect.width > 0 || rect.height > 0 || rect.top > 0 || rect.left > 0)) {
+            left = rect.left;
+            top = rect.bottom + 6;
+            if (left + popWidth > window.innerWidth - 10) {
+              left = window.innerWidth - popWidth - 10;
+            }
+            if (left < 10) left = 10;
+
+            if (top + 110 > window.innerHeight && rect.top > 110) {
+              top = rect.top - 95;
+            }
+          }
+        }
+        
+        popover.style.left = `${left}px`;
+        popover.style.top = `${top}px`;
+        setTimeout(() => {
+          input.focus();
+          input.select();
+        }, 50);
+      } catch (err) {
+        console.error("Error in openTimePopover:", err);
+      }
+    },
+    closeTimePopover: function() {
+      const overlay = document.getElementById('timePopoverOverlay');
+      const popover = document.getElementById('timePopover');
+      if (overlay) overlay.style.display = 'none';
+      if (popover) popover.style.display = 'none';
+      this.currentPopoverTaskId = null;
+    },
+    saveTimePopover: function() {
+      if(!this.currentPopoverTaskId) return;
+      const input = document.getElementById('timePopoverInput');
+      actionsModule.updateTaskTimeFast(this.currentPopoverTaskId, input.value);
+      this.closeTimePopover();
+    }
   };
 
   window.addEventListener('hashchange', routerModule.router);

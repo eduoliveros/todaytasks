@@ -190,8 +190,9 @@
             <div class="row">
               <input type="text" value="${escapeAttr(taskEdit.title)}" oninput="app.updateTaskEditField('title', this.value)" placeholder="Título de la tarea">
             </div>
-            <div class="row">
-              <input type="number" min="1" value="${escapeAttr(taskEdit.duration)}" style="width:100px" oninput="app.updateTaskEditField('duration', this.value)" placeholder="Minutos">
+            <div class="row" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+              <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Planificado (min):<br><input type="number" min="1" value="${escapeAttr(taskEdit.duration)}" style="width:110px;margin-top:4px;" oninput="app.updateTaskEditField('duration', this.value)"></label>
+              <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Consumido (min):<br><input type="number" min="0" value="${escapeAttr(taskEdit.actual||0)}" style="width:110px;margin-top:4px;" oninput="app.updateTaskEditField('actual', this.value)"></label>
             </div>
             <div class="task-actions">
               <button class="btn small done" onclick="app.saveEditTask(${t.id})">Guardar</button>
@@ -199,6 +200,7 @@
             </div>
           </div>`;
         }
+        const elapsedReal = window.TodayTasksUtils.getTaskElapsed(t);
         const segs = schedule.segmentsByTask[t.id] || [];
         const isOverflow = schedule.overflowIds.has(t.id);
         const label = t.status === "running" ? "en ejecución"
@@ -236,7 +238,7 @@
                 ${t.status!=="running" ? `<span class="drag-handle" title="Arrastrar para reordenar" onmousedown="app.armTaskDrag()">⠿</span>` : ""}
                 <div>
                   <div class="title">${escapeHtml(t.title)}${t.isRecurring ? ' <span class="tag tag-recurring" title="Tarea recurrente">🔁</span>' : ''}</div>
-                  <div class="meta">${fmtDur(t.planned)} planificados${(t.elapsedBefore||0)>0 ? ` · ${fmtDur(t.elapsedBefore)} realizados` : ''}</div>
+                  <div class="meta">${fmtDur(t.planned)} planificados · <span class="task-duration-clickable" title="Clic para ajustar tiempo consumido" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">${elapsedReal > 0 ? fmtDur(elapsedReal) : '0m'} realizados</span></div>
                   ${startTag ? `<div class="time-range ${trClass}"><span class="tag">${startTag}</span>${startVal}<span class="arrow">→</span><span class="tag">${endTag}</span>${endVal}${remainingChip ? " "+remainingChip : ""}</div>` : '<div class="meta" style="color:var(--danger)">sin hueco antes del fin de jornada</div>'}
                   ${splitNote}
                 </div>
@@ -378,7 +380,7 @@
         const realStart = t.completedAt - t.actualDuration;
         return `
         <div class="summary-row">
-          <div class="row-top"><span>${escapeHtml(t.title)}</span><span class="dur">${fmtDur(t.actualDuration)} (plan. ${fmtDur(t.planned)})</span></div>
+          <div class="row-top"><span>${escapeHtml(t.title)}</span><div style="text-align:right"><span class="dur task-duration-clickable" title="Clic para ajustar tiempo consumido" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">${fmtDur(t.actualDuration)} reales</span> <span class="dur" style="opacity:0.75">(plan. ${fmtDur(t.planned)})</span></div></div>
           <div class="time-range tr-running"><span class="tag">Inicio</span>${fmt(realStart)}<span class="arrow">→</span><span class="tag">Fin</span>${fmt(t.completedAt)}</div>
           <div style="margin-top:6px;display:flex;gap:6px;">
             <button class="btn small secondary" onclick="app.uncompleteTask(${t.id})" title="Deshacer completado y volver a pendiente">↩ Reabrir</button>
@@ -422,9 +424,10 @@
             rangeHtml = `<div class="meta" style="color:var(--danger)">sin hueco antes del fin de jornada</div>`;
           }
         }
+        const elapsedReal = window.TodayTasksUtils.getTaskElapsed(t);
         return `
         <div class="summary-row">
-          <div class="row-top"><span>${escapeHtml(t.title)}</span><span class="dur">${fmtDur(t.planned)}${(t.elapsedBefore||0)>0 ? ` (${fmtDur(t.elapsedBefore)} realizados)` : ''} · ${t.status === 'paused' ? 'en pausa' : t.status}</span></div>
+          <div class="row-top"><span>${escapeHtml(t.title)}</span><span class="dur">${fmtDur(t.planned)} plan. · <span class="task-duration-clickable" title="Clic para ajustar tiempo consumido" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">${elapsedReal > 0 ? fmtDur(elapsedReal) : '0m'} realizados</span> · ${t.status === 'paused' ? 'en pausa' : t.status}</span></div>
           ${rangeHtml}
           <div style="margin-top:6px">
             <button class="btn small secondary" onclick="app.openCopyTaskModal(${t.id})" title="Copiar esta tarea a otra fecha">📋 Copiar a...</button>
@@ -495,17 +498,14 @@
       if(!container) return;
       const state = getState();
       const focusTaskId = getFocusTaskId();
-      const t = state.tasks.find(t => t.id === focusTaskId);
+      const t = state.tasks.find(t => String(t.id) === String(focusTaskId));
       if(!t || t.status === 'completed'){
         window.location.hash = '#/';
         return;
       }
 
       const now = nowMinutes();
-      let elapsed = t.elapsedBefore || 0;
-      if(t.status === 'running' && t.runningStart !== null){
-        elapsed += Math.max(0, now - t.runningStart);
-      }
+      const elapsed = window.TodayTasksUtils.getTaskElapsed(t);
       const remaining = t.planned - elapsed;
       const overrun = remaining < 0;
       const pct = Math.min(elapsed / t.planned, 1);
@@ -538,7 +538,7 @@
                       transform="rotate(-90 100 100)"/>
             </svg>
             <div class="focus-ring-center">
-              <div class="ring-main-time${overrun ? ' overrun-text' : ''}">${timeDisplay}</div>
+              <div class="ring-main-time${overrun ? ' overrun-text' : ''}" style="cursor:pointer;" title="Clic para ajustar tiempo consumido" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">${timeDisplay}</div>
               <div class="ring-label">${labelText}</div>
             </div>
           </div>
@@ -550,7 +550,7 @@
             </div>
             <div class="focus-meta-item">
               <span class="meta-label">Transcurrido</span>
-              <span class="meta-value">${fmtDur(elapsed)}</span>
+              <span class="meta-value task-duration-clickable" title="Clic para ajustar tiempo transcurrido" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">${fmtDur(elapsed)}</span>
             </div>
             ${plannedEnd !== null ? `
             <div class="focus-meta-item">
@@ -632,6 +632,12 @@
       renderTasks(schedule);
       renderBoard(schedule);
       renderSummary(schedule);
+      const currentView = getCurrentView();
+      if(currentView === 'task'){
+        renderTaskFocusView();
+      } else if(currentView === 'interruption'){
+        renderInterruptionView();
+      }
     }
 
     function smartRender(){
