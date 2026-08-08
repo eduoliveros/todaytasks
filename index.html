@@ -30,6 +30,7 @@
           <span class="env-label">Personal</span>
         </button>
       </div>
+      <button class="help-btn" id="helpBtn" title="Atajos de teclado (Tecla '?')" aria-label="Ayuda de atajos de teclado">?</button>
     </div>
     <nav class="header-tabs" role="tablist">
       <button class="header-tab active" data-tab="entorno" role="tab" aria-selected="true" aria-controls="htab-entorno" title="Cambiar a panel Resumen (Atajo: 1)">
@@ -286,6 +287,41 @@
   <div class="time-popover-controls">
     <input type="number" id="timePopoverInput" min="0" step="0.1" placeholder="Minutos" onkeydown="if(event.key==='Enter') app.saveTimePopover()" />
     <button class="btn small done" onclick="app.saveTimePopover()" style="padding: 6px 12px; font-weight: 600;">Guardar</button>
+  </div>
+</div>
+
+<!-- Modal de ayuda: Atajos de teclado -->
+<div class="modal-overlay" id="shortcutsModal" role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle">
+  <div class="modal-box shortcuts-modal-box">
+    <div class="shortcuts-header">
+      <h3 id="shortcutsTitle">⌨️ Atajos de Teclado</h3>
+      <button class="close-modal-btn" id="closeShortcutsBtn" title="Cerrar (Esc)" aria-label="Cerrar">&times;</button>
+    </div>
+    <div class="shortcuts-body">
+      <div class="shortcuts-group">
+        <div class="shortcut-row"><kbd class="shortcut-key">1</kbd><span class="shortcut-desc">Panel Resumen</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">2</kbd><span class="shortcut-desc">Panel Tiempo</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">3</kbd><span class="shortcut-desc">Panel Configuración</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">H</kbd><span class="shortcut-desc">Ver gráfico de Histórico</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">F</kbd><span class="shortcut-desc">Modo enfoque en tarea actual</span></div>
+      </div>
+
+      <div class="shortcuts-group">
+        <div class="shortcut-row"><kbd class="shortcut-key">E</kbd><span class="shortcut-desc">Alternar entorno (Trabajo / Personal)</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">D</kbd><span class="shortcut-desc">Ir a panel Tiempo y seleccionar Hoy</span></div>
+      </div>
+
+      <div class="shortcuts-group">
+        <div class="shortcut-row"><kbd class="shortcut-key">T</kbd><span class="shortcut-desc">Crear nueva Tarea</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">R</kbd><span class="shortcut-desc">Crear nueva Reunión</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">I</kbd><span class="shortcut-desc">Iniciar una Interrupción</span></div>
+      </div>
+
+      <div class="shortcuts-group">
+        <div class="shortcut-row"><kbd class="shortcut-key">?</kbd><span class="shortcut-desc">Abrir / cerrar esta ayuda</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">Esc</kbd><span class="shortcut-desc">Cancelar edición, salir o desenfocar</span></div>
+      </div>
+    </div>
   </div>
 </div>
 

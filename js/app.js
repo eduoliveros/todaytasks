@@ -468,8 +468,36 @@
   if(envBtnWork) envBtnWork.addEventListener("click", () => actionsModule.switchEnvironment("work"));
   if(envBtnPersonal) envBtnPersonal.addEventListener("click", () => actionsModule.switchEnvironment("personal"));
 
+  function toggleShortcutsModal(show){
+    const modal = document.getElementById("shortcutsModal");
+    if(!modal) return;
+    const isVisible = modal.style.display === "flex";
+    const nextState = typeof show === "boolean" ? show : !isVisible;
+    modal.style.display = nextState ? "flex" : "none";
+  }
+
+  const helpBtn = document.getElementById("helpBtn");
+  if(helpBtn) helpBtn.addEventListener("click", () => toggleShortcutsModal(true));
+
+  const closeShortcutsBtn = document.getElementById("closeShortcutsBtn");
+  if(closeShortcutsBtn) closeShortcutsBtn.addEventListener("click", () => toggleShortcutsModal(false));
+
+  const shortcutsModalEl = document.getElementById("shortcutsModal");
+  if(shortcutsModalEl){
+    shortcutsModalEl.addEventListener("click", (e) => {
+      if(e.target === shortcutsModalEl) toggleShortcutsModal(false);
+    });
+  }
+
   window.addEventListener("keydown", (e) => {
     if(e.key === "Escape" || e.key === "Esc"){
+      const sModal = document.getElementById("shortcutsModal");
+      if(sModal && sModal.style.display === "flex"){
+        e.preventDefault();
+        toggleShortcutsModal(false);
+        return;
+      }
+
       if(state.activeInterruption || routerModule.getCurrentView() === 'interruption'){
         e.preventDefault();
         actionsModule.cancelInterruption();
@@ -502,7 +530,10 @@
     const tag = active ? active.tagName.toLowerCase() : "";
     if(tag === "input" || tag === "textarea" || (active && active.isContentEditable)) return;
 
-    if(e.key === "1" || e.key === "2" || e.key === "3"){
+    if(e.key === "?" || (e.shiftKey && e.key === "/")){
+      e.preventDefault();
+      toggleShortcutsModal();
+    } else if(e.key === "1" || e.key === "2" || e.key === "3"){
       e.preventDefault();
       const tabMap = { "1": "entorno", "2": "tiempo", "3": "config" };
       switchHeaderTab(tabMap[e.key]);
