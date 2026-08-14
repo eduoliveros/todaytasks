@@ -97,4 +97,36 @@ describe('TodayTasksUtils', () => {
       expect(noMatch).toBeNull();
     });
   });
+
+  describe('Cálculo de espacio del día ocupado por reuniones (computeOccupiedMeetingTime)', () => {
+    it('calcula 1h (60 min) cuando hay dos reuniones solapadas de 10:00 a 11:00 en lugar de sumar 2h', () => {
+      const utils = window.TodayTasksUtils;
+      const meetings = [
+        { id: 1, title: 'Reunión A', start: 600, end: 660 }, // 10:00 - 11:00
+        { id: 2, title: 'Reunión B', start: 600, end: 660 }  // 10:00 - 11:00
+      ];
+      expect(utils.computeOccupiedMeetingTime(meetings)).toBe(60);
+    });
+
+    it('combina correctamente reuniones parcialmente solapadas', () => {
+      const utils = window.TodayTasksUtils;
+      const meetings = [
+        { id: 1, title: 'Reunión 1', start: 600, end: 690 }, // 10:00 - 11:30 (90 min)
+        { id: 2, title: 'Reunión 2', start: 660, end: 720 }  // 11:00 - 12:00 (60 min)
+      ];
+      // Ocupan de 10:00 a 12:00 = 120 minutos (2h), no 150 min
+      expect(utils.computeOccupiedMeetingTime(meetings)).toBe(120);
+    });
+
+    it('suma correctamente reuniones disjuntas y maneja reuniones completamente contenidas', () => {
+      const utils = window.TodayTasksUtils;
+      const meetings = [
+        { id: 1, title: 'Grande', start: 600, end: 720 },  // 10:00 - 12:00
+        { id: 2, title: 'Dentro', start: 630, end: 660 },  // 10:30 - 11:00
+        { id: 3, title: 'Tarde', start: 800, end: 860 }   // 13:20 - 14:20 (60 min)
+      ];
+      // Ocupan [600, 720] (120 min) + [800, 860] (60 min) = 180 min (3h)
+      expect(utils.computeOccupiedMeetingTime(meetings)).toBe(180);
+    });
+  });
 });

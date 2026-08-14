@@ -18,7 +18,7 @@
       const el = document.getElementById("headerStats");
       if(!el) return;
       const state = getState();
-      const meetingsTotal = state.meetings.reduce((s,m) => s + (m.end - m.start), 0);
+      const meetingsTotal = window.TodayTasksUtils.computeOccupiedMeetingTime(state.meetings);
       const activeTasks = state.tasks.filter(t => t.status !== "completed");
       const tasksTotal = activeTasks.reduce((s,t) => s + t.planned, 0);
       const completedTotal = state.tasks
@@ -26,17 +26,21 @@
         .reduce((s,t) => s + (t.actualDuration||0), 0);
       const intTotal = (state.interruptions||[]).reduce((s,i) => s + (i.duration||0), 0);
 
-      const workStart = state.workStart !== undefined ? state.workStart : 9 * 60;
-      const workEnd = state.workEnd !== undefined ? state.workEnd : 18 * 60;
-      const workdayTotal = Math.max(0, workEnd - workStart);
-      const unassignedTime = Math.max(0, workdayTotal - meetingsTotal - tasksTotal);
+      const workStart = state.workStart;
+      const workEnd = state.workEnd;
+      const isFree = workStart === null || workEnd === null;
+      const workdayTotal = isFree ? 0 : Math.max(0, workEnd - workStart);
+      const unassignedTime = isFree ? 0 : Math.max(0, workdayTotal - meetingsTotal - tasksTotal);
 
       el.innerHTML = `
         <span class="stat-chip stat-meeting"><span class="stat-icon">🗓</span>Reuniones <span class="stat-value">${fmtDur(meetingsTotal)}</span></span>
         <span class="stat-chip stat-task"><span class="stat-icon">🗒</span>Tareas por hacer <span class="stat-value">${fmtDur(tasksTotal)}</span></span>
         <span class="stat-chip"><span class="stat-icon">✓</span>Completado hoy <span class="stat-value">${fmtDur(completedTotal)}</span></span>
         ${intTotal > 0 ? `<span class="stat-chip"><span class="stat-icon">⚡</span>Interrupciones <span class="stat-value" style="color:var(--danger)">${fmtDur(intTotal)}</span></span>` : ''}
-        <span class="stat-chip stat-free" title="Tiempo disponible en la jornada descontando reuniones y tareas por hacer (${fmt(workStart)} - ${fmt(workEnd)})"><span class="stat-icon">⏳</span>Tiempo no asignado <span class="stat-value">${fmtDur(unassignedTime)}</span></span>
+        ${isFree
+          ? `<span class="stat-chip stat-free" title="Día libre sin horario de jornada fijo"><span class="stat-icon">🏖</span>Día libre</span>`
+          : `<span class="stat-chip stat-free" title="Tiempo disponible en la jornada descontando reuniones y tareas por hacer (${fmt(workStart)} - ${fmt(workEnd)})"><span class="stat-icon">⏳</span>Tiempo no asignado <span class="stat-value">${fmtDur(unassignedTime)}</span></span>`
+        }
       `;
     }
 
@@ -317,16 +321,19 @@
           events.push({start:s.start, end:s.end, kind:"task-"+t.status, label:t.title});
         }
       }
-      events.sort((a,b)=>a.start-b.start);
-      const visible = events.filter(e => e.end > viewStart && e.start < workEnd);
+      const workEndLimit = state.workEnd !== null && state.workEnd !== undefined ? state.workEnd : 24 * 60;
+      const visible = events.filter(e => e.end > viewStart && e.start < workEndLimit);
 
-      if(!state.planningMode && now >= workEnd){
+      if(!state.planningMode && state.workEnd !== null && state.workEnd !== undefined && now >= state.workEnd){
         el.innerHTML = '<div class="board-empty">La jornada laboral ha terminado. Consulta el resumen abajo.</div>';
         return;
       }
 
       if(visible.length === 0){
-        el.innerHTML = '<div class="board-empty">No hay reuniones ni tareas programadas hasta el fin de jornada (' + fmt(workEnd) + ').</div>';
+        const emptyMsg = state.workEnd !== null && state.workEnd !== undefined
+          ? 'No hay reuniones ni tareas programadas hasta el fin de jornada (' + fmt(state.workEnd) + ').'
+          : 'No hay reuniones ni tareas programadas hoy (día libre).';
+        el.innerHTML = '<div class="board-empty">' + escapeHtml(emptyMsg) + '</div>';
         return;
       }
 
@@ -346,10 +353,12 @@
             <span class="dur">${fmtDur(e.end-start)}</span>
           </div>`;
       }
-      html += `<div class="slot" style="opacity:.6;border:1px dashed var(--board-line);background:none;">
-          <span class="time-label">${fmt(workEnd)}</span>
-          <span>fin de jornada</span>
-        </div>`;
+      if (state.workEnd !== null && state.workEnd !== undefined) {
+        html += `<div class="slot" style="opacity:.6;border:1px dashed var(--board-line);background:none;">
+            <span class="time-label">${fmt(state.workEnd)}</span>
+            <span>fin de jornada</span>
+          </div>`;
+      }
       html += '</div>';
 
       if(schedule.overflowIds.size > 0){
@@ -599,14 +608,17 @@
       const ts = document.getElementById("themeSelect");
       const dpi = document.getElementById("datePickerInput");
       const todayBtn = document.getElementById("todayBtn");
+      const dayLabel = document.getElementById("selectedDayLabel");
       const today = window.TodayTasksUtils.getTodayStr();
       const isToday = !state.selectedDate || state.selectedDate === today;
+      const dateStr = state.selectedDate || today;
 
       if(ws) ws.value = fmt(state.workStart);
       if(we) we.value = fmt(state.workEnd);
       if(ni) ni.value = state.notifyIntervalMin;
       if(ts) ts.value = state.themeMode || "auto";
-      if(dpi) dpi.value = state.selectedDate || today;
+      if(dpi) dpi.value = dateStr;
+      if(dayLabel) dayLabel.textContent = window.TodayTasksUtils.getDayAbbr(dateStr);
       if(todayBtn) {
         todayBtn.style.display = isToday ? "none" : "inline-flex";
       }

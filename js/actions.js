@@ -94,7 +94,7 @@
         const env = state.environments[envKey] || state.environments.work;
         const dateStr = state.selectedDate || window.TodayTasksUtils.getTodayStr();
         if (!env.days[dateStr]) {
-          env.days[dateStr] = { workStart: 9*60, workEnd: 18*60, meetings: [], tasks: [], interruptions: [], planningMode: false };
+          env.days[dateStr] = { meetings: [], tasks: [], interruptions: [], planningMode: false };
         }
         if (!Array.isArray(env.days[dateStr].meetings)) env.days[dateStr].meetings = [];
         env.days[dateStr].meetings.push({id:newId(), title, start, end});
@@ -269,12 +269,7 @@
       if (recurringTaskRules.length === 0) return false;
 
       if (!env.days[dateStr]) {
-        const isPersonal = envKey === "personal";
-        env.days[dateStr] = {
-          workStart: isPersonal ? 18 * 60 : 9 * 60,
-          workEnd: isPersonal ? 23 * 60 : 18 * 60,
-          meetings: [], tasks: [], interruptions: [], planningMode: false
-        };
+        env.days[dateStr] = { meetings: [], tasks: [], interruptions: [], planningMode: false };
       }
       const dayObj = env.days[dateStr];
       if (!Array.isArray(dayObj.tasks)) dayObj.tasks = [];
@@ -952,8 +947,6 @@
       if (!env.days) env.days = {};
       if (!env.days[targetDateStr]) {
         env.days[targetDateStr] = {
-          workStart: envKey === "personal" ? 18 * 60 : 9 * 60,
-          workEnd: envKey === "personal" ? 23 * 60 : 18 * 60,
           meetings: [],
           tasks: [],
           interruptions: [],

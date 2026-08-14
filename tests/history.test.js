@@ -34,6 +34,23 @@ describe('TodayTasksHistory - Histórico y Métricas', () => {
       expect(metrics.effectiveTime).toBe(60 + 75 + 15); // 150 min
     });
 
+    it('calcula el tiempo de reuniones en el histórico usando el tiempo real ocupado (no la suma si se solapan)', () => {
+      const dayData = {
+        meetings: [
+          { start: 600, end: 660 }, // 10:00 - 11:00 (60 min)
+          { start: 600, end: 660 }  // 10:00 - 11:00 (60 min solapados)
+        ],
+        tasks: [],
+        interruptions: []
+      };
+
+      const metrics = window.TodayTasksHistory.computeMetricsFromDay(dayData);
+
+      // Debe calcular 60 min ocupados, no 120 min
+      expect(metrics.meetingsTime).toBe(60);
+      expect(metrics.effectiveTime).toBe(60);
+    });
+
     it('devuelve valores en 0 para días vacíos o nulos', () => {
       const metrics = window.TodayTasksHistory.computeMetricsFromDay(null);
       expect(metrics.meetingsTime).toBe(0);

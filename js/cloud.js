@@ -139,6 +139,38 @@
           }
         });
         mergedEnv.history = Array.from(historyMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+
+        // Merge recurringMeetings array
+        const recMeetingsMap = new Map();
+        (remoteEnv.recurringMeetings || []).forEach(r => { if (r && r.id) recMeetingsMap.set(r.id, JSON.parse(JSON.stringify(r))); });
+        (localEnv.recurringMeetings || []).forEach(l => {
+          if (l && l.id) {
+            if (!recMeetingsMap.has(l.id)) {
+              recMeetingsMap.set(l.id, JSON.parse(JSON.stringify(l)));
+            } else {
+              const existing = recMeetingsMap.get(l.id);
+              const combinedExceptions = { ...(existing.exceptions || {}), ...(l.exceptions || {}) };
+              recMeetingsMap.set(l.id, { ...existing, ...l, exceptions: combinedExceptions });
+            }
+          }
+        });
+        mergedEnv.recurringMeetings = Array.from(recMeetingsMap.values());
+
+        // Merge recurringTasks array
+        const recTasksMap = new Map();
+        (remoteEnv.recurringTasks || []).forEach(r => { if (r && r.id) recTasksMap.set(r.id, JSON.parse(JSON.stringify(r))); });
+        (localEnv.recurringTasks || []).forEach(l => {
+          if (l && l.id) {
+            if (!recTasksMap.has(l.id)) {
+              recTasksMap.set(l.id, JSON.parse(JSON.stringify(l)));
+            } else {
+              const existing = recTasksMap.get(l.id);
+              const combinedExceptions = { ...(existing.exceptions || {}), ...(l.exceptions || {}) };
+              recTasksMap.set(l.id, { ...existing, ...l, exceptions: combinedExceptions });
+            }
+          }
+        });
+        mergedEnv.recurringTasks = Array.from(recTasksMap.values());
       });
 
       let maxId = 0;
@@ -149,6 +181,8 @@
           (day.tasks || []).forEach(t => { if (t.id > maxId) maxId = t.id; });
           (day.interruptions || []).forEach(i => { if (i.id > maxId) maxId = i.id; });
         });
+        (env.recurringMeetings || []).forEach(rm => { if (rm.id > maxId) maxId = rm.id; });
+        (env.recurringTasks || []).forEach(rt => { if (rt.id > maxId) maxId = rt.id; });
       });
       merged.nextId = Math.max(merged.nextId || 1, local.nextId || 1, remote.nextId || 1, maxId + 1);
 
@@ -164,11 +198,15 @@
       let tasks = 0, meetings = 0;
       ['work', 'personal'].forEach(k => {
         const env = wrapped.environments[k];
-        if(env && env.days){
-          Object.values(env.days).forEach(day => {
-            tasks += (day.tasks || []).length;
-            meetings += (day.meetings || []).length;
-          });
+        if(env){
+          if(env.days){
+            Object.values(env.days).forEach(day => {
+              tasks += (day.tasks || []).length;
+              meetings += (day.meetings || []).length;
+            });
+          }
+          meetings += (env.recurringMeetings || []).length;
+          tasks += (env.recurringTasks || []).length;
         }
       });
       return { tasks, meetings, total: tasks + meetings };

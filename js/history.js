@@ -41,7 +41,7 @@
     const tasks = dayData.tasks || [];
     const interruptions = dayData.interruptions || [];
 
-    const meetingsTime = meetings.reduce((sum, m) => sum + Math.max(0, (m.end || 0) - (m.start || 0)), 0);
+    const meetingsTime = window.TodayTasksUtils.computeOccupiedMeetingTime(meetings);
     const completedTasksTime = tasks
       .filter(t => t.status === "completed")
       .reduce((sum, t) => sum + (t.actualDuration || t.planned || 0), 0);

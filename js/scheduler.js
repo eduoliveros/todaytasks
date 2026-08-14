@@ -20,7 +20,10 @@
     const overflowIds = new Set();
 
     const running = state.tasks.find(t => t.status === "running");
-    const viewStart = state.planningMode ? state.workStart : now;
+    const workStartVal = state.workStart !== null && state.workStart !== undefined ? state.workStart : 9 * 60;
+    const workEndVal = state.workEnd !== null && state.workEnd !== undefined ? state.workEnd : 24 * 60;
+
+    const viewStart = state.planningMode ? workStartVal : now;
     let cursor;
 
     if(running){
@@ -45,7 +48,7 @@
 
       while(remaining > 0.01 && guard < 200){
         guard++;
-        if(pos >= state.workEnd){
+        if(pos >= workEndVal){
           overflowIds.add(t.id);
           break;
         }
@@ -55,7 +58,7 @@
           continue;
         }
         const nextBlock = blocked.find(b => b.start > pos);
-        const limit = Math.min(nextBlock ? nextBlock.start : Infinity, state.workEnd);
+        const limit = Math.min(nextBlock ? nextBlock.start : Infinity, workEndVal);
         const available = limit - pos;
         if(available <= 0.01){
           overflowIds.add(t.id);

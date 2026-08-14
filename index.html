@@ -59,6 +59,7 @@
       <div class="end-config">
         Fecha
         <button class="btn secondary date-nav-btn" id="prevDayBtn" title="Día anterior (Atajo para retrasar 1 día)">◀</button>
+        <span id="selectedDayLabel" class="day-abbr-badge"></span>
         <input type="date" id="datePickerInput" title="Seleccionar día concreto para planificar o consultar">
         <button class="btn secondary date-nav-btn" id="nextDayBtn" title="Día siguiente (Atajo para avanzar 1 día)">▶</button>
       </div>
@@ -95,6 +96,7 @@
           <option value="dark">🌙 Oscuro</option>
         </select>
       </div>
+      <button class="btn secondary" id="weeklyScheduleBtn" title="Configurar horario de inicio y fin de jornada por día de la semana">📅 Horario semanal</button>
       <button class="btn secondary" id="newDayBtn" title="Borra reuniones y tareas del día seleccionado para empezar de cero">↻ Nuevo día</button>
     </div>
 
@@ -129,7 +131,6 @@
             <select id="recTaskFreq" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;">
               <option value="daily">Diaria</option>
               <option value="weekly" selected>Semanal</option>
-              <option value="custom_weeks">Cada N semanas</option>
             </select>
           </label>
           <label style="flex:1;">Intervalo:
@@ -178,7 +179,6 @@
             <select id="recFreq" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;">
               <option value="daily">Diaria</option>
               <option value="weekly" selected>Semanal</option>
-              <option value="custom_weeks">Cada N semanas</option>
             </select>
           </label>
           <label style="flex:1;">Intervalo:
@@ -287,6 +287,24 @@
   <div class="time-popover-controls">
     <input type="number" id="timePopoverInput" min="0" step="0.1" placeholder="Minutos" onkeydown="if(event.key==='Enter') app.saveTimePopover()" />
     <button class="btn small done" onclick="app.saveTimePopover()" style="padding: 6px 12px; font-weight: 600;">Guardar</button>
+  </div>
+</div>
+
+<!-- Modal: Horario semanal -->
+<div class="modal-overlay" id="weeklyScheduleModal" role="dialog" aria-modal="true" aria-labelledby="weeklyScheduleTitle">
+  <div class="modal-box weekly-schedule-modal-box">
+    <div class="shortcuts-header">
+      <h3 id="weeklyScheduleTitle">&#128197; Horario semanal</h3>
+      <button class="close-modal-btn" id="closeWeeklyScheduleBtn" title="Cerrar (Esc)" aria-label="Cerrar">&times;</button>
+    </div>
+    <div class="weekly-schedule-body">
+      <div id="weeklyScheduleRows"></div>
+      <p class="weekly-schedule-hint">&#128161; Este horario se usa como plantilla al abrir un día nuevo. Puedes sobreescribir el horario de cualquier día concreto desde &#x2699;&#xFE0F; Configuración.</p>
+    </div>
+    <div class="weekly-schedule-actions">
+      <button class="btn" id="saveWeeklyScheduleBtn">Guardar</button>
+      <button class="btn secondary" id="cancelWeeklyScheduleBtn">Cancelar</button>
+    </div>
   </div>
 </div>
 

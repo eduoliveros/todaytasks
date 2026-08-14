@@ -2,10 +2,7 @@
   const { getTodayStr } = window.TodayTasksUtils;
 
   function defaultDayState(envKey) {
-    const isPersonal = envKey === "personal";
     return {
-      workStart: isPersonal ? 18 * 60 : 9 * 60,
-      workEnd: isPersonal ? 23 * 60 : 18 * 60,
       meetings: [],
       tasks: [],
       interruptions: [],
@@ -18,10 +15,13 @@
     const isPersonal = envKey === "personal";
     return {
       name: isPersonal ? "Personal" : "Trabajo",
+      weeklySchedule: null,
       days: {
         [today]: defaultDayState(envKey)
       },
       history: [],
+      recurringMeetings: [],
+      recurringTasks: [],
       activeInterruption: null
     };
   }
@@ -114,6 +114,7 @@
           if (!Array.isArray(env.recurringMeetings)) env.recurringMeetings = [];
           if (!Array.isArray(env.recurringTasks)) env.recurringTasks = [];
           if (env.activeInterruption === undefined) env.activeInterruption = null;
+          if (!("weeklySchedule" in env)) env.weeklySchedule = null;
 
           // Ensure each day in env.days is guarded
           Object.keys(env.days).forEach(d => {
@@ -121,8 +122,6 @@
             if (!dayObj || typeof dayObj !== "object") {
               env.days[d] = defaultDayState(key);
             } else {
-              if (typeof dayObj.workStart !== "number") dayObj.workStart = key === "personal" ? 18 * 60 : 9 * 60;
-              if (typeof dayObj.workEnd !== "number") dayObj.workEnd = key === "personal" ? 23 * 60 : 18 * 60;
               if (!Array.isArray(dayObj.meetings)) dayObj.meetings = [];
               if (!Array.isArray(dayObj.tasks)) dayObj.tasks = [];
               if (!Array.isArray(dayObj.interruptions)) dayObj.interruptions = [];
@@ -185,8 +184,39 @@
       return combined;
     }
 
-    const dayPropNames = ["workStart", "workEnd", "tasks", "interruptions", "planningMode"];
-    dayPropNames.forEach(prop => {
+    ["workStart", "workEnd"].forEach(prop => {
+      if (!Object.prototype.hasOwnProperty.call(rawState, prop)) {
+        Object.defineProperty(rawState, prop, {
+          get() {
+            const dayObj = getActiveDayObj();
+            if (dayObj.hasCustomHours && dayObj[prop] !== undefined) {
+              return dayObj[prop];
+            }
+            const envKey = rawState.activeEnv || "work";
+            const dateStr = rawState.selectedDate || today;
+            if (window.TodayTasksUtils && window.TodayTasksUtils.getScheduleForDate) {
+              const sched = window.TodayTasksUtils.getScheduleForDate(rawState, envKey, dateStr);
+              return prop === "workStart" ? sched.start : sched.end;
+            }
+            return dayObj[prop] !== undefined ? dayObj[prop] : null;
+          },
+          set(val) {
+            const dayObj = getActiveDayObj();
+            if (val !== null && val !== undefined && val !== "") {
+              dayObj.hasCustomHours = true;
+              dayObj[prop] = val;
+            } else {
+              dayObj.hasCustomHours = false;
+              delete dayObj[prop];
+            }
+          },
+          enumerable: false,
+          configurable: true
+        });
+      }
+    });
+
+    ["tasks", "interruptions", "planningMode"].forEach(prop => {
       if (!Object.prototype.hasOwnProperty.call(rawState, prop)) {
         Object.defineProperty(rawState, prop, {
           get() {
@@ -247,5 +277,5 @@
     }
   }
 
-  window.TodayTasksState = { defaultState, wrapState, loadState };
+  window.TodayTasksState = { defaultState, wrapState, loadState, defaultDayState };
 })();

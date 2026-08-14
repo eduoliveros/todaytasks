@@ -15,6 +15,7 @@ window.TodayTasksUtils = {
   },
 
   fmt(mins) {
+    if (mins === null || mins === undefined || isNaN(mins) || typeof mins !== "number") return "";
     mins = Math.max(0, Math.round(mins));
     const h = Math.floor(mins / 60) % 24;
     const m = mins % 60;
@@ -87,6 +88,44 @@ window.TodayTasksUtils = {
     return day === 0 ? 7 : day; // 1=Lunes ... 7=Domingo
   },
 
+  getDayAbbr(dateStr) {
+    if (!dateStr) return "";
+    const dow = window.TodayTasksUtils.getDayOfWeek(dateStr);
+    return ["", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"][dow] || "";
+  },
+
+  getScheduleForDate(state, envKey, dateStr) {
+    if (!dateStr) return { start: 9 * 60, end: 18 * 60, isFreeDay: false };
+    const envKeyToUse = envKey || (state && state.activeEnv) || "work";
+    const env = state && state.environments ? (state.environments[envKeyToUse] || state.environments.work) : null;
+    const dow = window.TodayTasksUtils.getDayOfWeek(dateStr);
+
+    if (env && env.weeklySchedule) {
+      const rule = env.weeklySchedule[dow];
+      if (rule === null) {
+        return { start: null, end: null, isFreeDay: true };
+      }
+      if (rule && typeof rule.start === "number" && typeof rule.end === "number") {
+        return { start: rule.start, end: rule.end, isFreeDay: false };
+      }
+    }
+
+    const isPersonal = envKeyToUse === "personal";
+    if (isPersonal) {
+      if (dow >= 1 && dow <= 5) {
+        return { start: 18 * 60, end: 23 * 60, isFreeDay: false };
+      } else {
+        return { start: 9 * 60, end: 23 * 60, isFreeDay: false };
+      }
+    } else {
+      if (dow >= 1 && dow <= 5) {
+        return { start: 9 * 60, end: 18 * 60, isFreeDay: false };
+      } else {
+        return { start: null, end: null, isFreeDay: true };
+      }
+    }
+  },
+
   getStartOfWeekMonday(dateStr) {
     const parts = dateStr.split("-").map(Number);
     const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
@@ -146,6 +185,28 @@ window.TodayTasksUtils = {
       ruleId: rule.id,
       rule
     };
+  },
+
+  computeOccupiedMeetingTime(meetings) {
+    if (!Array.isArray(meetings) || meetings.length === 0) return 0;
+    const sorted = meetings
+      .filter(m => m && typeof m.start === "number" && typeof m.end === "number" && m.end > m.start)
+      .map(m => ({ start: m.start, end: m.end }))
+      .sort((a, b) => a.start - b.start);
+    if (sorted.length === 0) return 0;
+
+    const merged = [{ start: sorted[0].start, end: sorted[0].end }];
+    for (let i = 1; i < sorted.length; i++) {
+      const prev = merged[merged.length - 1];
+      const current = sorted[i];
+      if (current.start <= prev.end) {
+        prev.end = Math.max(prev.end, current.end);
+      } else {
+        merged.push({ start: current.start, end: current.end });
+      }
+    }
+
+    return merged.reduce((total, iv) => total + (iv.end - iv.start), 0);
   }
 };
 

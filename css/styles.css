@@ -1668,3 +1668,135 @@
   }
 
 
+  /* ---- Day abbreviation badge (Panel Tiempo) ---- */
+  .day-abbr-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 5px;
+    background: rgba(79,70,229,0.10);
+    color: var(--primary, #4F46E5);
+    border: 1px solid rgba(79,70,229,0.20);
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    user-select: none;
+  }
+  [data-theme="dark"] .day-abbr-badge {
+    background: rgba(129,140,248,0.15);
+    color: #A5B4FC;
+    border-color: rgba(129,140,248,0.25);
+  }
+
+  /* ---- Weekly Schedule Modal ---- */
+  .weekly-schedule-modal-box {
+    max-width: 480px !important;
+  }
+  .weekly-schedule-body {
+    margin-top: 12px;
+  }
+  .weekly-schedule-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+    transition: opacity 0.15s;
+  }
+  .weekly-schedule-row:last-of-type {
+    border-bottom: none;
+  }
+  .ws-day-name {
+    font-weight: 600;
+    font-size: 14px;
+    width: 90px;
+    flex-shrink: 0;
+    color: var(--ink);
+  }
+  .weekly-schedule-row.is-free-day .ws-day-name {
+    color: var(--ink-soft);
+  }
+  .ws-free-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .ws-free-label input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    accent-color: var(--primary, #4F46E5);
+  }
+  .ws-times {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity 0.15s;
+  }
+  .ws-times-hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .ws-times input[type="time"] {
+    font-family: 'IBM Plex Mono', monospace;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 13px;
+    width: 96px;
+    background: var(--bg-card, #fff);
+    color: var(--ink);
+  }
+  .ws-sep {
+    font-size: 13px;
+    color: var(--ink-soft);
+    flex-shrink: 0;
+  }
+  .weekly-schedule-hint {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 14px;
+    margin-bottom: 0;
+    line-height: 1.5;
+    background: rgba(79,70,229,0.04);
+    border: 1px solid rgba(79,70,229,0.12);
+    border-radius: 6px;
+    padding: 8px 10px;
+  }
+  .weekly-schedule-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    justify-content: flex-end;
+  }
+  [data-theme="dark"] .weekly-schedule-row {
+    border-bottom-color: #2D3748;
+  }
+  [data-theme="dark"] .ws-day-name {
+    color: #E2E8F0;
+  }
+  [data-theme="dark"] .weekly-schedule-row.is-free-day .ws-day-name {
+    color: #718096;
+  }
+  [data-theme="dark"] .ws-free-label {
+    color: #A0AEC0;
+  }
+  [data-theme="dark"] .ws-times input[type="time"] {
+    background: #252D3D;
+    color: #E2E8F0;
+    border-color: #2D3748;
+  }
+  [data-theme="dark"] .ws-sep {
+    color: #718096;
+  }
+  [data-theme="dark"] .weekly-schedule-hint {
+    background: rgba(129,140,248,0.06);
+    border-color: rgba(129,140,248,0.15);
+    color: #A0AEC0;
+  }
+
