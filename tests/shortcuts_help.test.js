@@ -96,4 +96,15 @@ describe('Modal de ayuda de atajos de teclado', () => {
 
     expect(modal.style.display).not.toBe('flex');
   });
+
+  it('el modal contiene la ayuda del atajo "P" para el modo planificación', () => {
+    const modal = document.getElementById('shortcutsModal');
+    const keys = Array.from(modal.querySelectorAll('.shortcut-key')).map(el => el.textContent);
+    expect(keys).toContain('P');
+
+    const descRows = Array.from(modal.querySelectorAll('.shortcut-row'));
+    const pRow = descRows.find(r => r.querySelector('.shortcut-key')?.textContent === 'P');
+    expect(pRow).toBeDefined();
+    expect(pRow.textContent).toContain('planificación');
+  });
 });

@@ -167,7 +167,7 @@
     }
   });
 
-  document.getElementById("planningModeBtn").addEventListener("click", ()=>{
+  function togglePlanningMode(){
     state.planningMode = !state.planningMode;
     saveState();
     viewsModule.refreshPlanningModeBtn();
@@ -175,7 +175,10 @@
     showToast(state.planningMode
       ? "Modo planificación activado: las tareas se reparten desde el inicio de jornada (" + fmt(state.workStart) + ")."
       : "Modo planificación desactivado: las tareas vuelven a repartirse desde la hora actual.");
-  });
+  }
+
+  const planningBtnEl = document.getElementById("planningModeBtn");
+  if(planningBtnEl) planningBtnEl.addEventListener("click", togglePlanningMode);
   viewsModule.refreshPlanningModeBtn();
 
   document.getElementById("newDayBtn").addEventListener("click", actionsModule.startNewDay);
@@ -759,6 +762,9 @@
       e.preventDefault();
       switchHeaderTab("tiempo");
       actionsModule.resetToToday();
+    } else if(e.key === "p" || e.key === "P"){
+      e.preventDefault();
+      togglePlanningMode();
     } else if(e.key === "h" || e.key === "H"){
       e.preventDefault();
       if(routerModule.getCurrentView() === 'history'){
@@ -862,6 +868,7 @@
 
   // expose actions for inline onclick handlers
   window.app = {
+    togglePlanningMode,
     switchEnvironment: actionsModule.switchEnvironment,
     selectDate: actionsModule.selectDate,
     changeDateByDays: actionsModule.changeDateByDays,

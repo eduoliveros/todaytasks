@@ -122,4 +122,32 @@ describe('Atajo de teclado "D" (Tiempo y fecha de Hoy)', () => {
 
     expect(datePicker.value).toBe('2025-01-01');
   });
+
+  it('al pulsar "p" o "P", alterna el modo de planificación', async () => {
+    await import('../js/app.js');
+    const planningBtn = document.getElementById('planningModeBtn');
+    const initialActive = planningBtn.classList.contains('active');
+
+    const eventP = new KeyboardEvent('keydown', { key: 'p', bubbles: true });
+    window.dispatchEvent(eventP);
+    expect(planningBtn.classList.contains('active')).toBe(!initialActive);
+
+    const eventShiftP = new KeyboardEvent('keydown', { key: 'P', bubbles: true });
+    window.dispatchEvent(eventShiftP);
+    expect(planningBtn.classList.contains('active')).toBe(initialActive);
+  });
+
+  it('no activa el atajo "p" si el foco está en un input', async () => {
+    await import('../js/app.js');
+    const planningBtn = document.getElementById('planningModeBtn');
+    const initialActive = planningBtn.classList.contains('active');
+
+    const input = document.getElementById('taskTitle');
+    input.focus();
+
+    const event = new KeyboardEvent('keydown', { key: 'p', bubbles: true });
+    window.dispatchEvent(event);
+
+    expect(planningBtn.classList.contains('active')).toBe(initialActive);
+  });
 });
