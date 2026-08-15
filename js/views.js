@@ -322,7 +322,8 @@
         }
       }
       const workEndLimit = state.workEnd !== null && state.workEnd !== undefined ? state.workEnd : 24 * 60;
-      const visible = events.filter(e => e.end > viewStart && e.start < workEndLimit);
+      const visible = events.filter(e => e.end >= viewStart && e.start < workEndLimit);
+      visible.sort((a,b) => a.start - b.start || a.end - b.end);
 
       if(!state.planningMode && state.workEnd !== null && state.workEnd !== undefined && now >= state.workEnd){
         el.innerHTML = '<div class="board-empty">La jornada laboral ha terminado. Consulta el resumen abajo.</div>';
@@ -372,7 +373,11 @@
       const state = getState();
       const meetings = [...state.meetings].sort((a,b)=>a.start-b.start);
       const completed = state.tasks.filter(t=>t.status==="completed").sort((a,b)=>a.completedAt-b.completedAt);
-      const pending = state.tasks.filter(t=>t.status!=="completed").sort((a,b)=>a.order-b.order);
+      const pending = state.tasks.filter(t=>t.status!=="completed").sort((a,b)=>{
+        if(a.status === "running") return -1;
+        if(b.status === "running") return 1;
+        return a.order - b.order;
+      });
 
       const meetingsEl = document.getElementById("meetingsSummaryList");
       meetingsEl.innerHTML = meetings.length ? meetings.map(m => `

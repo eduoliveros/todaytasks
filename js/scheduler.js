@@ -30,7 +30,9 @@
       const plannedEnd = running.runningStart + (running.planned - (running.elapsedBefore||0));
       const effectiveEnd = Math.max(plannedEnd, now);
       segmentsByTask[running.id] = [{start: running.runningStart, end: effectiveEnd}];
-      cursor = effectiveEnd;
+      // In planning mode, if the running task ends before workStart (e.g. executing
+      // before the workday starts), pending tasks must still be scheduled from workStart.
+      cursor = state.planningMode ? Math.max(effectiveEnd, workStartVal) : effectiveEnd;
     } else {
       cursor = viewStart;
     }

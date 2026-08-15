@@ -11,6 +11,7 @@ describe('TodayTasksState', () => {
   describe('defaultState & wrapState', () => {
     it('crea una estructura de estado por defecto válida', () => {
       const state = window.TodayTasksState.defaultState();
+      state.selectedDate = '2026-08-17'; // Lunes
       expect(state.activeEnv).toBe('work');
       expect(state.environments.work).toBeDefined();
       expect(state.environments.personal).toBeDefined();
@@ -22,6 +23,7 @@ describe('TodayTasksState', () => {
 
     it('cambia valores según el ambiente activo (work vs personal)', () => {
       const state = window.TodayTasksState.defaultState();
+      state.selectedDate = '2026-08-17'; // Lunes
       
       // Entorno de trabajo por defecto (09:00 - 18:00)
       expect(state.workStart).toBe(540);
