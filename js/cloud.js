@@ -68,7 +68,8 @@
       const local = wrapState(localRaw);
       const remote = wrapState(remoteRaw);
       const merged = defaultState();
-
+      merged.activeEnv = local.activeEnv || remote.activeEnv || 'work';
+      merged.selectedDate = local.selectedDate || remote.selectedDate || merged.selectedDate;
       merged.themeMode = local.themeMode || remote.themeMode || 'auto';
       merged.notifyIntervalMin = local.notifyIntervalMin || remote.notifyIntervalMin || 10;
       merged.notifyEnabled = (local.notifyEnabled !== undefined) ? local.notifyEnabled : ((remote.notifyEnabled !== undefined) ? remote.notifyEnabled : true);
@@ -207,9 +208,11 @@
     function countItems(st){
       const wrapped = wrapState(st);
       let tasks = 0, meetings = 0;
+      let hasSchedule = false;
       ['work', 'personal'].forEach(k => {
         const env = wrapped.environments[k];
         if(env){
+          if(env.weeklySchedule) hasSchedule = true;
           if(env.days){
             Object.values(env.days).forEach(day => {
               tasks += (day.tasks || []).length;
@@ -220,7 +223,7 @@
           tasks += (env.recurringTasks || []).length;
         }
       });
-      return { tasks, meetings, total: tasks + meetings };
+      return { tasks, meetings, total: tasks + meetings, hasSchedule };
     }
 
     function attachCloudSync(uid){
@@ -248,12 +251,16 @@
             const cloudCounts = countItems(cloudData);
             const localCounts = countItems(state);
 
-            if(cloudCounts.total === 0 && localCounts.total > 0){
+            const cloudHasData = cloudCounts.total > 0 || cloudCounts.hasSchedule;
+            const localHasData = localCounts.total > 0 || localCounts.hasSchedule;
+
+            if(!cloudHasData && localHasData){
               console.log("La nube está vacía pero el dispositivo tiene datos. Protegiendo datos locales y subiendo a la nube...");
               pushToCloud();
-              showToast("Se han protegido y subido tus tareas de este dispositivo a la nube.");
+              showToast("Se han protegido y subido tus datos de este dispositivo a la nube.");
             }
-            else if(localCounts.total === 0 && cloudCounts.total > 0){
+            else if(localCounts.total === 0 && cloudCounts.total > 0 && !localCounts.hasSchedule){
+              // Local sin tareas ni horario → cargar nube directamente
               backupLocalState();
               applyingRemoteUpdate = true;
               setState(wrapState(cloudData));
@@ -262,6 +269,19 @@
               localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
               syncFormInputsFromState();
               renderAll();
+              showToast("Datos cargados desde la nube.");
+            }
+            else if(localCounts.total === 0 && cloudCounts.total > 0 && localCounts.hasSchedule){
+              // Local tiene horario pero sin tareas, nube tiene tareas → merge para no perder el horario local
+              backupLocalState();
+              applyingRemoteUpdate = true;
+              setState(mergeStates(state, cloudData));
+              setMeetingEdit(null); setTaskEdit(null);
+              applyingRemoteUpdate = false;
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
+              syncFormInputsFromState();
+              renderAll();
+              pushToCloud();
               showToast("Datos cargados desde la nube.");
             }
             else if(localCounts.total > 0 && cloudCounts.total > 0){
@@ -294,7 +314,19 @@
                 renderAll();
                 showToast("Datos cargados desde la nube.");
               }
+            } else if(cloudHasData && !localHasData){
+              // Nube tiene solo horario (sin tareas), local vacío → cargar nube
+              backupLocalState();
+              applyingRemoteUpdate = true;
+              setState(wrapState(cloudData));
+              setMeetingEdit(null); setTaskEdit(null);
+              applyingRemoteUpdate = false;
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
+              syncFormInputsFromState();
+              renderAll();
+              showToast("Datos cargados desde la nube.");
             } else {
+              // Ambos vacíos (sin tareas y sin horario): subir estado local
               pushToCloud();
             }
           } else {
@@ -308,7 +340,8 @@
         if(!doc.exists) return;
         backupLocalState();
         applyingRemoteUpdate = true;
-        setState(wrapState(doc.data()));
+        // Usar merge para preservar weeklySchedule local si el snapshot remoto lo trae a null
+        setState(mergeStates(getState(), doc.data()));
         setMeetingEdit(null); setTaskEdit(null);
         applyingRemoteUpdate = false;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
