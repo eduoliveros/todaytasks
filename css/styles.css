@@ -37,7 +37,14 @@
     letter-spacing:-0.01em;
   }
   .mono{font-family:'IBM Plex Mono',monospace;}
-  a,button{font-family:inherit;}
+  a{font-family:inherit;}
+  button{
+    font-family:inherit;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    user-select:none;
+  }
 
   /* ---------- Top bar: Tabbed Header ---------- */
   header.topbar {
@@ -295,6 +302,10 @@
     background:var(--ink);
     color:#fff;
     transition:opacity .15s;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    user-select:none;
   }
   .btn:hover{opacity:.85;}
   .btn.secondary{background:#EEF0EF;color:var(--ink);}

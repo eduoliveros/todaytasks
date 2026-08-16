@@ -69,8 +69,9 @@
       const remote = wrapState(remoteRaw);
       const merged = defaultState();
 
-      merged.activeEnv = local.activeEnv || remote.activeEnv || 'work';
-      merged.selectedDate = local.selectedDate || remote.selectedDate || window.TodayTasksUtils.getTodayStr();
+      merged.themeMode = local.themeMode || remote.themeMode || 'auto';
+      merged.notifyIntervalMin = local.notifyIntervalMin || remote.notifyIntervalMin || 10;
+      merged.notifyEnabled = (local.notifyEnabled !== undefined) ? local.notifyEnabled : ((remote.notifyEnabled !== undefined) ? remote.notifyEnabled : true);
 
       ['work', 'personal'].forEach(envKey => {
         const localEnv = (local.environments && local.environments[envKey]) || {};
@@ -78,6 +79,16 @@
         const mergedEnv = merged.environments[envKey];
 
         mergedEnv.activeInterruption = remoteEnv.activeInterruption || localEnv.activeInterruption || null;
+
+        // Merge weeklySchedule
+        if (remoteEnv.weeklySchedule || localEnv.weeklySchedule) {
+          mergedEnv.weeklySchedule = {
+            ...(localEnv.weeklySchedule || {}),
+            ...(remoteEnv.weeklySchedule || {})
+          };
+        } else {
+          mergedEnv.weeklySchedule = null;
+        }
 
         // Merge days objects
         mergedEnv.days = {};

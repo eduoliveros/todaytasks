@@ -51,4 +51,42 @@ describe('TodayTasksCloud - mergeStates', () => {
     expect(merged.environments.work.recurringTasks.map(t => t.title)).toContain('Tarea Recurrente Local');
     expect(merged.environments.work.recurringTasks.map(t => t.title)).toContain('Tarea Recurrente Remota');
   });
+
+  it('preserva y combina correctamente el horario semanal (weeklySchedule) en mergeStates', () => {
+    const local = window.TodayTasksState.defaultState();
+    local.environments.work.weeklySchedule = {
+      1: { start: 540, end: 1020 },
+      5: { start: 540, end: 900 }
+    };
+
+    const remote = window.TodayTasksState.defaultState();
+    remote.environments.work.weeklySchedule = {
+      1: { start: 480, end: 960 },
+      6: null
+    };
+
+    const merged = cloud.mergeStates(local, remote);
+
+    // El día 1 se sobrescribe por el valor de la nube
+    expect(merged.environments.work.weeklySchedule[1]).toEqual({ start: 480, end: 960 });
+    // El día 5 se conserva del local
+    expect(merged.environments.work.weeklySchedule[5]).toEqual({ start: 540, end: 900 });
+    // El día 6 se conserva como nulo (día libre) proveniente de la nube
+    expect(merged.environments.work.weeklySchedule[6]).toBeNull();
+  });
+
+  it('preserva el horario semanal local si la nube aún no tiene horario configurado (null)', () => {
+    const local = window.TodayTasksState.defaultState();
+    local.environments.work.weeklySchedule = {
+      1: { start: 540, end: 1020 }
+    };
+
+    const remote = window.TodayTasksState.defaultState();
+    remote.environments.work.weeklySchedule = null;
+
+    const merged = cloud.mergeStates(local, remote);
+    expect(merged.environments.work.weeklySchedule).toEqual({
+      1: { start: 540, end: 1020 }
+    });
+  });
 });
