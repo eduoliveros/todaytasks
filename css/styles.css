@@ -1466,6 +1466,25 @@
     border-color: rgba(129, 120, 255, 0.25);
   }
 
+  /* Auto-move task label */
+  .tag-automove {
+    font-size: 0.72rem;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgba(14, 165, 233, 0.08);
+    color: #0284c7;
+    border: 1px solid rgba(14, 165, 233, 0.25);
+    vertical-align: middle;
+    margin-left: 4px;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  [data-theme="dark"] .tag-automove {
+    background: rgba(56, 189, 248, 0.12);
+    color: #7dd3fc;
+    border-color: rgba(56, 189, 248, 0.25);
+  }
+
   /* --- Time Popover (Option C) & Clickable duration --- */
   .task-duration-clickable {
     cursor: pointer;

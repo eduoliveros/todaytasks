@@ -39,3 +39,6 @@ Este archivo define las reglas, contexto y estándares operativos para los agent
 
 - Para nueva funcionalidad siempre añade pruebas unitarias que testeen esta nueva funcionalidad.
 - Para correcciones de bugs, siempre crea un test que falle debido al bug antes de implementar la solución (TDD).
+
+## 4. Desarrollo
+1. Si es un cambio importante, plantea un plan de implementación y las posibles opciones que existan.

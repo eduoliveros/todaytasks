@@ -7,7 +7,7 @@ export default defineConfig({
   workers: 1,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:8080',
     headless: true,
     trace: 'on-first-retry',
   },
@@ -18,8 +18,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npx -y serve . -p 3000',
-    url: 'http://localhost:3000',
+    command: 'node server.js',
+    url: 'http://localhost:8080',
     reuseExistingServer: true,
     timeout: 30 * 1000,
   },

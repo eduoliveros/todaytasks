@@ -8,6 +8,11 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
   });
 
   test('Crear, editar, ejecutar y completar una tarea desde la UI', async ({ page }) => {
+    // Activar modo planificación para asegurar visibilidad en el tablero independientemente de la hora
+    await page.click('button[data-tab="tiempo"]');
+    await page.click('#planningModeBtn');
+    await page.click('button[data-tab="entorno"]');
+
     // 1. Crear nueva tarea
     await page.fill('#taskTitle', 'Diseñar prototipo Figma');
     await page.fill('#taskDuration', '45');
@@ -43,6 +48,18 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
     // Y debe aparecer en la sección de tareas completadas de la agenda
     const summaryBody = page.locator('#summaryBody');
     await expect(summaryBody).toContainText('Diseñar prototipo Figma V2');
+  });
+
+  test('Crear una tarea con Auto-mover a hoy y verificar el badge Pasar a hoy', async ({ page }) => {
+    await page.fill('#taskTitle', 'Revisión crítica de contratos');
+    await page.fill('#taskDuration', '30');
+    // Marcar checkbox "Auto-mover si no se completa a hoy"
+    await page.check('#isAutoMoveTaskCheckbox');
+    await page.click('#addTaskBtn');
+
+    const tasksList = page.locator('#tasksList');
+    await expect(tasksList).toContainText('Revisión crítica de contratos');
+    await expect(tasksList.locator('.tag-automove')).toContainText('Pasar a hoy');
   });
 
   test('Borrar una tarea desde la interfaz', async ({ page }) => {

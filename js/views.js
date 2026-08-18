@@ -189,6 +189,7 @@
 
       el.innerHTML = active.map(t => {
         if(taskEdit && taskEdit.id === t.id){
+          const isRecurring = t.isRecurring || !!taskEdit.ruleId;
           return `
           <div class="item task-item editing">
             <div class="row">
@@ -198,6 +199,12 @@
               <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Planificado (min):<br><input type="number" min="1" value="${escapeAttr(taskEdit.duration)}" style="width:110px;margin-top:4px;" oninput="app.updateTaskEditField('duration', this.value)"></label>
               <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Consumido (min):<br><input type="number" min="0" value="${escapeAttr(taskEdit.actual||0)}" style="width:110px;margin-top:4px;" oninput="app.updateTaskEditField('actual', this.value)"></label>
             </div>
+            ${!isRecurring ? `
+            <div style="margin-bottom:8px;">
+              <label style="font-size:0.82rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;color:var(--ink);">
+                <input type="checkbox" ${taskEdit.autoMoveToToday ? 'checked' : ''} onchange="app.updateTaskEditField('autoMoveToToday', this.checked)"> Auto-mover si no se completa a hoy
+              </label>
+            </div>` : ''}
             <div class="task-actions">
               <button class="btn small done" onclick="app.saveEditTask(${t.id})">Guardar</button>
               <button class="btn small secondary" onclick="app.cancelEditTask()">Cancelar</button>
@@ -235,13 +242,17 @@
           ? `draggable="true" ondragstart="app.taskDragStart(event, ${t.id})" ondragover="app.taskDragOver(event)" ondragleave="app.taskDragLeave(event)" ondrop="app.taskDrop(event, ${t.id})" ondragend="app.taskDragEnd(event)"`
           : "";
 
+        const autoMoveTag = (!t.isRecurring && t.autoMoveToToday)
+          ? ' <span class="tag tag-automove" title="Se trasladará automáticamente a hoy si no se completa">⏩ Pasar a hoy</span>'
+          : '';
+
         return `
           <div class="item task-item state-${t.status}" ${draggableAttrs}>
             <div class="top">
               <div style="display:flex;gap:8px;">
                 ${t.status!=="running" ? `<span class="drag-handle" title="Arrastrar para reordenar" onmousedown="app.armTaskDrag()">⠿</span>` : ""}
                 <div>
-                  <div class="title">${escapeHtml(t.title)}${t.isRecurring ? ' <span class="tag tag-recurring" title="Tarea recurrente">🔁</span>' : ''}</div>
+                  <div class="title">${escapeHtml(t.title)}${t.isRecurring ? ' <span class="tag tag-recurring" title="Tarea recurrente">🔁</span>' : ''}${autoMoveTag}</div>
                   <div class="meta">${fmtDur(t.planned)} planificados · <span class="task-duration-clickable" title="Clic para ajustar tiempo consumido" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">${elapsedReal > 0 ? fmtDur(elapsedReal) : '0m'} realizados</span></div>
                   ${startTag ? `<div class="time-range ${trClass}"><span class="tag">${startTag}</span>${startVal}<span class="arrow">→</span><span class="tag">${endTag}</span>${endVal}${remainingChip ? " "+remainingChip : ""}</div>` : '<div class="meta" style="color:var(--danger)">sin hueco antes del fin de jornada</div>'}
                   ${splitNote}
@@ -439,9 +450,12 @@
           }
         }
         const elapsedReal = window.TodayTasksUtils.getTaskElapsed(t);
+        const autoMoveTag = (!t.isRecurring && t.autoMoveToToday)
+          ? ' <span class="tag tag-automove" title="Se trasladará a hoy si no se completa">⏩ Pasar a hoy</span>'
+          : '';
         return `
         <div class="summary-row">
-          <div class="row-top"><span>${escapeHtml(t.title)}</span><span class="dur">${fmtDur(t.planned)} plan. · <span class="task-duration-clickable" title="Clic para ajustar tiempo consumido" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">${elapsedReal > 0 ? fmtDur(elapsedReal) : '0m'} realizados</span> · ${t.status === 'paused' ? 'en pausa' : t.status}</span></div>
+          <div class="row-top"><span>${escapeHtml(t.title)}${autoMoveTag}</span><span class="dur">${fmtDur(t.planned)} plan. · <span class="task-duration-clickable" title="Clic para ajustar tiempo consumido" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">${elapsedReal > 0 ? fmtDur(elapsedReal) : '0m'} realizados</span> · ${t.status === 'paused' ? 'en pausa' : t.status}</span></div>
           ${rangeHtml}
           <div style="margin-top:6px">
             <button class="btn small secondary" onclick="app.openCopyTaskModal(${t.id})" title="Copiar esta tarea a otra fecha">📋 Copiar a...</button>

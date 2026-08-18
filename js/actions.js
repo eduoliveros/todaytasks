@@ -345,7 +345,7 @@
     }
 
     /* ---------------- Actions: tasks ---------------- */
-    function addTask(title, durationStr, toTop = false, recurringData = null){
+    function addTask(title, durationStr, toTop = false, recurringData = null, autoMoveToToday = false){
       if(!title){
         alert("Indica un título para la tarea.");
         return;
@@ -389,7 +389,8 @@
         state.tasks.push({
           id:newId(), title, planned, order:newOrder,
           status:"pending", runningStart:null, elapsedBefore:0,
-          completedAt:null, actualDuration:null
+          completedAt:null, actualDuration:null,
+          autoMoveToToday: !!autoMoveToToday
         });
       }
       saveState();
@@ -444,7 +445,7 @@
       }
 
       const actual = window.TodayTasksUtils.getTaskElapsed(t);
-      setTaskEdit({id, title:t.title, duration:String(t.planned), actual:String(actual)});
+      setTaskEdit({id, title:t.title, duration:String(t.planned), actual:String(actual), autoMoveToToday: !!t.autoMoveToToday});
       renderAll();
     }
 
@@ -481,6 +482,10 @@
             t.runningStart = nowMinutes();
           }
         }
+      }
+
+      if (taskEdit.autoMoveToToday !== undefined) {
+        t.autoMoveToToday = !!taskEdit.autoMoveToToday;
       }
 
       if (taskEdit.mode === "series" && taskEdit.ruleId) {
@@ -830,6 +835,71 @@
       showToast(`Ambiente cambiado a ${envName === 'work' ? '💼 Trabajo' : '🏠 Personal'}`);
     }
 
+    function rolloverPendingTasks() {
+      const state = getState();
+      const today = window.TodayTasksUtils.getTodayStr();
+      const envKey = state.activeEnv || "work";
+      const env = state.environments[envKey] || state.environments.work;
+      if (!env || !env.days) return 0;
+
+      // Snapshot history before moving to preserve metrics for past days
+      if (window.TodayTasksHistory && window.TodayTasksHistory.snapshotAndPrune) {
+        window.TodayTasksHistory.snapshotAndPrune(state);
+      }
+
+      if (!env.days[today]) {
+        env.days[today] = { meetings: [], tasks: [], interruptions: [], planningMode: false };
+      }
+      const todayDayObj = env.days[today];
+      if (!Array.isArray(todayDayObj.tasks)) todayDayObj.tasks = [];
+
+      // Find days prior to today strictly (< today)
+      const pastDates = Object.keys(env.days).filter(d => d < today).sort();
+      let movedCount = 0;
+      const movedTitles = [];
+
+      pastDates.forEach(dateStr => {
+        const dayObj = env.days[dateStr];
+        if (!dayObj || !Array.isArray(dayObj.tasks)) return;
+
+        const remainingTasks = [];
+        dayObj.tasks.forEach(t => {
+          if (t.status !== "completed" && t.autoMoveToToday) {
+            const alreadyInToday = todayDayObj.tasks.some(existing => existing.id === t.id);
+            if (!alreadyInToday) {
+              const maxOrder = todayDayObj.tasks.reduce((m, task) => Math.max(m, task.order || 0), 0);
+              const savedElapsed = window.TodayTasksUtils.getTaskElapsed(t);
+              const taskStatus = savedElapsed > 0 ? "paused" : "pending";
+
+              todayDayObj.tasks.push({
+                ...t,
+                order: maxOrder + 1,
+                status: taskStatus,
+                runningStart: null,
+                elapsedBefore: savedElapsed,
+                completedAt: null,
+                actualDuration: null
+              });
+              movedCount++;
+              movedTitles.push(t.title);
+            }
+          } else {
+            remainingTasks.push(t);
+          }
+        });
+        dayObj.tasks = remainingTasks;
+      });
+
+      if (movedCount > 0) {
+        saveState();
+        smartRender ? smartRender() : renderAll();
+        const taskLabel = movedCount === 1 ? `"${movedTitles[0]}"` : `${movedCount} tareas pendientes`;
+        showToast(`${taskLabel} se ha${movedCount === 1 ? '' : 'n'} movido a hoy ⏩`);
+      }
+
+      return movedCount;
+    }
+
     function selectDate(dateStr){
       if(!dateStr) return;
       const state = getState();
@@ -839,6 +909,10 @@
         window.TodayTasksHistory.snapshotAndPrune(state);
       }
       materializeRecurringTasks();
+      const today = window.TodayTasksUtils.getTodayStr();
+      if(dateStr === today){
+        rolloverPendingTasks();
+      }
       saveState();
       if(ctx.syncFormInputsFromState) ctx.syncFormInputsFromState();
       smartRender();
@@ -860,6 +934,7 @@
         window.TodayTasksHistory.snapshotAndPrune(state);
       }
       materializeRecurringTasks();
+      rolloverPendingTasks();
       saveState();
       if(ctx.syncFormInputsFromState) ctx.syncFormInputsFromState();
       smartRender();
@@ -1059,7 +1134,7 @@
       copyTaskToDate, openCopyTaskModal,
       startInterruption, updateInterruptionTitle, completeInterruption, cancelInterruption,
       selectDate, changeDateByDays, resetToToday, saveHistoryMetric, deleteHistoryMetric,
-      materializeRecurringTasks,
+      materializeRecurringTasks, rolloverPendingTasks,
       startNewDay
     };
   };

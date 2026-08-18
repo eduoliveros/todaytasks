@@ -447,6 +447,8 @@
     isRecurringTaskCb.addEventListener("change", (e) => {
       const opts = document.getElementById("recurringTaskFormOptions");
       if (opts) opts.style.display = e.target.checked ? "block" : "none";
+      const autoMoveWrap = document.getElementById("autoMoveTaskOptionWrap");
+      if (autoMoveWrap) autoMoveWrap.style.display = e.target.checked ? "none" : "block";
     });
   }
 
@@ -510,7 +512,9 @@
     }
 
     let recurringData = null;
+    let autoMoveToToday = false;
     const recurringTaskCb = document.getElementById("isRecurringTaskCheckbox");
+    const autoMoveCb = document.getElementById("isAutoMoveTaskCheckbox");
     if (recurringTaskCb && recurringTaskCb.checked) {
       const freq = document.getElementById("recTaskFreq").value;
       const interval = parseInt(document.getElementById("recTaskInterval").value, 10) || 1;
@@ -518,15 +522,20 @@
       const daysOfWeek = Array.from(dayCbs).map(cb => parseInt(cb.value, 10));
       const endDate = document.getElementById("recTaskEndDate").value || null;
       recurringData = { isRecurring: true, freq, interval, daysOfWeek, endDate };
+    } else {
+      autoMoveToToday = !!(autoMoveCb && autoMoveCb.checked);
     }
 
-    actionsModule.addTask(title, dur, toTop, recurringData);
+    actionsModule.addTask(title, dur, toTop, recurringData, autoMoveToToday);
     titleEl.value = "";
     document.getElementById("taskDuration").value = "";
+    if (autoMoveCb) autoMoveCb.checked = false;
     if (recurringTaskCb) {
       recurringTaskCb.checked = false;
       const opts = document.getElementById("recurringTaskFormOptions");
       if (opts) opts.style.display = "none";
+      const autoMoveWrap = document.getElementById("autoMoveTaskOptionWrap");
+      if (autoMoveWrap) autoMoveWrap.style.display = "block";
     }
     titleEl.focus();
   }
@@ -985,8 +994,9 @@
 
   window.addEventListener('hashchange', routerModule.router);
 
-  // Materialize recurring tasks for the current day on startup
+  // Materialize recurring tasks and rollover pending tasks for the current day on startup
   actionsModule.materializeRecurringTasks();
+  actionsModule.rolloverPendingTasks();
 
   routerModule.router();
   cloudModule.renderAuthArea();
