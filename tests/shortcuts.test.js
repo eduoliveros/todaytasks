@@ -27,10 +27,23 @@ describe('Atajo de teclado "D" (Tiempo y fecha de Hoy)', () => {
     await import('../js/scheduler.js');
     await import('../js/ui.js');
     await import('../js/notifications.js');
+    await import('../js/actions/meetings.js');
+    await import('../js/actions/tasks.js');
+    await import('../js/actions/dragdrop.js');
+    await import('../js/actions/execution.js');
+    await import('../js/actions/calendar.js');
     await import('../js/actions.js');
+    await import('../js/views/dashboard.js');
+    await import('../js/views/meetings.js');
+    await import('../js/views/tasks.js');
+    await import('../js/views/board.js');
+    await import('../js/views/focus.js');
     await import('../js/views.js');
     await import('../js/cloud.js');
     await import('../js/router.js');
+    await import('../js/app/weekly-schedule.js');
+    await import('../js/app/forms.js');
+    await import('../js/app/shortcuts.js');
 
     state = window.TodayTasksState.defaultState();
     state.selectedDate = '2025-01-01';

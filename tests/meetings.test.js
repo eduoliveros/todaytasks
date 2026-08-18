@@ -12,6 +12,11 @@ describe('TodayTasksActions - Reuniones (Simples y Recurrentes)', () => {
 
     await import('../js/utils.js');
     await import('../js/state.js');
+    await import('../js/actions/meetings.js');
+    await import('../js/actions/tasks.js');
+    await import('../js/actions/dragdrop.js');
+    await import('../js/actions/execution.js');
+    await import('../js/actions/calendar.js');
     await import('../js/actions.js');
 
     state = window.TodayTasksState.defaultState();

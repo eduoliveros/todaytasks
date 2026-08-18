@@ -14,6 +14,11 @@ describe('TodayTasksActions - Auto-mover tareas pendientes a Hoy (Rollover)', ()
     await import('../js/utils.js');
     await import('../js/state.js');
     await import('../js/history.js');
+    await import('../js/actions/meetings.js');
+    await import('../js/actions/tasks.js');
+    await import('../js/actions/dragdrop.js');
+    await import('../js/actions/execution.js');
+    await import('../js/actions/calendar.js');
     await import('../js/actions.js');
 
     state = window.TodayTasksState.defaultState();

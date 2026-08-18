@@ -1,0 +1,289 @@
+/* actions/tasks.js — Acciones de tareas (CRUD, edición, recurrencia) */
+(function(){
+  "use strict";
+
+  window._TodayTasksTasks = function(ctx, helpers){
+    const {
+      getState, getTaskEdit, setTaskEdit,
+      saveState, newId, renderAll, smartRender
+    } = ctx;
+    const { nowMinutes, showToast, showRecurringModal } = helpers;
+
+    const DEFAULT_TASK_DURATION = 30;
+
+    function deleteRecurringTaskInstance(ruleId, dateStr) {
+      const state = getState();
+      const envKey = state.activeEnv || "work";
+      const env = state.environments[envKey] || state.environments.work;
+      const rule = (env.recurringTasks || []).find(r => r.id === ruleId);
+      if (rule) {
+        if (!rule.exceptions) rule.exceptions = {};
+        rule.exceptions[dateStr] = { type: "cancelled" };
+      }
+      const dayObj = env.days && env.days[dateStr];
+      if (dayObj && Array.isArray(dayObj.tasks)) {
+        dayObj.tasks = dayObj.tasks.filter(t => t.ruleId !== ruleId);
+      }
+      saveState();
+      renderAll();
+    }
+
+    function deleteRecurringTaskSeries(ruleId) {
+      const state = getState();
+      const envKey = state.activeEnv || "work";
+      const env = state.environments[envKey] || state.environments.work;
+      if (Array.isArray(env.recurringTasks)) {
+        env.recurringTasks = env.recurringTasks.filter(r => r.id !== ruleId);
+      }
+      Object.values(env.days || {}).forEach(dayObj => {
+        if (Array.isArray(dayObj.tasks)) {
+          dayObj.tasks = dayObj.tasks.filter(t => t.ruleId !== ruleId);
+        }
+      });
+      saveState();
+      renderAll();
+    }
+
+    function materializeRecurringTasks() {
+      const state = getState();
+      const envKey = state.activeEnv || "work";
+      const env = state.environments[envKey] || state.environments.work;
+      const dateStr = state.selectedDate || window.TodayTasksUtils.getTodayStr();
+      const recurringTaskRules = Array.isArray(env.recurringTasks) ? env.recurringTasks : [];
+      if (recurringTaskRules.length === 0) return false;
+
+      if (!env.days[dateStr]) {
+        env.days[dateStr] = { meetings: [], tasks: [], interruptions: [], planningMode: false };
+      }
+      const dayObj = env.days[dateStr];
+      if (!Array.isArray(dayObj.tasks)) dayObj.tasks = [];
+
+      let changed = false;
+      recurringTaskRules.forEach(rule => {
+        const matches = window.TodayTasksUtils && window.TodayTasksUtils.matchesRecurrenceRule
+          ? window.TodayTasksUtils.matchesRecurrenceRule(rule, dateStr)
+          : null;
+        if (!matches) return;
+
+        if (rule.exceptions && rule.exceptions[dateStr] && rule.exceptions[dateStr].type === "cancelled") return;
+
+        const alreadyExists = dayObj.tasks.some(t => t.ruleId === rule.id);
+        if (alreadyExists) return;
+
+        const maxOrder = dayObj.tasks.reduce((m, t) => Math.max(m, t.order || 0), 0);
+        dayObj.tasks.push({
+          id: newId(),
+          title: rule.title,
+          planned: rule.planned,
+          order: maxOrder + 1,
+          status: "pending",
+          runningStart: null,
+          elapsedBefore: 0,
+          completedAt: null,
+          actualDuration: null,
+          ruleId: rule.id,
+          isRecurring: true
+        });
+        changed = true;
+      });
+      return changed;
+    }
+
+    function addTask(title, durationStr, toTop = false, recurringData = null, autoMoveToToday = false){
+      if(!title){
+        alert("Indica un título para la tarea.");
+        return;
+      }
+      const state = getState();
+      let planned = parseInt(durationStr, 10);
+      if(!planned || planned <= 0){
+        planned = DEFAULT_TASK_DURATION;
+        showToast(`No indicaste duración: "${title}" se ha añadido con ${DEFAULT_TASK_DURATION} minutos por defecto.`);
+      }
+
+      if (recurringData && recurringData.isRecurring) {
+        if (!Array.isArray(state.recurringTasks)) {
+          state.recurringTasks = [];
+        }
+        const ruleId = "rec_task_" + newId();
+        state.recurringTasks.push({
+          id: ruleId,
+          title,
+          planned,
+          freq: recurringData.freq || "weekly",
+          interval: recurringData.interval || 1,
+          daysOfWeek: recurringData.daysOfWeek || [1],
+          startDate: state.selectedDate || window.TodayTasksUtils.getTodayStr(),
+          endDate: recurringData.endDate || null,
+          exceptions: {}
+        });
+        materializeRecurringTasks();
+        showToast(`Tarea recurrente "${title}" añadida 🔁`);
+      } else {
+        let newOrder;
+        if (toTop) {
+          state.tasks.forEach(t => {
+            t.order = (t.order || 0) + 1;
+          });
+          newOrder = 1;
+        } else {
+          const maxOrder = state.tasks.reduce((m,t)=>Math.max(m,t.order), 0);
+          newOrder = maxOrder + 1;
+        }
+        state.tasks.push({
+          id:newId(), title, planned, order:newOrder,
+          status:"pending", runningStart:null, elapsedBefore:0,
+          completedAt:null, actualDuration:null,
+          autoMoveToToday: !!autoMoveToToday
+        });
+      }
+      saveState();
+      renderAll();
+    }
+
+    function deleteTask(id){
+      const state = getState();
+      const t = state.tasks.find(t => t.id === id);
+
+      if (t && t.ruleId) {
+        const ruleId = t.ruleId;
+        const dateStr = state.selectedDate || window.TodayTasksUtils.getTodayStr();
+        showRecurringModal(
+          `Eliminar "${t.title}" 🔁`,
+          `¿Deseas eliminar solo la tarea del día ${dateStr} o eliminar toda la serie recurrente?`,
+          () => deleteRecurringTaskInstance(ruleId, dateStr),
+          () => deleteRecurringTaskSeries(ruleId)
+        );
+        return;
+      }
+
+      state.tasks = state.tasks.filter(t=>t.id!==id);
+      if(getTaskEdit() && getTaskEdit().id===id) setTaskEdit(null);
+      saveState();
+      renderAll();
+    }
+
+    function startEditTask(id){
+      const state = getState();
+      const t = state.tasks.find(t=>t.id===id);
+      if(!t) return;
+
+      if (t.ruleId) {
+        const ruleId = t.ruleId;
+        const dateStr = state.selectedDate || window.TodayTasksUtils.getTodayStr();
+        showRecurringModal(
+          `Editar "${t.title}" 🔁`,
+          `¿Deseas editar solo la tarea del día ${dateStr} o editar todas las futuras ocurrencias de la serie?`,
+          () => {
+            const actual = window.TodayTasksUtils.getTaskElapsed(t);
+            setTaskEdit({ id, ruleId, mode: "instance", title: t.title, duration: String(t.planned), actual: String(actual) });
+            renderAll();
+          },
+          () => {
+            const actual = window.TodayTasksUtils.getTaskElapsed(t);
+            setTaskEdit({ id, ruleId, mode: "series", title: t.title, duration: String(t.planned), actual: String(actual) });
+            renderAll();
+          }
+        );
+        return;
+      }
+
+      const actual = window.TodayTasksUtils.getTaskElapsed(t);
+      setTaskEdit({id, title:t.title, duration:String(t.planned), actual:String(actual), autoMoveToToday: !!t.autoMoveToToday});
+      renderAll();
+    }
+
+    function updateTaskEditField(field, value){
+      const taskEdit = getTaskEdit();
+      if(taskEdit) taskEdit[field] = value;
+    }
+
+    function cancelEditTask(){
+      setTaskEdit(null);
+      renderAll();
+    }
+
+    function saveEditTask(id){
+      const taskEdit = getTaskEdit();
+      if(!taskEdit || String(taskEdit.id) !== String(id)) return;
+      const state = getState();
+      const t = state.tasks.find(t => String(t.id) === String(id));
+      if(!t) return;
+      const title = (taskEdit.title||"").trim();
+      const planned = parseInt(taskEdit.duration, 10);
+      const actual = Math.round(parseFloat(taskEdit.actual) * 10) / 10;
+      if(!title || !planned || planned <= 0){
+        alert("Indica un título y una duración en minutos mayor que 0.");
+        return;
+      }
+
+      if(!isNaN(actual) && actual >= 0) {
+        if(t.status === "completed") {
+          t.actualDuration = actual;
+        } else {
+          t.elapsedBefore = actual;
+          if (t.status === "running") {
+            t.runningStart = nowMinutes();
+          }
+        }
+      }
+
+      if (taskEdit.autoMoveToToday !== undefined) {
+        t.autoMoveToToday = !!taskEdit.autoMoveToToday;
+      }
+
+      if (taskEdit.mode === "series" && taskEdit.ruleId) {
+        const envKey = state.activeEnv || "work";
+        const env = state.environments[envKey] || state.environments.work;
+        const rule = (env.recurringTasks || []).find(r => String(r.id) === String(taskEdit.ruleId));
+        if (rule) {
+          rule.title = title;
+          rule.planned = planned;
+        }
+      }
+
+      t.title = title; t.planned = planned;
+      setTaskEdit(null);
+      saveState();
+      smartRender ? smartRender() : renderAll();
+    }
+
+    function updateTaskTimeFast(id, actualMin) {
+      const state = getState();
+      const t = state.tasks.find(t => String(t.id) === String(id));
+      if(!t) return;
+      const actual = Math.round(parseFloat(actualMin) * 10) / 10;
+      if(!isNaN(actual) && actual >= 0) {
+        if(t.status === "completed") {
+          t.actualDuration = actual;
+        } else {
+          t.elapsedBefore = actual;
+          if (t.status === "running") {
+            t.runningStart = nowMinutes();
+          }
+        }
+        saveState();
+        smartRender ? smartRender() : renderAll();
+      }
+    }
+
+    function moveTask(id, dir){
+      const state = getState();
+      const list = state.tasks.filter(t=>t.status==="pending"||t.status==="paused")
+                               .sort((a,b)=>a.order-b.order);
+      const idx = list.findIndex(t=>t.id===id);
+      const swapIdx = idx + dir;
+      if(idx<0 || swapIdx<0 || swapIdx>=list.length) return;
+      const a = list[idx], b = list[swapIdx];
+      const tmp = a.order; a.order = b.order; b.order = tmp;
+      saveState();
+      renderAll();
+    }
+
+    return {
+      materializeRecurringTasks,
+      addTask, deleteTask, startEditTask, updateTaskEditField,
+      cancelEditTask, saveEditTask, updateTaskTimeFast, moveTask
+    };
+  };
+})();

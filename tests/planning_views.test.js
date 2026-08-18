@@ -26,6 +26,11 @@ describe('Planning Views - renderBoard & renderSummary chronological ordering', 
     await import('../js/utils.js');
     await import('../js/state.js');
     await import('../js/scheduler.js');
+    await import('../js/views/dashboard.js');
+    await import('../js/views/meetings.js');
+    await import('../js/views/tasks.js');
+    await import('../js/views/board.js');
+    await import('../js/views/focus.js');
     await import('../js/views.js');
 
     state = window.TodayTasksState.defaultState();
