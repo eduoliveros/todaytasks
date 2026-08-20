@@ -1,281 +1,301 @@
-(function () {
-  const { getTodayStr } = window.TodayTasksUtils;
+import { getTodayStr, getScheduleForDate, matchesRecurrenceRule } from './utils.js';
+import { snapshotAndPrune } from './history.js';
 
-  function defaultDayState(envKey) {
-    return {
-      meetings: [],
-      tasks: [],
-      interruptions: [],
-      planningMode: false
-    };
+function getToday() {
+  return (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.getTodayStr)
+    ? window.TodayTasksUtils.getTodayStr()
+    : getTodayStr();
+}
+
+export function defaultDayState(envKey) {
+  return {
+    meetings: [],
+    tasks: [],
+    interruptions: [],
+    planningMode: false
+  };
+}
+
+export function defaultEnvState(envKey) {
+  const today = getToday();
+  const isPersonal = envKey === "personal";
+  return {
+    name: isPersonal ? "Personal" : "Trabajo",
+    weeklySchedule: null,
+    days: {
+      [today]: defaultDayState(envKey)
+    },
+    history: [],
+    recurringMeetings: [],
+    recurringTasks: [],
+    activeInterruption: null
+  };
+}
+
+export function defaultState() {
+  const today = getToday();
+  const raw = {
+    activeEnv: "work",
+    selectedDate: today,
+    environments: {
+      work: defaultEnvState("work"),
+      personal: defaultEnvState("personal")
+    },
+    notifyIntervalMin: 10,
+    notifyEnabled: true,
+    themeMode: "auto",
+    nextId: 1
+  };
+  return wrapState(raw);
+}
+
+export function wrapState(rawState) {
+  if (!rawState || typeof rawState !== "object") {
+    rawState = {};
   }
 
-  function defaultEnvState(envKey) {
-    const today = getTodayStr();
-    const isPersonal = envKey === "personal";
-    return {
-      name: isPersonal ? "Personal" : "Trabajo",
-      weeklySchedule: null,
-      days: {
-        [today]: defaultDayState(envKey)
-      },
-      history: [],
-      recurringMeetings: [],
-      recurringTasks: [],
-      activeInterruption: null
-    };
+  const today = getToday();
+
+  if (typeof rawState.selectedDate !== "string" || !rawState.selectedDate) {
+    rawState.selectedDate = today;
   }
 
-  function defaultState() {
-    const today = getTodayStr();
-    const raw = {
-      activeEnv: "work",
-      selectedDate: today,
-      environments: {
-        work: defaultEnvState("work"),
-        personal: defaultEnvState("personal")
-      },
-      notifyIntervalMin: 10,
-      notifyEnabled: true,
-      themeMode: "auto",
-      nextId: 1
-    };
-    return wrapState(raw);
+  if (typeof rawState.activeEnv !== "string" || !["work", "personal"].includes(rawState.activeEnv)) {
+    rawState.activeEnv = "work";
   }
 
-  function wrapState(rawState) {
-    if (!rawState || typeof rawState !== "object") {
-      rawState = {};
-    }
+  if (!rawState.environments || typeof rawState.environments !== "object") {
+    // Legacy migration from single environment without days map
+    const workEnv = defaultEnvState("work");
+    workEnv.days[today] = {
+      workStart: typeof rawState.workStart === "number" ? rawState.workStart : 9 * 60,
+      workEnd: typeof rawState.workEnd === "number" ? rawState.workEnd : 18 * 60,
+      meetings: Array.isArray(rawState.meetings) ? rawState.meetings : [],
+      tasks: Array.isArray(rawState.tasks) ? rawState.tasks : [],
+      interruptions: Array.isArray(rawState.interruptions) ? rawState.interruptions : [],
+      planningMode: typeof rawState.planningMode === "boolean" ? rawState.planningMode : false
+    };
+    workEnv.activeInterruption = rawState.activeInterruption || null;
 
-    const today = getTodayStr();
+    rawState.environments = {
+      work: workEnv,
+      personal: defaultEnvState("personal")
+    };
 
-    if (typeof rawState.selectedDate !== "string" || !rawState.selectedDate) {
-      rawState.selectedDate = today;
-    }
+    delete rawState.workStart;
+    delete rawState.workEnd;
+    delete rawState.meetings;
+    delete rawState.tasks;
+    delete rawState.interruptions;
+    delete rawState.activeInterruption;
+    delete rawState.planningMode;
+  } else {
+    ["work", "personal"].forEach(key => {
+      if (!rawState.environments[key] || typeof rawState.environments[key] !== "object") {
+        rawState.environments[key] = defaultEnvState(key);
+      } else {
+        const env = rawState.environments[key];
 
-    if (typeof rawState.activeEnv !== "string" || !["work", "personal"].includes(rawState.activeEnv)) {
-      rawState.activeEnv = "work";
-    }
+        // Legacy migration if env has top-level meetings/tasks instead of days map
+        if (!env.days || typeof env.days !== "object") {
+          const dayData = {
+            workStart: typeof env.workStart === "number" ? env.workStart : (key === "personal" ? 18 * 60 : 9 * 60),
+            workEnd: typeof env.workEnd === "number" ? env.workEnd : (key === "personal" ? 23 * 60 : 18 * 60),
+            meetings: Array.isArray(env.meetings) ? env.meetings : [],
+            tasks: Array.isArray(env.tasks) ? env.tasks : [],
+            interruptions: Array.isArray(env.interruptions) ? env.interruptions : [],
+            planningMode: typeof env.planningMode === "boolean" ? env.planningMode : false
+          };
+          env.days = { [today]: dayData };
 
-    if (!rawState.environments || typeof rawState.environments !== "object") {
-      // Legacy migration from single environment without days map
-      const workEnv = defaultEnvState("work");
-      workEnv.days[today] = {
-        workStart: typeof rawState.workStart === "number" ? rawState.workStart : 9 * 60,
-        workEnd: typeof rawState.workEnd === "number" ? rawState.workEnd : 18 * 60,
-        meetings: Array.isArray(rawState.meetings) ? rawState.meetings : [],
-        tasks: Array.isArray(rawState.tasks) ? rawState.tasks : [],
-        interruptions: Array.isArray(rawState.interruptions) ? rawState.interruptions : [],
-        planningMode: typeof rawState.planningMode === "boolean" ? rawState.planningMode : false
-      };
-      workEnv.activeInterruption = rawState.activeInterruption || null;
+          delete env.workStart;
+          delete env.workEnd;
+          delete env.meetings;
+          delete env.tasks;
+          delete env.interruptions;
+          delete env.planningMode;
+        }
 
-      rawState.environments = {
-        work: workEnv,
-        personal: defaultEnvState("personal")
-      };
+        if (!Array.isArray(env.history)) env.history = [];
+        if (!Array.isArray(env.recurringMeetings)) env.recurringMeetings = [];
+        if (!Array.isArray(env.recurringTasks)) env.recurringTasks = [];
+        if (env.activeInterruption === undefined) env.activeInterruption = null;
+        if (!("weeklySchedule" in env)) env.weeklySchedule = null;
 
-      delete rawState.workStart;
-      delete rawState.workEnd;
-      delete rawState.meetings;
-      delete rawState.tasks;
-      delete rawState.interruptions;
-      delete rawState.activeInterruption;
-      delete rawState.planningMode;
-    } else {
-      ["work", "personal"].forEach(key => {
-        if (!rawState.environments[key] || typeof rawState.environments[key] !== "object") {
-          rawState.environments[key] = defaultEnvState(key);
-        } else {
-          const env = rawState.environments[key];
-
-          // Legacy migration if env has top-level meetings/tasks instead of days map
-          if (!env.days || typeof env.days !== "object") {
-            const dayData = {
-              workStart: typeof env.workStart === "number" ? env.workStart : (key === "personal" ? 18 * 60 : 9 * 60),
-              workEnd: typeof env.workEnd === "number" ? env.workEnd : (key === "personal" ? 23 * 60 : 18 * 60),
-              meetings: Array.isArray(env.meetings) ? env.meetings : [],
-              tasks: Array.isArray(env.tasks) ? env.tasks : [],
-              interruptions: Array.isArray(env.interruptions) ? env.interruptions : [],
-              planningMode: typeof env.planningMode === "boolean" ? env.planningMode : false
-            };
-            env.days = { [today]: dayData };
-
-            delete env.workStart;
-            delete env.workEnd;
-            delete env.meetings;
-            delete env.tasks;
-            delete env.interruptions;
-            delete env.planningMode;
+        // Ensure each day in env.days is guarded
+        Object.keys(env.days).forEach(d => {
+          const dayObj = env.days[d];
+          if (!dayObj || typeof dayObj !== "object") {
+            env.days[d] = defaultDayState(key);
+          } else {
+            if (!Array.isArray(dayObj.meetings)) dayObj.meetings = [];
+            if (!Array.isArray(dayObj.tasks)) dayObj.tasks = [];
+            if (!Array.isArray(dayObj.interruptions)) dayObj.interruptions = [];
+            if (typeof dayObj.planningMode !== "boolean") dayObj.planningMode = false;
           }
-
-          if (!Array.isArray(env.history)) env.history = [];
-          if (!Array.isArray(env.recurringMeetings)) env.recurringMeetings = [];
-          if (!Array.isArray(env.recurringTasks)) env.recurringTasks = [];
-          if (env.activeInterruption === undefined) env.activeInterruption = null;
-          if (!("weeklySchedule" in env)) env.weeklySchedule = null;
-
-          // Ensure each day in env.days is guarded
-          Object.keys(env.days).forEach(d => {
-            const dayObj = env.days[d];
-            if (!dayObj || typeof dayObj !== "object") {
-              env.days[d] = defaultDayState(key);
-            } else {
-              if (!Array.isArray(dayObj.meetings)) dayObj.meetings = [];
-              if (!Array.isArray(dayObj.tasks)) dayObj.tasks = [];
-              if (!Array.isArray(dayObj.interruptions)) dayObj.interruptions = [];
-              if (typeof dayObj.planningMode !== "boolean") dayObj.planningMode = false;
-            }
-          });
-        }
-      });
-    }
-
-    if (typeof rawState.notifyIntervalMin !== "number" || rawState.notifyIntervalMin <= 0) {
-      rawState.notifyIntervalMin = 10;
-    }
-    if (typeof rawState.notifyEnabled !== "boolean") {
-      rawState.notifyEnabled = true;
-    }
-    if (!["auto", "light", "dark"].includes(rawState.themeMode)) {
-      rawState.themeMode = "auto";
-    }
-    if (typeof rawState.nextId !== "number" || rawState.nextId < 1) {
-      rawState.nextId = 1;
-    }
-
-    // Dynamic non-enumerable getters/setters for active env and selected date day properties
-    function getActiveDayObj() {
-      const envKey = rawState.activeEnv || "work";
-      const env = rawState.environments[envKey] || rawState.environments.work;
-      const dateStr = rawState.selectedDate || today;
-      if (!env.days[dateStr]) {
-        env.days[dateStr] = defaultDayState(envKey);
-      }
-      return env.days[dateStr];
-    }
-
-    function getActiveEnvObj() {
-      const envKey = rawState.activeEnv || "work";
-      return rawState.environments[envKey] || rawState.environments.work;
-    }
-
-    function getEffectiveMeetings() {
-      const dayObj = getActiveDayObj();
-      const envObj = getActiveEnvObj();
-      const dateStr = rawState.selectedDate || today;
-
-      const singleMeetings = Array.isArray(dayObj.meetings) ? dayObj.meetings : [];
-      const recurringRules = Array.isArray(envObj.recurringMeetings) ? envObj.recurringMeetings : [];
-
-      const hydratedRecurring = [];
-      recurringRules.forEach(rule => {
-        const match = window.TodayTasksUtils && window.TodayTasksUtils.matchesRecurrenceRule
-          ? window.TodayTasksUtils.matchesRecurrenceRule(rule, dateStr)
-          : null;
-        if (match) {
-          hydratedRecurring.push(match);
-        }
-      });
-
-      const combined = [...singleMeetings, ...hydratedRecurring];
-      combined.sort((a, b) => a.start - b.start);
-      return combined;
-    }
-
-    ["workStart", "workEnd"].forEach(prop => {
-      if (!Object.prototype.hasOwnProperty.call(rawState, prop)) {
-        Object.defineProperty(rawState, prop, {
-          get() {
-            const dayObj = getActiveDayObj();
-            if (dayObj.hasCustomHours && dayObj[prop] !== undefined) {
-              return dayObj[prop];
-            }
-            const envKey = rawState.activeEnv || "work";
-            const dateStr = rawState.selectedDate || today;
-            if (window.TodayTasksUtils && window.TodayTasksUtils.getScheduleForDate) {
-              const sched = window.TodayTasksUtils.getScheduleForDate(rawState, envKey, dateStr);
-              return prop === "workStart" ? sched.start : sched.end;
-            }
-            return dayObj[prop] !== undefined ? dayObj[prop] : null;
-          },
-          set(val) {
-            const dayObj = getActiveDayObj();
-            if (val !== null && val !== undefined && val !== "") {
-              dayObj.hasCustomHours = true;
-              dayObj[prop] = val;
-            } else {
-              dayObj.hasCustomHours = false;
-              delete dayObj[prop];
-            }
-          },
-          enumerable: false,
-          configurable: true
         });
       }
     });
-
-    ["tasks", "interruptions", "planningMode"].forEach(prop => {
-      if (!Object.prototype.hasOwnProperty.call(rawState, prop)) {
-        Object.defineProperty(rawState, prop, {
-          get() {
-            return getActiveDayObj()[prop];
-          },
-          set(val) {
-            getActiveDayObj()[prop] = val;
-          },
-          enumerable: false,
-          configurable: true
-        });
-      }
-    });
-
-    Object.defineProperty(rawState, "meetings", {
-      get() {
-        return getEffectiveMeetings();
-      },
-      set(val) {
-        getActiveDayObj().meetings = val;
-      },
-      enumerable: false,
-      configurable: true
-    });
-
-    const envPropNames = ["activeInterruption", "history", "recurringMeetings", "recurringTasks"];
-    envPropNames.forEach(prop => {
-      if (!Object.prototype.hasOwnProperty.call(rawState, prop)) {
-        Object.defineProperty(rawState, prop, {
-          get() {
-            return getActiveEnvObj()[prop];
-          },
-          set(val) {
-            getActiveEnvObj()[prop] = val;
-          },
-          enumerable: false,
-          configurable: true
-        });
-      }
-    });
-
-    if (window.TodayTasksHistory && window.TodayTasksHistory.snapshotAndPrune) {
-      window.TodayTasksHistory.snapshotAndPrune(rawState);
-    }
-
-    return rawState;
   }
 
-  function loadState(storageKey) {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (!raw) return defaultState();
-      const parsed = JSON.parse(raw);
-      return wrapState(parsed);
-    } catch (e) {
-      console.error("No se pudo leer el estado guardado", e);
-      return defaultState();
-    }
+  if (typeof rawState.notifyIntervalMin !== "number" || rawState.notifyIntervalMin <= 0) {
+    rawState.notifyIntervalMin = 10;
+  }
+  if (typeof rawState.notifyEnabled !== "boolean") {
+    rawState.notifyEnabled = true;
+  }
+  if (!["auto", "light", "dark"].includes(rawState.themeMode)) {
+    rawState.themeMode = "auto";
+  }
+  if (typeof rawState.nextId !== "number" || rawState.nextId < 1) {
+    rawState.nextId = 1;
   }
 
-  window.TodayTasksState = { defaultState, wrapState, loadState, defaultDayState };
-})();
+  // Dynamic non-enumerable getters/setters for active env and selected date day properties
+  function getActiveDayObj() {
+    const envKey = rawState.activeEnv || "work";
+    const env = rawState.environments[envKey] || rawState.environments.work;
+    const dateStr = rawState.selectedDate || today;
+    if (!env.days[dateStr]) {
+      env.days[dateStr] = defaultDayState(envKey);
+    }
+    return env.days[dateStr];
+  }
+
+  function getActiveEnvObj() {
+    const envKey = rawState.activeEnv || "work";
+    return rawState.environments[envKey] || rawState.environments.work;
+  }
+
+  function getEffectiveMeetings() {
+    const dayObj = getActiveDayObj();
+    const envObj = getActiveEnvObj();
+    const dateStr = rawState.selectedDate || today;
+
+    const singleMeetings = Array.isArray(dayObj.meetings) ? dayObj.meetings : [];
+    const recurringRules = Array.isArray(envObj.recurringMeetings) ? envObj.recurringMeetings : [];
+
+    const hydratedRecurring = [];
+    const matchFn = (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.matchesRecurrenceRule)
+      ? window.TodayTasksUtils.matchesRecurrenceRule
+      : matchesRecurrenceRule;
+
+    recurringRules.forEach(rule => {
+      const match = matchFn ? matchFn(rule, dateStr) : null;
+      if (match) {
+        hydratedRecurring.push(match);
+      }
+    });
+
+    const combined = [...singleMeetings, ...hydratedRecurring];
+    combined.sort((a, b) => a.start - b.start);
+    return combined;
+  }
+
+  ["workStart", "workEnd"].forEach(prop => {
+    if (!Object.prototype.hasOwnProperty.call(rawState, prop)) {
+      Object.defineProperty(rawState, prop, {
+        get() {
+          const dayObj = getActiveDayObj();
+          if (dayObj.hasCustomHours && dayObj[prop] !== undefined) {
+            return dayObj[prop];
+          }
+          const envKey = rawState.activeEnv || "work";
+          const dateStr = rawState.selectedDate || today;
+          const schedFn = (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.getScheduleForDate)
+            ? window.TodayTasksUtils.getScheduleForDate
+            : getScheduleForDate;
+          if (schedFn) {
+            const sched = schedFn(rawState, envKey, dateStr);
+            return prop === "workStart" ? sched.start : sched.end;
+          }
+          return dayObj[prop] !== undefined ? dayObj[prop] : null;
+        },
+        set(val) {
+          const dayObj = getActiveDayObj();
+          if (val !== null && val !== undefined && val !== "") {
+            dayObj.hasCustomHours = true;
+            dayObj[prop] = val;
+          } else {
+            dayObj.hasCustomHours = false;
+            delete dayObj[prop];
+          }
+        },
+        enumerable: false,
+        configurable: true
+      });
+    }
+  });
+
+  ["tasks", "interruptions", "planningMode"].forEach(prop => {
+    if (!Object.prototype.hasOwnProperty.call(rawState, prop)) {
+      Object.defineProperty(rawState, prop, {
+        get() {
+          return getActiveDayObj()[prop];
+        },
+        set(val) {
+          getActiveDayObj()[prop] = val;
+        },
+        enumerable: false,
+        configurable: true
+      });
+    }
+  });
+
+  Object.defineProperty(rawState, "meetings", {
+    get() {
+      return getEffectiveMeetings();
+    },
+    set(val) {
+      getActiveDayObj().meetings = val;
+    },
+    enumerable: false,
+    configurable: true
+  });
+
+  const envPropNames = ["activeInterruption", "history", "recurringMeetings", "recurringTasks"];
+  envPropNames.forEach(prop => {
+    if (!Object.prototype.hasOwnProperty.call(rawState, prop)) {
+      Object.defineProperty(rawState, prop, {
+        get() {
+          return getActiveEnvObj()[prop];
+        },
+        set(val) {
+          getActiveEnvObj()[prop] = val;
+        },
+        enumerable: false,
+        configurable: true
+      });
+    }
+  });
+
+  const pruneFn = (typeof window !== "undefined" && window.TodayTasksHistory && window.TodayTasksHistory.snapshotAndPrune)
+    ? window.TodayTasksHistory.snapshotAndPrune
+    : snapshotAndPrune;
+  if (pruneFn) {
+    pruneFn(rawState);
+  }
+
+  return rawState;
+}
+
+export function loadState(storageKey) {
+  try {
+    const raw = typeof localStorage !== "undefined" ? localStorage.getItem(storageKey) : null;
+    if (!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+    return wrapState(parsed);
+  } catch (e) {
+    console.error("No se pudo leer el estado guardado", e);
+    return defaultState();
+  }
+}
+
+export const TodayTasksState = { defaultState, wrapState, loadState, defaultDayState, defaultEnvState };
+
+if (typeof window !== "undefined") {
+  window.TodayTasksState = TodayTasksState;
+}
+
+export default TodayTasksState;
+

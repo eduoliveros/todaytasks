@@ -1,14 +1,17 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import * as utils from '../js/utils.js';
+import { TodayTasksUtils } from '../js/utils.js';
 
-describe('TodayTasksUtils', () => {
-  beforeEach(async () => {
-    // Cargar el script js/utils.js en el contexto de jsdom
-    await import('../js/utils.js');
+describe('TodayTasksUtils (ES Module & Global bridge)', () => {
+  it('exporta correctamente tanto funciones nombradas como objeto consolidado y window.TodayTasksUtils', () => {
+    expect(TodayTasksUtils).toBeDefined();
+    expect(utils.nowMinutes).toBeDefined();
+    expect(window.TodayTasksUtils).toBeDefined();
+    expect(window.TodayTasksUtils.nowMinutes).toBe(utils.nowMinutes);
   });
 
   describe('timeToMinutes & fmt', () => {
     it('convierte cadenas "HH:MM" a minutos correctamente', () => {
-      const utils = window.TodayTasksUtils;
       expect(utils.timeToMinutes('09:30')).toBe(570);
       expect(utils.timeToMinutes('00:00')).toBe(0);
       expect(utils.timeToMinutes('18:45')).toBe(1125);
@@ -17,7 +20,6 @@ describe('TodayTasksUtils', () => {
     });
 
     it('formatea minutos a cadena "HH:MM"', () => {
-      const utils = window.TodayTasksUtils;
       expect(utils.fmt(570)).toBe('09:30');
       expect(utils.fmt(0)).toBe('00:00');
       expect(utils.fmt(1125)).toBe('18:45');
@@ -27,7 +29,6 @@ describe('TodayTasksUtils', () => {
 
   describe('fmtDur', () => {
     it('formatea duraciones en formato legible', () => {
-      const utils = window.TodayTasksUtils;
       expect(utils.fmtDur(30)).toBe('30 min');
       expect(utils.fmtDur(60)).toBe('1h ');
       expect(utils.fmtDur(90)).toBe('1h 30min');
@@ -37,14 +38,12 @@ describe('TodayTasksUtils', () => {
 
   describe('fmtRemaining', () => {
     it('calcula correctamente el tiempo restante sin overrun', () => {
-      const utils = window.TodayTasksUtils;
       const res = utils.fmtRemaining(600, 540); // queda 60 min
       expect(res.overrun).toBe(false);
       expect(res.text).toBe('quedan 1h ');
     });
 
     it('identifica y formatea el tiempo excedido (overrun)', () => {
-      const utils = window.TodayTasksUtils;
       const res = utils.fmtRemaining(540, 560); // 20 min tarde
       expect(res.overrun).toBe(true);
       expect(res.text).toBe('excedida 20 min');
@@ -53,19 +52,16 @@ describe('TodayTasksUtils', () => {
 
   describe('Operaciones con fechas (addDays, diffDays, getDayOfWeek)', () => {
     it('añade días a una fecha', () => {
-      const utils = window.TodayTasksUtils;
       expect(utils.addDays('2026-08-05', 1)).toBe('2026-08-06');
       expect(utils.addDays('2026-08-31', 1)).toBe('2026-09-01');
     });
 
     it('calcula diferencia en días entre dos fechas', () => {
-      const utils = window.TodayTasksUtils;
       expect(utils.diffDays('2026-08-10', '2026-08-05')).toBe(5);
       expect(utils.diffDays('2026-08-05', '2026-08-10')).toBe(-5);
     });
 
     it('devuelve el día de la semana (1=Lunes ... 7=Domingo)', () => {
-      const utils = window.TodayTasksUtils;
       // 2026-08-05 es Miércoles (3)
       expect(utils.getDayOfWeek('2026-08-05')).toBe(3);
       // 2026-08-09 es Domingo (7)
@@ -75,7 +71,6 @@ describe('TodayTasksUtils', () => {
 
   describe('Reglas de recurrencia (matchesRecurrenceRule)', () => {
     it('coincide correctamente con regla semanal', () => {
-      const utils = window.TodayTasksUtils;
       const rule = {
         id: 'rec-1',
         title: 'Reunión Semanal',
@@ -100,7 +95,6 @@ describe('TodayTasksUtils', () => {
 
   describe('Cálculo de espacio del día ocupado por reuniones (computeOccupiedMeetingTime)', () => {
     it('calcula 1h (60 min) cuando hay dos reuniones solapadas de 10:00 a 11:00 en lugar de sumar 2h', () => {
-      const utils = window.TodayTasksUtils;
       const meetings = [
         { id: 1, title: 'Reunión A', start: 600, end: 660 }, // 10:00 - 11:00
         { id: 2, title: 'Reunión B', start: 600, end: 660 }  // 10:00 - 11:00
@@ -109,7 +103,6 @@ describe('TodayTasksUtils', () => {
     });
 
     it('combina correctamente reuniones parcialmente solapadas', () => {
-      const utils = window.TodayTasksUtils;
       const meetings = [
         { id: 1, title: 'Reunión 1', start: 600, end: 690 }, // 10:00 - 11:30 (90 min)
         { id: 2, title: 'Reunión 2', start: 660, end: 720 }  // 11:00 - 12:00 (60 min)
@@ -119,7 +112,6 @@ describe('TodayTasksUtils', () => {
     });
 
     it('suma correctamente reuniones disjuntas y maneja reuniones completamente contenidas', () => {
-      const utils = window.TodayTasksUtils;
       const meetings = [
         { id: 1, title: 'Grande', start: 600, end: 720 },  // 10:00 - 12:00
         { id: 2, title: 'Dentro', start: 630, end: 660 },  // 10:30 - 11:00
@@ -130,3 +122,4 @@ describe('TodayTasksUtils', () => {
     });
   });
 });
+

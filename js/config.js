@@ -1,4 +1,4 @@
-window.TodayTasksConfig = {
+export const TodayTasksConfig = {
   storageKey: "tablero-dia-v1",
   firebase: {
     apiKey: "AIzaSyDwRdTjHp5E1U7bO5nIr7J9UyjuRvRo9fo",
@@ -9,4 +9,11 @@ window.TodayTasksConfig = {
     appId: "1:428737613419:web:9deeed94247f31ed94eb2e"
   }
 };
+
+if (typeof window !== "undefined") {
+  window.TodayTasksConfig = TodayTasksConfig;
+}
+
+export default TodayTasksConfig;
+
 

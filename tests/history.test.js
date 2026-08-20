@@ -1,11 +1,19 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import * as history from '../js/history.js';
+import { TodayTasksHistory, computeMetricsFromDay, snapshotAndPrune, saveHistoryMetric, deleteHistoryMetric } from '../js/history.js';
+import { addDays, getTodayStr } from '../js/utils.js';
 
-describe('TodayTasksHistory - Histórico y Métricas', () => {
+describe('TodayTasksHistory - Histórico y Métricas (ES Module & Global bridge)', () => {
   beforeEach(async () => {
     window.TodayTasksUi = { escapeHtml: (s) => s, escapeAttr: (s) => s };
-    await import('../js/utils.js');
-    await import('../js/history.js');
     await import('../js/state.js');
+  });
+
+  it('exporta correctamente tanto funciones nombradas como objeto consolidado y window.TodayTasksHistory', () => {
+    expect(TodayTasksHistory).toBeDefined();
+    expect(computeMetricsFromDay).toBeDefined();
+    expect(window.TodayTasksHistory).toBeDefined();
+    expect(window.TodayTasksHistory.computeMetricsFromDay).toBe(computeMetricsFromDay);
   });
 
   describe('computeMetricsFromDay', () => {
@@ -24,7 +32,7 @@ describe('TodayTasksHistory - Histórico y Métricas', () => {
         ]
       };
 
-      const metrics = window.TodayTasksHistory.computeMetricsFromDay(dayData);
+      const metrics = computeMetricsFromDay(dayData);
 
       expect(metrics.meetingsTime).toBe(60);
       expect(metrics.completedTasksTime).toBe(75); // 45 + 30
@@ -44,7 +52,7 @@ describe('TodayTasksHistory - Histórico y Métricas', () => {
         interruptions: []
       };
 
-      const metrics = window.TodayTasksHistory.computeMetricsFromDay(dayData);
+      const metrics = computeMetricsFromDay(dayData);
 
       // Debe calcular 60 min ocupados, no 120 min
       expect(metrics.meetingsTime).toBe(60);
@@ -52,7 +60,7 @@ describe('TodayTasksHistory - Histórico y Métricas', () => {
     });
 
     it('devuelve valores en 0 para días vacíos o nulos', () => {
-      const metrics = window.TodayTasksHistory.computeMetricsFromDay(null);
+      const metrics = computeMetricsFromDay(null);
       expect(metrics.meetingsTime).toBe(0);
       expect(metrics.effectiveTime).toBe(0);
     });
@@ -73,7 +81,7 @@ describe('TodayTasksHistory - Histórico y Métricas', () => {
         });
       }
 
-      window.TodayTasksHistory.snapshotAndPrune(state);
+      snapshotAndPrune(state);
 
       // Debe podar a máximo 40 días
       expect(env.history.length).toBe(40);
@@ -81,16 +89,16 @@ describe('TodayTasksHistory - Histórico y Métricas', () => {
 
     it('poda el detalle de días de tareas/reuniones de hace más de 10 días', () => {
       const state = window.TodayTasksState.defaultState();
-      const todayStr = window.TodayTasksUtils.getTodayStr();
+      const todayStr = getTodayStr();
       const env = state.environments.work;
 
-      const dateRecent = window.TodayTasksUtils.addDays(todayStr, -5);
-      const dateOld = window.TodayTasksUtils.addDays(todayStr, -12);
+      const dateRecent = addDays(todayStr, -5);
+      const dateOld = addDays(todayStr, -12);
 
       env.days[dateRecent] = { meetings: [], tasks: [] };
       env.days[dateOld] = { meetings: [], tasks: [] };
 
-      window.TodayTasksHistory.snapshotAndPrune(state);
+      snapshotAndPrune(state);
 
       expect(env.days[dateRecent]).toBeDefined();
       expect(env.days[dateOld]).toBeUndefined(); // Se eliminó por antigüedad > 10 días
@@ -102,7 +110,7 @@ describe('TodayTasksHistory - Histórico y Métricas', () => {
       const state = window.TodayTasksState.defaultState();
       const testDate = '2026-08-01';
 
-      window.TodayTasksHistory.saveHistoryMetric(state, testDate, {
+      saveHistoryMetric(state, testDate, {
         meetingsTime: 60,
         completedTasksTime: 120,
         uncompletedTasksWorkedTime: 30,
@@ -123,12 +131,12 @@ describe('TodayTasksHistory - Histórico y Métricas', () => {
       const state = window.TodayTasksState.defaultState();
       const testDate = '2026-08-01';
 
-      window.TodayTasksHistory.saveHistoryMetric(state, testDate, {
+      saveHistoryMetric(state, testDate, {
         meetingsTime: 60,
         completedTasksTime: 60
       });
 
-      window.TodayTasksHistory.deleteHistoryMetric(state, testDate);
+      deleteHistoryMetric(state, testDate);
 
       const env = state.environments.work;
       const entry = env.history.find(h => h.date === testDate);
@@ -136,3 +144,4 @@ describe('TodayTasksHistory - Histórico y Métricas', () => {
     });
   });
 });
+

@@ -6,7 +6,7 @@
 <title>Tablero del día · Planificador</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=1.50">
+<link rel="stylesheet" href="css/styles.css?v=1.60">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="icon" type="image/png" href="icon.png">
 <link rel="icon" type="image/jpeg" href="icon.jpg">
@@ -18,7 +18,7 @@
   <!-- Barra superior: logo + switcher + pestañas -->
   <div class="topbar-title-row">
     <div class="brand">
-      <h1>Tablero del día <span class="app-version">v1.56</span></h1>
+      <h1>Tablero del día <span class="app-version">v1.60</span></h1>
       <span class="db-status-badge" id="appModeLabel" title="Tipo de base de datos en uso">💾 local · persistente</span>
       <div class="env-switcher" id="envSwitcher">
         <button class="env-btn active" data-env="work" id="envBtnWork" title="Cambiar a ambiente de Trabajo (Tecla 'E')">
@@ -353,33 +353,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-<script src="js/config.js?v=1.56"></script>
-<script src="js/utils.js?v=1.56"></script>
-<script src="js/history.js?v=1.56"></script>
-<script src="js/state.js?v=1.56"></script>
-<script src="js/scheduler.js?v=1.56"></script>
-<script src="js/ui.js?v=1.56"></script>
-<script src="js/notifications.js?v=1.56"></script>
-<!-- actions sub-modules (deben cargarse antes del coordinador) -->
-<script src="js/actions/meetings.js?v=1.56"></script>
-<script src="js/actions/tasks.js?v=1.56"></script>
-<script src="js/actions/dragdrop.js?v=1.56"></script>
-<script src="js/actions/execution.js?v=1.56"></script>
-<script src="js/actions/calendar.js?v=1.56"></script>
-<script src="js/actions.js?v=1.56"></script>
-<!-- views sub-modules (deben cargarse antes del coordinador) -->
-<script src="js/views/dashboard.js?v=1.56"></script>
-<script src="js/views/meetings.js?v=1.56"></script>
-<script src="js/views/tasks.js?v=1.56"></script>
-<script src="js/views/board.js?v=1.56"></script>
-<script src="js/views/focus.js?v=1.56"></script>
-<script src="js/views.js?v=1.56"></script>
-<script src="js/cloud.js?v=1.56"></script>
-<script src="js/router.js?v=1.56"></script>
-<!-- app sub-modules (deben cargarse antes del coordinador) -->
-<script src="js/app/weekly-schedule.js?v=1.56"></script>
-<script src="js/app/forms.js?v=1.56"></script>
-<script src="js/app/shortcuts.js?v=1.56"></script>
-<script src="js/app.js?v=1.56"></script>
+<script type="module" src="js/app.js?v=1.60"></script>
 </body>
 </html>
+

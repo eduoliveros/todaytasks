@@ -1,18 +1,26 @@
-(function(){
-  "use strict";
+/* cloud.js — Firebase Cloud sync, autenticación y backup/restore */
+import { escapeHtml, escapeAttr, showToast } from './ui.js';
+import { defaultState, wrapState } from './state.js';
+import TodayTasksConfig from './config.js';
 
-  const { escapeHtml, escapeAttr, showToast } = window.TodayTasksUi;
-  const { defaultState, wrapState } = window.TodayTasksState;
+export function TodayTasksCloud(ctx){
+  const {
+    getState, setState, setMeetingEdit, setTaskEdit, saveState,
+    STORAGE_KEY, syncFormInputsFromState, renderAll
+  } = ctx;
 
-  window.TodayTasksCloud = function(ctx){
-    const {
-      getState, setState, setMeetingEdit, setTaskEdit, saveState,
-      STORAGE_KEY, syncFormInputsFromState, renderAll
-    } = ctx;
+  const _escapeHtml = (s) => (window.TodayTasksUi && window.TodayTasksUi.escapeHtml) ? window.TodayTasksUi.escapeHtml(s) : escapeHtml(s);
+  const _escapeAttr = (s) => (window.TodayTasksUi && window.TodayTasksUi.escapeAttr) ? window.TodayTasksUi.escapeAttr(s) : escapeAttr(s);
+  const _showToast = (s) => (window.TodayTasksUi && window.TodayTasksUi.showToast) ? window.TodayTasksUi.showToast(s) : showToast(s);
+  const _wrapState = (s) => (window.TodayTasksState && window.TodayTasksState.wrapState) ? window.TodayTasksState.wrapState(s) : wrapState(s);
+  const _defaultState = () => (window.TodayTasksState && window.TodayTasksState.defaultState) ? window.TodayTasksState.defaultState() : defaultState();
 
-    const firebaseConfig = window.TodayTasksConfig.firebase;
-    let fbAuth = null, fbDb = null, currentUser = null, cloudUnsubscribe = null;
-    let applyingRemoteUpdate = false;
+  const firebaseConfig = (window.TodayTasksConfig && window.TodayTasksConfig.firebase)
+    ? window.TodayTasksConfig.firebase
+    : (TodayTasksConfig && TodayTasksConfig.firebase);
+  let fbAuth = null, fbDb = null, currentUser = null, cloudUnsubscribe = null;
+  let applyingRemoteUpdate = false;
+
 
     function cloudDocRef(uid){
       return fbDb.collection("tableroDia").doc(uid);
@@ -447,5 +455,10 @@
       pushToCloud, backupLocalState, restoreLocalBackup, mergeStates,
       attachCloudSync, detachCloudSync, renderAuthArea, signInWithGoogle, initFirebase
     };
-  };
-})();
+}
+
+if (typeof window !== "undefined") {
+  window.TodayTasksCloud = TodayTasksCloud;
+}
+
+export default TodayTasksCloud;

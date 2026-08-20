@@ -1,103 +1,134 @@
 /* app.js — Coordinador principal de la aplicación */
-(function(){
-  "use strict";
+import TodayTasksConfig from './config.js';
+import { nowMinutes, fmt, fmtDur, fmtRemaining, timeToMinutes, getTodayStr, getDayOfWeek } from './utils.js';
+import { escapeHtml, escapeAttr, showToast } from './ui.js';
+import { defaultState, loadState } from './state.js';
+import { TodayTasksScheduler } from './scheduler.js';
+import { TodayTasksActions } from './actions.js';
+import { TodayTasksViews } from './views.js';
+import { TodayTasksCloud } from './cloud.js';
+import { TodayTasksRouter } from './router.js';
+import { TodayTasksNotifications } from './notifications.js';
+import { TodayTasksWeeklySchedule } from './app/weekly-schedule.js';
+import { TodayTasksForms } from './app/forms.js';
+import { TodayTasksShortcuts } from './app/shortcuts.js';
+import { TodayTasksHistory } from './history.js';
 
-  const STORAGE_KEY = window.TodayTasksConfig.storageKey;
-  const { nowMinutes, fmt, fmtDur, fmtRemaining, timeToMinutes } = window.TodayTasksUtils;
-  const { escapeHtml, escapeAttr, showToast } = window.TodayTasksUi;
-  const { defaultState, loadState } = window.TodayTasksState;
+const STORAGE_KEY = (typeof window !== "undefined" && window.TodayTasksConfig && window.TodayTasksConfig.storageKey)
+  ? window.TodayTasksConfig.storageKey
+  : (TodayTasksConfig && TodayTasksConfig.storageKey ? TodayTasksConfig.storageKey : "todaytasks_state_v1");
 
-  function fmtMMSS(startEpoch){
-    if(!startEpoch) return "00:00";
-    const totalSec = Math.max(0, Math.floor((Date.now() - startEpoch) / 1000));
-    const m = Math.floor(totalSec / 60);
-    const s = totalSec % 60;
-    return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-  }
+function fmtMMSS(startEpoch){
+  if(!startEpoch) return "00:00";
+  const totalSec = Math.max(0, Math.floor((Date.now() - startEpoch) / 1000));
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
 
-  /* ---------------- State ---------------- */
-  let state = loadState(STORAGE_KEY);
+/* ---------------- State ---------------- */
+const _loadState = (typeof window !== "undefined" && window.TodayTasksState && window.TodayTasksState.loadState)
+  ? window.TodayTasksState.loadState
+  : loadState;
 
-  let meetingEdit = null;
-  let taskEdit = null;
-  let notifyState = {taskId:null, lastNotifiedAt:null, timeEndNotified:false};
+let state = _loadState(STORAGE_KEY);
 
-  const RING_R = 85;
-  const RING_C = +(2 * Math.PI * RING_R).toFixed(2);
+let meetingEdit = null;
+let taskEdit = null;
+let notifyState = {taskId:null, lastNotifiedAt:null, timeEndNotified:false};
 
-  function saveState(){
+const RING_R = 85;
+const RING_C = +(2 * Math.PI * RING_R).toFixed(2);
+
+function saveState(){
+  if (typeof localStorage !== "undefined") {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    if(cloudModule && cloudModule.pushToCloud) cloudModule.pushToCloud();
   }
+  if(cloudModule && cloudModule.pushToCloud) cloudModule.pushToCloud();
+}
 
-  function newId(){
-    const id = state.nextId || 1;
-    state.nextId = id + 1;
-    return id;
-  }
+function newId(){
+  const id = state.nextId || 1;
+  state.nextId = id + 1;
+  return id;
+}
 
-  function computeSchedule(){
-    return window.TodayTasksScheduler.computeSchedule(state, nowMinutes);
-  }
+function computeSchedule(){
+  const scheduler = (typeof window !== "undefined" && window.TodayTasksScheduler && window.TodayTasksScheduler.computeSchedule)
+    ? window.TodayTasksScheduler.computeSchedule
+    : (TodayTasksScheduler && TodayTasksScheduler.computeSchedule ? TodayTasksScheduler.computeSchedule : TodayTasksScheduler);
+  const _nowMin = (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.nowMinutes)
+    ? window.TodayTasksUtils.nowMinutes
+    : nowMinutes;
+  return scheduler(state, _nowMin);
+}
 
-  let actionsModule, viewsModule, cloudModule, routerModule;
+let actionsModule, viewsModule, cloudModule, routerModule;
 
-  const ctx = {
-    STORAGE_KEY,
+const ctx = {
+  STORAGE_KEY,
+  getState: () => state,
+  setState: (newState) => { state = newState; },
+  getMeetingEdit: () => meetingEdit,
+  setMeetingEdit: (v) => { meetingEdit = v; },
+  getTaskEdit: () => taskEdit,
+  setTaskEdit: (v) => { taskEdit = v; },
+  getNotifyState: () => notifyState,
+  setNotifyState: (v) => { notifyState = v; },
+  getCurrentView: () => routerModule ? routerModule.getCurrentView() : 'main',
+  getFocusTaskId: () => routerModule ? routerModule.getFocusTaskId() : null,
+  saveState,
+  newId,
+  computeSchedule,
+  fmtMMSS,
+  RING_R,
+  RING_C,
+  renderAll: () => viewsModule && viewsModule.renderAll(),
+  smartRender: () => viewsModule && viewsModule.smartRender(),
+  renderInterruptionView: () => viewsModule && viewsModule.renderInterruptionView(),
+  renderTaskFocusView: () => viewsModule && viewsModule.renderTaskFocusView(),
+  syncFormInputsFromState: () => viewsModule && viewsModule.syncFormInputsFromState(),
+  refreshPlanningModeBtn: () => viewsModule && viewsModule.refreshPlanningModeBtn()
+};
+
+const actionsFactory = (typeof window !== "undefined" && window.TodayTasksActions) ? window.TodayTasksActions : TodayTasksActions;
+const viewsFactory = (typeof window !== "undefined" && window.TodayTasksViews) ? window.TodayTasksViews : TodayTasksViews;
+const cloudFactory = (typeof window !== "undefined" && window.TodayTasksCloud) ? window.TodayTasksCloud : TodayTasksCloud;
+const routerFactory = (typeof window !== "undefined" && window.TodayTasksRouter) ? window.TodayTasksRouter : TodayTasksRouter;
+const notificationsFactory = (typeof window !== "undefined" && window.TodayTasksNotifications) ? window.TodayTasksNotifications : TodayTasksNotifications;
+
+actionsModule = actionsFactory(ctx);
+viewsModule = viewsFactory(ctx);
+cloudModule = cloudFactory(ctx);
+routerModule = routerFactory(ctx);
+
+const { refreshNotifyBtn, requestNotificationPermission, checkRunningTaskNotification, checkMeetingNotifications } =
+  notificationsFactory({
     getState: () => state,
-    setState: (newState) => { state = newState; },
-    getMeetingEdit: () => meetingEdit,
-    setMeetingEdit: (v) => { meetingEdit = v; },
-    getTaskEdit: () => taskEdit,
-    setTaskEdit: (v) => { taskEdit = v; },
     getNotifyState: () => notifyState,
     setNotifyState: (v) => { notifyState = v; },
-    getCurrentView: () => routerModule ? routerModule.getCurrentView() : 'main',
-    getFocusTaskId: () => routerModule ? routerModule.getFocusTaskId() : null,
     saveState,
-    newId,
-    computeSchedule,
-    fmtMMSS,
-    RING_R,
-    RING_C,
-    renderAll: () => viewsModule && viewsModule.renderAll(),
-    smartRender: () => viewsModule && viewsModule.smartRender(),
-    renderInterruptionView: () => viewsModule && viewsModule.renderInterruptionView(),
-    renderTaskFocusView: () => viewsModule && viewsModule.renderTaskFocusView(),
-    syncFormInputsFromState: () => viewsModule && viewsModule.syncFormInputsFromState(),
-    refreshPlanningModeBtn: () => viewsModule && viewsModule.refreshPlanningModeBtn()
-  };
+    nowMinutes: () => (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.nowMinutes) ? window.TodayTasksUtils.nowMinutes() : nowMinutes(),
+    fmt: (m) => (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.fmt) ? window.TodayTasksUtils.fmt(m) : fmt(m),
+    fmtRemaining: (p, n) => (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.fmtRemaining) ? window.TodayTasksUtils.fmtRemaining(p, n) : fmtRemaining(p, n),
+    showToast: (msg) => (typeof window !== "undefined" && window.TodayTasksUi && window.TodayTasksUi.showToast) ? window.TodayTasksUi.showToast(msg) : showToast(msg)
+  });
 
-  actionsModule = window.TodayTasksActions(ctx);
-  viewsModule = window.TodayTasksViews(ctx);
-  cloudModule = window.TodayTasksCloud(ctx);
-  routerModule = window.TodayTasksRouter(ctx);
+/* ---------------- Header tabs ---------------- */
+function switchHeaderTab(target){
+  if (typeof document === "undefined") return;
+  const tabs = document.querySelectorAll('.header-tab');
+  const panels = document.querySelectorAll('.header-tab-panel');
+  tabs.forEach(function(t){
+    const isTarget = t.dataset.tab === target;
+    t.classList.toggle('active', isTarget);
+    t.setAttribute('aria-selected', isTarget ? 'true' : 'false');
+  });
+  panels.forEach(function(p){
+    p.classList.toggle('active', p.id === 'htab-' + target);
+  });
+}
 
-  const { refreshNotifyBtn, requestNotificationPermission, checkRunningTaskNotification, checkMeetingNotifications } =
-    window.TodayTasksNotifications({
-      getState: () => state,
-      getNotifyState: () => notifyState,
-      setNotifyState: (v) => { notifyState = v; },
-      saveState,
-      nowMinutes,
-      fmt,
-      fmtRemaining,
-      showToast
-    });
-
-  /* ---------------- Header tabs ---------------- */
-  function switchHeaderTab(target){
-    const tabs = document.querySelectorAll('.header-tab');
-    const panels = document.querySelectorAll('.header-tab-panel');
-    tabs.forEach(function(t){
-      const isTarget = t.dataset.tab === target;
-      t.classList.toggle('active', isTarget);
-      t.setAttribute('aria-selected', isTarget ? 'true' : 'false');
-    });
-    panels.forEach(function(p){
-      p.classList.toggle('active', p.id === 'htab-' + target);
-    });
-  }
 
   (function(){
     const tabs = document.querySelectorAll('.header-tab');
@@ -248,58 +279,76 @@
   }
 
   /* ---------------- Weekly Schedule sub-module ---------------- */
-  window._TodayTasksWeeklySchedule({
+  const weeklyScheduleFactory = (typeof window !== "undefined" && (window._TodayTasksWeeklySchedule || window.TodayTasksWeeklySchedule))
+    ? (window._TodayTasksWeeklySchedule || window.TodayTasksWeeklySchedule)
+    : TodayTasksWeeklySchedule;
+
+  weeklyScheduleFactory({
     getState: () => state,
     saveState,
     viewsModule,
-    fmt,
-    timeToMinutes,
-    showToast
+    fmt: (m) => (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.fmt) ? window.TodayTasksUtils.fmt(m) : fmt(m),
+    timeToMinutes: (s) => (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.timeToMinutes) ? window.TodayTasksUtils.timeToMinutes(s) : timeToMinutes(s),
+    showToast: (msg) => (typeof window !== "undefined" && window.TodayTasksUi && window.TodayTasksUi.showToast) ? window.TodayTasksUi.showToast(msg) : showToast(msg)
   });
 
   /* ---------------- Forms sub-module ---------------- */
-  window._TodayTasksForms({
+  const formsFactory = (typeof window !== "undefined" && (window._TodayTasksForms || window.TodayTasksForms))
+    ? (window._TodayTasksForms || window.TodayTasksForms)
+    : TodayTasksForms;
+
+  formsFactory({
     getState: () => state,
     actionsModule,
-    showToast,
-    fmt,
-    timeToMinutes
+    showToast: (msg) => (typeof window !== "undefined" && window.TodayTasksUi && window.TodayTasksUi.showToast) ? window.TodayTasksUi.showToast(msg) : showToast(msg),
+    fmt: (m) => (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.fmt) ? window.TodayTasksUtils.fmt(m) : fmt(m),
+    timeToMinutes: (s) => (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.timeToMinutes) ? window.TodayTasksUtils.timeToMinutes(s) : timeToMinutes(s)
   });
 
   /* ---------------- Summary accordion toggle ---------------- */
-  document.getElementById("summaryToggle").addEventListener("click", ()=>{
-    const body = document.getElementById("summaryBody");
-    const chevron = document.getElementById("summaryChevron");
-    const isHidden = body.style.display === "none";
-    body.style.display = isHidden ? "block" : "none";
-    chevron.textContent = isHidden ? "▴" : "▾";
-  });
+  if (typeof document !== "undefined") {
+    const summaryToggleEl = document.getElementById("summaryToggle");
+    if (summaryToggleEl) {
+      summaryToggleEl.addEventListener("click", ()=>{
+        const body = document.getElementById("summaryBody");
+        const chevron = document.getElementById("summaryChevron");
+        if (!body || !chevron) return;
+        const isHidden = body.style.display === "none";
+        body.style.display = isHidden ? "block" : "none";
+        chevron.textContent = isHidden ? "▴" : "▾";
+      });
+    }
 
-  /* ---------------- Other button wiring ---------------- */
-  const intBtn = document.getElementById("interruptionBtn");
-  if(intBtn){
-    intBtn.addEventListener("click", actionsModule.startInterruption);
+    /* ---------------- Other button wiring ---------------- */
+    const intBtn = document.getElementById("interruptionBtn");
+    if(intBtn){
+      intBtn.addEventListener("click", actionsModule.startInterruption);
+    }
+
+    const historyLinkBtn = document.getElementById("historyLinkBtn");
+    if(historyLinkBtn){
+      historyLinkBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        if(routerModule.getCurrentView() === 'history'){
+          window.location.hash = '#/';
+        } else {
+          window.location.hash = '#/history';
+        }
+      });
+    }
+
+    const envBtnWork = document.getElementById("envBtnWork");
+    const envBtnPersonal = document.getElementById("envBtnPersonal");
+    if(envBtnWork) envBtnWork.addEventListener("click", () => actionsModule.switchEnvironment("work"));
+    if(envBtnPersonal) envBtnPersonal.addEventListener("click", () => actionsModule.switchEnvironment("personal"));
   }
-
-  const historyLinkBtn = document.getElementById("historyLinkBtn");
-  if(historyLinkBtn){
-    historyLinkBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      if(routerModule.getCurrentView() === 'history'){
-        window.location.hash = '#/';
-      } else {
-        window.location.hash = '#/history';
-      }
-    });
-  }
-
-  const envBtnWork = document.getElementById("envBtnWork");
-  const envBtnPersonal = document.getElementById("envBtnPersonal");
-  if(envBtnWork) envBtnWork.addEventListener("click", () => actionsModule.switchEnvironment("work"));
-  if(envBtnPersonal) envBtnPersonal.addEventListener("click", () => actionsModule.switchEnvironment("personal"));
 
   /* ---------------- Shortcuts sub-module ---------------- */
-  window._TodayTasksShortcuts({
+  const shortcutsFactory = (typeof window !== "undefined" && (window._TodayTasksShortcuts || window.TodayTasksShortcuts))
+    ? (window._TodayTasksShortcuts || window.TodayTasksShortcuts)
+    : TodayTasksShortcuts;
+
+  shortcutsFactory({
     getState: () => state,
     getMeetingEdit: () => meetingEdit,
     getTaskEdit: () => taskEdit,
@@ -312,26 +361,28 @@
 
   /* ---------------- History metrics UI ---------------- */
   function toggleHistorySeries(key){
-    if(window.TodayTasksHistory){
-      window.TodayTasksHistory.toggleSeries(key);
-      if(routerModule.getCurrentView() === 'history'){
-        window.TodayTasksHistory.renderHistoryView(ctx);
+    const historyMod = (typeof window !== "undefined" && window.TodayTasksHistory) ? window.TodayTasksHistory : TodayTasksHistory;
+    if(historyMod && historyMod.toggleSeries){
+      historyMod.toggleSeries(key);
+      if(routerModule.getCurrentView() === 'history' && historyMod.renderHistoryView){
+        historyMod.renderHistoryView(ctx);
       }
     }
   }
 
   function promptAddHistoryMetric(){
-    const dateStr = prompt("Introduce la fecha en formato YYYY-MM-DD:", window.TodayTasksUtils.getTodayStr());
+    if (typeof window === "undefined" || !window.prompt) return;
+    const dateStr = window.prompt("Introduce la fecha en formato YYYY-MM-DD:", (window.TodayTasksUtils ? window.TodayTasksUtils.getTodayStr() : getTodayStr()));
     if(!dateStr) return;
-    const mStr = prompt("Tiempo de Reuniones (minutos):", "0");
+    const mStr = window.prompt("Tiempo de Reuniones (minutos):", "0");
     if(mStr === null) return;
-    const cStr = prompt("Tiempo de Tareas Completadas (minutos):", "0");
+    const cStr = window.prompt("Tiempo de Tareas Completadas (minutos):", "0");
     if(cStr === null) return;
-    const wStr = prompt("Tiempo Trabajado en Pendientes (minutos):", "0");
+    const wStr = window.prompt("Tiempo Trabajado en Pendientes (minutos):", "0");
     if(wStr === null) return;
-    const nwStr = prompt("Tiempo No Trabajado en Pendientes (minutos):", "0");
+    const nwStr = window.prompt("Tiempo No Trabajado en Pendientes (minutos):", "0");
     if(nwStr === null) return;
-    const iStr = prompt("Tiempo de Interrupciones (minutos):", "0");
+    const iStr = window.prompt("Tiempo de Interrupciones (minutos):", "0");
     if(iStr === null) return;
 
     actionsModule.saveHistoryMetric(dateStr.trim(), {
@@ -344,19 +395,20 @@
   }
 
   function editHistoryMetricPrompt(dateStr){
+    if (typeof window === "undefined" || !window.prompt) return;
     const envKey = state.activeEnv || "work";
     const env = state.environments[envKey] || {};
     const existing = (env.history || []).find(h => h.date === dateStr) || {};
 
-    const mStr = prompt(`[${dateStr}] Tiempo de Reuniones (minutos):`, String(existing.meetingsTime || 0));
+    const mStr = window.prompt(`[${dateStr}] Tiempo de Reuniones (minutos):`, String(existing.meetingsTime || 0));
     if(mStr === null) return;
-    const cStr = prompt(`[${dateStr}] Tiempo de Tareas Completadas (minutos):`, String(existing.completedTasksTime || 0));
+    const cStr = window.prompt(`[${dateStr}] Tiempo de Tareas Completadas (minutos):`, String(existing.completedTasksTime || 0));
     if(cStr === null) return;
-    const wStr = prompt(`[${dateStr}] Tiempo Trabajado en Pendientes (minutos):`, String(existing.uncompletedTasksWorkedTime || 0));
+    const wStr = window.prompt(`[${dateStr}] Tiempo Trabajado en Pendientes (minutos):`, String(existing.uncompletedTasksWorkedTime || 0));
     if(wStr === null) return;
-    const nwStr = prompt(`[${dateStr}] Tiempo No Trabajado en Pendientes (minutos):`, String(existing.uncompletedTasksNotWorkedTime || 0));
+    const nwStr = window.prompt(`[${dateStr}] Tiempo No Trabajado en Pendientes (minutos):`, String(existing.uncompletedTasksNotWorkedTime || 0));
     if(nwStr === null) return;
-    const iStr = prompt(`[${dateStr}] Tiempo de Interrupciones (minutos):`, String(existing.interruptionsTime || 0));
+    const iStr = window.prompt(`[${dateStr}] Tiempo de Interrupciones (minutos):`, String(existing.interruptionsTime || 0));
     if(iStr === null) return;
 
     actionsModule.saveHistoryMetric(dateStr, {
@@ -368,8 +420,8 @@
     });
   }
 
-  /* ---------------- Public API (window.app) ---------------- */
-  window.app = {
+  /* ---------------- Public API (window.app & export app) ---------------- */
+  export const app = {
     togglePlanningMode,
     switchEnvironment: actionsModule.switchEnvironment,
     selectDate: actionsModule.selectDate,
@@ -422,10 +474,12 @@
         if (!overlay || !popover || !input) return;
 
         const currentState = state;
-        const t = currentState.tasks.find(t => String(t.id) === String(taskId));
+        const t = (currentState.tasks || []).find(t => String(t.id) === String(taskId));
         if(!t) return;
 
-        const actual = window.TodayTasksUtils.getTaskElapsed(t);
+        const actual = (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.getTaskElapsed)
+          ? window.TodayTasksUtils.getTaskElapsed(t)
+          : (t.elapsedBefore || 0);
         input.value = actual;
 
         overlay.style.display = 'block';
@@ -485,8 +539,14 @@
     }
   };
 
+  if (typeof window !== "undefined") {
+    window.app = app;
+  }
+
   /* ---------------- Lifecycle ---------------- */
-  window.addEventListener('hashchange', routerModule.router);
+  if (typeof window !== "undefined") {
+    window.addEventListener('hashchange', routerModule.router);
+  }
 
   actionsModule.materializeRecurringTasks();
   actionsModule.rolloverPendingTasks();
@@ -510,4 +570,6 @@
     checkRunningTaskNotification();
     checkMeetingNotifications();
   }, 3000);
-})();
+
+  export default app;
+

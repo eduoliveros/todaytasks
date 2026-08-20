@@ -1,16 +1,22 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import * as stateModule from '../js/state.js';
+import { TodayTasksState, defaultState, wrapState, loadState } from '../js/state.js';
 
-describe('TodayTasksState', () => {
-  beforeEach(async () => {
-    // Cargar utils primero porque state.js depende de getTodayStr
-    await import('../js/utils.js');
-    await import('../js/state.js');
+describe('TodayTasksState (ES Module & Global bridge)', () => {
+  beforeEach(() => {
     localStorage.clear();
+  });
+
+  it('exporta correctamente tanto funciones nombradas como objeto consolidado y window.TodayTasksState', () => {
+    expect(TodayTasksState).toBeDefined();
+    expect(defaultState).toBeDefined();
+    expect(window.TodayTasksState).toBeDefined();
+    expect(window.TodayTasksState.defaultState).toBe(defaultState);
   });
 
   describe('defaultState & wrapState', () => {
     it('crea una estructura de estado por defecto válida', () => {
-      const state = window.TodayTasksState.defaultState();
+      const state = defaultState();
       state.selectedDate = '2026-08-17'; // Lunes
       expect(state.activeEnv).toBe('work');
       expect(state.environments.work).toBeDefined();
@@ -22,7 +28,7 @@ describe('TodayTasksState', () => {
     });
 
     it('cambia valores según el ambiente activo (work vs personal)', () => {
-      const state = window.TodayTasksState.defaultState();
+      const state = defaultState();
       state.selectedDate = '2026-08-17'; // Lunes
       
       // Entorno de trabajo por defecto (09:00 - 18:00)
@@ -36,7 +42,7 @@ describe('TodayTasksState', () => {
     });
 
     it('migra estados antiguos/incompletos de forma segura', () => {
-      const stateIncompleto = window.TodayTasksState.wrapState({
+      const stateIncompleto = wrapState({
         themeMode: 'dark'
       });
 
@@ -49,7 +55,7 @@ describe('TodayTasksState', () => {
 
   describe('loadState & localStorage', () => {
     it('retorna defaultState si localStorage está vacío', () => {
-      const state = window.TodayTasksState.loadState('todaytasks_test_key');
+      const state = loadState('todaytasks_test_key');
       expect(state).toBeDefined();
       expect(state.activeEnv).toBe('work');
     });
@@ -62,10 +68,11 @@ describe('TodayTasksState', () => {
       };
       localStorage.setItem('todaytasks_test_key', JSON.stringify(sampleData));
 
-      const state = window.TodayTasksState.loadState('todaytasks_test_key');
+      const state = loadState('todaytasks_test_key');
       expect(state.activeEnv).toBe('personal');
       expect(state.themeMode).toBe('light');
       expect(state.nextId).toBe(5);
     });
   });
 });
+
