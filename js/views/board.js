@@ -71,7 +71,15 @@ export function TodayTasksBoardView(ctx){
   const { getState } = ctx;
   let lastScrollTop = null;
   let lastRenderedDate = null;
-  let hasAutoScrolledToday = false;
+  let lastRenderedEnv = null;
+  let lastPlanningMode = null;
+  let userHasManuallyScrolled = false;
+  let isProgrammaticScroll = false;
+
+  function resetBoardScroll(){
+    userHasManuallyScrolled = false;
+    lastScrollTop = null;
+  }
 
   function renderBoard(schedule){
     if (typeof document === "undefined") return;
@@ -84,15 +92,17 @@ export function TodayTasksBoardView(ctx){
     const workEnd = state.workEnd !== null && state.workEnd !== undefined ? state.workEnd : 18 * 60;
     const today = getTodayStr();
     const isToday = !state.selectedDate || state.selectedDate === today;
-
-    // Capture current scroll position before updating innerHTML
-    const existingScrollEl = el.querySelector(".board-calendar-scroll");
-    let currentScrollTop = existingScrollEl ? existingScrollEl.scrollTop : lastScrollTop;
+    const currentEnv = state.activeEnv || 'work';
+    const currentPlanning = !!state.planningMode;
     const activeDateKey = state.selectedDate || today;
-    if (activeDateKey !== lastRenderedDate) {
-      currentScrollTop = null;
+
+    // Reset manual scroll if context changed (different date, environment or planning mode)
+    if (activeDateKey !== lastRenderedDate || currentEnv !== lastRenderedEnv || currentPlanning !== lastPlanningMode) {
       lastRenderedDate = activeDateKey;
-      hasAutoScrolledToday = false;
+      lastRenderedEnv = currentEnv;
+      lastPlanningMode = currentPlanning;
+      userHasManuallyScrolled = false;
+      lastScrollTop = null;
     }
 
     const titleEl = document.getElementById("boardTitle");
@@ -261,17 +271,26 @@ export function TodayTasksBoardView(ctx){
 
     const newScrollEl = el.querySelector(".board-calendar-scroll");
     if (newScrollEl) {
-      if (currentScrollTop !== null && currentScrollTop !== undefined) {
-        newScrollEl.scrollTop = currentScrollTop;
-      } else if (isToday && !hasAutoScrolledToday) {
+      const SCROLL_MARGIN_PX = 80;
+      let targetScroll = 0;
+
+      if (userHasManuallyScrolled && lastScrollTop !== null && lastScrollTop !== undefined) {
+        targetScroll = lastScrollTop;
+      } else if (isToday && !currentPlanning) {
         const nowOffset = (now - calStartMin) * PX_PER_MIN;
-        if (nowOffset > 120) {
-          newScrollEl.scrollTop = Math.max(0, nowOffset - 100);
-        }
-        hasAutoScrolledToday = true;
+        targetScroll = Math.max(0, Math.round(nowOffset - SCROLL_MARGIN_PX));
+      } else {
+        targetScroll = 0;
       }
 
+      isProgrammaticScroll = true;
+      newScrollEl.scrollTop = targetScroll;
+      isProgrammaticScroll = false;
+
       newScrollEl.addEventListener('scroll', () => {
+        if (isProgrammaticScroll) return;
+        if (!userHasManuallyScrolled && newScrollEl.scrollTop === targetScroll) return;
+        userHasManuallyScrolled = true;
         lastScrollTop = newScrollEl.scrollTop;
       }, { passive: true });
     }
@@ -368,7 +387,7 @@ export function TodayTasksBoardView(ctx){
     }
   }
 
-  return { renderBoard, renderSummary };
+  return { renderBoard, renderSummary, resetBoardScroll };
 }
 
 export default TodayTasksBoardView;

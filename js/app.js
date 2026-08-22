@@ -76,7 +76,8 @@ const ctx = {
   renderInterruptionView: () => viewsModule && viewsModule.renderInterruptionView(),
   renderTaskFocusView: () => viewsModule && viewsModule.renderTaskFocusView(),
   syncFormInputsFromState: () => viewsModule && viewsModule.syncFormInputsFromState(),
-  refreshPlanningModeBtn: () => viewsModule && viewsModule.refreshPlanningModeBtn()
+  refreshPlanningModeBtn: () => viewsModule && viewsModule.refreshPlanningModeBtn(),
+  resetBoardScroll: () => viewsModule && viewsModule.resetBoardScroll && viewsModule.resetBoardScroll()
 };
 
 actionsModule = TodayTasksActions(ctx);

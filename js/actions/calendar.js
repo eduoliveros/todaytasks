@@ -46,6 +46,7 @@ export function TodayTasksCalendar(ctx, helpers){
     state.activeEnv = envName;
     saveState();
 
+    if(ctx.resetBoardScroll) ctx.resetBoardScroll();
     if(ctx.syncFormInputsFromState) ctx.syncFormInputsFromState();
 
     if(wasFocus || wasInterruption || (typeof window !== "undefined" && window.location.hash !== '' && window.location.hash !== '#/')){
@@ -134,6 +135,7 @@ export function TodayTasksCalendar(ctx, helpers){
     if(dateStr === today && rollover){
       rollover();
     }
+    if(ctx.resetBoardScroll) ctx.resetBoardScroll();
     saveState();
     if(ctx.syncFormInputsFromState) ctx.syncFormInputsFromState();
     smartRender ? smartRender() : renderAll();
@@ -156,6 +158,7 @@ export function TodayTasksCalendar(ctx, helpers){
     }
     if(materializeRecurringTasks) materializeRecurringTasks();
     if(rollover) rollover();
+    if(ctx.resetBoardScroll) ctx.resetBoardScroll();
     saveState();
     if(ctx.syncFormInputsFromState) ctx.syncFormInputsFromState();
     smartRender ? smartRender() : renderAll();

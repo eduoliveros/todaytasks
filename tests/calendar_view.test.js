@@ -256,4 +256,117 @@ describe('Calendar Day View (Board) Tests', () => {
     scrollEl = boardContent.querySelector('.board-calendar-scroll');
     expect(scrollEl.scrollTop).toBe(180);
   });
+
+  it('ajusta automáticamente el scroll al momento actual con margen de contexto superior', () => {
+    // Día de 09:00 (540 min) a 18:00 (1080 min). Momento actual: 13:00 (780 min).
+    // nowOffset = (780 - 540) * 1.2 = 288px.
+    // Con margen de 80px, targetScroll = 288 - 80 = 208px.
+    const NOW = 780; // 13:00
+    const ctx = {
+      getState: () => state,
+      getMeetingEdit: () => null,
+      getTaskEdit: () => null,
+      getCurrentView: () => 'main',
+      getFocusTaskId: () => null,
+      computeSchedule: () => computeSchedule(state, () => NOW),
+      fmtMMSS: () => '',
+      RING_R: 80,
+      RING_C: 502
+    };
+
+    views = TodayTasksViews(ctx);
+    views.renderAll();
+
+    const boardContent = document.getElementById('boardContent');
+    const scrollEl = boardContent.querySelector('.board-calendar-scroll');
+    expect(scrollEl).not.toBeNull();
+    expect(scrollEl.scrollTop).toBe(208);
+  });
+
+  it('ajusta el scroll a 0 si el momento actual está cerca del inicio de la jornada', () => {
+    // Día de 09:00 (540 min) a 18:00 (1080 min). Momento actual: 09:15 (555 min).
+    // nowOffset = (555 - 540) * 1.2 = 18px.
+    // targetScroll = Math.max(0, 18 - 80) = 0px.
+    const NOW = 555; // 09:15
+    const ctx = {
+      getState: () => state,
+      getMeetingEdit: () => null,
+      getTaskEdit: () => null,
+      getCurrentView: () => 'main',
+      getFocusTaskId: () => null,
+      computeSchedule: () => computeSchedule(state, () => NOW),
+      fmtMMSS: () => '',
+      RING_R: 80,
+      RING_C: 502
+    };
+
+    views = TodayTasksViews(ctx);
+    views.renderAll();
+
+    const boardContent = document.getElementById('boardContent');
+    const scrollEl = boardContent.querySelector('.board-calendar-scroll');
+    expect(scrollEl).not.toBeNull();
+    expect(scrollEl.scrollTop).toBe(0);
+  });
+
+  it('en modo planificación el scroll se posiciona al inicio (0) para ver todo el plan', () => {
+    state.planningMode = true;
+    const NOW = 780; // 13:00
+    const ctx = {
+      getState: () => state,
+      getMeetingEdit: () => null,
+      getTaskEdit: () => null,
+      getCurrentView: () => 'main',
+      getFocusTaskId: () => null,
+      computeSchedule: () => computeSchedule(state, () => NOW),
+      fmtMMSS: () => '',
+      RING_R: 80,
+      RING_C: 502
+    };
+
+    views = TodayTasksViews(ctx);
+    views.renderAll();
+
+    const boardContent = document.getElementById('boardContent');
+    const scrollEl = boardContent.querySelector('.board-calendar-scroll');
+    expect(scrollEl).not.toBeNull();
+    expect(scrollEl.scrollTop).toBe(0);
+  });
+
+  it('reajusta el scroll al momento actual cuando se invoca resetBoardScroll', () => {
+    const NOW = 780; // 13:00 -> 208px target
+    const ctx = {
+      getState: () => state,
+      getMeetingEdit: () => null,
+      getTaskEdit: () => null,
+      getCurrentView: () => 'main',
+      getFocusTaskId: () => null,
+      computeSchedule: () => computeSchedule(state, () => NOW),
+      fmtMMSS: () => '',
+      RING_R: 80,
+      RING_C: 502
+    };
+
+    views = TodayTasksViews(ctx);
+    views.renderAll();
+
+    const boardContent = document.getElementById('boardContent');
+    let scrollEl = boardContent.querySelector('.board-calendar-scroll');
+    expect(scrollEl.scrollTop).toBe(208);
+
+    // Usuario mueve el scroll manualmente a 50px
+    scrollEl.scrollTop = 50;
+    scrollEl.dispatchEvent(new Event('scroll'));
+
+    // Re-render preserva 50px
+    views.renderAll();
+    scrollEl = boardContent.querySelector('.board-calendar-scroll');
+    expect(scrollEl.scrollTop).toBe(50);
+
+    // Al invocar resetBoardScroll (por ejemplo al volver a Hoy o vista principal), vuelve a 208px
+    views.resetBoardScroll();
+    views.renderAll();
+    scrollEl = boardContent.querySelector('.board-calendar-scroll');
+    expect(scrollEl.scrollTop).toBe(208);
+  });
 });

@@ -59,6 +59,7 @@ export function TodayTasksViews(ctx){
     /* Board */
     renderBoard:            boardV.renderBoard,
     renderSummary:          boardV.renderSummary,
+    resetBoardScroll:       boardV.resetBoardScroll,
     /* Focus */
     renderInterruptionView: focusV.renderInterruptionView,
     renderTaskFocusView:    focusV.renderTaskFocusView,

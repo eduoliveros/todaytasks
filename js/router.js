@@ -57,6 +57,7 @@ export function TodayTasksRouter(ctx){
       if(interruptionEl) interruptionEl.style.display = 'none';
       if(historyEl) historyEl.style.display = 'none';
       if(focusRefreshTimer){ clearInterval(focusRefreshTimer); focusRefreshTimer = null; }
+      if(ctx.resetBoardScroll) ctx.resetBoardScroll();
       if(renderAll) renderAll();
     }
   }
