@@ -2124,3 +2124,54 @@
     color: #A0AEC0;
   }
 
+  /* --- Banner de tareas automáticas en días futuros --- */
+  .automove-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 0.85rem;
+    color: #1E40AF;
+    animation: fadeIn 0.2s ease-in-out;
+  }
+  .automove-banner-text {
+    flex: 1;
+    line-height: 1.4;
+  }
+  .automove-banner .btn-bring {
+    background: #2563EB;
+    color: #FFFFFF;
+    border: none;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    font-size: 0.82rem;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  .automove-banner .btn-bring:hover {
+    background: #1D4ED8;
+    transform: translateY(-1px);
+  }
+  .automove-banner .btn-bring:active {
+    transform: translateY(0);
+  }
+  [data-theme="dark"] .automove-banner {
+    background: #1E293B;
+    border-color: #334155;
+    color: #93C5FD;
+  }
+  [data-theme="dark"] .automove-banner .btn-bring {
+    background: #3B82F6;
+    color: #FFFFFF;
+  }
+  [data-theme="dark"] .automove-banner .btn-bring:hover {
+    background: #2563EB;
+  }
+
+

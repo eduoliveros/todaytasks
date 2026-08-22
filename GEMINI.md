@@ -42,3 +42,4 @@ Este archivo define las reglas, contexto y estándares operativos para los agent
 
 ## 4. Desarrollo
 1. Si es un cambio importante, plantea un plan de implementación y las posibles opciones que existan.
+2. No repitas bloque de código, separa en nuevas funciones si es necesario.

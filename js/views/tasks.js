@@ -1,5 +1,5 @@
 /* views/tasks.js — Renderizado de la lista de tareas activas */
-import { nowMinutes, fmt, fmtDur, fmtRemaining, getTaskElapsed } from '../utils.js';
+import { nowMinutes, fmt, fmtDur, fmtRemaining, getTaskElapsed, getTodayStr } from '../utils.js';
 import { escapeHtml, escapeAttr } from '../ui.js';
 
 export function TodayTasksTasksView(ctx){
@@ -10,6 +10,49 @@ export function TodayTasksTasksView(ctx){
     const el = document.getElementById("tasksList");
     if (!el) return;
     const state = getState();
+    const today = getTodayStr();
+    const isFuture = !!(state.selectedDate && state.selectedDate > today);
+    const bannerEl = document.getElementById("tasksAutoMoveBanner");
+
+    if (bannerEl) {
+      if (isFuture) {
+        let pendingCount = 0;
+        if (ctx.countPendingAutoMoveTasks) {
+          pendingCount = ctx.countPendingAutoMoveTasks(state.selectedDate);
+        } else {
+          const envKey = state.activeEnv || "work";
+          const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+          if (env && env.days) {
+            const pastDates = Object.keys(env.days).filter(d => d < state.selectedDate);
+            pastDates.forEach(d => {
+              const dayObj = env.days[d];
+              if (dayObj && Array.isArray(dayObj.tasks)) {
+                dayObj.tasks.forEach(t => {
+                  if (t.status !== "completed" && t.autoMoveToToday) pendingCount++;
+                });
+              }
+            });
+          }
+        }
+
+        if (pendingCount > 0) {
+          const countText = pendingCount === 1 ? '1 tarea automática' : `${pendingCount} tareas automáticas`;
+          bannerEl.innerHTML = `
+            <div class="automove-banner">
+              <span class="automove-banner-text">Hay <strong>${countText}</strong> de días anteriores.</span>
+              <button class="btn-bring" onclick="app.rolloverPendingTasksToSelectedDate()" title="Mover las tareas automáticas pendientes a este día">⏩ Traer a este día</button>
+            </div>`;
+          bannerEl.style.display = "block";
+        } else {
+          bannerEl.innerHTML = "";
+          bannerEl.style.display = "none";
+        }
+      } else {
+        bannerEl.innerHTML = "";
+        bannerEl.style.display = "none";
+      }
+    }
+
     const taskEdit = getTaskEdit();
     const active = (state.tasks || []).filter(t => t.status !== "completed")
                                .sort((a,b)=>{
@@ -113,7 +156,11 @@ export function TodayTasksTasksView(ctx){
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:2px;">
-              <button class="icon-btn" title="Copiar a otro día" onclick="app.openCopyTaskModal(${t.id})">📋</button>
+              ${!t.isRecurring && t.autoMoveToToday ? `
+                <button class="icon-btn" title="Mover a otro día" onclick="app.openCopyTaskModal(${t.id})">➡️</button>
+              ` : `
+                <button class="icon-btn" title="Copiar a otro día" onclick="app.openCopyTaskModal(${t.id})">📋</button>
+              `}
               <button class="icon-btn" title="Editar" onclick="app.startEditTask(${t.id})">✎</button>
               <button class="icon-btn" title="Eliminar" onclick="app.deleteTask(${t.id})">✕</button>
             </div>

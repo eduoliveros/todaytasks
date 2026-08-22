@@ -375,12 +375,15 @@ export function TodayTasksBoardView(ctx){
         const autoMoveTag = (!t.isRecurring && t.autoMoveToToday)
           ? ' <span class="tag tag-automove" title="Se trasladará a hoy si no se completa">⏩ Pasar a hoy</span>'
           : '';
+        const isAutoMove = (!t.isRecurring && t.autoMoveToToday);
+        const transferBtnLabel = isAutoMove ? '➡️ Mover a...' : '📋 Copiar a...';
+        const transferBtnTitle = isAutoMove ? 'Mover esta tarea a otra fecha' : 'Copiar esta tarea a otra fecha';
         return `
         <div class="summary-row">
           <div class="row-top"><span>${escapeHtml(t.title)}${autoMoveTag}</span><span class="dur">${fmtDur(t.planned)} plan. · <span class="task-duration-clickable" title="Clic para ajustar tiempo consumido" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">${elapsedReal > 0 ? fmtDur(elapsedReal) : '0m'} realizados</span> · ${t.status === 'paused' ? 'en pausa' : t.status}</span></div>
           ${rangeHtml}
           <div style="margin-top:6px">
-            <button class="btn small secondary" onclick="app.openCopyTaskModal(${t.id})" title="Copiar esta tarea a otra fecha">📋 Copiar a...</button>
+            <button class="btn small secondary" onclick="app.openCopyTaskModal(${t.id})" title="${transferBtnTitle}">${transferBtnLabel}</button>
           </div>
         </div>
       `; }).join("") : '<div class="empty">Todo completado.</div>';

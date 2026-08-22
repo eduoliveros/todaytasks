@@ -59,9 +59,32 @@ export function TodayTasksCalendar(ctx, helpers){
     showToast(`Ambiente cambiado a ${envName === 'work' ? '💼 Trabajo' : '🏠 Personal'}`);
   }
 
-  function rolloverPendingTasks(materializeRecurringTasks) {
+  function countPendingAutoMoveTasks(targetDateStr) {
+    const state = getState();
+    const dateStr = targetDateStr || state.selectedDate || getTodayStr();
+    const envKey = state.activeEnv || "work";
+    const env = state.environments[envKey] || state.environments.work;
+    if (!env || !env.days) return 0;
+    const pastDates = Object.keys(env.days).filter(d => d < dateStr);
+    let count = 0;
+    pastDates.forEach(d => {
+      const dayObj = env.days[d];
+      if (dayObj && Array.isArray(dayObj.tasks)) {
+        dayObj.tasks.forEach(t => {
+          if (t.status !== "completed" && t.autoMoveToToday) {
+            count++;
+          }
+        });
+      }
+    });
+    return count;
+  }
+
+  function rolloverPendingTasks(materializeRecurringTasks, targetDate = null) {
     const state = getState();
     const today = getTodayStr();
+    const targetDateStr = targetDate || today;
+    const isToday = targetDateStr === today;
     const envKey = state.activeEnv || "work";
     const env = state.environments[envKey] || state.environments.work;
     if (!env || !env.days) return 0;
@@ -70,13 +93,13 @@ export function TodayTasksCalendar(ctx, helpers){
       snapshotAndPrune(state);
     }
 
-    if (!env.days[today]) {
-      env.days[today] = { meetings: [], tasks: [], interruptions: [], planningMode: false };
+    if (!env.days[targetDateStr]) {
+      env.days[targetDateStr] = { meetings: [], tasks: [], interruptions: [], planningMode: false };
     }
-    const todayDayObj = env.days[today];
-    if (!Array.isArray(todayDayObj.tasks)) todayDayObj.tasks = [];
+    const targetDayObj = env.days[targetDateStr];
+    if (!Array.isArray(targetDayObj.tasks)) targetDayObj.tasks = [];
 
-    const pastDates = Object.keys(env.days).filter(d => d < today).sort();
+    const pastDates = Object.keys(env.days).filter(d => d < targetDateStr).sort();
     let movedCount = 0;
     const movedTitles = [];
 
@@ -87,13 +110,13 @@ export function TodayTasksCalendar(ctx, helpers){
       const remainingTasks = [];
       dayObj.tasks.forEach(t => {
         if (t.status !== "completed" && t.autoMoveToToday) {
-          const alreadyInToday = todayDayObj.tasks.some(existing => existing.id === t.id);
-          if (!alreadyInToday) {
-            const maxOrder = todayDayObj.tasks.reduce((m, task) => Math.max(m, task.order || 0), 0);
+          const alreadyInTarget = targetDayObj.tasks.some(existing => existing.id === t.id);
+          if (!alreadyInTarget) {
+            const maxOrder = targetDayObj.tasks.reduce((m, task) => Math.max(m, task.order || 0), 0);
             const savedElapsed = getTaskElapsed(t);
             const taskStatus = savedElapsed > 0 ? "paused" : "pending";
 
-            todayDayObj.tasks.push({
+            targetDayObj.tasks.push({
               ...t,
               order: maxOrder + 1,
               status: taskStatus,
@@ -116,10 +139,15 @@ export function TodayTasksCalendar(ctx, helpers){
       saveState();
       smartRender ? smartRender() : renderAll();
       const taskLabel = movedCount === 1 ? `"${movedTitles[0]}"` : `${movedCount} tareas pendientes`;
-      showToast(`${taskLabel} se ha${movedCount === 1 ? '' : 'n'} movido a hoy ⏩`);
+      const destLabel = isToday ? "hoy" : (formatDateFriendly ? `el ${formatDateFriendly(targetDateStr)}` : targetDateStr);
+      showToast(`${taskLabel} se ha${movedCount === 1 ? '' : 'n'} movido a ${destLabel} ⏩`);
     }
 
     return movedCount;
+  }
+
+  function rolloverPendingTasksToDate(targetDateStr, materializeRecurringTasks) {
+    return rolloverPendingTasks(materializeRecurringTasks, targetDateStr);
   }
 
   function selectDate(dateStr, materializeRecurringTasks, rollover){
@@ -279,7 +307,96 @@ export function TodayTasksCalendar(ctx, helpers){
     showToast(`Tarea "${originalTask.title}" copiada al ${friendlyDate} 📋`);
   }
 
-  function openCopyTaskModal(taskId, copyTaskToDateFn) {
+  function moveTaskToDate(taskId, targetDateStr) {
+    if (!targetDateStr) return;
+    const state = getState();
+    const currentDateStr = state.selectedDate || getTodayStr();
+
+    if (currentDateStr === targetDateStr) {
+      showToast("La tarea ya está en esta fecha.");
+      return;
+    }
+
+    const envKey = state.activeEnv || "work";
+    const env = state.environments[envKey] || state.environments.work;
+    if (!env || !env.days) return;
+
+    let originalTask = null;
+    let sourceDateStr = null;
+
+    if (env.days[currentDateStr] && Array.isArray(env.days[currentDateStr].tasks)) {
+      const found = env.days[currentDateStr].tasks.find(t => t.id === taskId);
+      if (found) {
+        originalTask = found;
+        sourceDateStr = currentDateStr;
+      }
+    }
+
+    if (!originalTask) {
+      for (const d of Object.keys(env.days)) {
+        if (Array.isArray(env.days[d].tasks)) {
+          const found = env.days[d].tasks.find(t => t.id === taskId);
+          if (found) {
+            originalTask = found;
+            sourceDateStr = d;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!originalTask || !sourceDateStr) {
+      showToast("No se encontró la tarea a mover.");
+      return;
+    }
+
+    if (sourceDateStr === targetDateStr) {
+      showToast("La tarea ya está en esta fecha.");
+      return;
+    }
+
+    if (!env.days[targetDateStr]) {
+      env.days[targetDateStr] = {
+        meetings: [],
+        tasks: [],
+        interruptions: [],
+        planningMode: false
+      };
+    }
+
+    const sourceDayObj = env.days[sourceDateStr];
+    const targetDayObj = env.days[targetDateStr];
+    if (!Array.isArray(targetDayObj.tasks)) targetDayObj.tasks = [];
+
+    // Remove from source day
+    sourceDayObj.tasks = (sourceDayObj.tasks || []).filter(t => t.id !== taskId);
+
+    const maxOrder = targetDayObj.tasks.reduce((m, t) => Math.max(m, t.order || 0), 0);
+    const savedElapsed = getTaskElapsed(originalTask);
+    const taskStatus = originalTask.status === "completed"
+      ? "completed"
+      : (savedElapsed > 0 ? "paused" : "pending");
+
+    const movedTask = {
+      ...originalTask,
+      order: maxOrder + 1,
+      status: taskStatus,
+      runningStart: null,
+      elapsedBefore: savedElapsed,
+      completedAt: originalTask.status === "completed" ? originalTask.completedAt : null,
+      actualDuration: originalTask.status === "completed" ? originalTask.actualDuration : null
+    };
+
+    targetDayObj.tasks.push(movedTask);
+
+    saveState();
+    smartRender ? smartRender() : renderAll();
+
+    const friendlyDate = formatDateFriendly ? formatDateFriendly(targetDateStr) : targetDateStr;
+    showToast(`Tarea "${originalTask.title}" movida al ${friendlyDate} ➡️`);
+  }
+
+  function openCopyTaskModal(taskId, copyTaskToDateFn, moveTaskToDateFn) {
     const state = getState();
     const today = getTodayStr();
     if (typeof document === "undefined") return;
@@ -295,22 +412,52 @@ export function TodayTasksCalendar(ctx, helpers){
         originalTask = (env.days[currentDateStr].tasks || []).find(t => t.id === taskId);
       }
     }
+    if (!originalTask) {
+      const envKey = state.activeEnv || "work";
+      const env = state.environments[envKey] || state.environments.work;
+      if (env && env.days) {
+        for (const d of Object.keys(env.days)) {
+          const found = (env.days[d].tasks || []).find(t => t.id === taskId);
+          if (found) {
+            originalTask = found;
+            break;
+          }
+        }
+      }
+    }
     if (originalTask) taskTitle = originalTask.title;
 
+    const isAutoMove = !!(originalTask && !originalTask.isRecurring && originalTask.autoMoveToToday);
+    const actionFn = isAutoMove ? (moveTaskToDateFn || moveTaskToDate) : (copyTaskToDateFn || copyTaskToDate);
+
     if (!modal) {
-      const targetDate = prompt(`¿A qué fecha deseas copiar "${taskTitle || 'la tarea'}"? (YYYY-MM-DD)`, today);
-      if (targetDate && targetDate.trim()) copyTaskToDateFn(taskId, targetDate.trim());
+      const verb = isAutoMove ? "mover" : "copiar";
+      const targetDate = prompt(`¿A qué fecha deseas ${verb} "${taskTitle || 'la tarea'}"? (YYYY-MM-DD)`, today);
+      if (targetDate && targetDate.trim()) actionFn(taskId, targetDate.trim());
       return;
     }
 
     const titleEl = document.getElementById("copyTaskModalTitle");
-    if (titleEl) titleEl.textContent = taskTitle ? `Copiar "${taskTitle}" 📋` : "Copiar tarea 📋";
+    const descEl = document.getElementById("copyTaskModalDesc");
+    const labelTodaySpan = document.getElementById("copyTaskBtnTodayText");
+    const btnCustom = document.getElementById("copyTaskBtnCustomDate");
+
+    if (isAutoMove) {
+      if (titleEl) titleEl.textContent = taskTitle ? `Mover "${taskTitle}" ➡️` : "Mover tarea ➡️";
+      if (descEl) descEl.textContent = "¿A qué fecha deseas mover esta tarea? Se trasladará conservando el tiempo consumido y se quitará del día actual.";
+      if (labelTodaySpan) labelTodaySpan.innerHTML = "📅 <strong>Mover a Hoy</strong>";
+      if (btnCustom) btnCustom.textContent = "Mover";
+    } else {
+      if (titleEl) titleEl.textContent = taskTitle ? `Copiar "${taskTitle}" 📋` : "Copiar tarea 📋";
+      if (descEl) descEl.textContent = "¿A qué fecha deseas copiar esta tarea? Se creará una copia en estado pendiente con la duración completa original.";
+      if (labelTodaySpan) labelTodaySpan.innerHTML = "📅 <strong>Copiar a Hoy</strong>";
+      if (btnCustom) btnCustom.textContent = "Copiar";
+    }
 
     const dateInput = document.getElementById("copyTaskDateInput");
     if (dateInput) dateInput.value = state.selectedDate && state.selectedDate !== today ? state.selectedDate : today;
 
     const btnToday = document.getElementById("copyTaskBtnToday");
-    const btnCustom = document.getElementById("copyTaskBtnCustomDate");
     const btnCancel = document.getElementById("copyTaskBtnCancel");
     const todayLabel = document.getElementById("copyTaskTodayLabel");
 
@@ -328,7 +475,7 @@ export function TodayTasksCalendar(ctx, helpers){
     if (btnToday) {
       btnToday.onclick = () => {
         cleanup();
-        copyTaskToDateFn(taskId, today);
+        actionFn(taskId, today);
       };
     }
 
@@ -340,7 +487,7 @@ export function TodayTasksCalendar(ctx, helpers){
           return;
         }
         cleanup();
-        copyTaskToDateFn(taskId, val);
+        actionFn(taskId, val);
       };
     }
 
@@ -352,11 +499,13 @@ export function TodayTasksCalendar(ctx, helpers){
   }
 
   return {
-    switchEnvironment, rolloverPendingTasks, selectDate, changeDateByDays,
+    switchEnvironment, rolloverPendingTasks, rolloverPendingTasksToDate,
+    countPendingAutoMoveTasks, selectDate, changeDateByDays,
     resetToToday, saveHistoryMetric, deleteHistoryMetric, startNewDay,
-    copyTaskToDate, openCopyTaskModal
+    copyTaskToDate, moveTaskToDate, openCopyTaskModal
   };
 }
 
 export default TodayTasksCalendar;
+
 

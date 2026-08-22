@@ -207,4 +207,86 @@ describe('TodayTasksActions - Auto-mover tareas pendientes a Hoy (Rollover)', ()
     // En tomorrow sigue intacta
     expect(env.days[tomorrow].tasks.some(t => t.id === 301)).toBe(true);
   });
+
+  it('countPendingAutoMoveTasks cuenta correctamente tareas no completadas con autoMoveToToday de días anteriores a targetDate', () => {
+    const today = getTodayStr();
+    const yesterday = addDays(today, -1);
+    const tomorrow = addDays(today, 1);
+    const envKey = state.activeEnv || 'work';
+    const env = state.environments[envKey];
+
+    env.days[yesterday] = {
+      meetings: [],
+      interruptions: [],
+      planningMode: false,
+      tasks: [
+        { id: 401, title: 'T1', planned: 20, status: 'pending', autoMoveToToday: true },
+        { id: 402, title: 'T2', planned: 30, status: 'completed', autoMoveToToday: true },
+        { id: 403, title: 'T3', planned: 40, status: 'pending', autoMoveToToday: false }
+      ]
+    };
+
+    env.days[today] = {
+      meetings: [],
+      interruptions: [],
+      planningMode: false,
+      tasks: [
+        { id: 404, title: 'T4', planned: 15, status: 'pending', autoMoveToToday: true }
+      ]
+    };
+
+    // Para today, solo cuenta las de yesterday (1 tarea: 401)
+    expect(actions.countPendingAutoMoveTasks(today)).toBe(1);
+
+    // Para tomorrow, cuenta las de yesterday y today (2 tareas: 401 y 404)
+    expect(actions.countPendingAutoMoveTasks(tomorrow)).toBe(2);
+  });
+
+  it('rolloverPendingTasksToDate traslada las tareas automáticas pendientes de días anteriores al día futuro especificado', () => {
+    const today = getTodayStr();
+    const yesterday = addDays(today, -1);
+    const mondayFuture = addDays(today, 2);
+    const envKey = state.activeEnv || 'work';
+    const env = state.environments[envKey];
+
+    env.days[yesterday] = {
+      meetings: [],
+      interruptions: [],
+      planningMode: false,
+      tasks: [
+        { id: 501, title: 'Tarea de ayer con auto-mover', planned: 50, elapsedBefore: 20, status: 'paused', autoMoveToToday: true }
+      ]
+    };
+
+    env.days[today] = {
+      meetings: [],
+      interruptions: [],
+      planningMode: false,
+      tasks: [
+        { id: 502, title: 'Tarea de hoy con auto-mover', planned: 30, elapsedBefore: 0, status: 'pending', autoMoveToToday: true }
+      ]
+    };
+
+    const moved = actions.rolloverPendingTasksToDate(mondayFuture);
+    expect(moved).toBe(2);
+
+    expect(env.days[yesterday].tasks.some(t => t.id === 501)).toBe(false);
+    expect(env.days[today].tasks.some(t => t.id === 502)).toBe(false);
+
+    const mondayTasks = env.days[mondayFuture].tasks;
+    expect(mondayTasks).toHaveLength(2);
+    expect(mondayTasks.find(t => t.id === 501)).toMatchObject({
+      title: 'Tarea de ayer con auto-mover',
+      elapsedBefore: 20,
+      status: 'paused',
+      autoMoveToToday: true
+    });
+    expect(mondayTasks.find(t => t.id === 502)).toMatchObject({
+      title: 'Tarea de hoy con auto-mover',
+      elapsedBefore: 0,
+      status: 'pending',
+      autoMoveToToday: true
+    });
+  });
 });
+

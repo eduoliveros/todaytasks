@@ -72,11 +72,14 @@ export function TodayTasksActions(ctx) {
   function resetToToday(){
     calendar.resetToToday(materializeRecurringTasks, rollover);
   }
-  function rolloverPendingTasks(){
-    return calendar.rolloverPendingTasks(materializeRecurringTasks);
+  function rolloverPendingTasks(targetDate = null){
+    return calendar.rolloverPendingTasks(materializeRecurringTasks, targetDate);
+  }
+  function rolloverPendingTasksToDate(targetDateStr){
+    return calendar.rolloverPendingTasksToDate(targetDateStr, materializeRecurringTasks);
   }
   function openCopyTaskModal(taskId){
-    calendar.openCopyTaskModal(taskId, calendar.copyTaskToDate);
+    calendar.openCopyTaskModal(taskId, calendar.copyTaskToDate, calendar.moveTaskToDate);
   }
 
   return {
@@ -117,6 +120,8 @@ export function TodayTasksActions(ctx) {
     /* Calendar */
     switchEnvironment:      calendar.switchEnvironment,
     rolloverPendingTasks,
+    rolloverPendingTasksToDate,
+    countPendingAutoMoveTasks: calendar.countPendingAutoMoveTasks,
     selectDate,
     changeDateByDays,
     resetToToday,
@@ -124,6 +129,7 @@ export function TodayTasksActions(ctx) {
     deleteHistoryMetric:    calendar.deleteHistoryMetric,
     startNewDay:            calendar.startNewDay,
     copyTaskToDate:         calendar.copyTaskToDate,
+    moveTaskToDate:         calendar.moveTaskToDate,
     openCopyTaskModal
   };
 }

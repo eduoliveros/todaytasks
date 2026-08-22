@@ -77,7 +77,8 @@ const ctx = {
   renderTaskFocusView: () => viewsModule && viewsModule.renderTaskFocusView(),
   syncFormInputsFromState: () => viewsModule && viewsModule.syncFormInputsFromState(),
   refreshPlanningModeBtn: () => viewsModule && viewsModule.refreshPlanningModeBtn(),
-  resetBoardScroll: () => viewsModule && viewsModule.resetBoardScroll && viewsModule.resetBoardScroll()
+  resetBoardScroll: () => viewsModule && viewsModule.resetBoardScroll && viewsModule.resetBoardScroll(),
+  countPendingAutoMoveTasks: (targetDate) => actionsModule ? actionsModule.countPendingAutoMoveTasks(targetDate) : 0
 };
 
 actionsModule = TodayTasksActions(ctx);
@@ -407,7 +408,11 @@ function switchHeaderTab(target){
     completeTask: actionsModule.completeTask,
     uncompleteTask: actionsModule.uncompleteTask,
     copyTaskToDate: actionsModule.copyTaskToDate,
+    moveTaskToDate: actionsModule.moveTaskToDate,
     openCopyTaskModal: actionsModule.openCopyTaskModal,
+    rolloverPendingTasksToDate: (dateStr) => actionsModule.rolloverPendingTasksToDate(dateStr),
+    rolloverPendingTasksToSelectedDate: () => actionsModule.rolloverPendingTasksToDate(state.selectedDate),
+    countPendingAutoMoveTasks: (dateStr) => actionsModule.countPendingAutoMoveTasks(dateStr),
     startInterruption: actionsModule.startInterruption,
     updateInterruptionTitle: actionsModule.updateInterruptionTitle,
     completeInterruption: actionsModule.completeInterruption,

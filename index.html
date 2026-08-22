@@ -6,7 +6,7 @@
 <title>Tablero del día · Planificador</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=1.66">
+<link rel="stylesheet" href="css/styles.css?v=1.67">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="icon" type="image/png" href="icon.png">
 <link rel="icon" type="image/jpeg" href="icon.jpg">
@@ -18,7 +18,7 @@
   <!-- Barra superior: logo + switcher + pestañas -->
   <div class="topbar-title-row">
     <div class="brand">
-      <h1>Tablero del día <span class="app-version">v1.66</span></h1>
+      <h1>Tablero del día <span class="app-version">v1.67</span></h1>
       <span class="db-status-badge" id="appModeLabel" title="Tipo de base de datos en uso">💾 local · persistente</span>
       <div class="env-switcher" id="envSwitcher">
         <button class="env-btn active" data-env="work" id="envBtnWork" title="Cambiar a ambiente de Trabajo (Tecla 'E')">
@@ -160,6 +160,7 @@
           </label>
         </div>
       </div>
+      <div id="tasksAutoMoveBanner" style="display:none;margin-bottom:12px;"></div>
       <div id="tasksList"></div>
     </div>
 
@@ -269,11 +270,11 @@
     <p id="copyTaskModalDesc">¿A qué fecha deseas copiar esta tarea? Se creará una copia en estado pendiente con la duración completa original.</p>
     <div style="display:flex;flex-direction:column;gap:12px;">
       <button class="btn" id="copyTaskBtnToday" style="text-align:left;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
-        <span>📅 <strong>Copiar a Hoy</strong></span>
+        <span id="copyTaskBtnTodayText">📅 <strong>Copiar a Hoy</strong></span>
         <small id="copyTaskTodayLabel" style="opacity:0.85;"></small>
       </button>
       <div class="modal-field-group">
-        <label for="copyTaskDateInput" style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:6px;">Copiar a otra fecha:</label>
+        <label id="copyTaskDateLabel" for="copyTaskDateInput" style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:6px;">Seleccionar otra fecha:</label>
         <div style="display:flex;gap:8px;">
           <input type="date" id="copyTaskDateInput" style="flex:1;padding:6px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;background:var(--bg-card);color:var(--ink);">
           <button class="btn secondary" id="copyTaskBtnCustomDate">Copiar</button>

@@ -55,4 +55,51 @@ describe('Tasks View - Main Page Active Tasks List', () => {
     expect(clickableElements[0].getAttribute('onclick')).toContain("app.openTimePopover('103'");
     expect(clickableElements[1].getAttribute('onclick')).toContain("app.openTimePopover('102'");
   });
+
+  it('renderTasks muestra el botón ➡️ Mover en tareas auto-move y 📋 Copiar en tareas normales', () => {
+    state.tasks = [
+      { id: 201, title: 'Tarea Auto-mover', planned: 30, status: 'pending', autoMoveToToday: true, order: 1 },
+      { id: 202, title: 'Tarea Normal', planned: 40, status: 'pending', autoMoveToToday: false, order: 2 }
+    ];
+
+    tasksView.renderTasks({ segmentsByTask: {}, overflowIds: new Set() });
+
+    const tasksList = document.getElementById('tasksList');
+    const buttons = tasksList.querySelectorAll('.icon-btn[onclick*="openCopyTaskModal"]');
+    expect(buttons.length).toBe(2);
+
+    // Tarea 201 tiene ➡️ y título Mover a otro día
+    expect(buttons[0].textContent.trim()).toBe('➡️');
+    expect(buttons[0].getAttribute('title')).toBe('Mover a otro día');
+
+    // Tarea 202 tiene 📋 y título Copiar a otro día
+    expect(buttons[1].textContent.trim()).toBe('📋');
+    expect(buttons[1].getAttribute('title')).toBe('Copiar a otro día');
+  });
+
+  it('renderTasks renderiza el banner de auto-mover en días futuros si hay tareas pendientes en días pasados', () => {
+    document.body.innerHTML = `
+      <div id="tasksAutoMoveBanner" style="display:none;"></div>
+      <div id="tasksList"></div>
+    `;
+
+    state.selectedDate = '2099-01-02'; // Fecha futura
+    const envKey = state.activeEnv || 'work';
+    state.environments[envKey].days['2099-01-01'] = {
+      meetings: [],
+      interruptions: [],
+      planningMode: false,
+      tasks: [
+        { id: 301, title: 'Pendiente pasada', planned: 25, status: 'pending', autoMoveToToday: true }
+      ]
+    };
+
+    tasksView.renderTasks({ segmentsByTask: {}, overflowIds: new Set() });
+
+    const banner = document.getElementById('tasksAutoMoveBanner');
+    expect(banner.style.display).toBe('block');
+    expect(banner.textContent).toContain('1 tarea automática');
+    expect(banner.querySelector('.btn-bring')).not.toBeNull();
+  });
 });
+

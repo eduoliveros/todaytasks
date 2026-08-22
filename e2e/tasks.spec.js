@@ -184,7 +184,81 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
     await expect(popover).toBeHidden();
     await expect(clickableTime).toHaveText('25 min');
   });
+
+  test('Mover una tarea auto-move de forma individual a otra fecha mediante el botón ➡️ y el modal Mover', async ({ page }) => {
+    // 1. Crear tarea con auto-mover
+    await page.fill('#taskTitle', 'Tarea Individual AutoMove');
+    await page.fill('#taskDuration', '30');
+    await page.check('#isAutoMoveTaskCheckbox');
+    await page.click('#addTaskBtn');
+
+    const tasksList = page.locator('#tasksList');
+    await expect(tasksList).toContainText('Tarea Individual AutoMove');
+
+    // 2. Verificar que el botón es ➡️ (Mover a otro día)
+    const moveBtn = tasksList.locator('.icon-btn[title="Mover a otro día"]');
+    await expect(moveBtn).toBeVisible();
+    await expect(moveBtn).toHaveText('➡️');
+
+    // 3. Abrir modal
+    await moveBtn.click();
+    const modal = page.locator('#copyTaskModal');
+    await expect(modal).toBeVisible();
+    await expect(page.locator('#copyTaskModalTitle')).toContainText('Mover');
+    await expect(page.locator('#copyTaskBtnCustomDate')).toHaveText('Mover');
+
+    // 4. Mover a una fecha futura (dentro de 5 días)
+    const futureDate = '2026-08-30';
+    await page.fill('#copyTaskDateInput', futureDate);
+    await page.click('#copyTaskBtnCustomDate');
+
+    // Comprobar que el modal se cierra y la tarea ya no está en hoy
+    await expect(modal).toBeHidden();
+    await expect(tasksList).toContainText('Aún no hay tareas.');
+
+    // 5. Navegar a la fecha destino y verificar que la tarea está allí
+    await page.click('button[data-tab="tiempo"]');
+    await page.fill('#datePickerInput', futureDate);
+    await page.dispatchEvent('#datePickerInput', 'change');
+
+    await expect(tasksList).toContainText('Tarea Individual AutoMove');
+  });
+
+  test('Mover todas las tareas auto-move en bloque a un día futuro mediante el banner contextual', async ({ page }) => {
+    // 1. Crear 2 tareas en el día actual con auto-mover
+    await page.fill('#taskTitle', 'Pendiente AutoMove 1');
+    await page.fill('#taskDuration', '20');
+    await page.check('#isAutoMoveTaskCheckbox');
+    await page.click('#addTaskBtn');
+
+    await page.fill('#taskTitle', 'Pendiente AutoMove 2');
+    await page.fill('#taskDuration', '35');
+    await page.check('#isAutoMoveTaskCheckbox');
+    await page.click('#addTaskBtn');
+
+    const tasksList = page.locator('#tasksList');
+    await expect(tasksList).toContainText('Pendiente AutoMove 1');
+    await expect(tasksList).toContainText('Pendiente AutoMove 2');
+
+    // 2. Navegar al día siguiente (futuro)
+    await page.click('button[data-tab="tiempo"]');
+    await page.click('#nextDayBtn');
+
+    // En el día siguiente la lista de tareas está vacía pero debe aparecer el banner
+    const banner = page.locator('#tasksAutoMoveBanner');
+    await expect(banner).toBeVisible();
+    await expect(banner).toContainText('2 tareas automáticas');
+
+    // 3. Pulsar el botón del banner para traer todas las tareas automáticas en bloque
+    await page.click('#tasksAutoMoveBanner .btn-bring');
+
+    // 4. Verificar que ambas tareas se han trasladado al día futuro y el banner desaparece
+    await expect(banner).toBeHidden();
+    await expect(tasksList).toContainText('Pendiente AutoMove 1');
+    await expect(tasksList).toContainText('Pendiente AutoMove 2');
+  });
 });
+
 
 
 
