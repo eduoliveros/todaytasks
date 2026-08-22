@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { defaultState } from '../js/state.js';
 import { computeSchedule } from '../js/scheduler.js';
 import { TodayTasksViews } from '../js/views.js';
+import { getTodayStr } from '../js/utils.js';
 
 describe('Calendar Day View (Board) Tests', () => {
   let state;
@@ -26,7 +27,7 @@ describe('Calendar Day View (Board) Tests', () => {
     `;
 
     state = defaultState();
-    state.selectedDate = '2026-08-22';
+    state.selectedDate = getTodayStr();
     state.planningMode = false;
     state.workStart = 540;  // 09:00
     state.workEnd = 1080;  // 18:00
@@ -136,8 +137,8 @@ describe('Calendar Day View (Board) Tests', () => {
     expect(slots[0].textContent).toContain('17:00–18:00');
     expect(slots[0].textContent).toContain('Tarea dentro de jornada');
 
-    // Tarea 2: 18:00–18:45 (en la zona extendida con clase slot-overflow y tag ⚠ +jornada)
-    expect(slots[1].textContent).toContain('18:00–18:45');
+    // Tarea 2: 18:10–18:55 (tras descanso de 10 min, en la zona extendida con clase slot-overflow y tag ⚠ +jornada)
+    expect(slots[1].textContent).toContain('18:10–18:55');
     expect(slots[1].textContent).toContain('Tarea en zona extendida');
     expect(slots[1].classList.contains('slot-overflow')).toBe(true);
   });

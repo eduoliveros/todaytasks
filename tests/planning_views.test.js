@@ -48,8 +48,8 @@ describe('Planning Views - renderBoard & renderSummary chronological ordering', 
 
   it('renderiza los slots del panel de planificación (board) en estricto orden cronológico al añadir tarea a la parte superior', () => {
     state.tasks = [
-      { id: 1, title: 'Tarea 1 (Original)', planned: 60, status: 'pending', order: 2, elapsedBefore: 0 },
-      { id: 2, title: 'Tarea 2 (Nueva al inicio)', planned: 30, status: 'pending', order: 1, elapsedBefore: 0 }
+      { id: 1, title: 'Tarea 1 (Original)', planned: 30, status: 'pending', order: 2, elapsedBefore: 0 },
+      { id: 2, title: 'Tarea 2 (Nueva al inicio)', planned: 20, status: 'pending', order: 1, elapsedBefore: 0 }
     ];
 
     views.renderAll();
@@ -58,12 +58,12 @@ describe('Planning Views - renderBoard & renderSummary chronological ordering', 
     const slots = boardContent.querySelectorAll('.slot.slot-task');
     expect(slots).toHaveLength(2);
 
-    // Slot 1 debe ser Tarea 2 (09:00 - 09:30)
-    expect(slots[0].textContent).toContain('09:00–09:30');
+    // Slot 1 debe ser Tarea 2 (09:00 - 09:20)
+    expect(slots[0].textContent).toContain('09:00–09:20');
     expect(slots[0].textContent).toContain('Tarea 2 (Nueva al inicio)');
 
-    // Slot 2 debe ser Tarea 1 (09:30 - 10:30)
-    expect(slots[1].textContent).toContain('09:30–10:30');
+    // Slot 2 debe ser Tarea 1 (09:20 - 09:50)
+    expect(slots[1].textContent).toContain('09:20–09:50');
     expect(slots[1].textContent).toContain('Tarea 1 (Original)');
   });
 

@@ -144,6 +144,7 @@ export function TodayTasksDashboard(ctx){
     const we = document.getElementById("workEndInput") || document.getElementById("workEnd");
     const ni = document.getElementById("notifyIntervalInput") || document.getElementById("notifyInterval");
     const ts = document.getElementById("themeSelect");
+    const ab = document.getElementById("autoBreakToggle");
     const dpi = document.getElementById("datePickerInput");
     const dayLabel = document.getElementById("selectedDayLabel") || document.getElementById("datePickerDayLabel");
     const todayBtn = document.getElementById("todayBtn") || document.getElementById("btnDateToday");
@@ -158,6 +159,7 @@ export function TodayTasksDashboard(ctx){
       todayBtn.style.display = isToday ? "none" : "inline-flex";
     }
     refreshPlanningModeBtn();
+    refreshAutoBreakBtn();
     renderEnvSwitcher();
   }
 
@@ -171,9 +173,19 @@ export function TodayTasksDashboard(ctx){
     btn.textContent = state.planningMode ? "🗺 Planificación: ON" : "🗺 Modo planificación";
   }
 
+  function refreshAutoBreakBtn(){
+    if (typeof document === "undefined") return;
+    const btn = document.getElementById("autoBreakBtn");
+    if(!btn) return;
+    const state = getState();
+    const isEnabled = state.autoBreakEnabled !== false;
+    btn.classList.toggle("active", isEnabled);
+    btn.textContent = isEnabled ? "☕ Auto descansos: ON" : "☕ Auto descansos: OFF";
+  }
+
   return {
     renderClock, renderHeaderStats, renderTaskProgressBar,
-    renderEnvSwitcher, syncFormInputsFromState, refreshPlanningModeBtn
+    renderEnvSwitcher, syncFormInputsFromState, refreshPlanningModeBtn, refreshAutoBreakBtn
   };
 }
 

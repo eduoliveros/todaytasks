@@ -262,6 +262,16 @@ function switchHeaderTab(target){
     });
   }
 
+  const autoBreakBtnEl = document.getElementById("autoBreakBtn");
+  if(autoBreakBtnEl){
+    autoBreakBtnEl.addEventListener("click", ()=>{
+      state.autoBreakEnabled = !(state.autoBreakEnabled !== false);
+      saveState();
+      viewsModule.renderAll();
+      showToast(state.autoBreakEnabled ? "Auto descansos activados." : "Auto descansos desactivados.");
+    });
+  }
+
   /* ---------------- Weekly Schedule sub-module ---------------- */
   TodayTasksWeeklySchedule({
     getState: () => state,

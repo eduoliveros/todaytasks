@@ -1,6 +1,7 @@
 /* views/board.js — Tablero visual (timeline) y resumen del día */
 import { nowMinutes, fmt, fmtDur, fmtRemaining, getTaskElapsed, getTodayStr, formatDateFriendly } from '../utils.js';
 import { escapeHtml, escapeAttr } from '../ui.js';
+import { computeMeetingClusters } from '../scheduler.js';
 
 export function computeCalendarLayout(events, calStartMin, PX_PER_MIN) {
   const MIN_HEIGHT = 24;
@@ -123,9 +124,22 @@ export function TodayTasksBoardView(ctx){
     }
 
     const events = [];
+    const autoBreakEnabled = state.autoBreakEnabled !== false;
+    const meetingClusters = computeMeetingClusters(state.meetings || [], autoBreakEnabled);
     for(const m of (state.meetings || [])){
       events.push({start: m.start, end: m.end, kind: "meeting", label: m.title});
-      events.push({start: m.end, end: m.end + 10, kind: "buffer", label: m.title});
+    }
+    for(const c of meetingClusters){
+      if(c.breakDuration > 0){
+        const meetingNames = c.meetings.map(m => m.title).filter(Boolean).join(', ');
+        const label = c.breakDuration > 10
+          ? `descanso (${c.breakDuration} min) · ${meetingNames}`
+          : (meetingNames ? `colchón · ${meetingNames}` : `colchón · ${c.breakDuration} min`);
+        events.push({start: c.end, end: c.blockedEnd, kind: "buffer", label});
+      }
+    }
+    for(const b of (schedule && schedule.breaks ? schedule.breaks : [])){
+      events.push({start: b.start, end: b.end, kind: "break", label: `descanso · ${b.duration} min`, duration: b.duration});
     }
     for(const t of (state.tasks || [])){
       if(t.status === "completed") continue;
@@ -214,9 +228,10 @@ export function TodayTasksBoardView(ctx){
       const height = item.height;
       const kindClass = e.kind === "meeting" ? "slot-meeting"
                        : e.kind === "buffer" ? "slot-buffer"
+                       : e.kind === "break" ? "slot-break"
                        : "slot-task " + e.kind.replace("task-","");
       const label = e.kind === "meeting" ? "🗓 " + escapeHtml(e.label)
-                  : e.kind === "buffer" ? "colchón · " + escapeHtml(e.label)
+                  : (e.kind === "buffer" || e.kind === "break") ? "☕ " + escapeHtml(e.label)
                   : escapeHtml(e.label) + (e.kind==="task-running" ? " (en curso)" : "");
       const isPast = isToday && e.end <= now && !state.planningMode;
       const overflowClass = e.isOverflow ? "slot-overflow" : "";
@@ -234,7 +249,9 @@ export function TodayTasksBoardView(ctx){
         posStyles = `top:${top}px; height:${height}px; left:calc(${leftPct}% + 4px); width:calc(${colWidthPct}% - 8px);`;
       }
 
-      const tooltip = `${escapeAttr(e.label)} (${fmt(e.start)} – ${fmt(e.end)} · ${fmtDur(e.end - e.start)})`;
+      const tooltip = e.kind === "break"
+        ? `☕ Descanso de ${fmtDur(e.end - e.start)} (${fmt(e.start)} – ${fmt(e.end)})`
+        : `${escapeAttr(e.label)} (${fmt(e.start)} – ${fmt(e.end)} · ${fmtDur(e.end - e.start)})`;
 
       slotsHtml += `
         <div class="slot ${kindClass} ${overflowClass} ${pastClass} ${multiColClass} ${compactClass}" style="${posStyles}" title="${tooltip}">

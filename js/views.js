@@ -20,6 +20,8 @@ export function TodayTasksViews(ctx){
     dashboard.renderEnvSwitcher();
     dashboard.renderHeaderStats();
     dashboard.renderTaskProgressBar();
+    dashboard.refreshPlanningModeBtn();
+    dashboard.refreshAutoBreakBtn();
     const schedule = ctx.computeSchedule ? ctx.computeSchedule() : null;
     meetingsV.renderMeetings();
     tasksV.renderTasks(schedule);
@@ -52,6 +54,7 @@ export function TodayTasksViews(ctx){
     renderTaskProgressBar:  dashboard.renderTaskProgressBar,
     syncFormInputsFromState:dashboard.syncFormInputsFromState,
     refreshPlanningModeBtn: dashboard.refreshPlanningModeBtn,
+    refreshAutoBreakBtn:    dashboard.refreshAutoBreakBtn,
     /* Meetings */
     renderMeetings:         meetingsV.renderMeetings,
     /* Tasks */

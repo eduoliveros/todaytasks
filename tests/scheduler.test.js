@@ -7,9 +7,10 @@ describe('TodayTasksScheduler (ES Module)', () => {
     expect(TodayTasksScheduler).toBeDefined();
     expect(computeSchedule).toBeDefined();
     expect(blockedIntervals).toBeDefined();
+    expect(TodayTasksScheduler.computeMeetingClusters).toBeDefined();
   });
 
-  it('asigna tareas secuencialmente en tiempo libre', () => {
+  it('asigna tareas secuencialmente en tiempo libre e inserta descanso tras 60 min', () => {
     const state = defaultState();
     state.workStart = 540; // 09:00
     state.workEnd = 1080; // 18:00
@@ -26,8 +27,8 @@ describe('TodayTasksScheduler (ES Module)', () => {
     expect(schedule.overflowIds.size).toBe(0);
     // Tarea 1 de 09:00 a 10:00 (540 -> 600)
     expect(schedule.segmentsByTask[1]).toEqual([{ start: 540, end: 600 }]);
-    // Tarea 2 de 10:00 a 10:30 (600 -> 630)
-    expect(schedule.segmentsByTask[2]).toEqual([{ start: 600, end: 630 }]);
+    // Tarea 2 tras descanso de 10 min: de 10:10 a 10:40 (610 -> 640)
+    expect(schedule.segmentsByTask[2]).toEqual([{ start: 610, end: 640 }]);
   });
 
   it('respeta las reuniones y añade buffer de 10 minutos', () => {

@@ -41,6 +41,9 @@ export function defaultState() {
     },
     notifyIntervalMin: 10,
     notifyEnabled: true,
+    autoBreakEnabled: true,
+    autoBreakIntervalMin: 60,
+    autoBreakDurationMin: 10,
     themeMode: "auto",
     nextId: 1
   };
@@ -141,6 +144,15 @@ export function wrapState(rawState) {
   }
   if (typeof rawState.notifyEnabled !== "boolean") {
     rawState.notifyEnabled = true;
+  }
+  if (typeof rawState.autoBreakEnabled !== "boolean") {
+    rawState.autoBreakEnabled = true;
+  }
+  if (typeof rawState.autoBreakIntervalMin !== "number" || rawState.autoBreakIntervalMin <= 0) {
+    rawState.autoBreakIntervalMin = 60;
+  }
+  if (typeof rawState.autoBreakDurationMin !== "number" || rawState.autoBreakDurationMin <= 0) {
+    rawState.autoBreakDurationMin = 10;
   }
   if (!["auto", "light", "dark"].includes(rawState.themeMode)) {
     rawState.themeMode = "auto";

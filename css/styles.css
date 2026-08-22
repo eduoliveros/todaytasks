@@ -10,6 +10,7 @@
     --accent-running:#E0A030;
     --accent-meeting:#8A5A44;
     --accent-buffer:#B99B7D;
+    --accent-break:#4CAF50;
     --accent-done:#4C7A5B;
     --accent-pending:#5B7FA6;
     --accent-paused:#9A6B9E;
@@ -690,11 +691,20 @@
   }
 
   .slot-buffer{
-    background:rgba(185, 155, 125, 0.16);
-    border:1px dashed rgba(185, 155, 125, 0.45) !important;
-    border-left:3px dashed rgba(185, 155, 125, 0.65) !important;
+    background:rgba(76, 175, 80, 0.18);
+    border:1px dashed rgba(129, 199, 132, 0.55) !important;
+    border-left:3px dashed var(--accent-break) !important;
     font-style:italic;
-    color:#D8C8B8;
+    color:#C8E6C9;
+    font-size:11px;
+  }
+
+  .slot-break{
+    background:rgba(76, 175, 80, 0.22);
+    border:1px dashed rgba(129, 199, 132, 0.6) !important;
+    border-left:4px solid var(--accent-break) !important;
+    font-weight:500;
+    color:#C8E6C9;
     font-size:11px;
   }
 
