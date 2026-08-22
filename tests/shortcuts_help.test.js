@@ -6,41 +6,7 @@ describe('Modal de ayuda de atajos de teclado', () => {
   beforeAll(async () => {
     const html = fs.readFileSync(path.resolve(__dirname, '../index.html'), 'utf-8');
     document.documentElement.innerHTML = html;
-
-    window.TodayTasksConfig = { storageKey: 'todaytasks_test' };
-    window.TodayTasksUi = {
-      showToast: vi.fn(),
-      renderAll: vi.fn(),
-      refreshPlanningModeBtn: vi.fn(),
-      escapeHtml: s => s,
-      escapeAttr: s => s
-    };
     window.alert = vi.fn();
-
-    await import('../js/config.js');
-    await import('../js/utils.js');
-    await import('../js/history.js');
-    await import('../js/state.js');
-    await import('../js/scheduler.js');
-    await import('../js/ui.js');
-    await import('../js/notifications.js');
-    await import('../js/actions/meetings.js');
-    await import('../js/actions/tasks.js');
-    await import('../js/actions/dragdrop.js');
-    await import('../js/actions/execution.js');
-    await import('../js/actions/calendar.js');
-    await import('../js/actions.js');
-    await import('../js/views/dashboard.js');
-    await import('../js/views/meetings.js');
-    await import('../js/views/tasks.js');
-    await import('../js/views/board.js');
-    await import('../js/views/focus.js');
-    await import('../js/views.js');
-    await import('../js/cloud.js');
-    await import('../js/router.js');
-    await import('../js/app/weekly-schedule.js');
-    await import('../js/app/forms.js');
-    await import('../js/app/shortcuts.js');
     await import('../js/app.js');
   });
 

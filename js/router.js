@@ -1,4 +1,6 @@
 /* router.js — SPA hash router */
+import { renderHistoryView } from './history.js';
+
 export function TodayTasksRouter(ctx){
   const { getState, renderInterruptionView, renderTaskFocusView, renderAll } = ctx;
 
@@ -32,8 +34,8 @@ export function TodayTasksRouter(ctx){
       if(taskEl) taskEl.style.display = 'none';
       if(interruptionEl) interruptionEl.style.display = 'none';
       if(historyEl) historyEl.style.display = 'block';
-      if(window.TodayTasksHistory && window.TodayTasksHistory.renderHistoryView){
-        window.TodayTasksHistory.renderHistoryView(ctx);
+      if(renderHistoryView){
+        renderHistoryView(ctx);
       }
     } else if(view === 'task' && taskId){
       focusTaskId = taskId;
@@ -90,10 +92,6 @@ export function TodayTasksRouter(ctx){
     showView,
     router
   };
-}
-
-if (typeof window !== "undefined") {
-  window.TodayTasksRouter = TodayTasksRouter;
 }
 
 export default TodayTasksRouter;

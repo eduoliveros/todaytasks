@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { defaultState } from '../js/state.js';
+import { TodayTasksActions } from '../js/actions.js';
+import { getTodayStr } from '../js/utils.js';
 
 describe('Atajo de teclado "D" (Tiempo y fecha de Hoy)', () => {
   let actions;
@@ -10,42 +13,9 @@ describe('Atajo de teclado "D" (Tiempo y fecha de Hoy)', () => {
     const html = fs.readFileSync(path.resolve(__dirname, '../index.html'), 'utf-8');
     document.documentElement.innerHTML = html;
 
-    window.TodayTasksConfig = { storageKey: 'todaytasks_test' };
-    window.TodayTasksUi = {
-      showToast: vi.fn(),
-      renderAll: vi.fn(),
-      refreshPlanningModeBtn: vi.fn(),
-      escapeHtml: s => s,
-      escapeAttr: s => s
-    };
     window.alert = vi.fn();
 
-    await import('../js/config.js');
-    await import('../js/utils.js');
-    await import('../js/history.js');
-    await import('../js/state.js');
-    await import('../js/scheduler.js');
-    await import('../js/ui.js');
-    await import('../js/notifications.js');
-    await import('../js/actions/meetings.js');
-    await import('../js/actions/tasks.js');
-    await import('../js/actions/dragdrop.js');
-    await import('../js/actions/execution.js');
-    await import('../js/actions/calendar.js');
-    await import('../js/actions.js');
-    await import('../js/views/dashboard.js');
-    await import('../js/views/meetings.js');
-    await import('../js/views/tasks.js');
-    await import('../js/views/board.js');
-    await import('../js/views/focus.js');
-    await import('../js/views.js');
-    await import('../js/cloud.js');
-    await import('../js/router.js');
-    await import('../js/app/weekly-schedule.js');
-    await import('../js/app/forms.js');
-    await import('../js/app/shortcuts.js');
-
-    state = window.TodayTasksState.defaultState();
+    state = defaultState();
     state.selectedDate = '2025-01-01';
 
     const ctx = {
@@ -65,11 +35,11 @@ describe('Atajo de teclado "D" (Tiempo y fecha de Hoy)', () => {
       smartRender: () => {}
     };
 
-    actions = window.TodayTasksActions(ctx);
+    actions = TodayTasksActions(ctx);
   });
 
   it('actions.resetToToday() establece selectedDate al día actual', () => {
-    const today = window.TodayTasksUtils.getTodayStr();
+    const today = getTodayStr();
     expect(state.selectedDate).not.toBe(today);
 
     actions.resetToToday();
@@ -80,7 +50,7 @@ describe('Atajo de teclado "D" (Tiempo y fecha de Hoy)', () => {
   it('al pulsar la tecla "d", cambia al panel Tiempo y restablece la fecha a hoy', async () => {
     await import('../js/app.js');
 
-    const today = window.TodayTasksUtils.getTodayStr();
+    const today = getTodayStr();
 
     // Cambiar la fecha a un día del pasado a través de window.app
     window.app.selectDate('2025-01-01');
@@ -107,7 +77,7 @@ describe('Atajo de teclado "D" (Tiempo y fecha de Hoy)', () => {
   it('al pulsar "D" (mayúscula), también cambia al panel Tiempo y fecha de hoy', async () => {
     await import('../js/app.js');
 
-    const today = window.TodayTasksUtils.getTodayStr();
+    const today = getTodayStr();
     window.app.selectDate('2025-01-01');
 
     const datePicker = document.getElementById('datePickerInput');

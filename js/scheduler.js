@@ -80,10 +80,6 @@ export function computeSchedule(state, nowMinutes) {
 
 export const TodayTasksScheduler = { computeSchedule, blockedIntervals };
 
-if (typeof window !== "undefined") {
-  window.TodayTasksScheduler = TodayTasksScheduler;
-}
-
 export default TodayTasksScheduler;
 
 

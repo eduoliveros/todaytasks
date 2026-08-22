@@ -5,12 +5,6 @@ import { escapeHtml, escapeAttr } from '../ui.js';
 export function TodayTasksFocusView(ctx){
   const { getState, getCurrentView, getFocusTaskId, fmtMMSS, RING_R, RING_C } = ctx;
 
-  const _nowMinutes = () => (window.TodayTasksUtils && window.TodayTasksUtils.nowMinutes) ? window.TodayTasksUtils.nowMinutes() : nowMinutes();
-  const _fmt = (min) => (window.TodayTasksUtils && window.TodayTasksUtils.fmt) ? window.TodayTasksUtils.fmt(min) : fmt(min);
-  const _fmtDur = (min) => (window.TodayTasksUtils && window.TodayTasksUtils.fmtDur) ? window.TodayTasksUtils.fmtDur(min) : fmtDur(min);
-  const _escapeHtml = (str) => (window.TodayTasksUi && window.TodayTasksUi.escapeHtml) ? window.TodayTasksUi.escapeHtml(str) : escapeHtml(str);
-  const _escapeAttr = (str) => (window.TodayTasksUi && window.TodayTasksUi.escapeAttr) ? window.TodayTasksUi.escapeAttr(str) : escapeAttr(str);
-
   function renderInterruptionView(){
     if (typeof document === "undefined") return;
     const container = document.getElementById('view-interruption');
@@ -23,7 +17,7 @@ export function TodayTasksFocusView(ctx){
     }
 
     if(!state.activeInterruption.startEpoch){
-      state.activeInterruption.startEpoch = Date.now() - Math.max(0, _nowMinutes() - state.activeInterruption.start) * 60000;
+      state.activeInterruption.startEpoch = Date.now() - Math.max(0, nowMinutes() - state.activeInterruption.start) * 60000;
     }
 
     const existingTimeEl = container.querySelector('.interruption-time-value');
@@ -43,7 +37,7 @@ export function TodayTasksFocusView(ctx){
             <input type="text"
                    id="interruptionTitleInput"
                    class="interruption-input"
-                   value="${_escapeAttr(state.activeInterruption.title || '')}"
+                   value="${escapeAttr(state.activeInterruption.title || '')}"
                    placeholder="Motivo (ej: llamada, duda, reunión improvisada...)"
                    oninput="app.updateInterruptionTitle(this.value)"
                    autocomplete="off">
@@ -52,7 +46,7 @@ export function TodayTasksFocusView(ctx){
           <div class="interruption-timer-box">
             <div class="interruption-time-label">Tiempo transcurrido</div>
             <div class="interruption-time-value">${timerDisplay}</div>
-            <div class="interruption-start-meta">Iniciada a las ${_fmt(state.activeInterruption.start)}</div>
+            <div class="interruption-start-meta">Iniciada a las ${fmt(state.activeInterruption.start)}</div>
           </div>
 
           <div style="display:flex;gap:12px;width:100%;">
@@ -88,7 +82,7 @@ export function TodayTasksFocusView(ctx){
     }
 
 
-    const now = _nowMinutes();
+    const now = nowMinutes();
     let elapsed = t.elapsedBefore || 0;
     if(t.status === 'running' && t.runningStart !== null && t.runningStart !== undefined){
       elapsed += Math.max(0, now - t.runningStart);
@@ -118,7 +112,7 @@ export function TodayTasksFocusView(ctx){
           <a href="#/" class="btn secondary small focus-back" title="Volver al tablero (Esc)">← Volver al tablero</a>
         </div>
 
-        <h2 class="focus-task-name">${_escapeHtml(t.title)}</h2>
+        <h2 class="focus-task-name">${escapeHtml(t.title)}</h2>
 
         <div class="focus-ring-wrap">
           <svg class="focus-ring" viewBox="0 0 240 240">
@@ -131,7 +125,7 @@ export function TodayTasksFocusView(ctx){
           </svg>
           <div class="focus-ring-center">
             <div class="ring-main-time ${isOverrun ? 'overrun-text' : ''}">
-              ${isOverrun ? `+${_fmtDur(overrunMinutes)}` : _fmtDur(remaining)}
+              ${isOverrun ? `+${fmtDur(overrunMinutes)}` : fmtDur(remaining)}
             </div>
             <div class="ring-label">
               ${isOverrun ? 'tiempo extra' : 'restante'}
@@ -142,16 +136,16 @@ export function TodayTasksFocusView(ctx){
         <div class="focus-meta">
           <div class="focus-meta-item">
             <span class="meta-label">Planificado</span>
-            <span class="meta-value">${_fmtDur(t.planned)}</span>
+            <span class="meta-value">${fmtDur(t.planned)}</span>
           </div>
           <div class="focus-meta-item">
             <span class="meta-label">Transcurrido</span>
-            <span class="meta-value task-duration-clickable" title="Clic para ajustar tiempo transcurrido" onclick="app.openTimePopover('${_escapeAttr(t.id)}', event)">${_fmtDur(elapsed)}</span>
+            <span class="meta-value task-duration-clickable" title="Clic para ajustar tiempo transcurrido" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">${fmtDur(elapsed)}</span>
           </div>
           ${plannedEnd !== null ? `
           <div class="focus-meta-item">
             <span class="meta-label">Fin previsto</span>
-            <span class="meta-value">${_fmt(plannedEnd)}</span>
+            <span class="meta-value">${fmt(plannedEnd)}</span>
           </div>` : ''}
         </div>
 
@@ -168,17 +162,13 @@ export function TodayTasksFocusView(ctx){
           `}
         </div>
 
-        <span class="focus-updated">Actualizado: ${_fmt(now)}</span>
+        <span class="focus-updated">Actualizado: ${fmt(now)}</span>
       </div>
     `;
   }
 
 
   return { renderInterruptionView, renderTaskFocusView };
-}
-
-if (typeof window !== "undefined") {
-  window._TodayTasksFocusView = TodayTasksFocusView;
 }
 
 export default TodayTasksFocusView;

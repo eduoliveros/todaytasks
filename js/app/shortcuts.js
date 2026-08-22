@@ -144,9 +144,4 @@ export function TodayTasksShortcuts(appCtx){
   return { toggleShortcutsModal };
 }
 
-if (typeof window !== "undefined") {
-  window._TodayTasksShortcuts = TodayTasksShortcuts;
-  window.TodayTasksShortcuts = TodayTasksShortcuts;
-}
-
 export default TodayTasksShortcuts;

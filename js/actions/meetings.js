@@ -1,4 +1,5 @@
 /* actions/meetings.js — Acciones de reuniones (CRUD y recurrencia) */
+import { getTodayStr } from '../utils.js';
 
 export function TodayTasksMeetings(ctx, helpers) {
   const {
@@ -60,7 +61,7 @@ export function TodayTasksMeetings(ctx, helpers) {
         freq: recurringData.freq || "weekly",
         interval: recurringData.interval || 1,
         daysOfWeek: recurringData.daysOfWeek || [1],
-        startDate: state.selectedDate || (window.TodayTasksUtils ? window.TodayTasksUtils.getTodayStr() : ""),
+        startDate: state.selectedDate || getTodayStr(),
         endDate: recurringData.endDate || null,
         exceptions: {}
       });
@@ -68,7 +69,7 @@ export function TodayTasksMeetings(ctx, helpers) {
     } else {
       const envKey = state.activeEnv || "work";
       const env = state.environments[envKey] || state.environments.work;
-      const dateStr = state.selectedDate || (window.TodayTasksUtils ? window.TodayTasksUtils.getTodayStr() : "");
+      const dateStr = state.selectedDate || getTodayStr();
       if (!env.days[dateStr]) {
         env.days[dateStr] = { meetings: [], tasks: [], interruptions: [], planningMode: false };
       }
@@ -84,7 +85,7 @@ export function TodayTasksMeetings(ctx, helpers) {
   function deleteMeeting(id){
     id = normalizeMeetingId(id);
     const state = getState();
-    const dateStr = state.selectedDate || (window.TodayTasksUtils ? window.TodayTasksUtils.getTodayStr() : "");
+    const dateStr = state.selectedDate || getTodayStr();
     const target = state.meetings.find(m => m.id === id);
 
     if (target && target.isRecurring) {
@@ -112,7 +113,7 @@ export function TodayTasksMeetings(ctx, helpers) {
   function startEditMeeting(id){
     id = normalizeMeetingId(id);
     const state = getState();
-    const dateStr = state.selectedDate || (window.TodayTasksUtils ? window.TodayTasksUtils.getTodayStr() : "");
+    const dateStr = state.selectedDate || getTodayStr();
     const m = state.meetings.find(m=>m.id===id);
     if(!m) return;
 
@@ -191,7 +192,7 @@ export function TodayTasksMeetings(ctx, helpers) {
         rule.end = end;
       }
     } else {
-      const dateStr = state.selectedDate || (window.TodayTasksUtils ? window.TodayTasksUtils.getTodayStr() : "");
+      const dateStr = state.selectedDate || getTodayStr();
       const envKey = state.activeEnv || "work";
       const env = state.environments[envKey] || state.environments.work;
       const dayObj = env.days && env.days[dateStr];
@@ -215,10 +216,6 @@ export function TodayTasksMeetings(ctx, helpers) {
     addMeeting, deleteMeeting, startEditMeeting,
     updateMeetingEditField, cancelEditMeeting, saveEditMeeting
   };
-}
-
-if (typeof window !== "undefined") {
-  window._TodayTasksMeetings = TodayTasksMeetings;
 }
 
 export default TodayTasksMeetings;

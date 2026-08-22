@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { defaultState } from '../js/state.js';
+import { TodayTasksActions } from '../js/actions.js';
+import { getTodayStr, addDays } from '../js/utils.js';
 
 describe('TodayTasksActions - Auto-mover tareas pendientes a Hoy (Rollover)', () => {
   let actions;
@@ -7,21 +10,10 @@ describe('TodayTasksActions - Auto-mover tareas pendientes a Hoy (Rollover)', ()
   let notifyState = { taskId: null };
   let idCounter = 1;
 
-  beforeEach(async () => {
-    window.TodayTasksUi = { showToast: vi.fn(), renderAll: vi.fn() };
+  beforeEach(() => {
     window.alert = vi.fn();
 
-    await import('../js/utils.js');
-    await import('../js/state.js');
-    await import('../js/history.js');
-    await import('../js/actions/meetings.js');
-    await import('../js/actions/tasks.js');
-    await import('../js/actions/dragdrop.js');
-    await import('../js/actions/execution.js');
-    await import('../js/actions/calendar.js');
-    await import('../js/actions.js');
-
-    state = window.TodayTasksState.defaultState();
+    state = defaultState();
     idCounter = 1;
     taskEdit = null;
 
@@ -42,7 +34,7 @@ describe('TodayTasksActions - Auto-mover tareas pendientes a Hoy (Rollover)', ()
       smartRender: vi.fn()
     };
 
-    actions = window.TodayTasksActions(ctx);
+    actions = TodayTasksActions(ctx);
   });
 
   it('crea una tarea con autoMoveToToday = true cuando se marca la opción', () => {
@@ -74,8 +66,8 @@ describe('TodayTasksActions - Auto-mover tareas pendientes a Hoy (Rollover)', ()
   });
 
   it('mueve automáticamente tareas pendientes de días pasados (< today) a Hoy', () => {
-    const today = window.TodayTasksUtils.getTodayStr();
-    const yesterday = window.TodayTasksUtils.addDays(today, -1);
+    const today = getTodayStr();
+    const yesterday = addDays(today, -1);
     const envKey = state.activeEnv || 'work';
     const env = state.environments[envKey];
 
@@ -146,9 +138,9 @@ describe('TodayTasksActions - Auto-mover tareas pendientes a Hoy (Rollover)', ()
   });
 
   it('NO mueve tareas a días futuros si el usuario navega a un día futuro (> today)', () => {
-    const today = window.TodayTasksUtils.getTodayStr();
-    const yesterday = window.TodayTasksUtils.addDays(today, -1);
-    const tomorrow = window.TodayTasksUtils.addDays(today, 1);
+    const today = getTodayStr();
+    const yesterday = addDays(today, -1);
+    const tomorrow = addDays(today, 1);
     const envKey = state.activeEnv || 'work';
     const env = state.environments[envKey];
 
@@ -183,8 +175,8 @@ describe('TodayTasksActions - Auto-mover tareas pendientes a Hoy (Rollover)', ()
   });
 
   it('NO mueve tareas programadas en días futuros hacia hoy', () => {
-    const today = window.TodayTasksUtils.getTodayStr();
-    const tomorrow = window.TodayTasksUtils.addDays(today, 1);
+    const today = getTodayStr();
+    const tomorrow = addDays(today, 1);
     const envKey = state.activeEnv || 'work';
     const env = state.environments[envKey];
 

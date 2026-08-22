@@ -2,9 +2,7 @@ import { getTodayStr, getScheduleForDate, matchesRecurrenceRule } from './utils.
 import { snapshotAndPrune } from './history.js';
 
 function getToday() {
-  return (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.getTodayStr)
-    ? window.TodayTasksUtils.getTodayStr()
-    : getTodayStr();
+  return getTodayStr();
 }
 
 export function defaultDayState(envKey) {
@@ -176,12 +174,8 @@ export function wrapState(rawState) {
     const recurringRules = Array.isArray(envObj.recurringMeetings) ? envObj.recurringMeetings : [];
 
     const hydratedRecurring = [];
-    const matchFn = (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.matchesRecurrenceRule)
-      ? window.TodayTasksUtils.matchesRecurrenceRule
-      : matchesRecurrenceRule;
-
     recurringRules.forEach(rule => {
-      const match = matchFn ? matchFn(rule, dateStr) : null;
+      const match = matchesRecurrenceRule(rule, dateStr);
       if (match) {
         hydratedRecurring.push(match);
       }
@@ -202,11 +196,8 @@ export function wrapState(rawState) {
           }
           const envKey = rawState.activeEnv || "work";
           const dateStr = rawState.selectedDate || today;
-          const schedFn = (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.getScheduleForDate)
-            ? window.TodayTasksUtils.getScheduleForDate
-            : getScheduleForDate;
-          if (schedFn) {
-            const sched = schedFn(rawState, envKey, dateStr);
+          const sched = getScheduleForDate(rawState, envKey, dateStr);
+          if (sched) {
             return prop === "workStart" ? sched.start : sched.end;
           }
           return dayObj[prop] !== undefined ? dayObj[prop] : null;
@@ -269,11 +260,8 @@ export function wrapState(rawState) {
     }
   });
 
-  const pruneFn = (typeof window !== "undefined" && window.TodayTasksHistory && window.TodayTasksHistory.snapshotAndPrune)
-    ? window.TodayTasksHistory.snapshotAndPrune
-    : snapshotAndPrune;
-  if (pruneFn) {
-    pruneFn(rawState);
+  if (snapshotAndPrune) {
+    snapshotAndPrune(rawState);
   }
 
   return rawState;
@@ -292,10 +280,6 @@ export function loadState(storageKey) {
 }
 
 export const TodayTasksState = { defaultState, wrapState, loadState, defaultDayState, defaultEnvState };
-
-if (typeof window !== "undefined") {
-  window.TodayTasksState = TodayTasksState;
-}
 
 export default TodayTasksState;
 

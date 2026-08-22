@@ -1,24 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { defaultState } from '../js/state.js';
+import { TodayTasksActions } from '../js/actions.js';
+import { getTodayStr } from '../js/utils.js';
 
 describe('TodayTasksActions - Copiar Tareas a Otro Día', () => {
   let actions;
   let state;
   let idCounter = 1;
 
-  beforeEach(async () => {
-    window.TodayTasksUi = { showToast: () => {}, renderAll: () => {} };
+  beforeEach(() => {
     window.alert = vi.fn();
 
-    await import('../js/utils.js');
-    await import('../js/state.js');
-    await import('../js/actions/meetings.js');
-    await import('../js/actions/tasks.js');
-    await import('../js/actions/dragdrop.js');
-    await import('../js/actions/execution.js');
-    await import('../js/actions/calendar.js');
-    await import('../js/actions.js');
-
-    state = window.TodayTasksState.defaultState();
+    state = defaultState();
     idCounter = 1;
 
     const ctx = {
@@ -38,7 +31,7 @@ describe('TodayTasksActions - Copiar Tareas a Otro Día', () => {
       smartRender: () => {}
     };
 
-    actions = window.TodayTasksActions(ctx);
+    actions = TodayTasksActions(ctx);
   });
 
   it('copia una tarea activa del día actual a una fecha futura con estado pending y duración completa', () => {
@@ -75,7 +68,7 @@ describe('TodayTasksActions - Copiar Tareas a Otro Día', () => {
 
     expect(state.tasks[0].status).toBe('completed');
 
-    const todayStr = window.TodayTasksUtils.getTodayStr();
+    const todayStr = getTodayStr();
     actions.copyTaskToDate(pastTask.id, todayStr);
 
     state.selectedDate = todayStr;

@@ -1,19 +1,15 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import * as history from '../js/history.js';
-import { TodayTasksHistory, computeMetricsFromDay, snapshotAndPrune, saveHistoryMetric, deleteHistoryMetric } from '../js/history.js';
+import { computeMetricsFromDay, snapshotAndPrune, saveHistoryMetric, deleteHistoryMetric } from '../js/history.js';
+import { defaultState } from '../js/state.js';
 import { addDays, getTodayStr } from '../js/utils.js';
 
-describe('TodayTasksHistory - Histórico y Métricas (ES Module & Global bridge)', () => {
-  beforeEach(async () => {
-    window.TodayTasksUi = { escapeHtml: (s) => s, escapeAttr: (s) => s };
-    await import('../js/state.js');
-  });
-
-  it('exporta correctamente tanto funciones nombradas como objeto consolidado y window.TodayTasksHistory', () => {
-    expect(TodayTasksHistory).toBeDefined();
+describe('TodayTasksHistory - Histórico y Métricas (ES Module)', () => {
+  it('exporta correctamente las funciones del módulo de histórico', () => {
     expect(computeMetricsFromDay).toBeDefined();
-    expect(window.TodayTasksHistory).toBeDefined();
-    expect(window.TodayTasksHistory.computeMetricsFromDay).toBe(computeMetricsFromDay);
+    expect(snapshotAndPrune).toBeDefined();
+    expect(saveHistoryMetric).toBeDefined();
+    expect(deleteHistoryMetric).toBeDefined();
   });
 
   describe('computeMetricsFromDay', () => {
@@ -68,7 +64,7 @@ describe('TodayTasksHistory - Histórico y Métricas (ES Module & Global bridge)
 
   describe('snapshotAndPrune', () => {
     it('genera una captura histórica y limita los registros a los últimos 40 días', () => {
-      const state = window.TodayTasksState.defaultState();
+      const state = defaultState();
       const env = state.environments.work;
 
       // Crear 45 entradas antiguas en el historial
@@ -88,7 +84,7 @@ describe('TodayTasksHistory - Histórico y Métricas (ES Module & Global bridge)
     });
 
     it('poda el detalle de días de tareas/reuniones de hace más de 10 días', () => {
-      const state = window.TodayTasksState.defaultState();
+      const state = defaultState();
       const todayStr = getTodayStr();
       const env = state.environments.work;
 
@@ -107,7 +103,7 @@ describe('TodayTasksHistory - Histórico y Métricas (ES Module & Global bridge)
 
   describe('saveHistoryMetric & deleteHistoryMetric', () => {
     it('guarda o actualiza una medida manual en el historial', () => {
-      const state = window.TodayTasksState.defaultState();
+      const state = defaultState();
       const testDate = '2026-08-01';
 
       saveHistoryMetric(state, testDate, {
@@ -128,7 +124,7 @@ describe('TodayTasksHistory - Histórico y Métricas (ES Module & Global bridge)
     });
 
     it('elimina un registro del historial', () => {
-      const state = window.TodayTasksState.defaultState();
+      const state = defaultState();
       const testDate = '2026-08-01';
 
       saveHistoryMetric(state, testDate, {

@@ -1,13 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import * as utils from '../js/utils.js';
-import { TodayTasksUtils } from '../js/utils.js';
 
-describe('TodayTasksUtils (ES Module & Global bridge)', () => {
-  it('exporta correctamente tanto funciones nombradas como objeto consolidado y window.TodayTasksUtils', () => {
-    expect(TodayTasksUtils).toBeDefined();
+describe('TodayTasksUtils (ES Module)', () => {
+  it('exporta correctamente las funciones de utilidad', () => {
     expect(utils.nowMinutes).toBeDefined();
-    expect(window.TodayTasksUtils).toBeDefined();
-    expect(window.TodayTasksUtils.nowMinutes).toBe(utils.nowMinutes);
+    expect(utils.fmt).toBeDefined();
+    expect(utils.fmtDur).toBeDefined();
+    expect(utils.timeToMinutes).toBeDefined();
+    expect(utils.getTodayStr).toBeDefined();
+    expect(utils.getDayOfWeek).toBeDefined();
+    expect(utils.addDays).toBeDefined();
+    expect(utils.diffDays).toBeDefined();
+    expect(utils.computeOccupiedMeetingTime).toBeDefined();
   });
 
   describe('timeToMinutes & fmt', () => {

@@ -8,36 +8,6 @@ import { nowMinutes, fmt, fmtDur, timeToMinutes } from './utils.js';
 import { showToast } from './ui.js';
 
 export function TodayTasksActions(ctx) {
-  const _nowMinutes = () => {
-    return (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.nowMinutes)
-      ? window.TodayTasksUtils.nowMinutes()
-      : nowMinutes();
-  };
-
-  const _fmt = (min) => {
-    return (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.fmt)
-      ? window.TodayTasksUtils.fmt(min)
-      : fmt(min);
-  };
-
-  const _fmtDur = (min) => {
-    return (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.fmtDur)
-      ? window.TodayTasksUtils.fmtDur(min)
-      : fmtDur(min);
-  };
-
-  const _timeToMinutes = (str) => {
-    return (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.timeToMinutes)
-      ? window.TodayTasksUtils.timeToMinutes(str)
-      : timeToMinutes(str);
-  };
-
-  const _showToast = (msg) => {
-    return (typeof window !== "undefined" && window.TodayTasksUi && window.TodayTasksUi.showToast)
-      ? window.TodayTasksUi.showToast(msg)
-      : showToast(msg);
-  };
-
   /* Helper compartido: modal de recurrencia */
   function showRecurringModal(title, desc, onInstance, onSeries) {
     if (typeof document === "undefined") {
@@ -78,21 +48,15 @@ export function TodayTasksActions(ctx) {
 
   /* Helpers compartidos que se inyectan en los sub-módulos */
   const helpers = {
-    nowMinutes: _nowMinutes, fmt: _fmt, fmtDur: _fmtDur, timeToMinutes: _timeToMinutes, showToast: _showToast, showRecurringModal
+    nowMinutes, fmt, fmtDur, timeToMinutes, showToast, showRecurringModal
   };
 
   /* Instanciar sub-módulos */
-  const meetingsFactory = (typeof window !== "undefined" && window._TodayTasksMeetings) ? window._TodayTasksMeetings : TodayTasksMeetings;
-  const tasksFactory = (typeof window !== "undefined" && window._TodayTasksTasks) ? window._TodayTasksTasks : TodayTasksTasks;
-  const dragdropFactory = (typeof window !== "undefined" && window._TodayTasksDragDrop) ? window._TodayTasksDragDrop : TodayTasksDragDrop;
-  const executionFactory = (typeof window !== "undefined" && window._TodayTasksExecution) ? window._TodayTasksExecution : TodayTasksExecution;
-  const calendarFactory = (typeof window !== "undefined" && window._TodayTasksCalendar) ? window._TodayTasksCalendar : TodayTasksCalendar;
-
-  const meetings  = meetingsFactory(ctx, helpers);
-  const tasks     = tasksFactory(ctx, helpers);
-  const dragdrop  = dragdropFactory(ctx);
-  const execution = executionFactory(ctx, helpers);
-  const calendar  = calendarFactory(ctx, helpers);
+  const meetings  = TodayTasksMeetings(ctx, helpers);
+  const tasks     = TodayTasksTasks(ctx, helpers);
+  const dragdrop  = TodayTasksDragDrop(ctx);
+  const execution = TodayTasksExecution(ctx, helpers);
+  const calendar  = TodayTasksCalendar(ctx, helpers);
 
   /* Las funciones de calendar necesitan referencias cruzadas a tasks */
   const { materializeRecurringTasks } = tasks;
@@ -162,10 +126,6 @@ export function TodayTasksActions(ctx) {
     copyTaskToDate:         calendar.copyTaskToDate,
     openCopyTaskModal
   };
-}
-
-if (typeof window !== "undefined") {
-  window.TodayTasksActions = TodayTasksActions;
 }
 
 export default TodayTasksActions;

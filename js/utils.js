@@ -8,9 +8,7 @@ export function getTaskElapsed(t) {
   if (t.status === "completed") return Math.round((t.actualDuration || 0) * 10) / 10;
   let elapsed = t.elapsedBefore || 0;
   if (t.status === "running" && t.runningStart !== null) {
-    const currentNow = (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.nowMinutes)
-      ? window.TodayTasksUtils.nowMinutes()
-      : nowMinutes();
+    const currentNow = nowMinutes();
     elapsed += Math.max(0, currentNow - t.runningStart);
   }
   return Math.round(elapsed * 10) / 10;
@@ -34,11 +32,8 @@ export function fmtDur(mins) {
 
 export function fmtRemaining(plannedEndMin, nowMin) {
   const diff = plannedEndMin - nowMin;
-  const durFn = (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.fmtDur)
-    ? window.TodayTasksUtils.fmtDur
-    : fmtDur;
-  if (diff >= 0) return { text: "quedan " + durFn(diff), overrun: false };
-  return { text: "excedida " + durFn(-diff), overrun: true };
+  if (diff >= 0) return { text: "quedan " + fmtDur(diff), overrun: false };
+  return { text: "excedida " + fmtDur(-diff), overrun: true };
 }
 
 export function timeToMinutes(str) {
@@ -57,10 +52,7 @@ export function getTodayStr() {
 
 export function formatDateFriendly(dateStr) {
   if (!dateStr) return "";
-  const todayFn = (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.getTodayStr)
-    ? window.TodayTasksUtils.getTodayStr
-    : getTodayStr;
-  const today = todayFn();
+  const today = getTodayStr();
   if (dateStr === today) return "Hoy";
   const parts = dateStr.split("-");
   if (parts.length !== 3) return dateStr;
@@ -97,10 +89,7 @@ export function getDayOfWeek(dateStr) {
 
 export function getDayAbbr(dateStr) {
   if (!dateStr) return "";
-  const dowFn = (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.getDayOfWeek)
-    ? window.TodayTasksUtils.getDayOfWeek
-    : getDayOfWeek;
-  const dow = dowFn(dateStr);
+  const dow = getDayOfWeek(dateStr);
   return ["", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"][dow] || "";
 }
 
@@ -108,10 +97,7 @@ export function getScheduleForDate(state, envKey, dateStr) {
   if (!dateStr) return { start: 9 * 60, end: 18 * 60, isFreeDay: false };
   const envKeyToUse = envKey || (state && state.activeEnv) || "work";
   const env = state && state.environments ? (state.environments[envKeyToUse] || state.environments.work) : null;
-  const dowFn = (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.getDayOfWeek)
-    ? window.TodayTasksUtils.getDayOfWeek
-    : getDayOfWeek;
-  const dow = dowFn(dateStr);
+  const dow = getDayOfWeek(dateStr);
 
   if (env && env.weeklySchedule) {
     const rule = env.weeklySchedule[dow];
@@ -148,11 +134,8 @@ export function getStartOfWeekMonday(dateStr) {
 }
 
 export function diffWeeks(dateStr1, dateStr2) {
-  const getMonday = (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.getStartOfWeekMonday)
-    ? window.TodayTasksUtils.getStartOfWeekMonday
-    : getStartOfWeekMonday;
-  const mon1 = getMonday(dateStr1);
-  const mon2 = getMonday(dateStr2);
+  const mon1 = getStartOfWeekMonday(dateStr1);
+  const mon2 = getStartOfWeekMonday(dateStr2);
   const diffMs = mon1.getTime() - mon2.getTime();
   return Math.round(diffMs / (1000 * 60 * 60 * 24 * 7));
 }
@@ -179,23 +162,14 @@ export function matchesRecurrenceRule(rule, dateStr) {
   }
 
   const interval = rule.interval || 1;
-  const diffDaysFn = (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.diffDays)
-    ? window.TodayTasksUtils.diffDays
-    : diffDays;
-  const getDayOfWeekFn = (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.getDayOfWeek)
-    ? window.TodayTasksUtils.getDayOfWeek
-    : getDayOfWeek;
-  const diffWeeksFn = (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.diffWeeks)
-    ? window.TodayTasksUtils.diffWeeks
-    : diffWeeks;
 
   if (rule.freq === "daily") {
-    const dDiff = diffDaysFn(dateStr, rule.startDate);
+    const dDiff = diffDays(dateStr, rule.startDate);
     if (dDiff < 0 || dDiff % interval !== 0) return null;
   } else if (rule.freq === "weekly" || rule.freq === "custom_weeks") {
-    const dow = getDayOfWeekFn(dateStr);
+    const dow = getDayOfWeek(dateStr);
     if (!Array.isArray(rule.daysOfWeek) || !rule.daysOfWeek.includes(dow)) return null;
-    const wDiff = diffWeeksFn(dateStr, rule.startDate);
+    const wDiff = diffWeeks(dateStr, rule.startDate);
     if (wDiff < 0 || wDiff % interval !== 0) return null;
   } else {
     return null;
@@ -254,10 +228,6 @@ export const TodayTasksUtils = {
   matchesRecurrenceRule,
   computeOccupiedMeetingTime
 };
-
-if (typeof window !== "undefined") {
-  window.TodayTasksUtils = TodayTasksUtils;
-}
 
 export default TodayTasksUtils;
 

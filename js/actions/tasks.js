@@ -1,4 +1,5 @@
 /* actions/tasks.js — Acciones de tareas (CRUD, edición, recurrencia) */
+import { getTodayStr, matchesRecurrenceRule, getTaskElapsed } from '../utils.js';
 
 export function TodayTasksTasks(ctx, helpers){
   const {
@@ -46,7 +47,7 @@ export function TodayTasksTasks(ctx, helpers){
     const state = getState();
     const envKey = state.activeEnv || "work";
     const env = state.environments[envKey] || state.environments.work;
-    const dateStr = state.selectedDate || (window.TodayTasksUtils ? window.TodayTasksUtils.getTodayStr() : "");
+    const dateStr = state.selectedDate || getTodayStr();
     const recurringTaskRules = Array.isArray(env.recurringTasks) ? env.recurringTasks : [];
     if (recurringTaskRules.length === 0) return false;
 
@@ -58,9 +59,7 @@ export function TodayTasksTasks(ctx, helpers){
 
     let changed = false;
     recurringTaskRules.forEach(rule => {
-      const matches = window.TodayTasksUtils && window.TodayTasksUtils.matchesRecurrenceRule
-        ? window.TodayTasksUtils.matchesRecurrenceRule(rule, dateStr)
-        : null;
+      const matches = matchesRecurrenceRule(rule, dateStr);
       if (!matches) return;
 
       if (rule.exceptions && rule.exceptions[dateStr] && rule.exceptions[dateStr].type === "cancelled") return;
@@ -111,7 +110,7 @@ export function TodayTasksTasks(ctx, helpers){
         freq: recurringData.freq || "weekly",
         interval: recurringData.interval || 1,
         daysOfWeek: recurringData.daysOfWeek || [1],
-        startDate: state.selectedDate || (window.TodayTasksUtils ? window.TodayTasksUtils.getTodayStr() : ""),
+        startDate: state.selectedDate || getTodayStr(),
         endDate: recurringData.endDate || null,
         exceptions: {}
       });
@@ -145,7 +144,7 @@ export function TodayTasksTasks(ctx, helpers){
 
     if (t && t.ruleId) {
       const ruleId = t.ruleId;
-      const dateStr = state.selectedDate || (window.TodayTasksUtils ? window.TodayTasksUtils.getTodayStr() : "");
+      const dateStr = state.selectedDate || getTodayStr();
       showRecurringModal(
         `Eliminar "${t.title}" 🔁`,
         `¿Deseas eliminar solo la tarea del día ${dateStr} o eliminar toda la serie recurrente?`,
@@ -168,17 +167,17 @@ export function TodayTasksTasks(ctx, helpers){
 
     if (t.ruleId) {
       const ruleId = t.ruleId;
-      const dateStr = state.selectedDate || (window.TodayTasksUtils ? window.TodayTasksUtils.getTodayStr() : "");
+      const dateStr = state.selectedDate || getTodayStr();
       showRecurringModal(
         `Editar "${t.title}" 🔁`,
         `¿Deseas editar solo la tarea del día ${dateStr} o editar todas las futuras ocurrencias de la serie?`,
         () => {
-          const actual = window.TodayTasksUtils.getTaskElapsed(t);
+          const actual = getTaskElapsed(t);
           setTaskEdit({ id, ruleId, mode: "instance", title: t.title, duration: String(t.planned), actual: String(actual) });
           renderAll();
         },
         () => {
-          const actual = window.TodayTasksUtils.getTaskElapsed(t);
+          const actual = getTaskElapsed(t);
           setTaskEdit({ id, ruleId, mode: "series", title: t.title, duration: String(t.planned), actual: String(actual) });
           renderAll();
         }
@@ -186,7 +185,7 @@ export function TodayTasksTasks(ctx, helpers){
       return;
     }
 
-    const actual = window.TodayTasksUtils.getTaskElapsed(t);
+    const actual = getTaskElapsed(t);
     setTaskEdit({id, title:t.title, duration:String(t.planned), actual:String(actual), autoMoveToToday: !!t.autoMoveToToday});
     renderAll();
   }
@@ -283,10 +282,6 @@ export function TodayTasksTasks(ctx, helpers){
     addTask, deleteTask, startEditTask, updateTaskEditField,
     cancelEditTask, saveEditTask, updateTaskTimeFast, moveTask
   };
-}
-
-if (typeof window !== "undefined") {
-  window._TodayTasksTasks = TodayTasksTasks;
 }
 
 export default TodayTasksTasks;

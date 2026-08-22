@@ -7,17 +7,11 @@ import { TodayTasksFocusView } from './views/focus.js';
 
 export function TodayTasksViews(ctx){
   /* Instanciar sub-módulos */
-  const dashboardFactory = (typeof window !== "undefined" && window._TodayTasksDashboard) ? window._TodayTasksDashboard : TodayTasksDashboard;
-  const meetingsVFactory = (typeof window !== "undefined" && window._TodayTasksMeetingsView) ? window._TodayTasksMeetingsView : TodayTasksMeetingsView;
-  const tasksVFactory    = (typeof window !== "undefined" && window._TodayTasksTasksView) ? window._TodayTasksTasksView : TodayTasksTasksView;
-  const boardVFactory    = (typeof window !== "undefined" && window._TodayTasksBoardView) ? window._TodayTasksBoardView : TodayTasksBoardView;
-  const focusVFactory    = (typeof window !== "undefined" && window._TodayTasksFocusView) ? window._TodayTasksFocusView : TodayTasksFocusView;
-
-  const dashboard  = dashboardFactory(ctx);
-  const meetingsV  = meetingsVFactory(ctx);
-  const tasksV     = tasksVFactory(ctx);
-  const boardV     = boardVFactory(ctx);
-  const focusV     = focusVFactory(ctx);
+  const dashboard = TodayTasksDashboard(ctx);
+  const meetingsV = TodayTasksMeetingsView(ctx);
+  const tasksV    = TodayTasksTasksView(ctx);
+  const boardV    = TodayTasksBoardView(ctx);
+  const focusV    = TodayTasksFocusView(ctx);
 
   const { getCurrentView } = ctx;
 
@@ -72,10 +66,6 @@ export function TodayTasksViews(ctx){
     renderAll,
     smartRender
   };
-}
-
-if (typeof window !== "undefined") {
-  window.TodayTasksViews = TodayTasksViews;
 }
 
 export default TodayTasksViews;

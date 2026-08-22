@@ -1,23 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { defaultState } from '../js/state.js';
+import { TodayTasksActions } from '../js/actions.js';
 
 describe('TodayTasksActions - Interrupciones', () => {
   let actions;
   let state;
 
-  beforeEach(async () => {
-    window.TodayTasksUi = { showToast: () => {}, renderAll: () => {} };
+  beforeEach(() => {
     window.alert = vi.fn();
 
-    await import('../js/utils.js');
-    await import('../js/state.js');
-    await import('../js/actions/meetings.js');
-    await import('../js/actions/tasks.js');
-    await import('../js/actions/dragdrop.js');
-    await import('../js/actions/execution.js');
-    await import('../js/actions/calendar.js');
-    await import('../js/actions.js');
-
-    state = window.TodayTasksState.defaultState();
+    state = defaultState();
     let idCounter = 1;
 
     const ctx = {
@@ -37,7 +29,7 @@ describe('TodayTasksActions - Interrupciones', () => {
       smartRender: () => {}
     };
 
-    actions = window.TodayTasksActions(ctx);
+    actions = TodayTasksActions(ctx);
   });
 
   it('inicia una interrupción y pausa la tarea que estaba en ejecución', () => {

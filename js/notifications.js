@@ -1,3 +1,5 @@
+import { getTodayStr } from './utils.js';
+
 export function TodayTasksNotifications({ getState, getNotifyState, setNotifyState, saveState, nowMinutes, fmt, fmtRemaining, showToast }) {
   const notifSupported = (typeof window !== "undefined" && "Notification" in window);
 
@@ -156,7 +158,7 @@ export function TodayTasksNotifications({ getState, getNotifyState, setNotifySta
 
   function checkMeetingNotifications(){
     const state = getState();
-    const todayStr = (typeof window !== "undefined" && window.TodayTasksUtils) ? window.TodayTasksUtils.getTodayStr() : null;
+    const todayStr = getTodayStr();
     if(!todayStr || !state || !state.environments) return;
 
     const envKey = state.activeEnv || "work";
@@ -201,10 +203,6 @@ export function TodayTasksNotifications({ getState, getNotifyState, setNotifySta
     checkRunningTaskNotification,
     checkMeetingNotifications
   };
-}
-
-if (typeof window !== "undefined") {
-  window.TodayTasksNotifications = TodayTasksNotifications;
 }
 
 export default TodayTasksNotifications;

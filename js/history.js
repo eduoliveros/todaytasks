@@ -1,17 +1,5 @@
 import { getTodayStr, formatDateFriendly, diffDays, fmtDur, computeOccupiedMeetingTime } from './utils.js';
-
-// TodayTasksUi is loaded after this file, so access lazily
-function escapeHtml(s) {
-  return (typeof window !== "undefined" && window.TodayTasksUi && window.TodayTasksUi.escapeHtml)
-    ? window.TodayTasksUi.escapeHtml(s)
-    : s;
-}
-
-function escapeAttr(s) {
-  return (typeof window !== "undefined" && window.TodayTasksUi && window.TodayTasksUi.escapeAttr)
-    ? window.TodayTasksUi.escapeAttr(s)
-    : s;
-}
+import { escapeHtml, escapeAttr } from './ui.js';
 
 // Active series toggles for the chart
 let seriesToggles = {
@@ -418,10 +406,6 @@ export const TodayTasksHistory = {
   renderHistoryView,
   toggleSeries
 };
-
-if (typeof window !== "undefined") {
-  window.TodayTasksHistory = TodayTasksHistory;
-}
 
 export default TodayTasksHistory;
 

@@ -5,10 +5,6 @@ import { escapeHtml, escapeAttr } from '../ui.js';
 export function TodayTasksMeetingsView(ctx){
   const { getState, getMeetingEdit } = ctx;
 
-  const _fmt = (min) => (window.TodayTasksUtils && window.TodayTasksUtils.fmt) ? window.TodayTasksUtils.fmt(min) : fmt(min);
-  const _escapeHtml = (str) => (window.TodayTasksUi && window.TodayTasksUi.escapeHtml) ? window.TodayTasksUi.escapeHtml(str) : escapeHtml(str);
-  const _escapeAttr = (str) => (window.TodayTasksUi && window.TodayTasksUi.escapeAttr) ? window.TodayTasksUi.escapeAttr(str) : escapeAttr(str);
-
   function renderMeetings(){
     if (typeof document === "undefined") return;
     const el = document.getElementById("meetingsList");
@@ -28,14 +24,14 @@ export function TodayTasksMeetingsView(ctx){
           Editando reunión${modeLabel}
         </div>
         <div class="row">
-          <input type="text" value="${_escapeAttr(meetingEdit.title)}" oninput="app.updateMeetingEditField('title', this.value)" placeholder="Título de la reunión">
+          <input type="text" value="${escapeAttr(meetingEdit.title)}" oninput="app.updateMeetingEditField('title', this.value)" placeholder="Título de la reunión">
         </div>
         <div class="row">
-          <input type="time" value="${_escapeAttr(meetingEdit.start)}" style="flex:1" oninput="app.updateMeetingEditField('start', this.value)">
-          <input type="time" value="${_escapeAttr(meetingEdit.end)}" style="flex:1" oninput="app.updateMeetingEditField('end', this.value)">
+          <input type="time" value="${escapeAttr(meetingEdit.start)}" style="flex:1" oninput="app.updateMeetingEditField('start', this.value)">
+          <input type="time" value="${escapeAttr(meetingEdit.end)}" style="flex:1" oninput="app.updateMeetingEditField('end', this.value)">
         </div>
         <div class="task-actions">
-          <button class="btn small done" onclick="app.saveEditMeeting('${_escapeAttr(m.id)}')">Guardar</button>
+          <button class="btn small done" onclick="app.saveEditMeeting('${escapeAttr(m.id)}')">Guardar</button>
           <button class="btn small secondary" onclick="app.cancelEditMeeting()">Cancelar</button>
         </div>
       </div>`;
@@ -45,17 +41,17 @@ export function TodayTasksMeetingsView(ctx){
       <div class="item">
         <div class="top">
           <div>
-            <div class="title">${_escapeHtml(m.title)}</div>
+            <div class="title">${escapeHtml(m.title)}</div>
             <div class="time-range tr-meeting">
-              <span class="tag">Inicio</span>${_fmt(m.start)}<span class="arrow">→</span><span class="tag">Fin</span>${_fmt(m.end)}
+              <span class="tag">Inicio</span>${fmt(m.start)}<span class="arrow">→</span><span class="tag">Fin</span>${fmt(m.end)}
               ${recurringTag}
-              <span class="tag" style="margin-left:4px;background:rgba(79,70,229,0.08);color:#4F46E5;border-color:rgba(79,70,229,0.2);" title="Avisos: 2 min antes (${_fmt(m.start-2)}) y a la hora (${_fmt(m.start)})">🔔 2m y a la hora</span>
+              <span class="tag" style="margin-left:4px;background:rgba(79,70,229,0.08);color:#4F46E5;border-color:rgba(79,70,229,0.2);" title="Avisos: 2 min antes (${fmt(m.start-2)}) y a la hora (${fmt(m.start)})">🔔 2m y a la hora</span>
             </div>
-            <div class="meta">colchón hasta ${_fmt(m.end+10)}</div>
+            <div class="meta">colchón hasta ${fmt(m.end+10)}</div>
           </div>
           <div style="display:flex;align-items:center;gap:2px;">
-            <button class="icon-btn" title="Editar" onclick="app.startEditMeeting('${_escapeAttr(m.id)}')">✎</button>
-            <button class="icon-btn" title="Eliminar" onclick="app.deleteMeeting('${_escapeAttr(m.id)}')">✕</button>
+            <button class="icon-btn" title="Editar" onclick="app.startEditMeeting('${escapeAttr(m.id)}')">✎</button>
+            <button class="icon-btn" title="Eliminar" onclick="app.deleteMeeting('${escapeAttr(m.id)}')">✕</button>
           </div>
         </div>
       </div>`;
@@ -63,10 +59,6 @@ export function TodayTasksMeetingsView(ctx){
   }
 
   return { renderMeetings };
-}
-
-if (typeof window !== "undefined") {
-  window._TodayTasksMeetingsView = TodayTasksMeetingsView;
 }
 
 export default TodayTasksMeetingsView;

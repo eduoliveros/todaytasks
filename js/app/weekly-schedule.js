@@ -122,9 +122,9 @@ export function TodayTasksWeeklySchedule(appCtx){
     const envKey = state.activeEnv;
     const modal = document.getElementById('weeklyScheduleModal');
     if (!modal) return;
-    const titleEl = document.getElementById('weeklyScheduleModalTitle');
+    const titleEl = document.getElementById('weeklyScheduleTitle');
     const badgeEl = document.getElementById('weeklyScheduleEnvBadge');
-    if (titleEl) titleEl.textContent = 'Horario semanal';
+    if (titleEl) titleEl.textContent = '📅 Horario semanal';
     if (badgeEl) {
       badgeEl.textContent = envKey === 'work' ? '💼 Trabajo' : '🏠 Personal';
       badgeEl.className = 'weekly-env-badge ' + envKey;
@@ -141,16 +141,25 @@ export function TodayTasksWeeklySchedule(appCtx){
   }
 
   if (typeof document !== "undefined") {
-    const openWeeklyScheduleBtnEl = document.getElementById('openWeeklyScheduleBtn');
+    // Botón "📅 Horario semanal" en la cabecera (panel configuración)
+    const openWeeklyScheduleBtnEl = document.getElementById('weeklyScheduleBtn');
     if (openWeeklyScheduleBtnEl) {
       openWeeklyScheduleBtnEl.addEventListener('click', openWeeklyScheduleModal);
     }
 
+    // Botón × (cerrar) del modal
     const closeWeeklyScheduleBtnEl = document.getElementById('closeWeeklyScheduleBtn');
     if (closeWeeklyScheduleBtnEl) {
       closeWeeklyScheduleBtnEl.addEventListener('click', closeWeeklyScheduleModal);
     }
 
+    // Botón "Cancelar" del modal
+    const cancelWeeklyScheduleBtnEl = document.getElementById('cancelWeeklyScheduleBtn');
+    if (cancelWeeklyScheduleBtnEl) {
+      cancelWeeklyScheduleBtnEl.addEventListener('click', closeWeeklyScheduleModal);
+    }
+
+    // Clic en el overlay para cerrar
     const weeklyScheduleModalEl = document.getElementById('weeklyScheduleModal');
     if (weeklyScheduleModalEl) {
       weeklyScheduleModalEl.addEventListener('click', (e) => {
@@ -179,11 +188,6 @@ export function TodayTasksWeeklySchedule(appCtx){
   }
 
   return { derivePersonalFromWork, syncPersonalFromWork, getOrDeriveWeeklySchedule, openWeeklyScheduleModal, closeWeeklyScheduleModal };
-}
-
-if (typeof window !== "undefined") {
-  window._TodayTasksWeeklySchedule = TodayTasksWeeklySchedule;
-  window.TodayTasksWeeklySchedule = TodayTasksWeeklySchedule;
 }
 
 export default TodayTasksWeeklySchedule;

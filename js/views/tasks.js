@@ -5,14 +5,6 @@ import { escapeHtml, escapeAttr } from '../ui.js';
 export function TodayTasksTasksView(ctx){
   const { getState, getTaskEdit } = ctx;
 
-  const _nowMinutes = () => (window.TodayTasksUtils && window.TodayTasksUtils.nowMinutes) ? window.TodayTasksUtils.nowMinutes() : nowMinutes();
-  const _fmt = (min) => (window.TodayTasksUtils && window.TodayTasksUtils.fmt) ? window.TodayTasksUtils.fmt(min) : fmt(min);
-  const _fmtDur = (min) => (window.TodayTasksUtils && window.TodayTasksUtils.fmtDur) ? window.TodayTasksUtils.fmtDur(min) : fmtDur(min);
-  const _fmtRemaining = (p, n) => (window.TodayTasksUtils && window.TodayTasksUtils.fmtRemaining) ? window.TodayTasksUtils.fmtRemaining(p, n) : fmtRemaining(p, n);
-  const _getTaskElapsed = (t) => (window.TodayTasksUtils && window.TodayTasksUtils.getTaskElapsed) ? window.TodayTasksUtils.getTaskElapsed(t) : getTaskElapsed(t);
-  const _escapeHtml = (str) => (window.TodayTasksUi && window.TodayTasksUi.escapeHtml) ? window.TodayTasksUi.escapeHtml(str) : escapeHtml(str);
-  const _escapeAttr = (str) => (window.TodayTasksUi && window.TodayTasksUi.escapeAttr) ? window.TodayTasksUi.escapeAttr(str) : escapeAttr(str);
-
   function renderTasks(schedule){
     if (typeof document === "undefined") return;
     const el = document.getElementById("tasksList");
@@ -36,11 +28,11 @@ export function TodayTasksTasksView(ctx){
         return `
         <div class="item task-item editing">
           <div class="row">
-            <input type="text" value="${_escapeAttr(taskEdit.title)}" oninput="app.updateTaskEditField('title', this.value)" placeholder="Título de la tarea">
+            <input type="text" value="${escapeAttr(taskEdit.title)}" oninput="app.updateTaskEditField('title', this.value)" placeholder="Título de la tarea">
           </div>
           <div class="row" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
-            <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Planificado (min):<br><input type="number" min="1" value="${_escapeAttr(taskEdit.duration)}" style="width:110px;margin-top:4px;" oninput="app.updateTaskEditField('duration', this.value)"></label>
-            <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Consumido (min):<br><input type="number" min="0" value="${_escapeAttr(taskEdit.actual||0)}" style="width:110px;margin-top:4px;" oninput="app.updateTaskEditField('actual', this.value)"></label>
+            <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Planificado (min):<br><input type="number" min="1" value="${escapeAttr(taskEdit.duration)}" style="width:110px;margin-top:4px;" oninput="app.updateTaskEditField('duration', this.value)"></label>
+            <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Consumido (min):<br><input type="number" min="0" value="${escapeAttr(taskEdit.actual||0)}" style="width:110px;margin-top:4px;" oninput="app.updateTaskEditField('actual', this.value)"></label>
           </div>
           ${!isRecurring ? `
           <div style="margin-bottom:8px;">
@@ -54,7 +46,7 @@ export function TodayTasksTasksView(ctx){
           </div>
         </div>`;
       }
-      const elapsedReal = _getTaskElapsed(t);
+      const elapsedReal = getTaskElapsed(t);
       const segs = (schedule && schedule.segmentsByTask && schedule.segmentsByTask[t.id]) ? schedule.segmentsByTask[t.id] : [];
       const isOverflow = (schedule && schedule.overflowIds) ? schedule.overflowIds.has(t.id) : false;
       const label = t.status === "running" ? "en ejecución"
@@ -65,17 +57,17 @@ export function TodayTasksTasksView(ctx){
       let startTag, startVal, endTag, endVal, trClass, splitNote = "", remainingChip = "";
       if(t.status === "running"){
         const plannedEnd = t.runningStart + (t.planned - (t.elapsedBefore||0));
-        startTag = "Inicio real"; startVal = _fmt(t.runningStart);
-        endTag = "Fin prev."; endVal = _fmt(plannedEnd);
+        startTag = "Inicio real"; startVal = fmt(t.runningStart);
+        endTag = "Fin prev."; endVal = fmt(plannedEnd);
         trClass = "tr-running";
-        const rem = _fmtRemaining(plannedEnd, _nowMinutes());
-        remainingChip = `<span class="remaining-chip ${rem.overrun ? 'overrun' : ''}">${_escapeHtml(rem.text)}</span>`;
+        const rem = fmtRemaining(plannedEnd, nowMinutes());
+        remainingChip = `<span class="remaining-chip ${rem.overrun ? 'overrun' : ''}">${escapeHtml(rem.text)}</span>`;
       } else if(segs.length > 0){
-        startTag = "Inicio prev."; startVal = _fmt(segs[0].start);
-        endTag = "Fin prev."; endVal = _fmt(segs[segs.length-1].end);
+        startTag = "Inicio prev."; startVal = fmt(segs[0].start);
+        endTag = "Fin prev."; endVal = fmt(segs[segs.length-1].end);
         trClass = "tr-pending";
         if(segs.length > 1){
-          const parts = segs.map(s => `${_fmt(s.start)}-${_fmt(s.end)}`).join(", ");
+          const parts = segs.map(s => `${fmt(s.start)}-${fmt(s.end)}`).join(", ");
           splitNote = `<div class="meta" style="color:#B45309">Dividida por reuniones: ${parts}</div>`;
         }
       } else {
@@ -105,7 +97,7 @@ export function TodayTasksTasksView(ctx){
             <div style="display:flex;align-items:flex-start;gap:6px;flex:1;min-width:0;">
               ${dragHandle}
               <div style="flex:1;min-width:0;">
-                <div class="title">${_escapeHtml(t.title)}</div>
+                <div class="title">${escapeHtml(t.title)}</div>
                 <div class="time-range ${trClass}">
                   <span class="tag">${startTag}</span>${startVal}<span class="arrow">→</span><span class="tag">${endTag}</span>${endVal}
                   ${remainingChip}
@@ -113,7 +105,7 @@ export function TodayTasksTasksView(ctx){
                   ${autoMoveTag}
                 </div>
                 <div class="meta">
-                  Planificado: ${_fmtDur(t.planned)} · Consumido: ${_fmtDur(elapsedReal)}
+                  Planificado: ${fmtDur(t.planned)} · Consumido: ${fmtDur(elapsedReal)}
                   <span class="status-badge ${badgeClass}">${label}</span>
                   ${isOverflow ? '<span class="overflow-badge">⚠ No cabe en la jornada</span>' : ''}
                 </div>
@@ -155,10 +147,6 @@ export function TodayTasksTasksView(ctx){
   }
 
   return { renderTasks };
-}
-
-if (typeof window !== "undefined") {
-  window._TodayTasksTasksView = TodayTasksTasksView;
 }
 
 export default TodayTasksTasksView;

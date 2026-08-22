@@ -1,10 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { defaultState } from '../js/state.js';
+import { computeSchedule } from '../js/scheduler.js';
+import { TodayTasksViews } from '../js/views.js';
 
 describe('Planning Views - renderBoard & renderSummary chronological ordering', () => {
   let state;
   let views;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     document.body.innerHTML = `
       <div id="clockDisplay"></div>
       <div id="headerStats"></div>
@@ -22,18 +25,7 @@ describe('Planning Views - renderBoard & renderSummary chronological ordering', 
       <div id="envBtnPersonal"></div>
     `;
 
-    window.TodayTasksUi = { escapeHtml: (s) => s, escapeAttr: (s) => s };
-    await import('../js/utils.js');
-    await import('../js/state.js');
-    await import('../js/scheduler.js');
-    await import('../js/views/dashboard.js');
-    await import('../js/views/meetings.js');
-    await import('../js/views/tasks.js');
-    await import('../js/views/board.js');
-    await import('../js/views/focus.js');
-    await import('../js/views.js');
-
-    state = window.TodayTasksState.defaultState();
+    state = defaultState();
     state.selectedDate = '2026-08-17'; // Lunes
     state.planningMode = true; // Empieza desde trabajo start (09:00 / 540)
     state.workStart = 540;
@@ -45,13 +37,13 @@ describe('Planning Views - renderBoard & renderSummary chronological ordering', 
       getTaskEdit: () => null,
       getCurrentView: () => 'main',
       getFocusTaskId: () => null,
-      computeSchedule: () => window.TodayTasksScheduler.computeSchedule(state, () => 540),
+      computeSchedule: () => computeSchedule(state, () => 540),
       fmtMMSS: () => '',
       RING_R: 80,
       RING_C: 502
     };
 
-    views = window.TodayTasksViews(ctx);
+    views = TodayTasksViews(ctx);
   });
 
   it('renderiza los slots del panel de planificación (board) en estricto orden cronológico al añadir tarea a la parte superior', () => {
@@ -126,12 +118,12 @@ describe('Planning Views - renderBoard & renderSummary chronological ordering', 
       getTaskEdit: () => null,
       getCurrentView: () => 'main',
       getFocusTaskId: () => null,
-      computeSchedule: () => window.TodayTasksScheduler.computeSchedule(state, () => NOW),
+      computeSchedule: () => computeSchedule(state, () => NOW),
       fmtMMSS: () => '',
       RING_R: 80,
       RING_C: 502
     };
-    const viewsNow = window.TodayTasksViews(ctxNow);
+    const viewsNow = TodayTasksViews(ctxNow);
 
     state.tasks = [
       // Tarea A: en ejecución, runningStart = now = 600, 60 min planificados
@@ -165,12 +157,12 @@ describe('Planning Views - renderBoard & renderSummary chronological ordering', 
       getTaskEdit: () => null,
       getCurrentView: () => 'main',
       getFocusTaskId: () => null,
-      computeSchedule: () => window.TodayTasksScheduler.computeSchedule(state, () => NOW),
+      computeSchedule: () => computeSchedule(state, () => NOW),
       fmtMMSS: () => '',
       RING_R: 80,
       RING_C: 502
     };
-    const viewsOvertime = window.TodayTasksViews(ctxOvertime);
+    const viewsOvertime = TodayTasksViews(ctxOvertime);
 
     state.tasks = [
       // Tarea A: en ejecución con tiempo AGOTADO. plannedEnd=620 < now=630
@@ -202,12 +194,12 @@ describe('Planning Views - renderBoard & renderSummary chronological ordering', 
       getTaskEdit: () => null,
       getCurrentView: () => 'main',
       getFocusTaskId: () => null,
-      computeSchedule: () => window.TodayTasksScheduler.computeSchedule(state, () => NOW),
+      computeSchedule: () => computeSchedule(state, () => NOW),
       fmtMMSS: () => '',
       RING_R: 80,
       RING_C: 502
     };
-    const viewsPlan = window.TodayTasksViews(ctxPlan);
+    const viewsPlan = TodayTasksViews(ctxPlan);
 
     state.tasks = [
       { id: 1, title: 'Tarea A (en curso)', planned: 60, status: 'running', runningStart: NOW, order: 1, elapsedBefore: 0 },
@@ -240,12 +232,12 @@ describe('Planning Views - renderBoard & renderSummary chronological ordering', 
       getTaskEdit: () => null,
       getCurrentView: () => 'main',
       getFocusTaskId: () => null,
-      computeSchedule: () => window.TodayTasksScheduler.computeSchedule(state, () => NOW),
+      computeSchedule: () => computeSchedule(state, () => NOW),
       fmtMMSS: () => '',
       RING_R: 80,
       RING_C: 502
     };
-    const viewsEarly = window.TodayTasksViews(ctxEarly);
+    const viewsEarly = TodayTasksViews(ctxEarly);
 
     state.tasks = [
       { id: 1, title: 'Tarea ejecutando antes de jornada', planned: 60, status: 'running', runningStart: NOW, order: 1, elapsedBefore: 0 },

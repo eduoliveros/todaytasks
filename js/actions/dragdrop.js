@@ -66,9 +66,5 @@ export function TodayTasksDragDrop(ctx){
   };
 }
 
-if (typeof window !== "undefined") {
-  window._TodayTasksDragDrop = TodayTasksDragDrop;
-}
-
 export default TodayTasksDragDrop;
 

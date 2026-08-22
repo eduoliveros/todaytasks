@@ -209,9 +209,5 @@ export function TodayTasksExecution(ctx, helpers){
   };
 }
 
-if (typeof window !== "undefined") {
-  window._TodayTasksExecution = TodayTasksExecution;
-}
-
 export default TodayTasksExecution;
 

@@ -1,11 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { defaultState } from '../js/state.js';
+import { computeSchedule } from '../js/scheduler.js';
+import { TodayTasksViews } from '../js/views.js';
 
 describe('Focus View - Render and Navigation', () => {
   let state;
   let views;
   let currentTaskId = null;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     document.body.innerHTML = `
       <div id="view-main"></div>
       <div id="view-task" style="display:none"></div>
@@ -27,19 +30,7 @@ describe('Focus View - Render and Navigation', () => {
       <div id="envBtnPersonal"></div>
     `;
 
-    window.TodayTasksUi = { escapeHtml: (s) => s, escapeAttr: (s) => s };
-    await import('../js/utils.js');
-    await import('../js/state.js');
-    await import('../js/scheduler.js');
-    await import('../js/views/dashboard.js');
-    await import('../js/views/meetings.js');
-    await import('../js/views/tasks.js');
-    await import('../js/views/board.js');
-    await import('../js/views/focus.js');
-    await import('../js/views.js');
-    await import('../js/router.js');
-
-    state = window.TodayTasksState.defaultState();
+    state = defaultState();
     state.tasks = [
       { id: 42, title: 'Tarea para Foco', planned: 45, status: 'running', runningStart: 600, order: 1, elapsedBefore: 10 }
     ];
@@ -51,13 +42,13 @@ describe('Focus View - Render and Navigation', () => {
       getTaskEdit: () => null,
       getCurrentView: () => 'task',
       getFocusTaskId: () => currentTaskId,
-      computeSchedule: () => window.TodayTasksScheduler.computeSchedule(state, () => 610),
+      computeSchedule: () => computeSchedule(state, () => 610),
       fmtMMSS: () => '00:00',
       RING_R: 85,
       RING_C: 534.07
     };
 
-    views = window.TodayTasksViews(ctx);
+    views = TodayTasksViews(ctx);
   });
 
   it('renderTaskFocusView debe renderizar el contenido de la vista de foco en #view-task', () => {

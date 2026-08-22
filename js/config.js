@@ -9,11 +9,6 @@ export const TodayTasksConfig = {
     appId: "1:428737613419:web:9deeed94247f31ed94eb2e"
   }
 };
-
-if (typeof window !== "undefined") {
-  window.TodayTasksConfig = TodayTasksConfig;
-}
-
 export default TodayTasksConfig;
 
 

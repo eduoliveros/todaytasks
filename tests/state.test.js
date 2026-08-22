@@ -1,17 +1,15 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import * as stateModule from '../js/state.js';
-import { TodayTasksState, defaultState, wrapState, loadState } from '../js/state.js';
+import { defaultState, wrapState, loadState } from '../js/state.js';
 
-describe('TodayTasksState (ES Module & Global bridge)', () => {
+describe('TodayTasksState (ES Module)', () => {
   beforeEach(() => {
     localStorage.clear();
   });
 
-  it('exporta correctamente tanto funciones nombradas como objeto consolidado y window.TodayTasksState', () => {
-    expect(TodayTasksState).toBeDefined();
+  it('exporta correctamente las funciones del módulo de estado', () => {
     expect(defaultState).toBeDefined();
-    expect(window.TodayTasksState).toBeDefined();
-    expect(window.TodayTasksState.defaultState).toBe(defaultState);
+    expect(wrapState).toBeDefined();
+    expect(loadState).toBeDefined();
   });
 
   describe('defaultState & wrapState', () => {

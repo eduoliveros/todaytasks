@@ -1,4 +1,6 @@
 /* actions/calendar.js — Navegación de fechas, rollover, entorno, copia de tareas, día nuevo */
+import { getTodayStr, formatDateFriendly, addDays, getTaskElapsed } from '../utils.js';
+import { snapshotAndPrune, saveHistoryMetric as historySaveMetric, deleteHistoryMetric as historyDeleteMetric } from '../history.js';
 
 export function TodayTasksCalendar(ctx, helpers){
   const {
@@ -58,13 +60,13 @@ export function TodayTasksCalendar(ctx, helpers){
 
   function rolloverPendingTasks(materializeRecurringTasks) {
     const state = getState();
-    const today = window.TodayTasksUtils ? window.TodayTasksUtils.getTodayStr() : "";
+    const today = getTodayStr();
     const envKey = state.activeEnv || "work";
     const env = state.environments[envKey] || state.environments.work;
     if (!env || !env.days) return 0;
 
-    if (window.TodayTasksHistory && window.TodayTasksHistory.snapshotAndPrune) {
-      window.TodayTasksHistory.snapshotAndPrune(state);
+    if (snapshotAndPrune) {
+      snapshotAndPrune(state);
     }
 
     if (!env.days[today]) {
@@ -87,7 +89,7 @@ export function TodayTasksCalendar(ctx, helpers){
           const alreadyInToday = todayDayObj.tasks.some(existing => existing.id === t.id);
           if (!alreadyInToday) {
             const maxOrder = todayDayObj.tasks.reduce((m, task) => Math.max(m, task.order || 0), 0);
-            const savedElapsed = window.TodayTasksUtils ? window.TodayTasksUtils.getTaskElapsed(t) : (t.elapsedBefore || 0);
+            const savedElapsed = getTaskElapsed(t);
             const taskStatus = savedElapsed > 0 ? "paused" : "pending";
 
             todayDayObj.tasks.push({
@@ -124,33 +126,33 @@ export function TodayTasksCalendar(ctx, helpers){
     const state = getState();
     if(state.selectedDate === dateStr) return;
     state.selectedDate = dateStr;
-    if(window.TodayTasksHistory && window.TodayTasksHistory.snapshotAndPrune){
-      window.TodayTasksHistory.snapshotAndPrune(state);
+    if(snapshotAndPrune){
+      snapshotAndPrune(state);
     }
     if(materializeRecurringTasks) materializeRecurringTasks();
-    const today = window.TodayTasksUtils ? window.TodayTasksUtils.getTodayStr() : "";
+    const today = getTodayStr();
     if(dateStr === today && rollover){
       rollover();
     }
     saveState();
     if(ctx.syncFormInputsFromState) ctx.syncFormInputsFromState();
     smartRender ? smartRender() : renderAll();
-    showToast(`Viendo planificación del ${window.TodayTasksUtils ? window.TodayTasksUtils.formatDateFriendly(dateStr) : dateStr} (${dateStr})`);
+    showToast(`Viendo planificación del ${formatDateFriendly(dateStr)} (${dateStr})`);
   }
 
   function changeDateByDays(deltaDays, selectDateFn){
     const state = getState();
-    const current = state.selectedDate || (window.TodayTasksUtils ? window.TodayTasksUtils.getTodayStr() : "");
-    const targetDate = window.TodayTasksUtils ? window.TodayTasksUtils.addDays(current, deltaDays) : current;
+    const current = state.selectedDate || getTodayStr();
+    const targetDate = addDays(current, deltaDays);
     selectDateFn(targetDate);
   }
 
   function resetToToday(materializeRecurringTasks, rollover){
     const state = getState();
-    const today = window.TodayTasksUtils ? window.TodayTasksUtils.getTodayStr() : "";
+    const today = getTodayStr();
     state.selectedDate = today;
-    if(window.TodayTasksHistory && window.TodayTasksHistory.snapshotAndPrune){
-      window.TodayTasksHistory.snapshotAndPrune(state);
+    if(snapshotAndPrune){
+      snapshotAndPrune(state);
     }
     if(materializeRecurringTasks) materializeRecurringTasks();
     if(rollover) rollover();
@@ -162,8 +164,8 @@ export function TodayTasksCalendar(ctx, helpers){
 
   function saveHistoryMetric(dateStr, metrics){
     const state = getState();
-    if(window.TodayTasksHistory && window.TodayTasksHistory.saveHistoryMetric){
-      window.TodayTasksHistory.saveHistoryMetric(state, dateStr, metrics);
+    if(historySaveMetric){
+      historySaveMetric(state, dateStr, metrics);
     }
     saveState();
     smartRender ? smartRender() : renderAll();
@@ -173,8 +175,8 @@ export function TodayTasksCalendar(ctx, helpers){
   function deleteHistoryMetric(dateStr){
     if(typeof window !== "undefined" && !window.confirm(`¿Eliminar la medición guardada del día ${dateStr}?`)) return;
     const state = getState();
-    if(window.TodayTasksHistory && window.TodayTasksHistory.deleteHistoryMetric){
-      window.TodayTasksHistory.deleteHistoryMetric(state, dateStr);
+    if(historyDeleteMetric){
+      historyDeleteMetric(state, dateStr);
     }
     saveState();
     smartRender ? smartRender() : renderAll();
@@ -202,8 +204,8 @@ export function TodayTasksCalendar(ctx, helpers){
 
     if(typeof window !== "undefined" && !window.confirm(msg)) return;
 
-    if(window.TodayTasksHistory && window.TodayTasksHistory.snapshotAndPrune){
-      window.TodayTasksHistory.snapshotAndPrune(state);
+    if(snapshotAndPrune){
+      snapshotAndPrune(state);
     }
 
     state.meetings = [];
@@ -220,7 +222,7 @@ export function TodayTasksCalendar(ctx, helpers){
   function copyTaskToDate(taskId, targetDateStr) {
     if (!targetDateStr) return;
     const state = getState();
-    const currentDateStr = state.selectedDate || (window.TodayTasksUtils ? window.TodayTasksUtils.getTodayStr() : "");
+    const currentDateStr = state.selectedDate || getTodayStr();
 
     let originalTask = (state.tasks || []).find(t => t.id === taskId);
     if (!originalTask) {
@@ -270,13 +272,13 @@ export function TodayTasksCalendar(ctx, helpers){
     saveState();
     renderAll();
 
-    const friendlyDate = window.TodayTasksUtils && window.TodayTasksUtils.formatDateFriendly ? window.TodayTasksUtils.formatDateFriendly(targetDateStr) : targetDateStr;
+    const friendlyDate = formatDateFriendly ? formatDateFriendly(targetDateStr) : targetDateStr;
     showToast(`Tarea "${originalTask.title}" copiada al ${friendlyDate} 📋`);
   }
 
   function openCopyTaskModal(taskId, copyTaskToDateFn) {
     const state = getState();
-    const today = window.TodayTasksUtils ? window.TodayTasksUtils.getTodayStr() : "";
+    const today = getTodayStr();
     if (typeof document === "undefined") return;
     const modal = document.getElementById("copyTaskModal");
 
@@ -351,10 +353,6 @@ export function TodayTasksCalendar(ctx, helpers){
     resetToToday, saveHistoryMetric, deleteHistoryMetric, startNewDay,
     copyTaskToDate, openCopyTaskModal
   };
-}
-
-if (typeof window !== "undefined") {
-  window._TodayTasksCalendar = TodayTasksCalendar;
 }
 
 export default TodayTasksCalendar;

@@ -1,9 +1,9 @@
 /* app.js — Coordinador principal de la aplicación */
 import TodayTasksConfig from './config.js';
-import { nowMinutes, fmt, fmtDur, fmtRemaining, timeToMinutes, getTodayStr, getDayOfWeek } from './utils.js';
+import { nowMinutes, fmt, fmtDur, fmtRemaining, timeToMinutes, getTodayStr, getDayOfWeek, getTaskElapsed } from './utils.js';
 import { escapeHtml, escapeAttr, showToast } from './ui.js';
 import { defaultState, loadState } from './state.js';
-import { TodayTasksScheduler } from './scheduler.js';
+import { computeSchedule } from './scheduler.js';
 import { TodayTasksActions } from './actions.js';
 import { TodayTasksViews } from './views.js';
 import { TodayTasksCloud } from './cloud.js';
@@ -14,9 +14,7 @@ import { TodayTasksForms } from './app/forms.js';
 import { TodayTasksShortcuts } from './app/shortcuts.js';
 import { TodayTasksHistory } from './history.js';
 
-const STORAGE_KEY = (typeof window !== "undefined" && window.TodayTasksConfig && window.TodayTasksConfig.storageKey)
-  ? window.TodayTasksConfig.storageKey
-  : (TodayTasksConfig && TodayTasksConfig.storageKey ? TodayTasksConfig.storageKey : "todaytasks_state_v1");
+const STORAGE_KEY = (TodayTasksConfig && TodayTasksConfig.storageKey) ? TodayTasksConfig.storageKey : "todaytasks_state_v1";
 
 function fmtMMSS(startEpoch){
   if(!startEpoch) return "00:00";
@@ -27,11 +25,7 @@ function fmtMMSS(startEpoch){
 }
 
 /* ---------------- State ---------------- */
-const _loadState = (typeof window !== "undefined" && window.TodayTasksState && window.TodayTasksState.loadState)
-  ? window.TodayTasksState.loadState
-  : loadState;
-
-let state = _loadState(STORAGE_KEY);
+let state = loadState(STORAGE_KEY);
 
 let meetingEdit = null;
 let taskEdit = null;
@@ -53,14 +47,8 @@ function newId(){
   return id;
 }
 
-function computeSchedule(){
-  const scheduler = (typeof window !== "undefined" && window.TodayTasksScheduler && window.TodayTasksScheduler.computeSchedule)
-    ? window.TodayTasksScheduler.computeSchedule
-    : (TodayTasksScheduler && TodayTasksScheduler.computeSchedule ? TodayTasksScheduler.computeSchedule : TodayTasksScheduler);
-  const _nowMin = (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.nowMinutes)
-    ? window.TodayTasksUtils.nowMinutes
-    : nowMinutes;
-  return scheduler(state, _nowMin);
+function computeScheduleFn(){
+  return computeSchedule(state, nowMinutes);
 }
 
 let actionsModule, viewsModule, cloudModule, routerModule;
@@ -79,7 +67,7 @@ const ctx = {
   getFocusTaskId: () => routerModule ? routerModule.getFocusTaskId() : null,
   saveState,
   newId,
-  computeSchedule,
+  computeSchedule: computeScheduleFn,
   fmtMMSS,
   RING_R,
   RING_C,
@@ -91,27 +79,21 @@ const ctx = {
   refreshPlanningModeBtn: () => viewsModule && viewsModule.refreshPlanningModeBtn()
 };
 
-const actionsFactory = (typeof window !== "undefined" && window.TodayTasksActions) ? window.TodayTasksActions : TodayTasksActions;
-const viewsFactory = (typeof window !== "undefined" && window.TodayTasksViews) ? window.TodayTasksViews : TodayTasksViews;
-const cloudFactory = (typeof window !== "undefined" && window.TodayTasksCloud) ? window.TodayTasksCloud : TodayTasksCloud;
-const routerFactory = (typeof window !== "undefined" && window.TodayTasksRouter) ? window.TodayTasksRouter : TodayTasksRouter;
-const notificationsFactory = (typeof window !== "undefined" && window.TodayTasksNotifications) ? window.TodayTasksNotifications : TodayTasksNotifications;
-
-actionsModule = actionsFactory(ctx);
-viewsModule = viewsFactory(ctx);
-cloudModule = cloudFactory(ctx);
-routerModule = routerFactory(ctx);
+actionsModule = TodayTasksActions(ctx);
+viewsModule = TodayTasksViews(ctx);
+cloudModule = TodayTasksCloud(ctx);
+routerModule = TodayTasksRouter(ctx);
 
 const { refreshNotifyBtn, requestNotificationPermission, checkRunningTaskNotification, checkMeetingNotifications } =
-  notificationsFactory({
+  TodayTasksNotifications({
     getState: () => state,
     getNotifyState: () => notifyState,
     setNotifyState: (v) => { notifyState = v; },
     saveState,
-    nowMinutes: () => (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.nowMinutes) ? window.TodayTasksUtils.nowMinutes() : nowMinutes(),
-    fmt: (m) => (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.fmt) ? window.TodayTasksUtils.fmt(m) : fmt(m),
-    fmtRemaining: (p, n) => (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.fmtRemaining) ? window.TodayTasksUtils.fmtRemaining(p, n) : fmtRemaining(p, n),
-    showToast: (msg) => (typeof window !== "undefined" && window.TodayTasksUi && window.TodayTasksUi.showToast) ? window.TodayTasksUi.showToast(msg) : showToast(msg)
+    nowMinutes,
+    fmt,
+    fmtRemaining,
+    showToast
   });
 
 /* ---------------- Header tabs ---------------- */
@@ -171,9 +153,9 @@ function switchHeaderTab(target){
       state.workEnd = v;
 
       if(state.activeEnv === 'work') {
-        const dateStr = state.selectedDate || window.TodayTasksUtils.getTodayStr();
+        const dateStr = state.selectedDate || getTodayStr();
         const personalEnv = state.environments.personal;
-        const dow = window.TodayTasksUtils.getDayOfWeek(dateStr);
+        const dow = getDayOfWeek(dateStr);
         const personalSched = personalEnv.weeklySchedule;
         const isDerived = !personalSched || personalSched[dow] === undefined ||
           (personalSched[dow] && personalSched[dow].derived);
@@ -212,7 +194,7 @@ function switchHeaderTab(target){
 
   const dpiEl = document.getElementById("datePickerInput");
   if(dpiEl){
-    dpiEl.value = state.selectedDate || window.TodayTasksUtils.getTodayStr();
+    dpiEl.value = state.selectedDate || getTodayStr();
     dpiEl.addEventListener("change", (e) => actionsModule.selectDate(e.target.value));
   }
 
@@ -279,30 +261,22 @@ function switchHeaderTab(target){
   }
 
   /* ---------------- Weekly Schedule sub-module ---------------- */
-  const weeklyScheduleFactory = (typeof window !== "undefined" && (window._TodayTasksWeeklySchedule || window.TodayTasksWeeklySchedule))
-    ? (window._TodayTasksWeeklySchedule || window.TodayTasksWeeklySchedule)
-    : TodayTasksWeeklySchedule;
-
-  weeklyScheduleFactory({
+  TodayTasksWeeklySchedule({
     getState: () => state,
     saveState,
     viewsModule,
-    fmt: (m) => (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.fmt) ? window.TodayTasksUtils.fmt(m) : fmt(m),
-    timeToMinutes: (s) => (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.timeToMinutes) ? window.TodayTasksUtils.timeToMinutes(s) : timeToMinutes(s),
-    showToast: (msg) => (typeof window !== "undefined" && window.TodayTasksUi && window.TodayTasksUi.showToast) ? window.TodayTasksUi.showToast(msg) : showToast(msg)
+    fmt,
+    timeToMinutes,
+    showToast
   });
 
   /* ---------------- Forms sub-module ---------------- */
-  const formsFactory = (typeof window !== "undefined" && (window._TodayTasksForms || window.TodayTasksForms))
-    ? (window._TodayTasksForms || window.TodayTasksForms)
-    : TodayTasksForms;
-
-  formsFactory({
+  TodayTasksForms({
     getState: () => state,
     actionsModule,
-    showToast: (msg) => (typeof window !== "undefined" && window.TodayTasksUi && window.TodayTasksUi.showToast) ? window.TodayTasksUi.showToast(msg) : showToast(msg),
-    fmt: (m) => (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.fmt) ? window.TodayTasksUtils.fmt(m) : fmt(m),
-    timeToMinutes: (s) => (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.timeToMinutes) ? window.TodayTasksUtils.timeToMinutes(s) : timeToMinutes(s)
+    showToast,
+    fmt,
+    timeToMinutes
   });
 
   /* ---------------- Summary accordion toggle ---------------- */
@@ -344,11 +318,7 @@ function switchHeaderTab(target){
   }
 
   /* ---------------- Shortcuts sub-module ---------------- */
-  const shortcutsFactory = (typeof window !== "undefined" && (window._TodayTasksShortcuts || window.TodayTasksShortcuts))
-    ? (window._TodayTasksShortcuts || window.TodayTasksShortcuts)
-    : TodayTasksShortcuts;
-
-  shortcutsFactory({
+  TodayTasksShortcuts({
     getState: () => state,
     getMeetingEdit: () => meetingEdit,
     getTaskEdit: () => taskEdit,
@@ -361,7 +331,7 @@ function switchHeaderTab(target){
 
   /* ---------------- History metrics UI ---------------- */
   function toggleHistorySeries(key){
-    const historyMod = (typeof window !== "undefined" && window.TodayTasksHistory) ? window.TodayTasksHistory : TodayTasksHistory;
+    const historyMod = TodayTasksHistory;
     if(historyMod && historyMod.toggleSeries){
       historyMod.toggleSeries(key);
       if(routerModule.getCurrentView() === 'history' && historyMod.renderHistoryView){
@@ -372,7 +342,7 @@ function switchHeaderTab(target){
 
   function promptAddHistoryMetric(){
     if (typeof window === "undefined" || !window.prompt) return;
-    const dateStr = window.prompt("Introduce la fecha en formato YYYY-MM-DD:", (window.TodayTasksUtils ? window.TodayTasksUtils.getTodayStr() : getTodayStr()));
+    const dateStr = window.prompt("Introduce la fecha en formato YYYY-MM-DD:", getTodayStr());
     if(!dateStr) return;
     const mStr = window.prompt("Tiempo de Reuniones (minutos):", "0");
     if(mStr === null) return;
@@ -477,9 +447,7 @@ function switchHeaderTab(target){
         const t = (currentState.tasks || []).find(t => String(t.id) === String(taskId));
         if(!t) return;
 
-        const actual = (typeof window !== "undefined" && window.TodayTasksUtils && window.TodayTasksUtils.getTaskElapsed)
-          ? window.TodayTasksUtils.getTaskElapsed(t)
-          : (t.elapsedBefore || 0);
+        const actual = getTaskElapsed(t);
         input.value = actual;
 
         overlay.style.display = 'block';

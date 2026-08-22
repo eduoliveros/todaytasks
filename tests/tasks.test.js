@@ -1,4 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { defaultState } from '../js/state.js';
+import { TodayTasksActions } from '../js/actions.js';
+import * as utils from '../js/utils.js';
+
+const { getTodayStr, addDays, getTaskElapsed } = utils;
 
 describe('TodayTasksActions - Tareas', () => {
   let actions;
@@ -7,20 +12,10 @@ describe('TodayTasksActions - Tareas', () => {
   let notifyState = { taskId: null };
   let idCounter = 1;
 
-  beforeEach(async () => {
-    window.TodayTasksUi = { showToast: () => {}, renderAll: () => {} };
+  beforeEach(() => {
     window.alert = vi.fn();
 
-    await import('../js/utils.js');
-    await import('../js/state.js');
-    await import('../js/actions/meetings.js');
-    await import('../js/actions/tasks.js');
-    await import('../js/actions/dragdrop.js');
-    await import('../js/actions/execution.js');
-    await import('../js/actions/calendar.js');
-    await import('../js/actions.js');
-
-    state = window.TodayTasksState.defaultState();
+    state = defaultState();
     idCounter = 1;
     taskEdit = null;
 
@@ -41,7 +36,7 @@ describe('TodayTasksActions - Tareas', () => {
       smartRender: () => {}
     };
 
-    actions = window.TodayTasksActions(ctx);
+    actions = TodayTasksActions(ctx);
   });
 
   describe('Creación de tareas', () => {
@@ -179,24 +174,24 @@ describe('TodayTasksActions - Tareas', () => {
 
   describe('Navegación de fechas (changeDateByDays)', () => {
     it('avanza y retrocede días correctamente', () => {
-      const today = window.TodayTasksUtils.getTodayStr();
+      const today = getTodayStr();
       state.selectedDate = today;
 
       // Retroceder 1 día
       actions.changeDateByDays(-1);
-      const expectedPrev = window.TodayTasksUtils.addDays(today, -1);
+      const expectedPrev = addDays(today, -1);
       expect(state.selectedDate).toBe(expectedPrev);
 
       // Avanzar 2 días
       actions.changeDateByDays(2);
-      const expectedNext = window.TodayTasksUtils.addDays(today, 1);
+      const expectedNext = addDays(today, 1);
       expect(state.selectedDate).toBe(expectedNext);
     });
   });
 
   describe('Tareas recurrentes', () => {
     it('crea una regla recurrente y la materializa en el día actual', () => {
-      const today = window.TodayTasksUtils.getTodayStr();
+      const today = getTodayStr();
       state.selectedDate = today;
 
       // Force daily recurrence to ensure today matches
@@ -220,7 +215,7 @@ describe('TodayTasksActions - Tareas', () => {
     });
 
     it('no materializa duplicados si ya existe la tarea en el día', () => {
-      const today = window.TodayTasksUtils.getTodayStr();
+      const today = getTodayStr();
       state.selectedDate = today;
 
       actions.addTask('Standup', '10', false, {
@@ -234,7 +229,7 @@ describe('TodayTasksActions - Tareas', () => {
     });
 
     it('no materializa si existe excepción cancelled para esa fecha', () => {
-      const today = window.TodayTasksUtils.getTodayStr();
+      const today = getTodayStr();
       state.selectedDate = today;
 
       actions.addTask('Cancelable', '20', false, {
@@ -260,7 +255,7 @@ describe('TodayTasksActions - Tareas', () => {
     });
 
     it('al editar la serie se actualiza el título en la regla', () => {
-      const today = window.TodayTasksUtils.getTodayStr();
+      const today = getTodayStr();
       state.selectedDate = today;
 
       actions.addTask('Revisión semanal', '60', false, {
@@ -285,7 +280,7 @@ describe('TodayTasksActions - Tareas', () => {
     });
 
     it('al eliminar toda la serie se borra la regla y todas las instancias', () => {
-      const today = window.TodayTasksUtils.getTodayStr();
+      const today = getTodayStr();
       state.selectedDate = today;
 
       actions.addTask('Tarea serie', '30', false, {
@@ -321,22 +316,24 @@ describe('TodayTasksActions - Tareas', () => {
       actions.saveEditTask(taskId);
 
       expect(state.tasks[0].elapsedBefore).toBe(15);
-      expect(window.TodayTasksUtils.getTaskElapsed(state.tasks[0])).toBe(15);
+      expect(getTaskElapsed(state.tasks[0])).toBe(15);
     });
 
     it('actualiza el tiempo transcurrido en una tarea en ejecución reiniciando runningStart para evitar acumulados erróneos', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 0, 1, 8, 20, 0)); // 08:20 = 500 min
+
       actions.addTask('Tarea En Ejecución', '40');
       const taskId = state.tasks[0].id;
 
       // Start task at minute 500
-      vi.spyOn(window.TodayTasksUtils, 'nowMinutes').mockReturnValue(500);
       actions.startTask(taskId);
       expect(state.tasks[0].status).toBe('running');
       expect(state.tasks[0].runningStart).toBe(500);
 
       // Fast forward 7 minutes (minute 507) -> elapsed is 7
-      vi.spyOn(window.TodayTasksUtils, 'nowMinutes').mockReturnValue(507);
-      expect(window.TodayTasksUtils.getTaskElapsed(state.tasks[0])).toBe(7);
+      vi.setSystemTime(new Date(2026, 0, 1, 8, 27, 0)); // 08:27 = 507 min
+      expect(getTaskElapsed(state.tasks[0])).toBe(7);
 
       // User updates elapsed time to 10 min via fast update (popover or edit)
       actions.updateTaskTimeFast(taskId, '10');
@@ -346,7 +343,9 @@ describe('TodayTasksActions - Tareas', () => {
       expect(state.tasks[0].runningStart).toBe(507);
 
       // Total elapsed immediately after update must be 10 (NOT 17!)
-      expect(window.TodayTasksUtils.getTaskElapsed(state.tasks[0])).toBe(10);
+      expect(getTaskElapsed(state.tasks[0])).toBe(10);
+
+      vi.useRealTimers();
     });
 
     it('redondea valores con flotantes largos a máximo 1 decimal', () => {
@@ -356,7 +355,7 @@ describe('TodayTasksActions - Tareas', () => {
       actions.updateTaskTimeFast(taskId, '7.5499999999999545');
 
       expect(state.tasks[0].elapsedBefore).toBe(7.5);
-      expect(window.TodayTasksUtils.getTaskElapsed(state.tasks[0])).toBe(7.5);
+      expect(getTaskElapsed(state.tasks[0])).toBe(7.5);
     });
 
     it('actualiza correctamente el tiempo en una tarea completada', () => {
@@ -371,7 +370,7 @@ describe('TodayTasksActions - Tareas', () => {
       actions.updateTaskTimeFast(taskId, '25');
 
       expect(state.tasks[0].actualDuration).toBe(25);
-      expect(window.TodayTasksUtils.getTaskElapsed(state.tasks[0])).toBe(25);
+      expect(getTaskElapsed(state.tasks[0])).toBe(25);
     });
   });
 });

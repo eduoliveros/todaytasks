@@ -1,15 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import * as scheduler from '../js/scheduler.js';
 import { TodayTasksScheduler, computeSchedule, blockedIntervals } from '../js/scheduler.js';
 import { defaultState } from '../js/state.js';
 
-describe('TodayTasksScheduler (ES Module & Global bridge)', () => {
-  it('exporta correctamente tanto funciones nombradas como objeto consolidado y window.TodayTasksScheduler', () => {
+describe('TodayTasksScheduler (ES Module)', () => {
+  it('exporta correctamente las funciones del planificador', () => {
     expect(TodayTasksScheduler).toBeDefined();
     expect(computeSchedule).toBeDefined();
     expect(blockedIntervals).toBeDefined();
-    expect(window.TodayTasksScheduler).toBeDefined();
-    expect(window.TodayTasksScheduler.computeSchedule).toBe(computeSchedule);
   });
 
   it('asigna tareas secuencialmente en tiempo libre', () => {

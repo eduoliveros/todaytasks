@@ -253,9 +253,4 @@ export function TodayTasksForms(appCtx){
   return { handleMeetingSubmit, handleTaskSubmit };
 }
 
-if (typeof window !== "undefined") {
-  window._TodayTasksForms = TodayTasksForms;
-  window.TodayTasksForms = TodayTasksForms;
-}
-
 export default TodayTasksForms;

@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { defaultState } from '../js/state.js';
+import { TodayTasksActions } from '../js/actions.js';
 
 describe('TodayTasksActions - Reuniones (Simples y Recurrentes)', () => {
   let actions;
@@ -6,20 +8,10 @@ describe('TodayTasksActions - Reuniones (Simples y Recurrentes)', () => {
   let meetingEdit = null;
   let idCounter = 1;
 
-  beforeEach(async () => {
-    window.TodayTasksUi = { showToast: () => {}, renderAll: () => {} };
+  beforeEach(() => {
     window.alert = vi.fn();
 
-    await import('../js/utils.js');
-    await import('../js/state.js');
-    await import('../js/actions/meetings.js');
-    await import('../js/actions/tasks.js');
-    await import('../js/actions/dragdrop.js');
-    await import('../js/actions/execution.js');
-    await import('../js/actions/calendar.js');
-    await import('../js/actions.js');
-
-    state = window.TodayTasksState.defaultState();
+    state = defaultState();
     idCounter = 1;
     meetingEdit = null;
 
@@ -40,7 +32,7 @@ describe('TodayTasksActions - Reuniones (Simples y Recurrentes)', () => {
       smartRender: () => {}
     };
 
-    actions = window.TodayTasksActions(ctx);
+    actions = TodayTasksActions(ctx);
   });
 
   describe('Reuniones Puntuales (Simples)', () => {

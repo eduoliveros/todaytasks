@@ -27,10 +27,6 @@ export function showToast(message) {
 
 export const TodayTasksUi = { escapeHtml, escapeAttr, showToast };
 
-if (typeof window !== "undefined") {
-  window.TodayTasksUi = TodayTasksUi;
-}
-
 export default TodayTasksUi;
 
 

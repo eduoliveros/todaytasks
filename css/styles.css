@@ -716,6 +716,8 @@
   .ring-progress {
     stroke: var(--accent-running);
     stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
     transition: stroke-dashoffset 0.7s cubic-bezier(.4,0,.2,1), stroke 0.4s;
   }
   .ring-progress.state-overrun {
@@ -1173,6 +1175,22 @@
   [data-theme="dark"] .btn {
     background: var(--ink);
     color: #121418;
+  }
+  [data-theme="dark"] .btn.run {
+    background: var(--accent-running);
+    color: #3a2900;
+  }
+  [data-theme="dark"] .btn.pause {
+    background: var(--accent-paused);
+    color: #fff;
+  }
+  [data-theme="dark"] .btn.done {
+    background: var(--accent-done);
+    color: #fff;
+  }
+  [data-theme="dark"] .btn.danger {
+    background: var(--danger);
+    color: #fff;
   }
 
   [data-theme="dark"] .btn.secondary {
