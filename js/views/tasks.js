@@ -105,7 +105,7 @@ export function TodayTasksTasksView(ctx){
                   ${autoMoveTag}
                 </div>
                 <div class="meta">
-                  Planificado: ${fmtDur(t.planned)} · Consumido: ${fmtDur(elapsedReal)}
+                  Planificado: ${fmtDur(t.planned)} · Consumido: <span class="task-duration-clickable" title="Clic para ajustar tiempo consumido" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">${fmtDur(elapsedReal)}</span>
                   <span class="status-badge ${badgeClass}">${label}</span>
                   ${isOverflow ? '<span class="overflow-badge">⚠ No cabe en la jornada</span>' : ''}
                 </div>

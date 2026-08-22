@@ -156,6 +156,35 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
     await expect(viewTask).toBeHidden();
     await expect(page.locator('#view-main')).toBeVisible();
   });
+
+  test('Editar tiempo consumido directamente desde la página principal haciendo clic en el tiempo', async ({ page }) => {
+    await page.fill('#taskTitle', 'Tarea Ajuste Tiempo');
+    await page.fill('#taskDuration', '40');
+    await page.click('#addTaskBtn');
+
+    const tasksList = page.locator('#tasksList');
+    await expect(tasksList).toContainText('Tarea Ajuste Tiempo');
+
+    // El tiempo consumido inicial debe ser 0 min y clickable
+    const clickableTime = tasksList.locator('.task-duration-clickable');
+    await expect(clickableTime).toBeVisible();
+    await expect(clickableTime).toHaveText('0 min');
+
+    // Clic en el tiempo consumido abre el popover
+    await clickableTime.click();
+    const popover = page.locator('#timePopover');
+    await expect(popover).toBeVisible();
+
+    // Rellenar nuevo tiempo y guardar
+    const input = page.locator('#timePopoverInput');
+    await input.fill('25');
+    await page.click('#timePopover button:has-text("Guardar")');
+
+    // El popover se cierra y el tiempo consumido se actualiza en la página principal
+    await expect(popover).toBeHidden();
+    await expect(clickableTime).toHaveText('25 min');
+  });
 });
+
 
 
