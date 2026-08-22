@@ -130,9 +130,75 @@ describe('TodayTasksActions - Tareas', () => {
       expect(t1.order).toBe(2);
       expect(t2.order).toBe(3);
     });
+
+    it('ajusta el scroll con window.scrollBy para mantener el cursor sobre la flecha pulsada', () => {
+      window.scrollBy = vi.fn();
+      actions.addTask('Primera', '30');
+      actions.addTask('Segunda', '30');
+      const id2 = state.tasks[1].id;
+
+      // Crear elementos DOM simulados
+      document.body.innerHTML = `
+        <div id="tasksList">
+          <div class="task-item" data-task-id="${id2}">
+            <div class="order-controls">
+              <button class="icon-btn" title="Subir" data-action="move-up" data-task-id="${id2}">▲</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const btn = document.querySelector(`button[data-task-id="${id2}"]`);
+      let callCount = 0;
+      btn.getBoundingClientRect = vi.fn(() => {
+        callCount++;
+        // Primera llamada (antes de render): top = 500
+        // Segunda llamada (después de render): top = 420 (subió 80px)
+        return { top: callCount === 1 ? 500 : 420, left: 200, bottom: 530, right: 230, width: 30, height: 30 };
+      });
+
+      actions.moveTask(id2, -1);
+
+      expect(window.scrollBy).toHaveBeenCalledWith(expect.objectContaining({
+        top: -80,
+        left: 0,
+        behavior: 'instant'
+      }));
+    });
   });
 
   describe('Ciclo de vida de ejecución de tareas', () => {
+    it('desplaza el scroll un poco por encima de la tarea al iniciarla', () => {
+      window.scrollTo = vi.fn();
+      window.scrollY = 400;
+
+      actions.addTask('Tarea en cola', '30');
+      const taskId = state.tasks[0].id;
+
+      document.body.innerHTML = `
+        <div id="tasksList">
+          <div class="task-item" data-task-id="${taskId}"></div>
+        </div>
+      `;
+      const taskEl = document.querySelector(`[data-task-id="${taskId}"]`);
+      taskEl.getBoundingClientRect = vi.fn(() => ({
+        top: 200,
+        left: 50,
+        bottom: 280,
+        right: 350,
+        width: 300,
+        height: 80
+      }));
+
+      actions.startTask(taskId);
+
+      // currentScrollY (400) + rect.top (200) - offset (60) = 540
+      expect(window.scrollTo).toHaveBeenCalledWith(expect.objectContaining({
+        top: 540,
+        behavior: 'smooth'
+      }));
+    });
+
     it('inicia, pausa, reanuda y completa una tarea', () => {
       actions.addTask('Tarea en ejecucion', '30');
       const taskId = state.tasks[0].id;

@@ -135,7 +135,7 @@ export function TodayTasksTasksView(ctx){
       const autoMoveTag = (!t.isRecurring && t.autoMoveToToday) ? `<span class="tag tag-automove" title="Se trasladará automáticamente a hoy si no se completa">⏩ Pasar a hoy</span>` : '';
 
       return `
-        <div class="item task-item ${t.status}" ${dragAttrs}>
+        <div class="item task-item ${t.status}" data-task-id="${t.id}" ${dragAttrs}>
           <div class="top">
             <div style="display:flex;align-items:flex-start;gap:6px;flex:1;min-width:0;">
               ${dragHandle}
@@ -170,8 +170,8 @@ export function TodayTasksTasksView(ctx){
               <button class="btn small run" onclick="app.startTask(${t.id})">▶ Iniciar</button>
               <button class="btn small done" onclick="app.completeTask(${t.id})">✓ Completar</button>
               <div class="order-controls">
-                <button class="icon-btn" title="Subir" onclick="app.moveTask(${t.id},-1)">▲</button>
-                <button class="icon-btn" title="Bajar" onclick="app.moveTask(${t.id},1)">▼</button>
+                <button class="icon-btn" title="Subir" data-action="move-up" data-task-id="${t.id}" onclick="app.moveTask(${t.id},-1,event)">▲</button>
+                <button class="icon-btn" title="Bajar" data-action="move-down" data-task-id="${t.id}" onclick="app.moveTask(${t.id},1,event)">▼</button>
               </div>
             ` : ""}
             ${t.status==="running" ? `
@@ -183,8 +183,8 @@ export function TodayTasksTasksView(ctx){
               <button class="btn small run" onclick="app.resumeTask(${t.id})">▶ Reanudar</button>
               <button class="btn small done" onclick="app.completeTask(${t.id})">✓ Completar</button>
               <div class="order-controls">
-                <button class="icon-btn" title="Subir" onclick="app.moveTask(${t.id},-1)">▲</button>
-                <button class="icon-btn" title="Bajar" onclick="app.moveTask(${t.id},1)">▼</button>
+                <button class="icon-btn" title="Subir" data-action="move-up" data-task-id="${t.id}" onclick="app.moveTask(${t.id},-1,event)">▲</button>
+                <button class="icon-btn" title="Bajar" data-action="move-down" data-task-id="${t.id}" onclick="app.moveTask(${t.id},1,event)">▼</button>
               </div>
             ` : ""}
           </div>

@@ -44,6 +44,21 @@ export function TodayTasksExecution(ctx, helpers){
     setNotifyState({taskId: targetTask.id, lastNotifiedAt: nowMinutes(), timeEndNotified: nowMinutes() >= plannedEnd});
     saveState();
     smartRender ? smartRender() : renderAll();
+
+    if (typeof document !== "undefined" && typeof window !== "undefined") {
+      const targetEl = document.querySelector(`#tasksList .task-item[data-task-id="${id}"]`) ||
+                       document.querySelector("#tasksList .task-item") ||
+                       document.getElementById("tasksList");
+      if (targetEl && typeof targetEl.getBoundingClientRect === "function") {
+        const rect = targetEl.getBoundingClientRect();
+        const scrollOffset = 60; // Margen superior para ver un poco por encima de la tarea
+        const currentScrollY = (typeof window.scrollY !== "undefined") ? window.scrollY : (document.documentElement ? document.documentElement.scrollTop : 0);
+        const targetScrollY = Math.max(0, currentScrollY + rect.top - scrollOffset);
+        if (typeof window.scrollTo === "function") {
+          window.scrollTo({ top: targetScrollY, behavior: 'smooth' });
+        }
+      }
+    }
   }
 
   function pauseTask(id){

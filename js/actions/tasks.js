@@ -264,17 +264,41 @@ export function TodayTasksTasks(ctx, helpers){
     }
   }
 
-  function moveTask(id, dir){
+  function moveTask(id, dir, event){
     const state = getState();
     const list = state.tasks.filter(t=>t.status==="pending"||t.status==="paused")
                              .sort((a,b)=>a.order-b.order);
     const idx = list.findIndex(t=>t.id===id);
     const swapIdx = idx + dir;
     if(idx<0 || swapIdx<0 || swapIdx>=list.length) return;
+
+    let beforeRect = null;
+    if (typeof document !== "undefined") {
+      const btn = (event && event.currentTarget) ||
+                  document.querySelector(`#tasksList button[data-task-id="${id}"][data-action="${dir === -1 ? 'move-up' : 'move-down'}"]`) ||
+                  document.querySelector(`#tasksList .task-item[data-task-id="${id}"] .order-controls button[title="${dir === -1 ? 'Subir' : 'Bajar'}"]`);
+      if (btn && typeof btn.getBoundingClientRect === "function") {
+        beforeRect = btn.getBoundingClientRect();
+      }
+    }
+
     const a = list[idx], b = list[swapIdx];
     const tmp = a.order; a.order = b.order; b.order = tmp;
     saveState();
     renderAll();
+
+    if (beforeRect && typeof document !== "undefined" && typeof window !== "undefined") {
+      const newBtn = document.querySelector(`#tasksList button[data-task-id="${id}"][data-action="${dir === -1 ? 'move-up' : 'move-down'}"]`) ||
+                     document.querySelector(`#tasksList .task-item[data-task-id="${id}"] .order-controls button[title="${dir === -1 ? 'Subir' : 'Bajar'}"]`);
+      if (newBtn && typeof newBtn.getBoundingClientRect === "function") {
+        const afterRect = newBtn.getBoundingClientRect();
+        const deltaY = afterRect.top - beforeRect.top;
+        const deltaX = afterRect.left - beforeRect.left;
+        if ((deltaY !== 0 || deltaX !== 0) && typeof window.scrollBy === "function") {
+          window.scrollBy({ top: deltaY, left: deltaX, behavior: 'instant' });
+        }
+      }
+    }
   }
 
   return {

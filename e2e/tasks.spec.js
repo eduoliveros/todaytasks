@@ -257,6 +257,47 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
     await expect(tasksList).toContainText('Pendiente AutoMove 1');
     await expect(tasksList).toContainText('Pendiente AutoMove 2');
   });
+
+  test('Reordenar tareas con flechas y scroll al iniciar tarea', async ({ page }) => {
+    // 1. Crear 3 tareas
+    for (let i = 1; i <= 3; i++) {
+      await page.fill('#taskTitle', `Tarea Número ${i}`);
+      await page.fill('#taskDuration', '25');
+      await page.click('#addTaskBtn');
+    }
+
+    const tasksList = page.locator('#tasksList');
+    await expect(tasksList).toContainText('Tarea Número 1');
+    await expect(tasksList).toContainText('Tarea Número 2');
+    await expect(tasksList).toContainText('Tarea Número 3');
+
+    // 2. Localizar el botón de subir de la Tarea Número 3
+    const task3SubirBtn = tasksList.locator('.task-item:has-text("Tarea Número 3") button[data-action="move-up"]');
+    await expect(task3SubirBtn).toBeVisible();
+
+    // Guardar posición del botón en viewport antes del click
+    const boxBefore = await task3SubirBtn.boundingBox();
+    expect(boxBefore).toBeTruthy();
+
+    // Pulsar subir en Tarea Número 3
+    await task3SubirBtn.click();
+
+    // Ahora la Tarea Número 3 debe estar antes que la Tarea Número 2
+    const items = tasksList.locator('.task-item .title');
+    await expect(items.nth(0)).toHaveText('Tarea Número 1');
+    await expect(items.nth(1)).toHaveText('Tarea Número 3');
+    await expect(items.nth(2)).toHaveText('Tarea Número 2');
+
+    // 3. Iniciar la Tarea Número 2 (que está al final)
+    const task2StartBtn = tasksList.locator('.task-item:has-text("Tarea Número 2") button:has-text("▶ Iniciar")');
+    await task2StartBtn.click();
+
+    // La Tarea Número 2 pasa a primera posición y estado "running"
+    await expect(items.nth(0)).toHaveText('Tarea Número 2');
+    const runningItem = tasksList.locator('.task-item.running');
+    await expect(runningItem).toBeVisible();
+    await expect(runningItem).toContainText('Tarea Número 2');
+  });
 });
 
 
