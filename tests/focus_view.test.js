@@ -1,0 +1,99 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+
+describe('Focus View - Render and Navigation', () => {
+  let state;
+  let views;
+  let currentTaskId = null;
+
+  beforeEach(async () => {
+    document.body.innerHTML = `
+      <div id="view-main"></div>
+      <div id="view-task" style="display:none"></div>
+      <div id="view-interruption" style="display:none"></div>
+      <div id="view-history" style="display:none"></div>
+      <div id="clockDisplay"></div>
+      <div id="headerStats"></div>
+      <div id="taskProgressContainer"></div>
+      <div id="meetingsList"></div>
+      <div id="tasksList"></div>
+      <div id="boardTitle"></div>
+      <div id="boardNow"></div>
+      <div id="boardContent"></div>
+      <div id="meetingsSummaryList"></div>
+      <div id="completedList"></div>
+      <div id="pendingList"></div>
+      <div id="planningModeBtn"></div>
+      <div id="envBtnWork"></div>
+      <div id="envBtnPersonal"></div>
+    `;
+
+    window.TodayTasksUi = { escapeHtml: (s) => s, escapeAttr: (s) => s };
+    await import('../js/utils.js');
+    await import('../js/state.js');
+    await import('../js/scheduler.js');
+    await import('../js/views/dashboard.js');
+    await import('../js/views/meetings.js');
+    await import('../js/views/tasks.js');
+    await import('../js/views/board.js');
+    await import('../js/views/focus.js');
+    await import('../js/views.js');
+    await import('../js/router.js');
+
+    state = window.TodayTasksState.defaultState();
+    state.tasks = [
+      { id: 42, title: 'Tarea para Foco', planned: 45, status: 'running', runningStart: 600, order: 1, elapsedBefore: 10 }
+    ];
+    currentTaskId = 42;
+
+    const ctx = {
+      getState: () => state,
+      getMeetingEdit: () => null,
+      getTaskEdit: () => null,
+      getCurrentView: () => 'task',
+      getFocusTaskId: () => currentTaskId,
+      computeSchedule: () => window.TodayTasksScheduler.computeSchedule(state, () => 610),
+      fmtMMSS: () => '00:00',
+      RING_R: 85,
+      RING_C: 534.07
+    };
+
+    views = window.TodayTasksViews(ctx);
+  });
+
+  it('renderTaskFocusView debe renderizar el contenido de la vista de foco en #view-task', () => {
+    const taskContainer = document.getElementById('view-task');
+    expect(taskContainer).not.toBeNull();
+    expect(taskContainer.innerHTML).toBe('');
+
+    views.renderTaskFocusView();
+
+    expect(taskContainer.innerHTML).toContain('focus-view');
+    expect(taskContainer.innerHTML).toContain('Tarea para Foco');
+    expect(taskContainer.innerHTML).toContain('Volver al tablero');
+    expect(taskContainer.innerHTML).toContain('focus-ring-wrap');
+    expect(taskContainer.innerHTML).toContain('⏸ Pausar');
+    expect(taskContainer.innerHTML).toContain('✓ Completar');
+  });
+
+
+  it('renderTaskFocusView debe renderizar correctamente una tarea en estado paused', () => {
+    state.tasks[0].status = 'paused';
+    const taskContainer = document.getElementById('view-task');
+
+    views.renderTaskFocusView();
+
+    expect(taskContainer.innerHTML).toContain('▶ Reanudar');
+    expect(taskContainer.innerHTML).toContain('✓ Completar');
+  });
+
+  it('renderTaskFocusView debe renderizar correctamente una tarea en estado pending', () => {
+    state.tasks[0].status = 'pending';
+    const taskContainer = document.getElementById('view-task');
+
+    views.renderTaskFocusView();
+
+    expect(taskContainer.innerHTML).toContain('▶ Iniciar');
+    expect(taskContainer.innerHTML).toContain('✓ Completar');
+  });
+});
+

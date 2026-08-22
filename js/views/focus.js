@@ -71,21 +71,22 @@ export function TodayTasksFocusView(ctx){
 
   function renderTaskFocusView(){
     if (typeof document === "undefined") return;
-    const container = document.getElementById('view-focus');
+    const container = document.getElementById('view-task') || document.getElementById('view-focus');
     if(!container) return;
 
-    const taskId = getFocusTaskId();
-    if(taskId === null){
+    const taskId = getFocusTaskId ? getFocusTaskId() : (ctx.getFocusTaskId ? ctx.getFocusTaskId() : null);
+    if(taskId === null || taskId === undefined){
       if (typeof window !== "undefined") window.location.hash = '#/';
       return;
     }
 
-    const state = getState();
-    const t = (state.tasks || []).find(x => x.id === taskId);
+    const state = getState ? getState() : {};
+    const t = (state.tasks || []).find(x => String(x.id) === String(taskId));
     if(!t){
       if (typeof window !== "undefined") window.location.hash = '#/';
       return;
     }
+
 
     const now = _nowMinutes();
     let elapsed = t.elapsedBefore || 0;
@@ -97,12 +98,14 @@ export function TodayTasksFocusView(ctx){
     const remaining = Math.max(0, planned - elapsed);
     const overrunMinutes = isOverrun ? (elapsed - planned) : 0;
 
+    const radius = 100;
+    const circumference = +(2 * Math.PI * radius).toFixed(2);
     const fraction = Math.min(1, elapsed / planned);
-    const dashOffset = RING_C * (1 - fraction);
+    const dashOffset = +(circumference * (1 - fraction)).toFixed(2);
 
-    let ringClass = 'progress-ring-fill';
-    if(t.status === 'paused') ringClass += ' paused';
-    if(isOverrun) ringClass += ' overrun';
+    let ringClass = '';
+    if(t.status === 'paused') ringClass += ' state-paused';
+    if(isOverrun) ringClass += ' state-overrun';
 
     let plannedEnd = null;
     if(t.status === 'running' && t.runningStart !== null && t.runningStart !== undefined){
@@ -111,29 +114,32 @@ export function TodayTasksFocusView(ctx){
 
     container.innerHTML = `
       <div class="focus-view">
-        <button class="focus-back-btn" onclick="window.location.hash='#/'" title="Volver al tablero (Esc)">← Volver al tablero</button>
+        <div class="focus-header">
+          <a href="#/" class="btn secondary small focus-back" title="Volver al tablero (Esc)">← Volver al tablero</a>
+        </div>
 
-        <div class="focus-title">${_escapeHtml(t.title)}</div>
+        <h2 class="focus-task-name">${_escapeHtml(t.title)}</h2>
 
-        <div class="focus-ring-container">
-          <svg class="focus-ring-svg" viewBox="0 0 240 240">
-            <circle class="progress-ring-bg" cx="120" cy="120" r="${RING_R}"/>
-            <circle class="${ringClass}"
-                    cx="120" cy="120" r="${RING_R}"
-                    stroke-dasharray="${RING_C}"
+        <div class="focus-ring-wrap">
+          <svg class="focus-ring" viewBox="0 0 240 240">
+            <circle class="ring-track" cx="120" cy="120" r="${radius}" fill="none" stroke-width="12"/>
+            <circle class="ring-progress ${ringClass}"
+                    cx="120" cy="120" r="${radius}"
+                    fill="none" stroke-width="12"
+                    stroke-dasharray="${circumference}"
                     stroke-dashoffset="${dashOffset}"/>
           </svg>
           <div class="focus-ring-center">
-            <div class="focus-time-display ${isOverrun ? 'overrun' : ''}">
+            <div class="ring-main-time ${isOverrun ? 'overrun-text' : ''}">
               ${isOverrun ? `+${_fmtDur(overrunMinutes)}` : _fmtDur(remaining)}
             </div>
-            <div class="focus-ring-label ${isOverrun ? 'overrun' : ''}">
+            <div class="ring-label">
               ${isOverrun ? 'tiempo extra' : 'restante'}
             </div>
           </div>
         </div>
 
-        <div class="focus-meta-grid">
+        <div class="focus-meta">
           <div class="focus-meta-item">
             <span class="meta-label">Planificado</span>
             <span class="meta-value">${_fmtDur(t.planned)}</span>
@@ -166,6 +172,7 @@ export function TodayTasksFocusView(ctx){
       </div>
     `;
   }
+
 
   return { renderInterruptionView, renderTaskFocusView };
 }

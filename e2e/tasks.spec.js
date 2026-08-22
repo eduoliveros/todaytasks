@@ -119,4 +119,43 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
     expect(await datePicker.inputValue()).toBe(todayDateStr);
     await expect(page.locator('#todayBtn')).toBeHidden();
   });
+
+  test('Abrir ventana de foco con botón ◎ Foco [F] y tecla "f"', async ({ page }) => {
+    await page.fill('#taskTitle', 'Tarea en Foco E2E');
+    await page.fill('#taskDuration', '25');
+    await page.click('#addTaskBtn');
+
+    const tasksList = page.locator('#tasksList');
+    await expect(tasksList).toContainText('Tarea en Foco E2E');
+
+    // 1. Iniciar la tarea para que aparezca el botón de foco en marcha
+    await page.click('#tasksList .btn.run');
+    const focusBtn = tasksList.locator('.focus-link');
+    await expect(focusBtn).toBeVisible();
+
+    // Click en botón ◎ Foco [F]
+    await focusBtn.click();
+
+    const viewTask = page.locator('#view-task');
+    await expect(viewTask).toBeVisible();
+    await expect(viewTask).toContainText('Tarea en Foco E2E');
+    await expect(viewTask.locator('.focus-ring-wrap')).toBeVisible();
+
+    // Volver al tablero con el botón volver
+    await page.click('.focus-back');
+    await expect(viewTask).toBeHidden();
+    await expect(page.locator('#view-main')).toBeVisible();
+
+    // 2. Pulsar la tecla "f" para abrir foco
+    await page.keyboard.press('f');
+    await expect(viewTask).toBeVisible();
+    await expect(viewTask).toContainText('Tarea en Foco E2E');
+
+    // Pulsar "Escape" para volver
+    await page.keyboard.press('Escape');
+    await expect(viewTask).toBeHidden();
+    await expect(page.locator('#view-main')).toBeVisible();
+  });
 });
+
+
