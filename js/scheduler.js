@@ -49,7 +49,7 @@ export function computeSchedule(state, nowMinutes) {
 
     while (remaining > 0.01 && guard < 200) {
       guard++;
-      if (pos >= workEndVal) {
+      if (pos >= 24 * 60) {
         overflowIds.add(t.id);
         break;
       }
@@ -59,7 +59,7 @@ export function computeSchedule(state, nowMinutes) {
         continue;
       }
       const nextBlock = blocked.find(b => b.start > pos);
-      const limit = Math.min(nextBlock ? nextBlock.start : Infinity, workEndVal);
+      const limit = nextBlock ? nextBlock.start : 24 * 60;
       const available = limit - pos;
       if (available <= 0.01) {
         overflowIds.add(t.id);
@@ -70,7 +70,10 @@ export function computeSchedule(state, nowMinutes) {
       pos += use;
       remaining -= use;
     }
-    if (remaining > 0.01) overflowIds.add(t.id);
+    const taskEnd = segs.length > 0 ? segs[segs.length - 1].end : pos;
+    if (taskEnd > workEndVal || remaining > 0.01) {
+      overflowIds.add(t.id);
+    }
     segmentsByTask[t.id] = segs;
     cursor = pos;
   }
