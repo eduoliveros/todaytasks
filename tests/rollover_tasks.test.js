@@ -44,10 +44,16 @@ describe('TodayTasksActions - Auto-mover tareas pendientes a Hoy (Rollover)', ()
     expect(state.tasks[0].autoMoveToToday).toBe(true);
   });
 
-  it('crea una tarea con autoMoveToToday = false/falsy por defecto', () => {
+  it('crea una tarea con autoMoveToToday = true por defecto', () => {
     actions.addTask('Revisar presupuestos', '45');
     expect(state.tasks).toHaveLength(1);
-    expect(state.tasks[0].autoMoveToToday).toBeFalsy();
+    expect(state.tasks[0].autoMoveToToday).toBe(true);
+  });
+
+  it('crea una tarea con autoMoveToToday = false cuando se desmarca explícitamente', () => {
+    actions.addTask('Revisar presupuestos', '45', false, null, false);
+    expect(state.tasks).toHaveLength(1);
+    expect(state.tasks[0].autoMoveToToday).toBe(false);
   });
 
   it('permite editar y alternar la propiedad autoMoveToToday en una tarea existente', () => {

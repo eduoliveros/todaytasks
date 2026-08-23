@@ -48,7 +48,7 @@ describe('TodayTasksCloud - mergeStates', () => {
     expect(merged.environments.work.recurringTasks.map(t => t.title)).toContain('Tarea Recurrente Remota');
   });
 
-  it('preserva y combina correctamente el horario semanal (weeklySchedule) en mergeStates', () => {
+  it('el horario semanal (weeklySchedule) de la nube siempre prevalece por completo sobre el local si la nube tiene horario', () => {
     const local = defaultState();
     local.environments.work.weeklySchedule = {
       1: { start: 540, end: 1020 },
@@ -63,15 +63,16 @@ describe('TodayTasksCloud - mergeStates', () => {
 
     const merged = cloud.mergeStates(local, remote);
 
-    // El día 1 se sobrescribe por el valor de la nube
-    expect(merged.environments.work.weeklySchedule[1]).toEqual({ start: 480, end: 960 });
-    // El día 5 se conserva del local
-    expect(merged.environments.work.weeklySchedule[5]).toEqual({ start: 540, end: 900 });
-    // El día 6 se conserva como nulo (día libre) proveniente de la nube
-    expect(merged.environments.work.weeklySchedule[6]).toBeNull();
+    // El horario de la nube prevalece íntegramente
+    expect(merged.environments.work.weeklySchedule).toEqual({
+      1: { start: 480, end: 960 },
+      6: null
+    });
+    // El día 5 local no debe colarse en el horario
+    expect(merged.environments.work.weeklySchedule[5]).toBeUndefined();
   });
 
-  it('preserva el horario semanal local si la nube aún no tiene horario configurado (null)', () => {
+  it('el horario semanal local gana sólo cuando en la nube weeklySchedule es null o undefined', () => {
     const local = defaultState();
     local.environments.work.weeklySchedule = {
       1: { start: 540, end: 1020 }
@@ -84,6 +85,17 @@ describe('TodayTasksCloud - mergeStates', () => {
     expect(merged.environments.work.weeklySchedule).toEqual({
       1: { start: 540, end: 1020 }
     });
+  });
+
+  it('ambos con weeklySchedule null produce weeklySchedule null', () => {
+    const local = defaultState();
+    local.environments.work.weeklySchedule = null;
+
+    const remote = defaultState();
+    remote.environments.work.weeklySchedule = null;
+
+    const merged = cloud.mergeStates(local, remote);
+    expect(merged.environments.work.weeklySchedule).toBeNull();
   });
 
   // --- Tests TDD para bugs de sincronización con nuevo dispositivo ---
@@ -176,6 +188,27 @@ describe('TodayTasksCloud - mergeStates', () => {
     const merged = cloud.mergeStates(local, remote);
     expect(merged.activeEnv).toBe('personal');
     expect(merged.selectedDate).toBe('2026-08-20');
+  });
+
+  it('aplica la prevalencia de weeklySchedule de la nube también en el entorno personal', () => {
+    const local = defaultState();
+    local.environments.personal.weeklySchedule = {
+      1: { start: 1080, end: 1380 },
+      5: { start: 900, end: 1380 }
+    };
+
+    const remote = defaultState();
+    remote.environments.personal.weeklySchedule = {
+      1: { start: 1140, end: 1400 },
+      6: { start: 600, end: 1200 }
+    };
+
+    const merged = cloud.mergeStates(local, remote);
+    expect(merged.environments.personal.weeklySchedule).toEqual({
+      1: { start: 1140, end: 1400 },
+      6: { start: 600, end: 1200 }
+    });
+    expect(merged.environments.personal.weeklySchedule[5]).toBeUndefined();
   });
 });
 

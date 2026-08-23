@@ -82,12 +82,12 @@ export function TodayTasksCloud(ctx){
 
         mergedEnv.activeInterruption = remoteEnv.activeInterruption || localEnv.activeInterruption || null;
 
-        // Merge weeklySchedule
-        if (remoteEnv.weeklySchedule || localEnv.weeklySchedule) {
-          mergedEnv.weeklySchedule = {
-            ...(localEnv.weeklySchedule || {}),
-            ...(remoteEnv.weeklySchedule || {})
-          };
+        // Horario semanal: si la nube tiene horario configurado, la nube siempre prevalece por completo (sin mezclar claves locales).
+        // Sólo en el caso de que en la nube weeklySchedule sea null o undefined, el horario semanal local gana.
+        if (remoteEnv && remoteEnv.weeklySchedule) {
+          mergedEnv.weeklySchedule = JSON.parse(JSON.stringify(remoteEnv.weeklySchedule));
+        } else if (localEnv && localEnv.weeklySchedule) {
+          mergedEnv.weeklySchedule = JSON.parse(JSON.stringify(localEnv.weeklySchedule));
         } else {
           mergedEnv.weeklySchedule = null;
         }
@@ -341,7 +341,7 @@ export function TodayTasksCloud(ctx){
         if(!doc.exists) return;
         backupLocalState();
         applyingRemoteUpdate = true;
-        // Usar merge para preservar weeklySchedule local si el snapshot remoto lo trae a null
+        // Al actualizar desde otro dispositivo, mergeStates aplica los datos y el horario semanal de la nube (el cual prevalece salvo que sea null)
         setState(mergeStates(getState(), doc.data()));
         setMeetingEdit(null); setTaskEdit(null);
         applyingRemoteUpdate = false;

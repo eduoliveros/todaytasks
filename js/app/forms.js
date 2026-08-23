@@ -102,7 +102,7 @@ export function TodayTasksForms(appCtx){
     }
 
     let recurringData = null;
-    let autoMoveToToday = false;
+    let autoMoveToToday = true;
     const recurringTaskCb = document.getElementById("isRecurringTaskCheckbox");
     const autoMoveCb = document.getElementById("isAutoMoveTaskCheckbox");
     if (recurringTaskCb && recurringTaskCb.checked) {
@@ -113,13 +113,13 @@ export function TodayTasksForms(appCtx){
       const endDate = document.getElementById("recTaskEndDate").value || null;
       recurringData = { isRecurring: true, freq, interval, daysOfWeek, endDate };
     } else {
-      autoMoveToToday = !!(autoMoveCb && autoMoveCb.checked);
+      autoMoveToToday = autoMoveCb ? autoMoveCb.checked : true;
     }
 
     actionsModule.addTask(title, dur, toTop, recurringData, autoMoveToToday);
     titleEl.value = "";
     document.getElementById("taskDuration").value = "";
-    if (autoMoveCb) autoMoveCb.checked = false;
+    if (autoMoveCb) autoMoveCb.checked = true;
     if (recurringTaskCb) {
       recurringTaskCb.checked = false;
       const opts = document.getElementById("recurringTaskFormOptions");

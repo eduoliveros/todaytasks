@@ -86,7 +86,7 @@ export function TodayTasksTasks(ctx, helpers){
     return changed;
   }
 
-  function addTask(title, durationStr, toTop = false, recurringData = null, autoMoveToToday = false){
+  function addTask(title, durationStr, toTop = false, recurringData = null, autoMoveToToday = true){
     if(!title){
       alert("Indica un título para la tarea.");
       return;

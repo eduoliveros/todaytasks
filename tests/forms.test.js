@@ -31,7 +31,7 @@ describe('TodayTasksForms - Formularios y Menú de Posición', () => {
 
       <input type="text" id="taskTitle" value="" />
       <input type="number" id="taskDuration" value="" />
-      <input type="checkbox" id="isAutoMoveTaskCheckbox" />
+      <input type="checkbox" id="isAutoMoveTaskCheckbox" checked />
       <div id="autoMoveTaskOptionWrap"></div>
       <input type="checkbox" id="isRecurringTaskCheckbox" />
       <div id="recurringTaskFormOptions" style="display:none;">
@@ -78,7 +78,7 @@ describe('TodayTasksForms - Formularios y Menú de Posición', () => {
       expect(addedTasks).toHaveLength(0);
     });
 
-    it('añade tarea al final por defecto (toTop = false)', () => {
+    it('añade tarea con autoMoveToToday = true por defecto', () => {
       document.getElementById('taskTitle').value = 'Nueva Tarea';
       document.getElementById('taskDuration').value = '25';
       forms.handleTaskSubmit(false);
@@ -89,9 +89,22 @@ describe('TodayTasksForms - Formularios y Menú de Posición', () => {
         dur: '25',
         toTop: false,
         recurringData: null,
-        autoMoveToToday: false
+        autoMoveToToday: true
       });
       expect(document.getElementById('taskTitle').value).toBe('');
+      expect(document.getElementById('isAutoMoveTaskCheckbox').checked).toBe(true);
+    });
+
+    it('añade tarea con autoMoveToToday = false si se desmarca el checkbox', () => {
+      document.getElementById('taskTitle').value = 'Tarea Sin AutoMove';
+      document.getElementById('taskDuration').value = '25';
+      document.getElementById('isAutoMoveTaskCheckbox').checked = false;
+      forms.handleTaskSubmit(false);
+
+      expect(addedTasks).toHaveLength(1);
+      expect(addedTasks[0].autoMoveToToday).toBe(false);
+      // Tras enviar, se restablece a checked
+      expect(document.getElementById('isAutoMoveTaskCheckbox').checked).toBe(true);
     });
 
     it('añade tarea arriba si toTop = true', () => {
