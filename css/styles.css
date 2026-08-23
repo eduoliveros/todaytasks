@@ -1722,6 +1722,8 @@
     font-size: 13px;
     font-weight: 500;
     color: var(--ink);
+    user-select: none;
+    -webkit-user-select: none;
     transition: background 0.1s ease, color 0.1s ease;
   }
   .task-menu-item:hover {

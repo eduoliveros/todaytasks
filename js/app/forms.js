@@ -139,26 +139,35 @@ export function TodayTasksForms(appCtx){
     let longPressTimeout = null;
     let isLongPress = false;
 
+    function startHolding(e) {
+      if (e.type === "mousedown" && e.button !== 0) return;
+      isLongPress = false;
+      if (addTaskBtn) addTaskBtn.classList.add("btn-holding");
+      longPressTimeout = setTimeout(() => {
+        isLongPress = true;
+        showInsertPositionMenu();
+        cancelHolding();
+      }, 600);
+    }
+
+    function cancelHolding() {
+      if (longPressTimeout) {
+        clearTimeout(longPressTimeout);
+        longPressTimeout = null;
+      }
+      if (addTaskBtn) addTaskBtn.classList.remove("btn-holding");
+    }
+
     if (addTaskBtn) {
-      addTaskBtn.addEventListener("mousedown", (e) => {
-        if(e.button !== 0) return;
-        isLongPress = false;
-        longPressTimeout = setTimeout(() => {
-          isLongPress = true;
-          openTaskPositionMenu(addTaskBtn);
-        }, 500);
-      });
-
-      addTaskBtn.addEventListener("mouseup", () => {
-        clearTimeout(longPressTimeout);
-      });
-
-      addTaskBtn.addEventListener("mouseleave", () => {
-        clearTimeout(longPressTimeout);
-      });
+      addTaskBtn.addEventListener("mousedown", startHolding);
+      addTaskBtn.addEventListener("touchstart", startHolding, { passive: true });
+      addTaskBtn.addEventListener("mouseup", cancelHolding);
+      addTaskBtn.addEventListener("mouseleave", cancelHolding);
+      addTaskBtn.addEventListener("touchend", cancelHolding);
+      addTaskBtn.addEventListener("touchcancel", cancelHolding);
 
       addTaskBtn.addEventListener("click", (e) => {
-        if(isLongPress) {
+        if (isLongPress) {
           e.preventDefault();
           e.stopPropagation();
           isLongPress = false;
@@ -169,58 +178,71 @@ export function TodayTasksForms(appCtx){
 
       addTaskBtn.addEventListener("contextmenu", (e) => {
         e.preventDefault();
-        openTaskPositionMenu(addTaskBtn);
+        showInsertPositionMenu();
       });
     }
 
     /* Position menu popup */
-    function openTaskPositionMenu(anchorEl){
-      const existing = document.getElementById("taskPositionMenu");
-      if(existing) existing.remove();
+    function showInsertPositionMenu(){
+      const existing = document.getElementById("addTaskPositionMenu");
+      if (existing) existing.remove();
+
+      const titleEl = document.getElementById("taskTitle");
+      const title = titleEl ? titleEl.value.trim() : "";
+      if(!title){
+        showToast("Escribe un título para la tarea.");
+        if (titleEl) titleEl.focus();
+        return;
+      }
 
       const menu = document.createElement("div");
-      menu.id = "taskPositionMenu";
-      menu.className = "task-position-menu";
-      menu.innerHTML = `
-        <div class="pos-option" data-top="true">
-          <span class="pos-icon">▲</span>
-          <div>
-            <strong>Añadir arriba del todo</strong>
-            <small>Prioridad máxima, primera de la lista</small>
-          </div>
-        </div>
-        <div class="pos-option" data-top="false">
-          <span class="pos-icon">▼</span>
-          <div>
-            <strong>Añadir abajo del todo</strong>
-            <small>Al final de la cola (por defecto)</small>
-          </div>
-        </div>
-      `;
+      menu.id = "addTaskPositionMenu";
+      menu.className = "task-context-menu";
 
-      document.body.appendChild(menu);
-
-      const rect = anchorEl.getBoundingClientRect();
-      menu.style.position = "fixed";
-      menu.style.bottom = (window.innerHeight - rect.top + 6) + "px";
-      menu.style.right = (window.innerWidth - rect.right) + "px";
-
-      menu.querySelectorAll(".pos-option").forEach(opt => {
-        opt.addEventListener("click", () => {
-          const toTop = opt.getAttribute("data-top") === "true";
-          menu.remove();
-          handleTaskSubmit(toTop);
-        });
+      const optionTop = document.createElement("div");
+      optionTop.className = "task-menu-item";
+      optionTop.innerHTML = "<span>⬆️</span> <span>Añadir al inicio (arriba)</span>";
+      optionTop.addEventListener("click", () => {
+        handleTaskSubmit(true);
+        menu.remove();
       });
 
+      const optionBottom = document.createElement("div");
+      optionBottom.className = "task-menu-item";
+      optionBottom.innerHTML = "<span>⬇️</span> <span>Añadir al final (abajo)</span>";
+      optionBottom.addEventListener("click", () => {
+        handleTaskSubmit(false);
+        menu.remove();
+      });
+
+      menu.appendChild(optionTop);
+      menu.appendChild(optionBottom);
+      document.body.appendChild(menu);
+
+      if (addTaskBtn) {
+        const rect = addTaskBtn.getBoundingClientRect();
+        menu.style.position = "absolute";
+        menu.style.top = `${rect.bottom + window.scrollY + 6}px`;
+
+        const menuWidth = 200;
+        let leftPos = rect.right + window.scrollX - menuWidth;
+        if (leftPos < 10) leftPos = 10;
+        if (leftPos + menuWidth > window.innerWidth - 10) {
+          leftPos = Math.max(10, window.innerWidth - menuWidth - 10);
+        }
+        menu.style.left = `${leftPos}px`;
+      }
+
       setTimeout(() => {
-        const clickOutside = (e) => {
-          if(!menu.contains(e.target) && e.target !== anchorEl){
+        const clickOutside = (ev) => {
+          if (!menu.contains(ev.target) && ev.target !== addTaskBtn) {
             menu.remove();
             document.removeEventListener("click", clickOutside);
+            document.removeEventListener("touchstart", clickOutside);
           }
         };
         document.addEventListener("click", clickOutside);
+        document.addEventListener("touchstart", clickOutside);
       }, 50);
     }
 

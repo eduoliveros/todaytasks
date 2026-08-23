@@ -298,6 +298,34 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
     await expect(runningItem).toBeVisible();
     await expect(runningItem).toContainText('Tarea Número 2');
   });
+
+  test('Menú de opciones de posición con click derecho o mantener botón Añadir', async ({ page }) => {
+    // 1. Crear una primera tarea normal
+    await page.fill('#taskTitle', 'Primera Tarea Normal');
+    await page.click('#addTaskBtn');
+
+    const tasksList = page.locator('#tasksList');
+    await expect(tasksList).toContainText('Primera Tarea Normal');
+
+    // 2. Preparar segunda tarea y abrir menú con click derecho
+    await page.fill('#taskTitle', 'Segunda Tarea Arriba');
+    await page.click('#addTaskBtn', { button: 'right' });
+
+    const menu = page.locator('#addTaskPositionMenu');
+    await expect(menu).toBeVisible();
+    await expect(menu).toHaveClass(/task-context-menu/);
+
+    // 3. Seleccionar "Añadir al inicio (arriba)"
+    await page.click('#addTaskPositionMenu .task-menu-item:has-text("Añadir al inicio (arriba)")');
+
+    // El menú debe cerrarse
+    await expect(menu).toBeHidden();
+
+    // La segunda tarea debe estar en la primera posición
+    const items = tasksList.locator('.task-item .title');
+    await expect(items.nth(0)).toHaveText('Segunda Tarea Arriba');
+    await expect(items.nth(1)).toHaveText('Primera Tarea Normal');
+  });
 });
 
 
