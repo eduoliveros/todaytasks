@@ -349,6 +349,27 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
     await expect(taskItem).toBeVisible();
     await expect(taskItem).toHaveClass(/highlight-pulse/);
   });
+
+  test('Permitir crear y editar duración de tareas usando formato flexible "1h 30m" y "45m"', async ({ page }) => {
+    // 1. Crear tarea especificando duración en formato "1h 30m"
+    await page.fill('#taskTitle', 'Desarrollo de módulo');
+    await page.fill('#taskDuration', '1h 30m');
+    await page.click('#addTaskBtn');
+
+    const tasksList = page.locator('#tasksList');
+    await expect(tasksList).toContainText('Desarrollo de módulo');
+    // Planificado debe mostrar 1h 30min (90 min)
+    await expect(tasksList).toContainText('Planificado: 1h 30min');
+
+    // 2. Editar la duración usando formato "45m"
+    await page.click('#tasksList .icon-btn[title="Editar"]');
+    const durInput = page.locator('#tasksList input[placeholder="ej. 30, 1h 30m"]');
+    await durInput.fill('45m');
+    await page.click('#tasksList button:has-text("Guardar")');
+
+    // Comprobar que se actualizó a 45 min
+    await expect(tasksList).toContainText('Planificado: 45 min');
+  });
 });
 
 

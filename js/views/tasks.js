@@ -74,8 +74,8 @@ export function TodayTasksTasksView(ctx){
             <input type="text" value="${escapeAttr(taskEdit.title)}" oninput="app.updateTaskEditField('title', this.value)" placeholder="Título de la tarea">
           </div>
           <div class="row" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
-            <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Planificado (min):<br><input type="number" min="1" value="${escapeAttr(taskEdit.duration)}" style="width:110px;margin-top:4px;" oninput="app.updateTaskEditField('duration', this.value)"></label>
-            <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Consumido (min):<br><input type="number" min="0" value="${escapeAttr(taskEdit.actual||0)}" style="width:110px;margin-top:4px;" oninput="app.updateTaskEditField('actual', this.value)"></label>
+            <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Planificado:<br><input type="text" value="${escapeAttr(taskEdit.duration)}" placeholder="ej. 30, 1h 30m" style="width:110px;margin-top:4px;" oninput="app.updateTaskEditField('duration', this.value)"></label>
+            <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Consumido:<br><input type="text" value="${escapeAttr(taskEdit.actual||0)}" placeholder="ej. 15, 1h" style="width:110px;margin-top:4px;" oninput="app.updateTaskEditField('actual', this.value)"></label>
           </div>
           ${!isRecurring ? `
           <div style="margin-bottom:8px;">

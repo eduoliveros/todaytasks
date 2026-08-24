@@ -1,5 +1,5 @@
 /* actions/tasks.js — Acciones de tareas (CRUD, edición, recurrencia) */
-import { getTodayStr, matchesRecurrenceRule, getTaskElapsed } from '../utils.js';
+import { getTodayStr, matchesRecurrenceRule, getTaskElapsed, parseDuration } from '../utils.js';
 
 export function TodayTasksTasks(ctx, helpers){
   const {
@@ -92,7 +92,8 @@ export function TodayTasksTasks(ctx, helpers){
       return;
     }
     const state = getState();
-    let planned = parseInt(durationStr, 10);
+    const parsed = parseDuration(durationStr);
+    let planned = (parsed !== null && parsed > 0) ? Math.round(parsed) : null;
     if(!planned || planned <= 0){
       planned = DEFAULT_TASK_DURATION;
       showToast(`No indicaste duración: "${title}" se ha añadido con ${DEFAULT_TASK_DURATION} minutos por defecto.`);
@@ -207,10 +208,12 @@ export function TodayTasksTasks(ctx, helpers){
     const t = state.tasks.find(t => String(t.id) === String(id));
     if(!t) return;
     const title = (taskEdit.title||"").trim();
-    const planned = parseInt(taskEdit.duration, 10);
-    const actual = Math.round(parseFloat(taskEdit.actual) * 10) / 10;
+    const parsedPlanned = parseDuration(taskEdit.duration);
+    const planned = (parsedPlanned !== null && parsedPlanned > 0) ? Math.round(parsedPlanned) : null;
+    const parsedActual = parseDuration(taskEdit.actual);
+    const actual = parsedActual !== null ? Math.round(parsedActual * 10) / 10 : Math.round(parseFloat(taskEdit.actual) * 10) / 10;
     if(!title || !planned || planned <= 0){
-      alert("Indica un título y una duración en minutos mayor que 0.");
+      alert("Indica un título y una duración en minutos o formato horas/minutos mayor que 0 (ej. 30 o 1h 30m).");
       return;
     }
 
@@ -250,7 +253,8 @@ export function TodayTasksTasks(ctx, helpers){
     const state = getState();
     const t = state.tasks.find(t => String(t.id) === String(id));
     if(!t) return;
-    const actual = Math.round(parseFloat(actualMin) * 10) / 10;
+    const parsed = parseDuration(actualMin);
+    const actual = parsed !== null ? Math.round(parsed * 10) / 10 : Math.round(parseFloat(actualMin) * 10) / 10;
     if(!isNaN(actual) && actual >= 0) {
       if(t.status === "completed") {
         t.actualDuration = actual;

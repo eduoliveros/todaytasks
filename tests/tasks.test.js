@@ -40,7 +40,7 @@ describe('TodayTasksActions - Tareas', () => {
   });
 
   describe('Creación de tareas', () => {
-    it('añade una tarea con duración especificada', () => {
+    it('añade una tarea con duración especificada en minutos numéricos', () => {
       actions.addTask('Diseñar interfaz', '45');
       expect(state.tasks).toHaveLength(1);
       expect(state.tasks[0]).toMatchObject({
@@ -49,6 +49,19 @@ describe('TodayTasksActions - Tareas', () => {
         status: 'pending',
         order: 1
       });
+    });
+
+    it('añade una tarea con duración en formato horas y minutos ("1h 30m", "1h", "45m", "1.5h")', () => {
+      actions.addTask('Reunión arquitectura', '1h 30m');
+      actions.addTask('Planificación', '2h');
+      actions.addTask('Code review', '45m');
+      actions.addTask('Testing', '1.5h');
+
+      expect(state.tasks).toHaveLength(4);
+      expect(state.tasks[0].planned).toBe(90);
+      expect(state.tasks[1].planned).toBe(120);
+      expect(state.tasks[2].planned).toBe(45);
+      expect(state.tasks[3].planned).toBe(90);
     });
 
     it('asigna duración por defecto (30 min) si no se especifica duración válida', () => {
@@ -82,6 +95,18 @@ describe('TodayTasksActions - Tareas', () => {
 
       expect(state.tasks[0].title).toBe('Tarea Modificada');
       expect(state.tasks[0].planned).toBe(60);
+      expect(taskEdit).toBeNull();
+    });
+
+    it('modifica y guarda la duración usando formatos como "1h 45m"', () => {
+      actions.addTask('Tarea Original', '30');
+      const taskId = state.tasks[0].id;
+
+      actions.startEditTask(taskId);
+      actions.updateTaskEditField('duration', '1h 45m');
+      actions.saveEditTask(taskId);
+
+      expect(state.tasks[0].planned).toBe(105);
       expect(taskEdit).toBeNull();
     });
 
@@ -456,6 +481,16 @@ describe('TodayTasksActions - Tareas', () => {
 
       expect(state.tasks[0].elapsedBefore).toBe(7.5);
       expect(getTaskElapsed(state.tasks[0])).toBe(7.5);
+    });
+
+    it('permite actualizar tiempo consumido rápido usando formatos como "1h 10m"', () => {
+      actions.addTask('Tarea Larga', '120');
+      const taskId = state.tasks[0].id;
+
+      actions.updateTaskTimeFast(taskId, '1h 10m');
+
+      expect(state.tasks[0].elapsedBefore).toBe(70);
+      expect(getTaskElapsed(state.tasks[0])).toBe(70);
     });
 
     it('actualiza correctamente el tiempo en una tarea completada', () => {

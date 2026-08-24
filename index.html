@@ -6,7 +6,7 @@
 <title>Tablero del día · Planificador</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=1.71">
+<link rel="stylesheet" href="css/styles.css?v=1.75">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="icon" type="image/png" href="icon.png">
 <link rel="icon" type="image/jpeg" href="icon.jpg">
@@ -18,7 +18,7 @@
   <!-- Barra superior: logo + switcher + pestañas -->
   <div class="topbar-title-row">
     <div class="brand">
-      <h1>Tablero del día <span class="app-version">v1.74</span></h1>
+      <h1>Tablero del día <span class="app-version">v1.75</span></h1>
       <span class="db-status-badge" id="appModeLabel" title="Tipo de base de datos en uso">💾 local · persistente</span>
       <div class="env-switcher" id="envSwitcher">
         <button class="env-btn active" data-env="work" id="envBtnWork" title="Cambiar a ambiente de Trabajo (Tecla 'E')">
@@ -118,7 +118,7 @@
         <input type="text" id="taskTitle" placeholder="Título de la tarea">
       </div>
       <div class="row">
-        <input type="number" id="taskDuration" placeholder="Minutos (30 por defecto)" min="1" style="width:180px">
+        <input type="text" id="taskDuration" placeholder="Duración (ej. 30, 1h 30m)" style="width:180px">
         <button class="btn" id="addTaskBtn">Añadir</button>
       </div>
       <div style="margin-top:6px;margin-bottom:14px;display:flex;flex-direction:column;gap:6px;">
@@ -292,7 +292,7 @@
     <span>Ajustar tiempo consumido</span>
   </div>
   <div class="time-popover-controls">
-    <input type="number" id="timePopoverInput" min="0" step="0.1" placeholder="Minutos" onkeydown="if(event.key==='Enter') app.saveTimePopover()" />
+    <input type="text" id="timePopoverInput" placeholder="ej. 25, 1h 30m" onkeydown="if(event.key==='Enter') app.saveTimePopover()" />
     <button class="btn small done" onclick="app.saveTimePopover()" style="padding: 6px 12px; font-weight: 600;">Guardar</button>
   </div>
 </div>

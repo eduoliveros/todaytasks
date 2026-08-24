@@ -47,6 +47,67 @@ export function timeToMinutes(str) {
   return h * 60 + m;
 }
 
+export function parseDuration(val) {
+  if (val === null || val === undefined) return null;
+  if (typeof val === "number") {
+    return isNaN(val) ? null : val;
+  }
+  if (typeof val !== "string") return null;
+
+  let s = val.trim().toLowerCase();
+  if (!s) return null;
+
+  // Reemplazar comas por puntos para números decimales (ej. 1,5h -> 1.5h)
+  s = s.replace(',', '.');
+
+  // Si es un número puro (ej. "45", "90", "1.5")
+  if (/^[-+]?\d+(\.\d+)?$/.test(s)) {
+    const num = parseFloat(s);
+    return isNaN(num) ? null : num;
+  }
+
+  // Formato reloj HH:MM (ej. "1:30", "02:15")
+  const hhmmMatch = s.match(/^(\d+):(\d{1,2})$/);
+  if (hhmmMatch) {
+    const hours = parseInt(hhmmMatch[1], 10);
+    const mins = parseInt(hhmmMatch[2], 10);
+    return hours * 60 + mins;
+  }
+
+  let totalMinutes = 0;
+  let matched = false;
+
+  // Horas: "1h", "1.5h", "1 hr", "1 hrs", "1 hora", "1 horas" (soporta "1h30m", "1h 30m", etc.)
+  const hourMatch = s.match(/(\d+(?:\.\d+)?)\s*(?:horas?|hrs?|h)(?=[^a-z]|$)/);
+  if (hourMatch) {
+    totalMinutes += parseFloat(hourMatch[1]) * 60;
+    matched = true;
+  }
+
+  // Minutos: "30m", "30min", "30mins", "30 minuto", "30 minutos"
+  const minMatch = s.match(/(\d+(?:\.\d+)?)\s*(?:minutos?|mins?|m)(?=[^a-z]|$)/);
+  if (minMatch) {
+    totalMinutes += parseFloat(minMatch[1]);
+    matched = true;
+  }
+
+  // Si solo especificó horas y un número sin unidad después (ej. "1h 30", "1h30")
+  if (hourMatch && !minMatch) {
+    const remainingAfterHour = s.slice(hourMatch.index + hourMatch[0].length).trim();
+    const trailingMinMatch = remainingAfterHour.match(/^(\d+(?:\.\d+)?)$/);
+    if (trailingMinMatch) {
+      totalMinutes += parseFloat(trailingMinMatch[1]);
+      matched = true;
+    }
+  }
+
+  if (matched) {
+    return Math.round(totalMinutes * 10) / 10;
+  }
+
+  return null;
+}
+
 export function getTodayStr() {
   const d = new Date();
   const year = d.getFullYear();
@@ -221,6 +282,7 @@ export const TodayTasksUtils = {
   fmtDur,
   fmtRemaining,
   timeToMinutes,
+  parseDuration,
   getTodayStr,
   formatDateFriendly,
   addDays,

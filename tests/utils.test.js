@@ -31,6 +31,64 @@ describe('TodayTasksUtils (ES Module)', () => {
     });
   });
 
+  describe('parseDuration', () => {
+    it('parsea números directos y cadenas numéricas en minutos', () => {
+      expect(utils.parseDuration(45)).toBe(45);
+      expect(utils.parseDuration('45')).toBe(45);
+      expect(utils.parseDuration('  90  ')).toBe(90);
+      expect(utils.parseDuration('120')).toBe(120);
+      expect(utils.parseDuration(0)).toBe(0);
+      expect(utils.parseDuration('-10')).toBe(-10);
+    });
+
+    it('parsea formatos combinados de horas y minutos ("1h 30m", "1h30m", "1h 30min", etc.)', () => {
+      expect(utils.parseDuration('1h 30m')).toBe(90);
+      expect(utils.parseDuration('1h30m')).toBe(90);
+      expect(utils.parseDuration('1h 30min')).toBe(90);
+      expect(utils.parseDuration('1h 30 mins')).toBe(90);
+      expect(utils.parseDuration('1h 30 minutos')).toBe(90);
+      expect(utils.parseDuration('1 hora 30 minutos')).toBe(90);
+      expect(utils.parseDuration('1hr 30m')).toBe(90);
+      expect(utils.parseDuration('1H 30M')).toBe(90);
+      expect(utils.parseDuration('2h 15m')).toBe(135);
+      expect(utils.parseDuration('1h 30')).toBe(90);
+    });
+
+    it('parsea formatos con solo horas ("1h", "2h", "1.5h", "1,5h", "0.5h")', () => {
+      expect(utils.parseDuration('1h')).toBe(60);
+      expect(utils.parseDuration('2h')).toBe(120);
+      expect(utils.parseDuration('2 horas')).toBe(120);
+      expect(utils.parseDuration('1.5h')).toBe(90);
+      expect(utils.parseDuration('1,5h')).toBe(90);
+      expect(utils.parseDuration('0.5h')).toBe(30);
+      expect(utils.parseDuration('0,5 h')).toBe(30);
+      expect(utils.parseDuration('2hrs')).toBe(120);
+    });
+
+    it('parsea formatos con solo minutos ("30m", "45min", "45 minutos")', () => {
+      expect(utils.parseDuration('30m')).toBe(30);
+      expect(utils.parseDuration('45min')).toBe(45);
+      expect(utils.parseDuration('45 min')).toBe(45);
+      expect(utils.parseDuration('45 minutos')).toBe(45);
+      expect(utils.parseDuration('90m')).toBe(90);
+    });
+
+    it('parsea formatos de reloj HH:MM ("1:30", "0:45")', () => {
+      expect(utils.parseDuration('1:30')).toBe(90);
+      expect(utils.parseDuration('0:45')).toBe(45);
+      expect(utils.parseDuration('02:00')).toBe(120);
+    });
+
+    it('retorna null para cadenas vacías o valores inválidos', () => {
+      expect(utils.parseDuration('')).toBeNull();
+      expect(utils.parseDuration('   ')).toBeNull();
+      expect(utils.parseDuration(null)).toBeNull();
+      expect(utils.parseDuration(undefined)).toBeNull();
+      expect(utils.parseDuration('invalido')).toBeNull();
+      expect(utils.parseDuration('---')).toBeNull();
+    });
+  });
+
   describe('fmtDur', () => {
     it('formatea duraciones en formato legible', () => {
       expect(utils.fmtDur(30)).toBe('30 min');

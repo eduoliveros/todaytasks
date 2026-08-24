@@ -30,7 +30,7 @@ describe('TodayTasksForms - Formularios y Menú de Posición', () => {
       <button id="addMeetingBtn">Añadir Reunión</button>
 
       <input type="text" id="taskTitle" value="" />
-      <input type="number" id="taskDuration" value="" />
+      <input type="text" id="taskDuration" value="" />
       <input type="checkbox" id="isAutoMoveTaskCheckbox" checked />
       <div id="autoMoveTaskOptionWrap"></div>
       <input type="checkbox" id="isRecurringTaskCheckbox" />
