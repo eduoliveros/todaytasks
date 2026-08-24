@@ -19,7 +19,7 @@ export function TodayTasksMeetingsView(ctx){
       if(meetingEdit && meetingEdit.id === m.id){
         const modeLabel = meetingEdit.mode === "instance" ? " (Solo esta ocurrencia)" : (meetingEdit.mode === "series" ? " (Toda la serie)" : "");
         return `
-      <div class="item editing">
+      <div class="item editing" id="meeting-item-${escapeAttr(m.id)}">
         <div class="row" style="font-size:0.8rem;color:#4F46E5;font-weight:600;margin-bottom:4px;">
           Editando reunión${modeLabel}
         </div>
@@ -38,7 +38,7 @@ export function TodayTasksMeetingsView(ctx){
       }
       const recurringTag = m.isRecurring ? `<span class="tag" style="margin-left:4px;background:rgba(16,185,129,0.1);color:#059669;border-color:rgba(16,185,129,0.25);" title="Reunión recurrente${m.isModifiedInstance ? ' (Ocurrencia modificada)' : ' (Serie)'}">🔁 Recurrente${m.isModifiedInstance ? ' ✎' : ''}</span>` : '';
       return `
-      <div class="item">
+      <div class="item" id="meeting-item-${escapeAttr(m.id)}">
         <div class="top">
           <div>
             <div class="title">${escapeHtml(m.title)}</div>

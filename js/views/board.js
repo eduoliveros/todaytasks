@@ -127,7 +127,7 @@ export function TodayTasksBoardView(ctx){
     const autoBreakEnabled = state.autoBreakEnabled !== false;
     const meetingClusters = computeMeetingClusters(state.meetings || [], autoBreakEnabled);
     for(const m of (state.meetings || [])){
-      events.push({start: m.start, end: m.end, kind: "meeting", label: m.title});
+      events.push({start: m.start, end: m.end, kind: "meeting", label: m.title, id: m.id, targetKind: "meeting"});
     }
     for(const c of meetingClusters){
       if(c.breakDuration > 0){
@@ -146,7 +146,7 @@ export function TodayTasksBoardView(ctx){
       const segs = (schedule && schedule.segmentsByTask && schedule.segmentsByTask[t.id]) ? schedule.segmentsByTask[t.id] : [];
       for(const s of segs){
         const isOverflow = s.end > workEnd || (schedule && schedule.overflowIds && schedule.overflowIds.has(t.id));
-        events.push({start: s.start, end: s.end, kind: "task-" + t.status, label: t.title, isOverflow});
+        events.push({start: s.start, end: s.end, kind: "task-" + t.status, label: t.title, isOverflow, id: t.id, targetKind: "task"});
       }
     }
 
@@ -249,12 +249,25 @@ export function TodayTasksBoardView(ctx){
         posStyles = `top:${top}px; height:${height}px; left:calc(${leftPct}% + 4px); width:calc(${colWidthPct}% - 8px);`;
       }
 
+      const isInteractive = (e.id !== undefined && (e.targetKind === "meeting" || e.targetKind === "task"));
+      const interactiveClass = isInteractive ? "slot-interactive" : "";
+      const targetDomId = isInteractive
+        ? (e.targetKind === "meeting" ? `meeting-item-${escapeAttr(e.id)}` : `task-item-${escapeAttr(e.id)}`)
+        : "";
+      const clickAttrs = isInteractive
+        ? `onclick="app.scrollToElement('${targetDomId}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();app.scrollToElement('${targetDomId}');}" data-target-id="${targetDomId}" role="button" tabindex="0"`
+        : "";
+
+      const actionHint = isInteractive
+        ? (e.targetKind === "meeting" ? " · Clic para ver reunión en la lista" : " · Clic para ver tarea en la lista")
+        : "";
+
       const tooltip = e.kind === "break"
         ? `☕ Descanso de ${fmtDur(e.end - e.start)} (${fmt(e.start)} – ${fmt(e.end)})`
-        : `${escapeAttr(e.label)} (${fmt(e.start)} – ${fmt(e.end)} · ${fmtDur(e.end - e.start)})`;
+        : `${escapeAttr(e.label)} (${fmt(e.start)} – ${fmt(e.end)} · ${fmtDur(e.end - e.start)})${actionHint}`;
 
       slotsHtml += `
-        <div class="slot ${kindClass} ${overflowClass} ${pastClass} ${multiColClass} ${compactClass}" style="${posStyles}" title="${tooltip}">
+        <div class="slot ${kindClass} ${overflowClass} ${pastClass} ${multiColClass} ${compactClass} ${interactiveClass}" style="${posStyles}" title="${tooltip}" ${clickAttrs}>
           <span class="time-label">${fmt(e.start)}<span class="sep">–</span>${fmt(e.end)}</span>
           <span class="slot-title">${label}</span>
           ${overflowTag}

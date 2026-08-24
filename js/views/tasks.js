@@ -69,7 +69,7 @@ export function TodayTasksTasksView(ctx){
       if(taskEdit && taskEdit.id === t.id){
         const isRecurring = t.isRecurring || !!taskEdit.ruleId;
         return `
-        <div class="item task-item editing">
+        <div class="item task-item editing" id="task-item-${t.id}">
           <div class="row">
             <input type="text" value="${escapeAttr(taskEdit.title)}" oninput="app.updateTaskEditField('title', this.value)" placeholder="Título de la tarea">
           </div>
@@ -135,7 +135,7 @@ export function TodayTasksTasksView(ctx){
       const autoMoveTag = (!t.isRecurring && t.autoMoveToToday) ? `<span class="tag tag-automove" title="Se trasladará automáticamente a hoy si no se completa">⏩ Pasar a hoy</span>` : '';
 
       return `
-        <div class="item task-item ${t.status}" data-task-id="${t.id}" ${dragAttrs}>
+        <div class="item task-item ${t.status}" id="task-item-${t.id}" data-task-id="${t.id}" ${dragAttrs}>
           <div class="top">
             <div style="display:flex;align-items:flex-start;gap:6px;flex:1;min-width:0;">
               ${dragHandle}

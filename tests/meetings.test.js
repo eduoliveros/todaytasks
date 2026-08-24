@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { defaultState } from '../js/state.js';
 import { TodayTasksActions } from '../js/actions.js';
+import { TodayTasksMeetingsView } from '../js/views/meetings.js';
 
 describe('TodayTasksActions - Reuniones (Simples y Recurrentes)', () => {
   let actions;
@@ -230,6 +231,34 @@ describe('TodayTasksActions - Reuniones (Simples y Recurrentes)', () => {
 
       state.selectedDate = '2026-08-10';
       expect(state.meetings[0].title).toBe('Nuevo Título Serie');
+    });
+  });
+
+  describe('TodayTasksMeetingsView - Identificadores DOM', () => {
+    it('asigna id="meeting-item-${m.id}" a cada tarjeta de reunión en vista normal y edición', () => {
+      document.body.innerHTML = '<div id="meetingsList"></div>';
+      state.meetings = [
+        { id: 'meet-1', title: 'Reunión 1', start: 600, end: 660 },
+        { id: 'meet-2', title: 'Reunión 2', start: 700, end: 730 }
+      ];
+
+      const ctx = {
+        getState: () => state,
+        getMeetingEdit: () => meetingEdit
+      };
+      const meetingsView = TodayTasksMeetingsView(ctx);
+
+      // Vista normal
+      meetingsView.renderMeetings();
+      expect(document.getElementById('meeting-item-meet-1')).not.toBeNull();
+      expect(document.getElementById('meeting-item-meet-2')).not.toBeNull();
+
+      // Vista edición
+      meetingEdit = { id: 'meet-2', title: 'Reunión 2', start: '11:40', end: '12:10' };
+      meetingsView.renderMeetings();
+      const editingEl = document.getElementById('meeting-item-meet-2');
+      expect(editingEl).not.toBeNull();
+      expect(editingEl.classList.contains('editing')).toBe(true);
     });
   });
 });

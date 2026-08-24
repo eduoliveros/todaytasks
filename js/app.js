@@ -1,7 +1,7 @@
 /* app.js — Coordinador principal de la aplicación */
 import TodayTasksConfig from './config.js';
 import { nowMinutes, fmt, fmtDur, fmtRemaining, timeToMinutes, getTodayStr, getDayOfWeek, getTaskElapsed } from './utils.js';
-import { escapeHtml, escapeAttr, showToast } from './ui.js';
+import { escapeHtml, escapeAttr, showToast, scrollToElement } from './ui.js';
 import { defaultState, loadState } from './state.js';
 import { computeSchedule } from './scheduler.js';
 import { TodayTasksActions } from './actions.js';
@@ -447,6 +447,7 @@ function switchHeaderTab(target){
     editHistoryMetricPrompt,
     deleteHistoryMetric: actionsModule.deleteHistoryMetric,
     restoreLocalBackup: cloudModule.restoreLocalBackup,
+    scrollToElement,
     openTimePopover: function(taskId, event) {
       try {
         if (event) {

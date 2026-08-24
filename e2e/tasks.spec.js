@@ -326,6 +326,29 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
     await expect(items.nth(0)).toHaveText('Segunda Tarea Arriba');
     await expect(items.nth(1)).toHaveText('Primera Tarea Normal');
   });
+
+  test('Pulsar una tarea en el calendario hace scroll hasta su tarjeta y activa el resaltado', async ({ page }) => {
+    // Activar modo planificación para ver la tarea en el calendario
+    await page.click('button[data-tab="tiempo"]');
+    await page.click('#planningModeBtn');
+    await page.click('button[data-tab="entorno"]');
+
+    await page.fill('#taskTitle', 'Tarea con Scroll Interactivo');
+    await page.fill('#taskDuration', '45');
+    await page.click('#addTaskBtn');
+
+    const slot = page.locator('#boardContent .slot-task:has-text("Tarea con Scroll Interactivo")');
+    await expect(slot).toBeVisible();
+    await expect(slot).toHaveClass(/slot-interactive/);
+
+    // Pulsar sobre el slot del calendario
+    await slot.click();
+
+    // La tarjeta de la tarea debe recibir la clase highlight-pulse
+    const taskItem = page.locator('#tasksList .task-item:has-text("Tarea con Scroll Interactivo")');
+    await expect(taskItem).toBeVisible();
+    await expect(taskItem).toHaveClass(/highlight-pulse/);
+  });
 });
 
 

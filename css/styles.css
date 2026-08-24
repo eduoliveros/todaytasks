@@ -389,6 +389,30 @@
     padding:10px 12px;
     margin-bottom:8px;
     background:#FCFCFA;
+    transition:box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .item.highlight-pulse{
+    animation:itemHighlightPulse 1.2s ease-out;
+    border-color:var(--accent-pending, #4F46E5) !important;
+  }
+  @keyframes itemHighlightPulse{
+    0%{
+      box-shadow:0 0 0 0 rgba(79,70,229,0.7);
+      transform:scale(1.02);
+    }
+    50%{
+      box-shadow:0 0 0 8px rgba(79,70,229,0.25);
+    }
+    100%{
+      box-shadow:0 0 0 0 rgba(79,70,229,0);
+      transform:scale(1);
+    }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .item.highlight-pulse{
+      animation:none;
+      outline:3px solid var(--accent-pending, #4F46E5);
+    }
   }
   .item.editing{
     border-color:var(--accent-pending);
@@ -686,6 +710,21 @@
   .calendar-grid-track .slot:hover{
     z-index:12;
     box-shadow:0 4px 12px rgba(0,0,0,0.35);
+  }
+
+  .calendar-grid-track .slot.slot-interactive{
+    cursor:pointer;
+    user-select:none;
+    -webkit-tap-highlight-color:rgba(79,70,229,0.2);
+  }
+
+  .calendar-grid-track .slot.slot-interactive:hover{
+    transform:translateY(-1px);
+    box-shadow:0 4px 14px rgba(0,0,0,0.3);
+  }
+
+  .calendar-grid-track .slot.slot-interactive:active{
+    transform:scale(0.98);
   }
 
   .calendar-grid-track .slot .time-label{

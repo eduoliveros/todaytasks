@@ -25,8 +25,34 @@ export function showToast(message) {
   toastTimer = setTimeout(() => { el.classList.remove("visible"); }, 4000);
 }
 
-export const TodayTasksUi = { escapeHtml, escapeAttr, showToast };
+export function scrollToElement(elementId) {
+  if (typeof document === "undefined" || !elementId) return false;
+  const el = document.getElementById(elementId);
+  if (!el) return false;
+
+  try {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } catch (_e) {
+    if (typeof el.scrollIntoView === "function") {
+      el.scrollIntoView();
+    }
+  }
+
+  el.classList.remove("highlight-pulse");
+  // Trigger DOM reflow to restart animation reliably
+  void el.offsetWidth;
+  el.classList.add("highlight-pulse");
+
+  setTimeout(() => {
+    el.classList.remove("highlight-pulse");
+  }, 1300);
+
+  return true;
+}
+
+export const TodayTasksUi = { escapeHtml, escapeAttr, showToast, scrollToElement };
 
 export default TodayTasksUi;
+
 
 

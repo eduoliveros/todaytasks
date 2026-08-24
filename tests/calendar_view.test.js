@@ -3,6 +3,7 @@ import { defaultState } from '../js/state.js';
 import { computeSchedule } from '../js/scheduler.js';
 import { TodayTasksViews } from '../js/views.js';
 import { getTodayStr } from '../js/utils.js';
+import { scrollToElement } from '../js/ui.js';
 
 describe('Calendar Day View (Board) Tests', () => {
   let state;
@@ -369,5 +370,90 @@ describe('Calendar Day View (Board) Tests', () => {
     views.renderAll();
     scrollEl = boardContent.querySelector('.board-calendar-scroll');
     expect(scrollEl.scrollTop).toBe(208);
+  });
+
+  it('renderiza slots interactivos con onclick="app.scrollToElement(...)" para tareas y reuniones', () => {
+    const NOW = 540; // 09:00
+    state.meetings = [
+      { id: 'meet-123', title: 'Daily Standup', start: 570, end: 600 }
+    ];
+    state.tasks = [
+      { id: 99, title: 'Revisar PRs', planned: 30, status: 'pending', order: 1 }
+    ];
+
+    const ctx = {
+      getState: () => state,
+      getMeetingEdit: () => null,
+      getTaskEdit: () => null,
+      getCurrentView: () => 'main',
+      getFocusTaskId: () => null,
+      computeSchedule: () => computeSchedule(state, () => NOW),
+      fmtMMSS: () => '',
+      RING_R: 80,
+      RING_C: 502
+    };
+
+    views = TodayTasksViews(ctx);
+    views.renderAll();
+
+    const boardContent = document.getElementById('boardContent');
+    const meetingSlot = boardContent.querySelector('.slot-meeting');
+    expect(meetingSlot).not.toBeNull();
+    expect(meetingSlot.classList.contains('slot-interactive')).toBe(true);
+    expect(meetingSlot.getAttribute('data-target-id')).toBe('meeting-item-meet-123');
+    expect(meetingSlot.getAttribute('onclick')).toBe("app.scrollToElement('meeting-item-meet-123')");
+    expect(meetingSlot.getAttribute('role')).toBe('button');
+    expect(meetingSlot.getAttribute('tabindex')).toBe('0');
+
+    const taskSlot = boardContent.querySelector('.slot-task');
+    expect(taskSlot).not.toBeNull();
+    expect(taskSlot.classList.contains('slot-interactive')).toBe(true);
+    expect(taskSlot.getAttribute('data-target-id')).toBe('task-item-99');
+    expect(taskSlot.getAttribute('onclick')).toBe("app.scrollToElement('task-item-99')");
+  });
+
+  it('los descansos y colchones automáticos no son interactivos ni tienen onclick', () => {
+    const NOW = 540;
+    state.meetings = [
+      { id: 'meet-1', title: 'Reunión Larga', start: 540, end: 660 } // 2h -> genera colchón/break
+    ];
+
+    const ctx = {
+      getState: () => state,
+      getMeetingEdit: () => null,
+      getTaskEdit: () => null,
+      getCurrentView: () => 'main',
+      getFocusTaskId: () => null,
+      computeSchedule: () => computeSchedule(state, () => NOW),
+      fmtMMSS: () => '',
+      RING_R: 80,
+      RING_C: 502
+    };
+
+    views = TodayTasksViews(ctx);
+    views.renderAll();
+
+    const boardContent = document.getElementById('boardContent');
+    const bufferSlot = boardContent.querySelector('.slot-buffer');
+    if (bufferSlot) {
+      expect(bufferSlot.classList.contains('slot-interactive')).toBe(false);
+      expect(bufferSlot.getAttribute('onclick')).toBeNull();
+      expect(bufferSlot.getAttribute('data-target-id')).toBeNull();
+    }
+  });
+
+  it('scrollToElement desplaza suavemente al elemento y le añade la clase highlight-pulse', () => {
+    const testDiv = document.createElement('div');
+    testDiv.id = 'target-test-element';
+    testDiv.scrollIntoView = vi.fn();
+    document.body.appendChild(testDiv);
+
+    const result = scrollToElement('target-test-element');
+    expect(result).toBe(true);
+    expect(testDiv.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+    expect(testDiv.classList.contains('highlight-pulse')).toBe(true);
+
+    // Si el elemento no existe, retorna false sin error
+    expect(scrollToElement('inexistente')).toBe(false);
   });
 });

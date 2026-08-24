@@ -101,5 +101,24 @@ describe('Tasks View - Main Page Active Tasks List', () => {
     expect(banner.textContent).toContain('1 tarea automática');
     expect(banner.querySelector('.btn-bring')).not.toBeNull();
   });
+
+  it('renderTasks asigna id="task-item-${t.id}" a cada elemento de tarea tanto en vista normal como en edición', () => {
+    state.tasks = [
+      { id: 401, title: 'Tarea Normal ID', planned: 30, status: 'pending', order: 1 },
+      { id: 402, title: 'Tarea Editando ID', planned: 45, status: 'pending', order: 2 }
+    ];
+
+    // Modo normal
+    tasksView.renderTasks({ segmentsByTask: {}, overflowIds: new Set() });
+    expect(document.getElementById('task-item-401')).not.toBeNull();
+    expect(document.getElementById('task-item-402')).not.toBeNull();
+
+    // Modo edición
+    taskEdit = { id: 402, title: 'Tarea Editando ID', duration: 45, actual: 0 };
+    tasksView.renderTasks({ segmentsByTask: {}, overflowIds: new Set() });
+    const editingEl = document.getElementById('task-item-402');
+    expect(editingEl).not.toBeNull();
+    expect(editingEl.classList.contains('editing')).toBe(true);
+  });
 });
 

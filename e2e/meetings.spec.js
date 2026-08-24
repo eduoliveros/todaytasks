@@ -69,4 +69,25 @@ test.describe('Flujo de Reuniones en la Web (E2E)', () => {
     // 5. Confirmar que en el día actual ya no está
     await expect(meetingsList).toContainText('Aún no hay reuniones.');
   });
+
+  test('Pulsar una reunión en el calendario hace scroll hasta su tarjeta y activa el resaltado', async ({ page }) => {
+    // 1. Crear reunión
+    await page.fill('#meetingTitle', 'Reunión con Cliente');
+    await page.fill('#meetingStart', '11:00');
+    await page.fill('#meetingEnd', '12:00');
+    await page.click('#addMeetingBtn');
+
+    // 2. Localizar el slot interactivo en el calendario
+    const slot = page.locator('#boardContent .slot-meeting:has-text("Reunión con Cliente")');
+    await expect(slot).toBeVisible();
+    await expect(slot).toHaveClass(/slot-interactive/);
+
+    // 3. Pulsar sobre el slot
+    await slot.click();
+
+    // 4. La tarjeta de reunión en la lista debe recibir highlight-pulse
+    const meetingItem = page.locator('#meetingsList .item:has-text("Reunión con Cliente")');
+    await expect(meetingItem).toBeVisible();
+    await expect(meetingItem).toHaveClass(/highlight-pulse/);
+  });
 });
