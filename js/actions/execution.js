@@ -8,17 +8,41 @@ export function TodayTasksExecution(ctx, helpers){
   const { nowMinutes, fmtDur, showToast } = helpers;
 
   /* ---------------- Task execution controls ---------------- */
+  function getElapsedFromRunning(task){
+    if(!task || task.status !== "running") return 0;
+    if(task.runningStartEpoch){
+      return Math.max(0, (Date.now() - task.runningStartEpoch) / 60000);
+    }
+    if(task.runningStart !== null && task.runningStart !== undefined){
+      const currentNow = nowMinutes();
+      const diff = currentNow >= task.runningStart ? (currentNow - task.runningStart) : (1440 - task.runningStart + currentNow);
+      return Math.max(0, diff);
+    }
+    return 0;
+  }
+
   function startTask(id){
     const state = getState();
-    const targetTask = state.tasks.find(t=>t.id===id);
-    if(!targetTask || targetTask.status==="completed") return;
+    const targetTask = state.tasks.find(t => String(t.id) === String(id));
+    if(!targetTask) return;
 
-    const runningTask = state.tasks.find(t=>t.status==="running");
+    if(targetTask.status === "completed"){
+      const savedElapsed = targetTask.actualDuration ?? targetTask.elapsedBefore ?? 0;
+      targetTask.status = "pending";
+      targetTask.completedAt = null;
+      targetTask.elapsedBefore = savedElapsed;
+      targetTask.actualDuration = null;
+      targetTask.runningStart = null;
+      targetTask.runningStartEpoch = null;
+    }
 
-    if(runningTask && runningTask.id !== id){
-      const elapsed = nowMinutes() - runningTask.runningStart;
+    const runningTask = state.tasks.find(t => t.status === "running");
+
+    if(runningTask && String(runningTask.id) !== String(id)){
+      const elapsed = getElapsedFromRunning(runningTask);
       runningTask.elapsedBefore = (runningTask.elapsedBefore||0) + Math.max(0, elapsed);
       runningTask.runningStart = null;
+      runningTask.runningStartEpoch = null;
       runningTask.status = "paused";
     }
 
@@ -26,10 +50,10 @@ export function TodayTasksExecution(ctx, helpers){
       .filter(t => t.status !== "completed")
       .sort((a,b) => a.order - b.order);
 
-    const otherTasks = activeQueue.filter(t => t.id !== targetTask.id && (!runningTask || t.id !== runningTask.id));
+    const otherTasks = activeQueue.filter(t => String(t.id) !== String(targetTask.id) && (!runningTask || String(t.id) !== String(runningTask.id)));
 
     const newOrder = [targetTask];
-    if(runningTask && runningTask.id !== targetTask.id){
+    if(runningTask && String(runningTask.id) !== String(targetTask.id)){
       newOrder.push(runningTask);
     }
     newOrder.push(...otherTasks);
@@ -40,6 +64,7 @@ export function TodayTasksExecution(ctx, helpers){
 
     targetTask.status = "running";
     targetTask.runningStart = nowMinutes();
+    targetTask.runningStartEpoch = Date.now();
     const plannedEnd = targetTask.runningStart + (targetTask.planned - (targetTask.elapsedBefore||0));
     setNotifyState({taskId: targetTask.id, lastNotifiedAt: nowMinutes(), timeEndNotified: nowMinutes() >= plannedEnd});
     saveState();
@@ -63,13 +88,16 @@ export function TodayTasksExecution(ctx, helpers){
 
   function pauseTask(id){
     const state = getState();
-    const t = state.tasks.find(t=>t.id===id);
-    if(!t || t.status!=="running") return;
-    const elapsed = nowMinutes() - t.runningStart;
+    const t = state.tasks.find(t => String(t.id) === String(id));
+    if(!t || t.status !== "running") return;
+    const elapsed = getElapsedFromRunning(t);
     t.elapsedBefore = (t.elapsedBefore||0) + Math.max(0, elapsed);
     t.runningStart = null;
+    t.runningStartEpoch = null;
     t.status = "paused";
-    if(getNotifyState().taskId === id) setNotifyState({taskId:null, lastNotifiedAt:null, timeEndNotified:false});
+    if(getNotifyState() && String(getNotifyState().taskId) === String(id)) {
+      setNotifyState({taskId:null, lastNotifiedAt:null, timeEndNotified:false});
+    }
     saveState();
     smartRender ? smartRender() : renderAll();
   }
@@ -80,20 +108,26 @@ export function TodayTasksExecution(ctx, helpers){
 
   function completeTask(id){
     const state = getState();
-    const t = state.tasks.find(t=>t.id===id);
+    const t = state.tasks.find(t => String(t.id) === String(id));
     if(!t) return;
     let actual = t.elapsedBefore || 0;
-    if(t.status === "running" && t.runningStart !== null){
-      actual += Math.max(0, nowMinutes() - t.runningStart);
+    if(t.status === "running"){
+      actual += getElapsedFromRunning(t);
+    } else if(t.status === "completed"){
+      actual = t.actualDuration ?? t.elapsedBefore ?? 0;
     }
+    actual = Math.round(actual * 10) / 10;
     t.status = "completed";
     t.completedAt = nowMinutes();
     t.actualDuration = actual;
     t.elapsedBefore = actual;
     t.runningStart = null;
-    if(getNotifyState().taskId === id) setNotifyState({taskId:null, lastNotifiedAt:null, timeEndNotified:false});
+    t.runningStartEpoch = null;
+    if(getNotifyState() && String(getNotifyState().taskId) === String(id)) {
+      setNotifyState({taskId:null, lastNotifiedAt:null, timeEndNotified:false});
+    }
     saveState();
-    if(ctx.getCurrentView && ctx.getCurrentView() === 'task' && ctx.getFocusTaskId && ctx.getFocusTaskId() === id){
+    if(ctx.getCurrentView && ctx.getCurrentView() === 'task' && ctx.getFocusTaskId && String(ctx.getFocusTaskId()) === String(id)){
       if (typeof window !== "undefined") window.location.hash = '#/';
     } else {
       smartRender ? smartRender() : renderAll();
@@ -102,7 +136,7 @@ export function TodayTasksExecution(ctx, helpers){
 
   function uncompleteTask(id){
     const state = getState();
-    const t = state.tasks.find(t=>t.id===id);
+    const t = state.tasks.find(t => String(t.id) === String(id));
     if(!t || t.status !== "completed") return;
     const maxOrder = state.tasks.filter(t2=>t2.status!=="completed").reduce((m,t2)=>Math.max(m,t2.order),0);
     const savedElapsed = t.actualDuration ?? t.elapsedBefore ?? 0;
@@ -111,9 +145,10 @@ export function TodayTasksExecution(ctx, helpers){
     t.elapsedBefore = savedElapsed;
     t.actualDuration = null;
     t.runningStart = null;
+    t.runningStartEpoch = null;
     t.order = maxOrder + 1;
     saveState();
-    renderAll();
+    smartRender ? smartRender() : renderAll();
     showToast(`"${t.title}" se ha devuelto a ${t.status === "paused" ? "en pausa" : "pendientes"}.`);
   }
 

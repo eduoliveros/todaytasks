@@ -358,8 +358,9 @@ export function TodayTasksBoardView(ctx){
           <div class="row-top"><span>${escapeHtml(t.title)}</span><div style="text-align:right"><span class="dur task-duration-clickable" title="Clic para ajustar tiempo consumido" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">${fmtDur(t.actualDuration)} reales</span> <span class="dur" style="opacity:0.75">(plan. ${fmtDur(t.planned)})</span></div></div>
           <div class="time-range tr-running"><span class="tag">Inicio</span>${fmt(realStart)}<span class="arrow">→</span><span class="tag">Fin</span>${fmt(t.completedAt)}</div>
           <div style="margin-top:6px;display:flex;gap:6px;">
-            <button class="btn small secondary" onclick="app.uncompleteTask(${t.id})" title="Deshacer completado y volver a pendiente">↩ Reabrir</button>
-            <button class="btn small secondary" onclick="app.openCopyTaskModal(${t.id})" title="Copiar esta tarea a otra fecha">📋 Copiar a...</button>
+            <button class="btn small secondary" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)" title="Ajustar tiempo consumido">⏱ Ajustar tiempo</button>
+            <button class="btn small secondary" onclick="app.uncompleteTask('${escapeAttr(t.id)}')" title="Deshacer completado y volver a pendiente">↩ Reabrir</button>
+            <button class="btn small secondary" onclick="app.openCopyTaskModal('${escapeAttr(t.id)}')" title="Copiar esta tarea a otra fecha">📋 Copiar a...</button>
           </div>
         </div>`;
       });
@@ -413,7 +414,7 @@ export function TodayTasksBoardView(ctx){
           <div class="row-top"><span>${escapeHtml(t.title)}${autoMoveTag}</span><span class="dur">${fmtDur(t.planned)} plan. · <span class="task-duration-clickable" title="Clic para ajustar tiempo consumido" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">${elapsedReal > 0 ? fmtDur(elapsedReal) : '0m'} realizados</span> · ${t.status === 'paused' ? 'en pausa' : t.status}</span></div>
           ${rangeHtml}
           <div style="margin-top:6px">
-            <button class="btn small secondary" onclick="app.openCopyTaskModal(${t.id})" title="${transferBtnTitle}">${transferBtnLabel}</button>
+            <button class="btn small secondary" onclick="app.openCopyTaskModal('${escapeAttr(t.id)}')" title="${transferBtnTitle}">${transferBtnLabel}</button>
           </div>
         </div>
       `; }).join("") : '<div class="empty">Todo completado.</div>';

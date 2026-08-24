@@ -226,7 +226,41 @@ describe('TodayTasksActions - Tareas', () => {
       actions.uncompleteTask(taskId);
       expect(state.tasks[0].status).toBe('pending');
     });
+
+    it('funciona correctamente con IDs de tipo string o alfanumérico', () => {
+      state.tasks = [
+        { id: 'rec_task_294', title: 'Tarea recurrente', planned: 30, status: 'pending', runningStart: null, elapsedBefore: 0, order: 1 }
+      ];
+
+      actions.startTask('rec_task_294');
+      expect(state.tasks[0].status).toBe('running');
+      expect(state.tasks[0].runningStart).not.toBeNull();
+
+      actions.pauseTask('rec_task_294');
+      expect(state.tasks[0].status).toBe('paused');
+
+      actions.resumeTask('rec_task_294');
+      expect(state.tasks[0].status).toBe('running');
+
+      actions.completeTask('rec_task_294');
+      expect(state.tasks[0].status).toBe('completed');
+
+      actions.uncompleteTask('rec_task_294');
+      expect(state.tasks[0].status).toBe('pending');
+    });
+
+    it('permite iniciar directamente una tarea completada reabriéndola y poniéndola en marcha', () => {
+      state.tasks = [
+        { id: 294, title: 'Tarea completada', planned: 30, status: 'completed', actualDuration: 20, completedAt: 600, order: 1 }
+      ];
+
+      actions.startTask(294);
+      expect(state.tasks[0].status).toBe('running');
+      expect(state.tasks[0].runningStart).not.toBeNull();
+      expect(state.tasks[0].elapsedBefore).toBe(20);
+    });
   });
+
 
   describe('Eliminación de tareas', () => {
     it('elimina una tarea existente de la lista', () => {

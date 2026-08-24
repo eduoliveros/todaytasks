@@ -140,7 +140,7 @@ export function TodayTasksTasks(ctx, helpers){
 
   function deleteTask(id){
     const state = getState();
-    const t = state.tasks.find(t => t.id === id);
+    const t = state.tasks.find(t => String(t.id) === String(id));
 
     if (t && t.ruleId) {
       const ruleId = t.ruleId;
@@ -154,15 +154,15 @@ export function TodayTasksTasks(ctx, helpers){
       return;
     }
 
-    state.tasks = state.tasks.filter(t=>t.id!==id);
-    if(getTaskEdit() && getTaskEdit().id===id) setTaskEdit(null);
+    state.tasks = state.tasks.filter(t => String(t.id) !== String(id));
+    if(getTaskEdit() && String(getTaskEdit().id) === String(id)) setTaskEdit(null);
     saveState();
     renderAll();
   }
 
   function startEditTask(id){
     const state = getState();
-    const t = state.tasks.find(t=>t.id===id);
+    const t = state.tasks.find(t => String(t.id) === String(id));
     if(!t) return;
 
     if (t.ruleId) {
@@ -221,6 +221,7 @@ export function TodayTasksTasks(ctx, helpers){
         t.elapsedBefore = actual;
         if (t.status === "running") {
           t.runningStart = nowMinutes();
+          t.runningStartEpoch = Date.now();
         }
       }
     }
@@ -253,10 +254,12 @@ export function TodayTasksTasks(ctx, helpers){
     if(!isNaN(actual) && actual >= 0) {
       if(t.status === "completed") {
         t.actualDuration = actual;
+        t.elapsedBefore = actual;
       } else {
         t.elapsedBefore = actual;
         if (t.status === "running") {
           t.runningStart = nowMinutes();
+          t.runningStartEpoch = Date.now();
         }
       }
       saveState();
@@ -268,7 +271,7 @@ export function TodayTasksTasks(ctx, helpers){
     const state = getState();
     const list = state.tasks.filter(t=>t.status==="pending"||t.status==="paused")
                              .sort((a,b)=>a.order-b.order);
-    const idx = list.findIndex(t=>t.id===id);
+    const idx = list.findIndex(t => String(t.id) === String(id));
     const swapIdx = idx + dir;
     if(idx<0 || swapIdx<0 || swapIdx>=list.length) return;
 

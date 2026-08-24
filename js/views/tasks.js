@@ -66,10 +66,10 @@ export function TodayTasksTasksView(ctx){
     }
 
     el.innerHTML = active.map(t => {
-      if(taskEdit && taskEdit.id === t.id){
+      if(taskEdit && String(taskEdit.id) === String(t.id)){
         const isRecurring = t.isRecurring || !!taskEdit.ruleId;
         return `
-        <div class="item task-item editing" id="task-item-${t.id}">
+        <div class="item task-item editing" id="task-item-${escapeAttr(t.id)}">
           <div class="row">
             <input type="text" value="${escapeAttr(taskEdit.title)}" oninput="app.updateTaskEditField('title', this.value)" placeholder="Título de la tarea">
           </div>
@@ -84,7 +84,7 @@ export function TodayTasksTasksView(ctx){
             </label>
           </div>` : ''}
           <div class="task-actions">
-            <button class="btn small done" onclick="app.saveEditTask(${t.id})">Guardar</button>
+            <button class="btn small done" onclick="app.saveEditTask('${escapeAttr(t.id)}')">Guardar</button>
             <button class="btn small secondary" onclick="app.cancelEditTask()">Cancelar</button>
           </div>
         </div>`;
@@ -122,10 +122,10 @@ export function TodayTasksTasksView(ctx){
       const isDraggable = (t.status === "pending" || t.status === "paused");
       const dragAttrs = isDraggable
         ? `draggable="true"
-           ondragstart="app.taskDragStart(event, ${t.id})"
+           ondragstart="app.taskDragStart(event, '${escapeAttr(t.id)}')"
            ondragover="app.taskDragOver(event)"
            ondragleave="app.taskDragLeave(event)"
-           ondrop="app.taskDrop(event, ${t.id})"
+           ondrop="app.taskDrop(event, '${escapeAttr(t.id)}')"
            ondragend="app.taskDragEnd(event)"`
         : '';
       const dragHandle = isDraggable
@@ -135,7 +135,7 @@ export function TodayTasksTasksView(ctx){
       const autoMoveTag = (!t.isRecurring && t.autoMoveToToday) ? `<span class="tag tag-automove" title="Se trasladará automáticamente a hoy si no se completa">⏩ Pasar a hoy</span>` : '';
 
       return `
-        <div class="item task-item ${t.status}" id="task-item-${t.id}" data-task-id="${t.id}" ${dragAttrs}>
+        <div class="item task-item ${t.status}" id="task-item-${escapeAttr(t.id)}" data-task-id="${escapeAttr(t.id)}" ${dragAttrs}>
           <div class="top">
             <div style="display:flex;align-items:flex-start;gap:6px;flex:1;min-width:0;">
               ${dragHandle}
@@ -157,34 +157,34 @@ export function TodayTasksTasksView(ctx){
             </div>
             <div style="display:flex;align-items:center;gap:2px;">
               ${!t.isRecurring && t.autoMoveToToday ? `
-                <button class="icon-btn" title="Mover a otro día" onclick="app.openCopyTaskModal(${t.id})">➡️</button>
+                <button class="icon-btn" title="Mover a otro día" onclick="app.openCopyTaskModal('${escapeAttr(t.id)}')">➡️</button>
               ` : `
-                <button class="icon-btn" title="Copiar a otro día" onclick="app.openCopyTaskModal(${t.id})">📋</button>
+                <button class="icon-btn" title="Copiar a otro día" onclick="app.openCopyTaskModal('${escapeAttr(t.id)}')">📋</button>
               `}
-              <button class="icon-btn" title="Editar" onclick="app.startEditTask(${t.id})">✎</button>
-              <button class="icon-btn" title="Eliminar" onclick="app.deleteTask(${t.id})">✕</button>
+              <button class="icon-btn" title="Editar" onclick="app.startEditTask('${escapeAttr(t.id)}')">✎</button>
+              <button class="icon-btn" title="Eliminar" onclick="app.deleteTask('${escapeAttr(t.id)}')">✕</button>
             </div>
           </div>
           <div class="task-actions">
             ${t.status==="pending" ? `
-              <button class="btn small run" onclick="app.startTask(${t.id})">▶ Iniciar</button>
-              <button class="btn small done" onclick="app.completeTask(${t.id})">✓ Completar</button>
+              <button class="btn small run" onclick="app.startTask('${escapeAttr(t.id)}')">▶ Iniciar</button>
+              <button class="btn small done" onclick="app.completeTask('${escapeAttr(t.id)}')">✓ Completar</button>
               <div class="order-controls">
-                <button class="icon-btn" title="Subir" data-action="move-up" data-task-id="${t.id}" onclick="app.moveTask(${t.id},-1,event)">▲</button>
-                <button class="icon-btn" title="Bajar" data-action="move-down" data-task-id="${t.id}" onclick="app.moveTask(${t.id},1,event)">▼</button>
+                <button class="icon-btn" title="Subir" data-action="move-up" data-task-id="${escapeAttr(t.id)}" onclick="app.moveTask('${escapeAttr(t.id)}',-1,event)">▲</button>
+                <button class="icon-btn" title="Bajar" data-action="move-down" data-task-id="${escapeAttr(t.id)}" onclick="app.moveTask('${escapeAttr(t.id)}',1,event)">▼</button>
               </div>
             ` : ""}
             ${t.status==="running" ? `
-              <a href="#/task/${t.id}" class="btn small secondary focus-link" title="Abrir vista de foco (Tecla 'F')">◎ Foco [F]</a>
-              <button class="btn small pause" onclick="app.pauseTask(${t.id})">⏸ Pausar</button>
-              <button class="btn small done" onclick="app.completeTask(${t.id})">✓ Completar</button>
+              <a href="#/task/${escapeAttr(t.id)}" class="btn small secondary focus-link" title="Abrir vista de foco (Tecla 'F')">◎ Foco [F]</a>
+              <button class="btn small pause" onclick="app.pauseTask('${escapeAttr(t.id)}')">⏸ Pausar</button>
+              <button class="btn small done" onclick="app.completeTask('${escapeAttr(t.id)}')">✓ Completar</button>
             ` : ""}
             ${t.status==="paused" ? `
-              <button class="btn small run" onclick="app.resumeTask(${t.id})">▶ Reanudar</button>
-              <button class="btn small done" onclick="app.completeTask(${t.id})">✓ Completar</button>
+              <button class="btn small run" onclick="app.resumeTask('${escapeAttr(t.id)}')">▶ Reanudar</button>
+              <button class="btn small done" onclick="app.completeTask('${escapeAttr(t.id)}')">✓ Completar</button>
               <div class="order-controls">
-                <button class="icon-btn" title="Subir" data-action="move-up" data-task-id="${t.id}" onclick="app.moveTask(${t.id},-1,event)">▲</button>
-                <button class="icon-btn" title="Bajar" data-action="move-down" data-task-id="${t.id}" onclick="app.moveTask(${t.id},1,event)">▼</button>
+                <button class="icon-btn" title="Subir" data-action="move-up" data-task-id="${escapeAttr(t.id)}" onclick="app.moveTask('${escapeAttr(t.id)}',-1,event)">▲</button>
+                <button class="icon-btn" title="Bajar" data-action="move-down" data-task-id="${escapeAttr(t.id)}" onclick="app.moveTask('${escapeAttr(t.id)}',1,event)">▼</button>
               </div>
             ` : ""}
           </div>

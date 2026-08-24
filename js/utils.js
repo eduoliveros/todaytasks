@@ -5,11 +5,16 @@ export function nowMinutes() {
 
 export function getTaskElapsed(t) {
   if (!t) return 0;
-  if (t.status === "completed") return Math.round((t.actualDuration || 0) * 10) / 10;
+  if (t.status === "completed") return Math.round((t.actualDuration ?? t.elapsedBefore ?? 0) * 10) / 10;
   let elapsed = t.elapsedBefore || 0;
-  if (t.status === "running" && t.runningStart !== null) {
-    const currentNow = nowMinutes();
-    elapsed += Math.max(0, currentNow - t.runningStart);
+  if (t.status === "running" && t.runningStart !== null && t.runningStart !== undefined) {
+    if (t.runningStartEpoch) {
+      elapsed += Math.max(0, (Date.now() - t.runningStartEpoch) / 60000);
+    } else {
+      const currentNow = nowMinutes();
+      const diff = currentNow >= t.runningStart ? (currentNow - t.runningStart) : (1440 - t.runningStart + currentNow);
+      elapsed += Math.max(0, diff);
+    }
   }
   return Math.round(elapsed * 10) / 10;
 }

@@ -51,8 +51,8 @@ export function TodayTasksDragDrop(ctx){
     const state = getState();
     const queue = state.tasks.filter(t=>t.status==="pending"||t.status==="paused")
                               .sort((a,b)=>a.order-b.order);
-    const fromIdx = queue.findIndex(t=>t.id===fromId);
-    const toIdx = queue.findIndex(t=>t.id===toId);
+    const fromIdx = queue.findIndex(t => String(t.id) === String(fromId));
+    const toIdx = queue.findIndex(t => String(t.id) === String(toId));
     if(fromIdx === -1 || toIdx === -1) return;
     const [moved] = queue.splice(fromIdx, 1);
     queue.splice(toIdx, 0, moved);

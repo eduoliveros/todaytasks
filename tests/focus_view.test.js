@@ -86,5 +86,31 @@ describe('Focus View - Render and Navigation', () => {
     expect(taskContainer.innerHTML).toContain('▶ Iniciar');
     expect(taskContainer.innerHTML).toContain('✓ Completar');
   });
+
+  it('renderTaskFocusView debe renderizar correctamente una tarea en estado completed con opción de reabrir', () => {
+    state.tasks[0].status = 'completed';
+    state.tasks[0].actualDuration = 20;
+    const taskContainer = document.getElementById('view-task');
+
+    views.renderTaskFocusView();
+
+    expect(taskContainer.innerHTML).toContain('Completada');
+    expect(taskContainer.innerHTML).toContain('app.uncompleteTask');
+    expect(taskContainer.innerHTML).toContain('Volver al tablero');
+    expect(taskContainer.innerHTML).not.toContain('▶ Iniciar');
+  });
+
+  it('renderTaskFocusView debe entrecomillar los IDs de tarea en los botones onclick', () => {
+    state.tasks[0].id = 'rec_task_294';
+    currentTaskId = 'rec_task_294';
+    state.tasks[0].status = 'running';
+    const taskContainer = document.getElementById('view-task');
+
+    views.renderTaskFocusView();
+
+    expect(taskContainer.innerHTML).toContain("app.pauseTask('rec_task_294')");
+    expect(taskContainer.innerHTML).toContain("app.completeTask('rec_task_294')");
+  });
 });
+
 

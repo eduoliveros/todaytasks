@@ -1106,6 +1106,9 @@
   .ring-progress.state-paused {
     stroke: var(--accent-paused);
   }
+  .ring-progress.state-completed {
+    stroke: var(--accent-done);
+  }
   .focus-ring-center {
     position: absolute;
     inset: 0;

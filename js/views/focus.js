@@ -1,5 +1,5 @@
 /* views/focus.js — Vistas de pantalla completa: interrupción y foco de tarea */
-import { nowMinutes, fmt, fmtDur } from '../utils.js';
+import { nowMinutes, fmt, fmtDur, getTaskElapsed } from '../utils.js';
 import { escapeHtml, escapeAttr } from '../ui.js';
 
 export function TodayTasksFocusView(ctx){
@@ -81,29 +81,40 @@ export function TodayTasksFocusView(ctx){
       return;
     }
 
-
     const now = nowMinutes();
-    let elapsed = t.elapsedBefore || 0;
-    if(t.status === 'running' && t.runningStart !== null && t.runningStart !== undefined){
-      elapsed += Math.max(0, now - t.runningStart);
-    }
+    const elapsed = getTaskElapsed(t);
     const planned = t.planned || 1;
-    const isOverrun = elapsed > planned;
+    const isCompleted = t.status === 'completed';
+    const isOverrun = !isCompleted && elapsed > planned;
     const remaining = Math.max(0, planned - elapsed);
     const overrunMinutes = isOverrun ? (elapsed - planned) : 0;
 
     const radius = 100;
     const circumference = +(2 * Math.PI * radius).toFixed(2);
-    const fraction = Math.min(1, elapsed / planned);
+    const fraction = isCompleted ? 1 : Math.min(1, elapsed / planned);
     const dashOffset = +(circumference * (1 - fraction)).toFixed(2);
 
     let ringClass = '';
     if(t.status === 'paused') ringClass += ' state-paused';
+    if(isCompleted) ringClass += ' state-completed';
     if(isOverrun) ringClass += ' state-overrun';
 
     let plannedEnd = null;
     if(t.status === 'running' && t.runningStart !== null && t.runningStart !== undefined){
       plannedEnd = t.runningStart + Math.max(0, t.planned - (t.elapsedBefore || 0));
+    }
+
+    let ringMainText = '';
+    let ringLabelText = '';
+    if(isCompleted){
+      ringMainText = 'Completada';
+      ringLabelText = `${fmtDur(elapsed)} dedicados`;
+    } else if(isOverrun){
+      ringMainText = `+${fmtDur(overrunMinutes)}`;
+      ringLabelText = 'tiempo extra';
+    } else {
+      ringMainText = fmtDur(remaining);
+      ringLabelText = 'restante';
     }
 
     container.innerHTML = `
@@ -125,10 +136,10 @@ export function TodayTasksFocusView(ctx){
           </svg>
           <div class="focus-ring-center">
             <div class="ring-main-time ${isOverrun ? 'overrun-text' : ''}">
-              ${isOverrun ? `+${fmtDur(overrunMinutes)}` : fmtDur(remaining)}
+              ${ringMainText}
             </div>
             <div class="ring-label">
-              ${isOverrun ? 'tiempo extra' : 'restante'}
+              ${ringLabelText}
             </div>
           </div>
         </div>
@@ -151,14 +162,18 @@ export function TodayTasksFocusView(ctx){
 
         <div class="focus-actions">
           ${t.status === 'running' ? `
-            <button class="btn pause" onclick="app.pauseTask(${t.id})">⏸ Pausar</button>
-            <button class="btn done" onclick="app.completeTask(${t.id})">✓ Completar</button>
+            <button class="btn pause" onclick="app.pauseTask('${escapeAttr(t.id)}')">⏸ Pausar</button>
+            <button class="btn done" onclick="app.completeTask('${escapeAttr(t.id)}')">✓ Completar</button>
           ` : t.status === 'paused' ? `
-            <button class="btn run" onclick="app.resumeTask(${t.id})">▶ Reanudar</button>
-            <button class="btn done" onclick="app.completeTask(${t.id})">✓ Completar</button>
+            <button class="btn run" onclick="app.resumeTask('${escapeAttr(t.id)}')">▶ Reanudar</button>
+            <button class="btn done" onclick="app.completeTask('${escapeAttr(t.id)}')">✓ Completar</button>
+          ` : isCompleted ? `
+            <button class="btn secondary" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">⏱ Ajustar tiempo</button>
+            <button class="btn secondary" onclick="app.uncompleteTask('${escapeAttr(t.id)}')">↩ Reabrir tarea</button>
+            <a href="#/" class="btn done" style="text-decoration:none;">✓ Volver al tablero</a>
           ` : `
-            <button class="btn run" onclick="app.startTask(${t.id})">▶ Iniciar</button>
-            <button class="btn done" onclick="app.completeTask(${t.id})">✓ Completar</button>
+            <button class="btn run" onclick="app.startTask('${escapeAttr(t.id)}')">▶ Iniciar</button>
+            <button class="btn done" onclick="app.completeTask('${escapeAttr(t.id)}')">✓ Completar</button>
           `}
         </div>
 

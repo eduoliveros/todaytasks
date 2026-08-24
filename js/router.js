@@ -78,8 +78,10 @@ export function TodayTasksRouter(ctx){
       return;
     }
     if(hash.startsWith('#/task/')){
-      const id = parseInt(hash.replace('#/task/', ''), 10);
-      if(!isNaN(id)){
+      const rawId = decodeURIComponent(hash.replace('#/task/', '')).trim();
+      if(rawId){
+        const parsed = Number(rawId);
+        const id = !isNaN(parsed) && String(parsed) === rawId ? parsed : rawId;
         showView('task', id);
         return;
       }

@@ -110,7 +110,7 @@ export function TodayTasksCalendar(ctx, helpers){
       const remainingTasks = [];
       dayObj.tasks.forEach(t => {
         if (t.status !== "completed" && t.autoMoveToToday) {
-          const alreadyInTarget = targetDayObj.tasks.some(existing => existing.id === t.id);
+          const alreadyInTarget = targetDayObj.tasks.some(existing => String(existing.id) === String(t.id));
           if (!alreadyInTarget) {
             const maxOrder = targetDayObj.tasks.reduce((m, task) => Math.max(m, task.order || 0), 0);
             const savedElapsed = getTaskElapsed(t);
@@ -253,14 +253,13 @@ export function TodayTasksCalendar(ctx, helpers){
   function copyTaskToDate(taskId, targetDateStr) {
     if (!targetDateStr) return;
     const state = getState();
-    const currentDateStr = state.selectedDate || getTodayStr();
-
-    let originalTask = (state.tasks || []).find(t => t.id === taskId);
+    let originalTask = (state.tasks || []).find(t => String(t.id) === String(taskId));
     if (!originalTask) {
+      const currentDateStr = state.selectedDate || getTodayStr();
       const envKey = state.activeEnv || "work";
       const env = state.environments[envKey] || state.environments.work;
       if (env && env.days && env.days[currentDateStr]) {
-        originalTask = (env.days[currentDateStr].tasks || []).find(t => t.id === taskId);
+        originalTask = (env.days[currentDateStr].tasks || []).find(t => String(t.id) === String(taskId));
       }
     }
 
@@ -325,7 +324,7 @@ export function TodayTasksCalendar(ctx, helpers){
     let sourceDateStr = null;
 
     if (env.days[currentDateStr] && Array.isArray(env.days[currentDateStr].tasks)) {
-      const found = env.days[currentDateStr].tasks.find(t => t.id === taskId);
+      const found = env.days[currentDateStr].tasks.find(t => String(t.id) === String(taskId));
       if (found) {
         originalTask = found;
         sourceDateStr = currentDateStr;
@@ -335,7 +334,7 @@ export function TodayTasksCalendar(ctx, helpers){
     if (!originalTask) {
       for (const d of Object.keys(env.days)) {
         if (Array.isArray(env.days[d].tasks)) {
-          const found = env.days[d].tasks.find(t => t.id === taskId);
+          const found = env.days[d].tasks.find(t => String(t.id) === String(taskId));
           if (found) {
             originalTask = found;
             sourceDateStr = d;
@@ -369,7 +368,7 @@ export function TodayTasksCalendar(ctx, helpers){
     if (!Array.isArray(targetDayObj.tasks)) targetDayObj.tasks = [];
 
     // Remove from source day
-    sourceDayObj.tasks = (sourceDayObj.tasks || []).filter(t => t.id !== taskId);
+    sourceDayObj.tasks = (sourceDayObj.tasks || []).filter(t => String(t.id) !== String(taskId));
 
     const maxOrder = targetDayObj.tasks.reduce((m, t) => Math.max(m, t.order || 0), 0);
     const savedElapsed = getTaskElapsed(originalTask);
@@ -403,13 +402,13 @@ export function TodayTasksCalendar(ctx, helpers){
     const modal = document.getElementById("copyTaskModal");
 
     let taskTitle = "";
-    let originalTask = (state.tasks || []).find(t => t.id === taskId);
+    let originalTask = (state.tasks || []).find(t => String(t.id) === String(taskId));
     if (!originalTask) {
       const currentDateStr = state.selectedDate || today;
       const envKey = state.activeEnv || "work";
       const env = state.environments[envKey] || state.environments.work;
       if (env && env.days && env.days[currentDateStr]) {
-        originalTask = (env.days[currentDateStr].tasks || []).find(t => t.id === taskId);
+        originalTask = (env.days[currentDateStr].tasks || []).find(t => String(t.id) === String(taskId));
       }
     }
     if (!originalTask) {
@@ -417,7 +416,7 @@ export function TodayTasksCalendar(ctx, helpers){
       const env = state.environments[envKey] || state.environments.work;
       if (env && env.days) {
         for (const d of Object.keys(env.days)) {
-          const found = (env.days[d].tasks || []).find(t => t.id === taskId);
+          const found = (env.days[d].tasks || []).find(t => String(t.id) === String(taskId));
           if (found) {
             originalTask = found;
             break;
