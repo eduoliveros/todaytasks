@@ -42,6 +42,7 @@ describe('Focus View - Render and Navigation', () => {
       getTaskEdit: () => null,
       getCurrentView: () => 'task',
       getFocusTaskId: () => currentTaskId,
+      nowMinutes: () => 610,
       computeSchedule: () => computeSchedule(state, () => 610),
       fmtMMSS: () => '00:00',
       RING_R: 85,
@@ -111,6 +112,64 @@ describe('Focus View - Render and Navigation', () => {
     expect(taskContainer.innerHTML).toContain("app.pauseTask('rec_task_294')");
     expect(taskContainer.innerHTML).toContain("app.completeTask('rec_task_294')");
   });
+
+  it('renderTaskFocusView debe mostrar la marca de corte en el arco SVG y badge de advertencia cuando una reunión corta la tarea', () => {
+    // Tarea: planificada 45 min, transcurridos 10 min, quedan 35 min.
+    // Reunión a las 625 (en 15 min desde now=610). 15 min < 35 min restantes -> Interrumpe la tarea.
+    state.meetings = [
+      { id: 101, title: 'Daily Standup', start: 625, end: 640 }
+    ];
+    const taskContainer = document.getElementById('view-task');
+
+    views.renderTaskFocusView();
+
+    // Debe contener el notch o dot en el SVG
+    expect(taskContainer.innerHTML).toContain('ring-meeting-notch');
+    expect(taskContainer.innerHTML).toContain('ring-meeting-dot');
+
+    // Debe contener el badge central con aviso de tiempo restante hasta la reunión
+    expect(taskContainer.innerHTML).toContain('focus-meeting-badge');
+    expect(taskContainer.innerHTML).toContain('Daily Standup');
+    expect(taskContainer.innerHTML).toContain('15 min');
+
+    // Debe contener el bloque de reunión en la sección de metadatos
+    expect(taskContainer.innerHTML).toContain('Siguiente reunión');
+    expect(taskContainer.innerHTML).toContain('10:25');
+  });
+
+  it('renderTaskFocusView no debe mostrar marca de corte en el arco si la reunión empieza después de que termine la tarea', () => {
+    // Tarea: quedan 35 min (fin previsto = 645 a las 10:45).
+    // Reunión a las 700 (11:40, en 90 min). 90 min > 35 min restantes -> No interrumpe.
+    state.meetings = [
+      { id: 102, title: 'Sprint Review', start: 700, end: 760 }
+    ];
+    const taskContainer = document.getElementById('view-task');
+
+    views.renderTaskFocusView();
+
+    // No debe dibujar marca de corte en el arco de la tarea
+    expect(taskContainer.innerHTML).not.toContain('ring-meeting-notch');
+
+    // Pero sí debe informar de la siguiente reunión en metadatos
+    expect(taskContainer.innerHTML).toContain('Siguiente reunión');
+    expect(taskContainer.innerHTML).toContain('Sprint Review');
+    expect(taskContainer.innerHTML).toContain('11:40');
+  });
+
+  it('renderTaskFocusView debe mostrar indicador de reunión en curso cuando coincide la hora actual', () => {
+    // Reunión en curso: start=600, end=630, now=610
+    state.meetings = [
+      { id: 103, title: 'Reunión con Cliente', start: 600, end: 630 }
+    ];
+    const taskContainer = document.getElementById('view-task');
+
+    views.renderTaskFocusView();
+
+    expect(taskContainer.innerHTML).toContain('focus-meeting-badge');
+    expect(taskContainer.innerHTML).toContain('Reunión en curso');
+    expect(taskContainer.innerHTML).toContain('Reunión con Cliente');
+  });
 });
+
 
 

@@ -3,12 +3,16 @@ export function nowMinutes() {
   return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
 }
 
-export function getTaskElapsed(t) {
+export function getTaskElapsed(t, nowVal) {
   if (!t) return 0;
   if (t.status === "completed") return Math.round((t.actualDuration ?? t.elapsedBefore ?? 0) * 10) / 10;
   let elapsed = t.elapsedBefore || 0;
   if (t.status === "running" && t.runningStart !== null && t.runningStart !== undefined) {
-    if (t.runningStartEpoch) {
+    if (nowVal !== undefined && nowVal !== null) {
+      const currentNow = typeof nowVal === "function" ? nowVal() : nowVal;
+      const diff = currentNow >= t.runningStart ? (currentNow - t.runningStart) : (1440 - t.runningStart + currentNow);
+      elapsed += Math.max(0, diff);
+    } else if (t.runningStartEpoch) {
       elapsed += Math.max(0, (Date.now() - t.runningStartEpoch) / 60000);
     } else {
       const currentNow = nowMinutes();

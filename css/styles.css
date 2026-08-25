@@ -1143,6 +1143,60 @@
     letter-spacing: .07em;
     color: var(--ink-soft);
   }
+  .ring-meeting-notch {
+    stroke: #8B5CF6;
+    stroke-width: 3.5px;
+    stroke-linecap: round;
+  }
+  .ring-meeting-dot {
+    fill: #8B5CF6;
+    stroke: #FFFFFF;
+    stroke-width: 1.5px;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+  }
+  .focus-meeting-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10.5px;
+    font-weight: 600;
+    line-height: 1.2;
+    max-width: 142px;
+    box-sizing: border-box;
+  }
+  .focus-meeting-badge .badge-icon {
+    font-size: 11px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .focus-meeting-badge .badge-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .focus-meeting-badge.normal {
+    background: rgba(139, 92, 246, 0.12);
+    color: #6D28D9;
+    border: 1px solid rgba(139, 92, 246, 0.25);
+  }
+  .focus-meeting-badge.warning {
+    background: rgba(245, 158, 11, 0.14);
+    color: #B45309;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+  }
+  .focus-meeting-badge.ongoing {
+    background: rgba(239, 68, 68, 0.14);
+    color: #DC2626;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+  }
+  .warning-text {
+    color: #D97706 !important;
+    font-weight: 700 !important;
+  }
   /* Meta info row */
   .focus-meta {
     display: flex;
@@ -1746,6 +1800,31 @@
   [data-theme="dark"] .interruption-timer-box {
     background: #2D1A1C;
     border-color: #5C3236;
+  }
+  [data-theme="dark"] .ring-meeting-notch {
+    stroke: #A78BFA;
+  }
+  [data-theme="dark"] .ring-meeting-dot {
+    fill: #A78BFA;
+    stroke: #1E1B18;
+  }
+  [data-theme="dark"] .focus-meeting-badge.normal {
+    background: rgba(139, 92, 246, 0.22);
+    color: #C4B5FD;
+    border-color: rgba(139, 92, 246, 0.4);
+  }
+  [data-theme="dark"] .focus-meeting-badge.warning {
+    background: rgba(245, 158, 11, 0.22);
+    color: #FCD34D;
+    border-color: rgba(245, 158, 11, 0.4);
+  }
+  [data-theme="dark"] .focus-meeting-badge.ongoing {
+    background: rgba(239, 68, 68, 0.22);
+    color: #FCA5A5;
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+  [data-theme="dark"] .warning-text {
+    color: #FBBF24 !important;
   }
 
   /* Modal overlay & box */

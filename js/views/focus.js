@@ -81,8 +81,8 @@ export function TodayTasksFocusView(ctx){
       return;
     }
 
-    const now = nowMinutes();
-    const elapsed = getTaskElapsed(t);
+    const now = (ctx && ctx.nowMinutes) ? (typeof ctx.nowMinutes === 'function' ? ctx.nowMinutes() : ctx.nowMinutes) : nowMinutes();
+    const elapsed = getTaskElapsed(t, now);
     const planned = t.planned || 1;
     const isCompleted = t.status === 'completed';
     const isOverrun = !isCompleted && elapsed > planned;
@@ -102,6 +102,63 @@ export function TodayTasksFocusView(ctx){
     let plannedEnd = null;
     if(t.status === 'running' && t.runningStart !== null && t.runningStart !== undefined){
       plannedEnd = t.runningStart + Math.max(0, t.planned - (t.elapsedBefore || 0));
+    }
+
+    /* Reuniones: cálculo de próxima reunión, reunión en curso y marca de corte en el arco */
+    const meetings = (state.meetings || []).filter(m => m && typeof m.start === 'number' && typeof m.end === 'number');
+    const ongoingMeeting = meetings.find(m => m.start <= now && m.end > now);
+    const nextMeeting = meetings.find(m => m.start > now);
+    const timeToMeeting = nextMeeting ? Math.max(0, nextMeeting.start - now) : null;
+
+    const isCutoff = !isCompleted && nextMeeting && (timeToMeeting < remaining);
+
+    let meetingSvgElements = '';
+    if(isCutoff && planned > 0){
+      const fractionAtMeeting = Math.min(1, Math.max(0, (elapsed + timeToMeeting) / planned));
+      const angle = -Math.PI / 2 + (fractionAtMeeting * 2 * Math.PI);
+      const dotX = +(120 + radius * Math.cos(angle)).toFixed(2);
+      const dotY = +(120 + radius * Math.sin(angle)).toFixed(2);
+      const notchX1 = +(120 + (radius - 9) * Math.cos(angle)).toFixed(2);
+      const notchY1 = +(120 + (radius - 9) * Math.sin(angle)).toFixed(2);
+      const notchX2 = +(120 + (radius + 9) * Math.cos(angle)).toFixed(2);
+      const notchY2 = +(120 + (radius + 9) * Math.sin(angle)).toFixed(2);
+
+      meetingSvgElements = `
+        <line class="ring-meeting-notch"
+              x1="${notchX1}" y1="${notchY1}"
+              x2="${notchX2}" y2="${notchY2}"
+              title="Corte por reunión: ${escapeAttr(nextMeeting.title)} (${fmt(nextMeeting.start)})" />
+        <circle class="ring-meeting-dot"
+                cx="${dotX}" cy="${dotY}" r="4.5">
+          <title>Reunión: ${escapeAttr(nextMeeting.title)} (${fmt(nextMeeting.start)})</title>
+        </circle>
+      `;
+    }
+
+    let meetingBadgeHtml = '';
+    if(ongoingMeeting){
+      meetingBadgeHtml = `
+        <div class="focus-meeting-badge ongoing" title="Reunión en curso hasta las ${fmt(ongoingMeeting.end)}">
+          <span class="badge-icon">🔴</span>
+          <span class="badge-text">Reunión en curso: ${escapeHtml(ongoingMeeting.title)} (hasta ${fmt(ongoingMeeting.end)})</span>
+        </div>
+      `;
+    } else if(nextMeeting && (isCutoff || timeToMeeting <= 60)){
+      if(isCutoff || timeToMeeting <= 10){
+        meetingBadgeHtml = `
+          <div class="focus-meeting-badge warning" title="Reunión ${fmt(nextMeeting.start)} · ${escapeAttr(nextMeeting.title)}">
+            <span class="badge-icon">⚠️</span>
+            <span class="badge-text">en ${fmtDur(timeToMeeting)}: ${escapeHtml(nextMeeting.title)}</span>
+          </div>
+        `;
+      } else {
+        meetingBadgeHtml = `
+          <div class="focus-meeting-badge normal" title="Reunión ${fmt(nextMeeting.start)} · ${escapeAttr(nextMeeting.title)}">
+            <span class="badge-icon">📅</span>
+            <span class="badge-text">${fmt(nextMeeting.start)} (en ${fmtDur(timeToMeeting)}) · ${escapeHtml(nextMeeting.title)}</span>
+          </div>
+        `;
+      }
     }
 
     let ringMainText = '';
@@ -133,6 +190,7 @@ export function TodayTasksFocusView(ctx){
                     fill="none" stroke-width="12"
                     stroke-dasharray="${circumference}"
                     stroke-dashoffset="${dashOffset}"/>
+            ${meetingSvgElements}
           </svg>
           <div class="focus-ring-center">
             <div class="ring-main-time ${isOverrun ? 'overrun-text' : ''}">
@@ -141,6 +199,7 @@ export function TodayTasksFocusView(ctx){
             <div class="ring-label">
               ${ringLabelText}
             </div>
+            ${meetingBadgeHtml}
           </div>
         </div>
 
@@ -157,6 +216,17 @@ export function TodayTasksFocusView(ctx){
           <div class="focus-meta-item">
             <span class="meta-label">Fin previsto</span>
             <span class="meta-value">${fmt(plannedEnd)}</span>
+          </div>` : ''}
+          ${ongoingMeeting ? `
+          <div class="focus-meta-item">
+            <span class="meta-label">Reunión en curso</span>
+            <span class="meta-value warning-text" title="${escapeAttr(ongoingMeeting.title)}">${escapeHtml(ongoingMeeting.title)} (hasta ${fmt(ongoingMeeting.end)})</span>
+          </div>` : nextMeeting ? `
+          <div class="focus-meta-item">
+            <span class="meta-label">Siguiente reunión</span>
+            <span class="meta-value ${isCutoff ? 'warning-text' : ''}" title="${escapeAttr(nextMeeting.title)}">
+              ${fmt(nextMeeting.start)} (${fmtDur(timeToMeeting)}) · ${escapeHtml(nextMeeting.title)}
+            </span>
           </div>` : ''}
         </div>
 
@@ -181,7 +251,6 @@ export function TodayTasksFocusView(ctx){
       </div>
     `;
   }
-
 
   return { renderInterruptionView, renderTaskFocusView };
 }
