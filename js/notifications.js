@@ -1,6 +1,6 @@
-import { getTodayStr } from './utils.js';
+import { getTodayStr, matchesRecurrenceRule } from './utils.js';
 
-export function TodayTasksNotifications({ getState, getNotifyState, setNotifyState, saveState, nowMinutes, fmt, fmtRemaining, showToast }) {
+export function TodayTasksNotifications({ getState, getNotifyState, setNotifyState, pauseTask, saveState, nowMinutes, fmt, fmtRemaining, showToast }) {
   const notifSupported = (typeof window !== "undefined" && "Notification" in window);
 
   function isNotifyActive(){
@@ -164,10 +164,20 @@ export function TodayTasksNotifications({ getState, getNotifyState, setNotifySta
     const envKey = state.activeEnv || "work";
     const envObj = state.environments[envKey];
     const dayObj = (envObj && envObj.days) ? envObj.days[todayStr] : null;
-    if(!dayObj || !Array.isArray(dayObj.meetings)) return;
+    if(!dayObj) return;
 
     const now = nowMinutes ? nowMinutes() : 0;
-    const meetings = dayObj.meetings;
+    const singleMeetings = Array.isArray(dayObj.meetings) ? dayObj.meetings : [];
+    const recurringRules = Array.isArray(envObj.recurringMeetings) ? envObj.recurringMeetings : [];
+    const hydratedRecurring = [];
+    recurringRules.forEach(rule => {
+      const match = matchesRecurrenceRule(rule, todayStr);
+      if (match) {
+        hydratedRecurring.push(match);
+      }
+    });
+    const meetings = [...singleMeetings, ...hydratedRecurring];
+    meetings.sort((a, b) => a.start - b.start);
 
     meetings.forEach(m => {
       if(!m || typeof m.start !== "number") return;
@@ -183,14 +193,32 @@ export function TodayTasksNotifications({ getState, getNotifyState, setNotifySta
         }
       }
 
-      // 2. Notificación en la hora exacta de la reunión
+      // 2. Notificación en la hora exacta de la reunión y auto-pausa de la tarea activa
       const keyStart = `${todayStr}_${m.id}_start_${m.start}`;
-      if(now >= m.start && now < (m.start + 2)){
-        if(!notifiedMeetingKeys.has(keyStart)){
+      const isStartWindow = (now >= m.start && now < (m.start + 2));
+      const isDuringMeeting = (now >= m.start && (typeof m.end === 'number' ? now < m.end : now < (m.start + 2)));
+
+      if(!notifiedMeetingKeys.has(keyStart)){
+        if(isStartWindow || isDuringMeeting){
           notifiedMeetingKeys.add(keyStart);
-          const title = `🔔 Reunión ahora: ${m.title}`;
-          const body = `La reunión "${m.title}" comienza ahora (${fmt ? fmt(m.start) : m.start} - ${fmt ? fmt(m.end) : m.end}).`;
-          sendDesktopNotification(title, body, `meeting-start-${m.id}`);
+
+          if(isStartWindow){
+            const title = `🔔 Reunión ahora: ${m.title}`;
+            const body = `La reunión "${m.title}" comienza ahora (${fmt ? fmt(m.start) : m.start} - ${fmt ? fmt(m.end) : m.end}).`;
+            sendDesktopNotification(title, body, `meeting-start-${m.id}`);
+          }
+
+          // Auto-pausar tarea activa si existe
+          const currentTasks = state.tasks || (dayObj.tasks || []);
+          const runningTask = currentTasks.find(t => t.status === "running");
+          if(runningTask && (isStartWindow || runningTask.runningStart === null || runningTask.runningStart < m.start)){
+            if(pauseTask){
+              pauseTask(runningTask.id);
+            }
+            if(showToast){
+              showToast(`Reunión iniciada: "${runningTask.title}" se ha pausado automáticamente.`);
+            }
+          }
         }
       }
     });
@@ -206,5 +234,3 @@ export function TodayTasksNotifications({ getState, getNotifyState, setNotifySta
 }
 
 export default TodayTasksNotifications;
-
-

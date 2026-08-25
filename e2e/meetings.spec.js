@@ -90,4 +90,34 @@ test.describe('Flujo de Reuniones en la Web (E2E)', () => {
     await expect(meetingItem).toBeVisible();
     await expect(meetingItem).toHaveClass(/highlight-pulse/);
   });
+
+  test('Pausa automáticamente la tarea activa cuando empieza una reunión', async ({ page }) => {
+    // 1. Crear una tarea y ponerla en marcha
+    await page.fill('#taskTitle', 'Tarea en progreso');
+    await page.fill('#taskDuration', '45');
+    await page.click('#addTaskBtn');
+
+    const startBtn = page.locator('#tasksList .task-item').first().locator('button:has-text("Iniciar")');
+    await startBtn.click();
+
+    // Comprobar que la tarea está en marcha (botón de pausar visible)
+    const pauseBtn = page.locator('#tasksList .task-item').first().locator('button:has-text("Pausar")');
+    await expect(pauseBtn).toBeVisible();
+
+    // 2. Crear una reunión que comience a la hora actual
+    const now = new Date();
+    const startH = String(now.getHours()).padStart(2, '0');
+    const startM = String(now.getMinutes()).padStart(2, '0');
+    const endH = String((now.getHours() + 1) % 24).padStart(2, '0');
+
+    await page.fill('#meetingTitle', 'Reunión Inmediata');
+    await page.fill('#meetingStart', `${startH}:${startM}`);
+    await page.fill('#meetingEnd', `${endH}:${startM}`);
+    await page.click('#addMeetingBtn');
+
+    // 3. Esperar a que el tick de 3 segundos detecte el inicio de la reunión y pause la tarea
+    const resumeBtn = page.locator('#tasksList .task-item').first().locator('button:has-text("Reanudar")');
+    await expect(resumeBtn).toBeVisible({ timeout: 10000 });
+  });
 });
+

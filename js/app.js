@@ -91,6 +91,7 @@ const { refreshNotifyBtn, requestNotificationPermission, checkRunningTaskNotific
     getState: () => state,
     getNotifyState: () => notifyState,
     setNotifyState: (v) => { notifyState = v; },
+    pauseTask: (id) => actionsModule.pauseTask(id),
     saveState,
     nowMinutes,
     fmt,
