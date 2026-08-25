@@ -212,4 +212,145 @@ describe('TodayTasksCloud - mergeStates', () => {
   });
 });
 
+describe('TodayTasksCloud - detección de origen y sincronización', () => {
+  let cloud, ctx, mockDocRef, mockDb, mockAuth, snapshotCallback;
+  let setStateSpy, setMeetingEditSpy, setTaskEditSpy;
+
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <span id="syncStatus"></span>
+      <div id="authArea"></div>
+      <span id="appModeLabel"></span>
+    `;
+
+    snapshotCallback = null;
+    mockDocRef = {
+      set: vi.fn().mockResolvedValue(true),
+      onSnapshot: vi.fn((opts, cb) => {
+        snapshotCallback = cb || opts;
+        return vi.fn();
+      })
+    };
+    mockDb = {
+      collection: vi.fn().mockReturnValue({
+        doc: vi.fn().mockReturnValue(mockDocRef)
+      }),
+      settings: vi.fn()
+    };
+    let authCallback = null;
+    mockAuth = {
+      setPersistence: vi.fn().mockResolvedValue(true),
+      onAuthStateChanged: vi.fn((cb) => { authCallback = cb; }),
+      getRedirectResult: vi.fn().mockResolvedValue(null),
+      signOut: vi.fn()
+    };
+
+    global.firebase = {
+      initializeApp: vi.fn(),
+      auth: Object.assign(() => mockAuth, {
+        Auth: { Persistence: { LOCAL: 'local' } }
+      }),
+      firestore: () => mockDb
+    };
+
+    setStateSpy = vi.fn();
+    setMeetingEditSpy = vi.fn();
+    setTaskEditSpy = vi.fn();
+
+    ctx = {
+      getState: () => defaultState(),
+      setState: setStateSpy,
+      setMeetingEdit: setMeetingEditSpy,
+      setTaskEdit: setTaskEditSpy,
+      saveState: vi.fn(),
+      STORAGE_KEY: 'test_key',
+      syncFormInputsFromState: vi.fn(),
+      renderAll: vi.fn()
+    };
+
+    cloud = TodayTasksCloud(ctx);
+    cloud.initFirebase();
+    if (authCallback) {
+      authCallback({ uid: 'user_123', email: 'test@example.com' });
+    }
+  });
+
+  it('pushToCloud incluye _lastUpdatedBy y _lastUpdatedAt con el clientId del cliente actual', () => {
+    cloud.pushToCloud();
+
+    expect(mockDocRef.set).toHaveBeenCalledTimes(1);
+    const sentData = mockDocRef.set.mock.calls[0][0];
+    expect(sentData).toHaveProperty('_lastUpdatedBy');
+    expect(sentData).toHaveProperty('_lastUpdatedAt');
+    expect(sentData._lastUpdatedBy).toBe(cloud.getClientId());
+    expect(typeof sentData._lastUpdatedAt).toBe('number');
+  });
+
+  it('onSnapshot ignora la confirmación de subida del propio dispositivo (no muestra "otro dispositivo" ni resetea edición)', () => {
+    // 1. Primer snapshot de carga inicial
+    const initialSnapshot = {
+      metadata: { fromCache: false, hasPendingWrites: false },
+      exists: true,
+      data: () => ({ ...defaultState(), _lastUpdatedBy: cloud.getClientId() })
+    };
+    snapshotCallback(initialSnapshot);
+
+    setStateSpy.mockClear();
+    setMeetingEditSpy.mockClear();
+    setTaskEditSpy.mockClear();
+
+    // 2. Segundo snapshot: confirmación de Firestore de una escritura propia
+    const ownAckSnapshot = {
+      metadata: { fromCache: false, hasPendingWrites: false },
+      exists: true,
+      data: () => ({ ...defaultState(), _lastUpdatedBy: cloud.getClientId(), _lastUpdatedAt: Date.now() })
+    };
+    snapshotCallback(ownAckSnapshot);
+
+    // No debe haber sobrescrito el estado ni reseteado la edición
+    expect(setStateSpy).not.toHaveBeenCalled();
+    expect(setMeetingEditSpy).not.toHaveBeenCalled();
+    expect(setTaskEditSpy).not.toHaveBeenCalled();
+
+    const statusEl = document.getElementById('syncStatus');
+    expect(statusEl.textContent).toContain('Sincronizado');
+    expect(statusEl.textContent).not.toContain('otro dispositivo');
+  });
+
+  it('onSnapshot aplica actualización y notifica cuando los datos provienen de OTRO dispositivo', () => {
+    // 1. Primer snapshot de carga inicial
+    const initialSnapshot = {
+      metadata: { fromCache: false, hasPendingWrites: false },
+      exists: true,
+      data: () => ({ ...defaultState(), _lastUpdatedBy: cloud.getClientId() })
+    };
+    snapshotCallback(initialSnapshot);
+
+    setStateSpy.mockClear();
+    setMeetingEditSpy.mockClear();
+    setTaskEditSpy.mockClear();
+
+    // 2. Segundo snapshot: cambio realizado por OTRO dispositivo (clientId diferente)
+    const otherDeviceSnapshot = {
+      metadata: { fromCache: false, hasPendingWrites: false },
+      exists: true,
+      data: () => ({
+        ...defaultState(),
+        _lastUpdatedBy: 'c_other_device_999',
+        _lastUpdatedAt: Date.now()
+      })
+    };
+    snapshotCallback(otherDeviceSnapshot);
+
+    // Debe haber ejecutado merge y reseteo de edición
+    expect(setStateSpy).toHaveBeenCalledTimes(1);
+    expect(setMeetingEditSpy).toHaveBeenCalledWith(null);
+    expect(setTaskEditSpy).toHaveBeenCalledWith(null);
+
+    const statusEl = document.getElementById('syncStatus');
+    expect(statusEl.textContent).toContain('Actualizado desde otro dispositivo');
+  });
+});
+
+
 

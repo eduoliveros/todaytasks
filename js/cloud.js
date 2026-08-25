@@ -13,29 +13,38 @@ export function TodayTasksCloud(ctx){
   const firebaseConfig = TodayTasksConfig && TodayTasksConfig.firebase;
   let fbAuth = null, fbDb = null, currentUser = null, cloudUnsubscribe = null;
   let applyingRemoteUpdate = false;
+  const clientId = 'c_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
 
+  function getClientId(){
+    return clientId;
+  }
 
-    function cloudDocRef(uid){
-      return fbDb.collection("tableroDia").doc(uid);
-    }
+  function cloudDocRef(uid){
+    return fbDb.collection("tableroDia").doc(uid);
+  }
 
-    function setSyncStatus(kind, text){
-      const el = document.getElementById("syncStatus");
-      if(!el) return;
-      el.className = "sync-status" + (kind ? " " + kind : "");
-      el.textContent = text;
-    }
+  function setSyncStatus(kind, text){
+    const el = document.getElementById("syncStatus");
+    if(!el) return;
+    el.className = "sync-status" + (kind ? " " + kind : "");
+    el.textContent = text;
+  }
 
-    function pushToCloud(){
-      if(!currentUser || !fbDb || applyingRemoteUpdate) return;
-      setSyncStatus("saving", "⏳ Guardando en la nube…");
-      cloudDocRef(currentUser.uid).set(getState())
-        .then(()=> setSyncStatus("", "☁ Sincronizado"))
-        .catch(err => {
-          console.error("Error guardando en Firestore", err);
-          setSyncStatus("error", "⚠ Error al sincronizar");
-        });
-    }
+  function pushToCloud(){
+    if(!currentUser || !fbDb || applyingRemoteUpdate) return;
+    setSyncStatus("saving", "⏳ Guardando en la nube…");
+    const cloudPayload = {
+      ...getState(),
+      _lastUpdatedBy: clientId,
+      _lastUpdatedAt: Date.now()
+    };
+    cloudDocRef(currentUser.uid).set(cloudPayload)
+      .then(()=> setSyncStatus("", "☁ Sincronizado"))
+      .catch(err => {
+        console.error("Error guardando en Firestore", err);
+        setSyncStatus("error", "⚠ Error al sincronizar");
+      });
+  }
 
     function backupLocalState(){
       try {
@@ -339,10 +348,19 @@ export function TodayTasksCloud(ctx){
 
         if(doc.metadata.hasPendingWrites) return;
         if(!doc.exists) return;
+
+        const remoteData = doc.data() || {};
+        // Si la actualización proviene del propio dispositivo (confirmación de Firestore),
+        // no mostramos el mensaje de "otro dispositivo" ni re-aplicamos el estado local.
+        if(remoteData._lastUpdatedBy === clientId){
+          setSyncStatus("", "☁ Sincronizado");
+          return;
+        }
+
         backupLocalState();
         applyingRemoteUpdate = true;
         // Al actualizar desde otro dispositivo, mergeStates aplica los datos y el horario semanal de la nube (el cual prevalece salvo que sea null)
-        setState(mergeStates(getState(), doc.data()));
+        setState(mergeStates(getState(), remoteData));
         setMeetingEdit(null); setTaskEdit(null);
         applyingRemoteUpdate = false;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
@@ -445,7 +463,7 @@ export function TodayTasksCloud(ctx){
     }
 
     return {
-      pushToCloud, backupLocalState, restoreLocalBackup, mergeStates,
+      getClientId, pushToCloud, backupLocalState, restoreLocalBackup, mergeStates,
       attachCloudSync, detachCloudSync, renderAuthArea, signInWithGoogle, initFirebase
     };
 }
