@@ -1,5 +1,5 @@
 /* views/meetings.js — Renderizado de la lista de reuniones */
-import { fmt } from '../utils.js';
+import { fmt, nowMinutes, getTodayStr } from '../utils.js';
 import { escapeHtml, escapeAttr } from '../ui.js';
 
 export function TodayTasksMeetingsView(ctx){
@@ -15,11 +15,20 @@ export function TodayTasksMeetingsView(ctx){
       el.innerHTML = '<div class="empty">Aún no hay reuniones.</div>';
       return;
     }
+    const currentNow = typeof ctx.nowMinutes === "function" ? ctx.nowMinutes() : nowMinutes();
+    const todayStr = typeof ctx.getTodayStr === "function" ? ctx.getTodayStr() : getTodayStr();
+    const selectedDate = state.selectedDate || todayStr;
+    const isPastDate = selectedDate < todayStr;
+    const isFutureDate = selectedDate > todayStr;
+
     el.innerHTML = state.meetings.map(m => {
+      const isPast = !isFutureDate && (isPastDate || (selectedDate === todayStr && m.end <= currentNow));
+      const pastClass = isPast ? " past" : "";
+
       if(meetingEdit && meetingEdit.id === m.id){
         const modeLabel = meetingEdit.mode === "instance" ? " (Solo esta ocurrencia)" : (meetingEdit.mode === "series" ? " (Toda la serie)" : "");
         return `
-      <div class="item editing" id="meeting-item-${escapeAttr(m.id)}">
+      <div class="item editing${pastClass}" id="meeting-item-${escapeAttr(m.id)}">
         <div class="row" style="font-size:0.8rem;color:#4F46E5;font-weight:600;margin-bottom:4px;">
           Editando reunión${modeLabel}
         </div>
@@ -38,7 +47,7 @@ export function TodayTasksMeetingsView(ctx){
       }
       const recurringTag = m.isRecurring ? `<span class="tag" style="margin-left:4px;background:rgba(16,185,129,0.1);color:#059669;border-color:rgba(16,185,129,0.25);" title="Reunión recurrente${m.isModifiedInstance ? ' (Ocurrencia modificada)' : ' (Serie)'}">🔁 Recurrente${m.isModifiedInstance ? ' ✎' : ''}</span>` : '';
       return `
-      <div class="item" id="meeting-item-${escapeAttr(m.id)}">
+      <div class="item${pastClass}" id="meeting-item-${escapeAttr(m.id)}">
         <div class="top">
           <div>
             <div class="title">${escapeHtml(m.title)}</div>

@@ -261,4 +261,79 @@ describe('TodayTasksActions - Reuniones (Simples y Recurrentes)', () => {
       expect(editingEl.classList.contains('editing')).toBe(true);
     });
   });
+
+  describe('TodayTasksMeetingsView - Atenuación de reuniones pasadas', () => {
+    it('añade la clase "past" a reuniones que ya han concluido hoy y no a las que están en curso o futuras', () => {
+      document.body.innerHTML = '<div id="meetingsList"></div>';
+      state.selectedDate = '2026-08-25';
+      state.meetings = [
+        { id: 'm-past', title: 'Reunión Pasada', start: 540, end: 600 },       // 09:00 - 10:00
+        { id: 'm-current', title: 'Reunión En Curso', start: 630, end: 690 },  // 10:30 - 11:30
+        { id: 'm-future', title: 'Reunión Futura', start: 720, end: 780 }      // 12:00 - 13:00
+      ];
+
+      // Ahora son las 11:00 (660 minutos)
+      let currentNow = 660;
+      const ctx = {
+        getState: () => state,
+        getMeetingEdit: () => null,
+        nowMinutes: () => currentNow,
+        getTodayStr: () => '2026-08-25'
+      };
+
+      const meetingsView = TodayTasksMeetingsView(ctx);
+      meetingsView.renderMeetings();
+
+      const elPast = document.getElementById('meeting-item-m-past');
+      const elCurrent = document.getElementById('meeting-item-m-current');
+      const elFuture = document.getElementById('meeting-item-m-future');
+
+      expect(elPast.classList.contains('past')).toBe(true);
+      expect(elCurrent.classList.contains('past')).toBe(false);
+      expect(elFuture.classList.contains('past')).toBe(false);
+    });
+
+    it('añade la clase "past" a todas las reuniones si la fecha seleccionada es del pasado', () => {
+      document.body.innerHTML = '<div id="meetingsList"></div>';
+      state.selectedDate = '2026-08-20';
+      state.meetings = [
+        { id: 'm-1', title: 'Reunión 1', start: 900, end: 960 }
+      ];
+
+      const ctx = {
+        getState: () => state,
+        getMeetingEdit: () => null,
+        nowMinutes: () => 500,
+        getTodayStr: () => '2026-08-25'
+      };
+
+      const meetingsView = TodayTasksMeetingsView(ctx);
+      meetingsView.renderMeetings();
+
+      const el = document.getElementById('meeting-item-m-1');
+      expect(el.classList.contains('past')).toBe(true);
+    });
+
+    it('no añade la clase "past" a ninguna reunión si la fecha seleccionada es futura', () => {
+      document.body.innerHTML = '<div id="meetingsList"></div>';
+      state.selectedDate = '2026-08-30';
+      state.meetings = [
+        { id: 'm-1', title: 'Reunión 1', start: 500, end: 540 }
+      ];
+
+      const ctx = {
+        getState: () => state,
+        getMeetingEdit: () => null,
+        nowMinutes: () => 600,
+        getTodayStr: () => '2026-08-25'
+      };
+
+      const meetingsView = TodayTasksMeetingsView(ctx);
+      meetingsView.renderMeetings();
+
+      const el = document.getElementById('meeting-item-m-1');
+      expect(el.classList.contains('past')).toBe(false);
+    });
+  });
 });
+

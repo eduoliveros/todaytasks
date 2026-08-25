@@ -389,7 +389,13 @@
     padding:10px 12px;
     margin-bottom:8px;
     background:#FCFCFA;
-    transition:box-shadow 0.2s ease, border-color 0.2s ease;
+    transition:box-shadow 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+  }
+  .item.past{
+    opacity: 0.5;
+  }
+  .item.past:hover{
+    opacity: 0.95;
   }
   .item.highlight-pulse{
     animation:itemHighlightPulse 1.2s ease-out;
@@ -1622,6 +1628,12 @@
   [data-theme="dark"] .item {
     background: #20242D;
     border-color: var(--line);
+  }
+  [data-theme="dark"] .item.past {
+    opacity: 0.45;
+  }
+  [data-theme="dark"] .item.past:hover {
+    opacity: 0.95;
   }
   [data-theme="dark"] .item.editing {
     background: #1A2433;
