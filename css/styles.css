@@ -376,7 +376,7 @@
     font-family:'IBM Plex Mono',monospace;font-size:11px;
     padding:3px 9px;border-radius:20px;background:#EEF2F7;color:var(--accent-pending);
   }
-  .sync-status.saving{color:#8a5f00;background:#FBEED2;}
+  .sync-status.saving, .sync-status.pending{color:#8a5f00;background:#FBEED2;}
   .sync-status.error{color:var(--danger);background:#F6D9D4;}
   .btn.pause{background:var(--accent-paused);color:#fff;}
   .btn.done{background:var(--accent-done);color:#fff;}

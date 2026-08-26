@@ -36,9 +36,20 @@ const RING_C = +(2 * Math.PI * RING_R).toFixed(2);
 
 function saveState(){
   if (typeof localStorage !== "undefined") {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      if (e && e.name === 'QuotaExceededError') {
+        showToast('⚠️ Almacenamiento local lleno. Libera espacio o inicia sesión en la nube.');
+      }
+      console.error('Error guardando estado local:', e);
+    }
   }
-  if(cloudModule && cloudModule.pushToCloud) cloudModule.pushToCloud();
+  if(cloudModule && cloudModule.pushToCloudDebounced) {
+    cloudModule.pushToCloudDebounced();
+  } else if(cloudModule && cloudModule.pushToCloud) {
+    cloudModule.pushToCloud();
+  }
 }
 
 function newId(){
@@ -535,6 +546,16 @@ function switchHeaderTab(target){
   /* ---------------- Lifecycle ---------------- */
   if (typeof window !== "undefined") {
     window.addEventListener('hashchange', routerModule.router);
+    window.addEventListener('beforeunload', () => {
+      if(cloudModule && cloudModule.flushPendingCloudPush) {
+        cloudModule.flushPendingCloudPush();
+      }
+    });
+    window.addEventListener('pagehide', () => {
+      if(cloudModule && cloudModule.flushPendingCloudPush) {
+        cloudModule.flushPendingCloudPush();
+      }
+    });
   }
 
   actionsModule.materializeRecurringTasks();

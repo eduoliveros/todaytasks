@@ -13,6 +13,8 @@ export function TodayTasksCloud(ctx){
   const firebaseConfig = TodayTasksConfig && TodayTasksConfig.firebase;
   let fbAuth = null, fbDb = null, currentUser = null, cloudUnsubscribe = null;
   let applyingRemoteUpdate = false;
+  let pushDebounceTimer = null;
+  const DEFAULT_DEBOUNCE_MS = 500;
   const clientId = 'c_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
 
   function getClientId(){
@@ -30,7 +32,11 @@ export function TodayTasksCloud(ctx){
     el.textContent = text;
   }
 
-  function pushToCloud(){
+  function pushToCloud(options = {}){
+    if (pushDebounceTimer) {
+      clearTimeout(pushDebounceTimer);
+      pushDebounceTimer = null;
+    }
     if(!currentUser || !fbDb || applyingRemoteUpdate) return;
     setSyncStatus("saving", "⏳ Guardando en la nube…");
     const cloudPayload = {
@@ -44,6 +50,26 @@ export function TodayTasksCloud(ctx){
         console.error("Error guardando en Firestore", err);
         setSyncStatus("error", "⚠ Error al sincronizar");
       });
+  }
+
+  function pushToCloudDebounced(delayMs = DEFAULT_DEBOUNCE_MS){
+    if(!currentUser || !fbDb || applyingRemoteUpdate) return;
+    setSyncStatus("pending", "⏳ Cambios pendientes…");
+    if (pushDebounceTimer) {
+      clearTimeout(pushDebounceTimer);
+    }
+    pushDebounceTimer = setTimeout(() => {
+      pushDebounceTimer = null;
+      pushToCloud();
+    }, delayMs);
+  }
+
+  function flushPendingCloudPush(){
+    if (pushDebounceTimer) {
+      clearTimeout(pushDebounceTimer);
+      pushDebounceTimer = null;
+      pushToCloud();
+    }
   }
 
     function backupLocalState(){
@@ -463,7 +489,8 @@ export function TodayTasksCloud(ctx){
     }
 
     return {
-      getClientId, pushToCloud, backupLocalState, restoreLocalBackup, mergeStates,
+      getClientId, pushToCloud, pushToCloudDebounced, flushPendingCloudPush,
+      backupLocalState, restoreLocalBackup, mergeStates,
       attachCloudSync, detachCloudSync, renderAuthArea, signInWithGoogle, initFirebase
     };
 }
