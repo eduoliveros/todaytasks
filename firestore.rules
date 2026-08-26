@@ -1,0 +1,25 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Funciones auxiliares de autenticación y propiedad
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Colección tableroDia: cada usuario solo puede leer y modificar sus propios datos
+    match /tableroDia/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Denegación explícita por defecto para cualquier otra colección no definida
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
