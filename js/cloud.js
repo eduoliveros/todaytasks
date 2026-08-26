@@ -199,12 +199,12 @@ export function TodayTasksCloud(ctx){
       ['work', 'personal'].forEach(envKey => {
         const env = merged.environments[envKey];
         Object.values(env.days || {}).forEach(day => {
-          (day.meetings || []).forEach(m => { if (m.id > maxId) maxId = m.id; });
-          (day.tasks || []).forEach(t => { if (t.id > maxId) maxId = t.id; });
-          (day.interruptions || []).forEach(i => { if (i.id > maxId) maxId = i.id; });
+          (day.meetings || []).forEach(m => { if (typeof m.id === 'number' && m.id > maxId) maxId = m.id; });
+          (day.tasks || []).forEach(t => { if (typeof t.id === 'number' && t.id > maxId) maxId = t.id; });
+          (day.interruptions || []).forEach(i => { if (typeof i.id === 'number' && i.id > maxId) maxId = i.id; });
         });
-        (env.recurringMeetings || []).forEach(rm => { if (rm.id > maxId) maxId = rm.id; });
-        (env.recurringTasks || []).forEach(rt => { if (rt.id > maxId) maxId = rt.id; });
+        (env.recurringMeetings || []).forEach(rm => { if (typeof rm.id === 'number' && rm.id > maxId) maxId = rm.id; });
+        (env.recurringTasks || []).forEach(rt => { if (typeof rt.id === 'number' && rt.id > maxId) maxId = rt.id; });
       });
       merged.nextId = Math.max(merged.nextId || 1, local.nextId || 1, remote.nextId || 1, maxId + 1);
 

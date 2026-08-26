@@ -25,7 +25,7 @@ export function TodayTasksMeetingsView(ctx){
       const isPast = !isFutureDate && (isPastDate || (selectedDate === todayStr && m.end <= currentNow));
       const pastClass = isPast ? " past" : "";
 
-      if(meetingEdit && meetingEdit.id === m.id){
+      if(meetingEdit && String(meetingEdit.id) === String(m.id)){
         const modeLabel = meetingEdit.mode === "instance" ? " (Solo esta ocurrencia)" : (meetingEdit.mode === "series" ? " (Toda la serie)" : "");
         return `
       <div class="item editing${pastClass}" id="meeting-item-${escapeAttr(m.id)}">

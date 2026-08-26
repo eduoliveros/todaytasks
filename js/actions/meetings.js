@@ -9,7 +9,7 @@ export function TodayTasksMeetings(ctx, helpers) {
   const { fmt, timeToMinutes, showToast, showRecurringModal } = helpers;
 
   function normalizeMeetingId(id) {
-    if (typeof id === 'string' && !id.startsWith('rec_')) {
+    if (typeof id === 'string' && /^\d+$/.test(id)) {
       const n = parseInt(id, 10);
       return isNaN(n) ? id : n;
     }
@@ -18,11 +18,11 @@ export function TodayTasksMeetings(ctx, helpers) {
 
   function deleteMeetingInstance(ruleId, dateStr) {
     const state = getState();
-    const rule = (state.recurringMeetings || []).find(r => r.id === ruleId);
+    const rule = (state.recurringMeetings || []).find(r => String(r.id) === String(ruleId));
     if (rule) {
       if (!rule.exceptions) rule.exceptions = {};
       rule.exceptions[dateStr] = { type: "cancelled" };
-      if (getMeetingEdit() && getMeetingEdit().id === ruleId) setMeetingEdit(null);
+      if (getMeetingEdit() && String(getMeetingEdit().id) === String(ruleId)) setMeetingEdit(null);
       saveState();
       renderAll();
       showToast(`Ocurrencia del ${dateStr} eliminada ✕`);
@@ -32,9 +32,9 @@ export function TodayTasksMeetings(ctx, helpers) {
   function deleteMeetingSeries(ruleId) {
     const state = getState();
     if (Array.isArray(state.recurringMeetings)) {
-      state.recurringMeetings = state.recurringMeetings.filter(r => r.id !== ruleId);
+      state.recurringMeetings = state.recurringMeetings.filter(r => String(r.id) !== String(ruleId));
     }
-    if (getMeetingEdit() && getMeetingEdit().id === ruleId) setMeetingEdit(null);
+    if (getMeetingEdit() && String(getMeetingEdit().id) === String(ruleId)) setMeetingEdit(null);
     saveState();
     renderAll();
     showToast(`Serie recurrente eliminada ✕`);
@@ -86,7 +86,7 @@ export function TodayTasksMeetings(ctx, helpers) {
     id = normalizeMeetingId(id);
     const state = getState();
     const dateStr = state.selectedDate || getTodayStr();
-    const target = state.meetings.find(m => m.id === id);
+    const target = state.meetings.find(m => String(m.id) === String(id));
 
     if (target && target.isRecurring) {
       const ruleId = target.ruleId || id;
@@ -103,9 +103,9 @@ export function TodayTasksMeetings(ctx, helpers) {
     const env = state.environments[envKey] || state.environments.work;
     const dayObj = env.days && env.days[dateStr];
     if (dayObj && Array.isArray(dayObj.meetings)) {
-      dayObj.meetings = dayObj.meetings.filter(m => m.id !== id);
+      dayObj.meetings = dayObj.meetings.filter(m => String(m.id) !== String(id));
     }
-    if (getMeetingEdit() && getMeetingEdit().id === id) setMeetingEdit(null);
+    if (getMeetingEdit() && String(getMeetingEdit().id) === String(id)) setMeetingEdit(null);
     saveState();
     renderAll();
   }
@@ -114,7 +114,7 @@ export function TodayTasksMeetings(ctx, helpers) {
     id = normalizeMeetingId(id);
     const state = getState();
     const dateStr = state.selectedDate || getTodayStr();
-    const m = state.meetings.find(m=>m.id===id);
+    const m = state.meetings.find(m => String(m.id) === String(id));
     if(!m) return;
 
     if (m.isRecurring) {
@@ -135,7 +135,7 @@ export function TodayTasksMeetings(ctx, helpers) {
           renderAll();
         },
         () => {
-          const rule = m.rule || (state.recurringMeetings || []).find(r => r.id === ruleId);
+          const rule = m.rule || (state.recurringMeetings || []).find(r => String(r.id) === String(ruleId));
           setMeetingEdit({
             id: m.id,
             ruleId,
@@ -151,7 +151,7 @@ export function TodayTasksMeetings(ctx, helpers) {
       return;
     }
 
-    setMeetingEdit({id, mode: "single", title:m.title, start:fmt(m.start), end:fmt(m.end)});
+    setMeetingEdit({id: m.id, mode: "single", title:m.title, start:fmt(m.start), end:fmt(m.end)});
     renderAll();
   }
 
@@ -168,7 +168,7 @@ export function TodayTasksMeetings(ctx, helpers) {
   function saveEditMeeting(id){
     id = normalizeMeetingId(id);
     const meetingEdit = getMeetingEdit();
-    if(!meetingEdit || meetingEdit.id !== id) return;
+    if(!meetingEdit || String(meetingEdit.id) !== String(id)) return;
     const state = getState();
     const title = (meetingEdit.title||"").trim();
     const start = timeToMinutes(meetingEdit.start);
@@ -179,13 +179,13 @@ export function TodayTasksMeetings(ctx, helpers) {
     }
 
     if (meetingEdit.mode === "instance") {
-      const rule = (state.recurringMeetings || []).find(r => r.id === meetingEdit.ruleId);
+      const rule = (state.recurringMeetings || []).find(r => String(r.id) === String(meetingEdit.ruleId));
       if (rule) {
         if (!rule.exceptions) rule.exceptions = {};
         rule.exceptions[meetingEdit.dateStr] = { type: "modified", title, start, end };
       }
     } else if (meetingEdit.mode === "series") {
-      const rule = (state.recurringMeetings || []).find(r => r.id === meetingEdit.ruleId);
+      const rule = (state.recurringMeetings || []).find(r => String(r.id) === String(meetingEdit.ruleId));
       if (rule) {
         rule.title = title;
         rule.start = start;
@@ -197,7 +197,7 @@ export function TodayTasksMeetings(ctx, helpers) {
       const env = state.environments[envKey] || state.environments.work;
       const dayObj = env.days && env.days[dateStr];
       if (dayObj && Array.isArray(dayObj.meetings)) {
-        const m = dayObj.meetings.find(m => m.id === id);
+        const m = dayObj.meetings.find(m => String(m.id) === String(id));
         if (m) {
           m.title = title;
           m.start = start;

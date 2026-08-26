@@ -42,9 +42,12 @@ function saveState(){
 }
 
 function newId(){
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
   const id = state.nextId || 1;
   state.nextId = id + 1;
-  return id;
+  return 'id_' + id + '_' + Date.now();
 }
 
 function computeScheduleFn(){

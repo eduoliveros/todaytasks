@@ -106,13 +106,17 @@ test.describe('Flujo de Reuniones en la Web (E2E)', () => {
 
     // 2. Crear una reunión que comience a la hora actual
     const now = new Date();
-    const startH = String(now.getHours()).padStart(2, '0');
-    const startM = String(now.getMinutes()).padStart(2, '0');
-    const endH = String((now.getHours() + 1) % 24).padStart(2, '0');
+    const startMins = now.getHours() * 60 + now.getMinutes();
+    const endMins = Math.min(1439, startMins + 30);
+    const effectiveStartMins = (endMins <= startMins) ? Math.max(0, endMins - 15) : startMins;
+    const startH = String(Math.floor(effectiveStartMins / 60)).padStart(2, '0');
+    const startM = String(effectiveStartMins % 60).padStart(2, '0');
+    const endH = String(Math.floor(endMins / 60)).padStart(2, '0');
+    const endM = String(endMins % 60).padStart(2, '0');
 
     await page.fill('#meetingTitle', 'Reunión Inmediata');
     await page.fill('#meetingStart', `${startH}:${startM}`);
-    await page.fill('#meetingEnd', `${endH}:${startM}`);
+    await page.fill('#meetingEnd', `${endH}:${endM}`);
     await page.click('#addMeetingBtn');
 
     // 3. Esperar a que el tick de 3 segundos detecte el inicio de la reunión y pause la tarea
