@@ -50,6 +50,7 @@ export function TodayTasksMeetings(ctx, helpers) {
     }
 
     if (recurringData && recurringData.isRecurring) {
+      if (ctx.undoModule && ctx.undoModule.pushSnapshot) ctx.undoModule.pushSnapshot(`Añadir reunión recurrente "${title}"`);
       if (!Array.isArray(state.recurringMeetings)) {
         state.recurringMeetings = [];
       }
@@ -67,6 +68,7 @@ export function TodayTasksMeetings(ctx, helpers) {
       });
       showToast(`Reunión recurrente "${title}" añadida 🔁`);
     } else {
+      if (ctx.undoModule && ctx.undoModule.pushSnapshot) ctx.undoModule.pushSnapshot(`Añadir reunión "${title}"`);
       const envKey = state.activeEnv || "work";
       const env = state.environments[envKey] || state.environments.work;
       const dateStr = state.selectedDate || getTodayStr();
@@ -93,10 +95,20 @@ export function TodayTasksMeetings(ctx, helpers) {
       showRecurringModal(
         `Eliminar "${target.title}" 🔁`,
         `¿Deseas eliminar solo la reunión del día ${dateStr} o eliminar toda la serie recurrente?`,
-        () => deleteMeetingInstance(ruleId, dateStr),
-        () => deleteMeetingSeries(ruleId)
+        () => {
+          if (ctx.undoModule && ctx.undoModule.pushSnapshot) ctx.undoModule.pushSnapshot(`Eliminar ocurrencia de reunión "${target.title}"`);
+          deleteMeetingInstance(ruleId, dateStr);
+        },
+        () => {
+          if (ctx.undoModule && ctx.undoModule.pushSnapshot) ctx.undoModule.pushSnapshot(`Eliminar serie de reuniones "${target.title}"`);
+          deleteMeetingSeries(ruleId);
+        }
       );
       return;
+    }
+
+    if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+      ctx.undoModule.pushSnapshot(`Eliminar reunión "${target ? target.title : ''}"`);
     }
 
     const envKey = state.activeEnv || "work";
@@ -108,6 +120,12 @@ export function TodayTasksMeetings(ctx, helpers) {
     if (getMeetingEdit() && String(getMeetingEdit().id) === String(id)) setMeetingEdit(null);
     saveState();
     renderAll();
+    if (showToast) {
+      showToast(`Reunión "${target ? target.title : ''}" eliminada.`, {
+        label: "Deshacer",
+        onClick: () => { if (ctx.undoModule && ctx.undoModule.undo) ctx.undoModule.undo(); }
+      });
+    }
   }
 
   function startEditMeeting(id){
@@ -176,6 +194,10 @@ export function TodayTasksMeetings(ctx, helpers) {
     if(!title || start === null || end === null || end <= start){
       alert("Revisa el título y que la hora de fin sea posterior a la de inicio.");
       return;
+    }
+
+    if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+      ctx.undoModule.pushSnapshot(`Editar reunión "${title}"`);
     }
 
     if (meetingEdit.mode === "instance") {

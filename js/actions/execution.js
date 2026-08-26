@@ -110,6 +110,11 @@ export function TodayTasksExecution(ctx, helpers){
     const state = getState();
     const t = state.tasks.find(t => String(t.id) === String(id));
     if(!t) return;
+
+    if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+      ctx.undoModule.pushSnapshot(`Completar tarea "${t.title}"`);
+    }
+
     let actual = t.elapsedBefore || 0;
     if(t.status === "running"){
       actual += getElapsedFromRunning(t);
@@ -127,6 +132,12 @@ export function TodayTasksExecution(ctx, helpers){
       setNotifyState({taskId:null, lastNotifiedAt:null, timeEndNotified:false});
     }
     saveState();
+    if (showToast) {
+      showToast(`Tarea "${t.title}" completada.`, {
+        label: "Deshacer",
+        onClick: () => { if (ctx.undoModule && ctx.undoModule.undo) ctx.undoModule.undo(); }
+      });
+    }
     if(ctx.getCurrentView && ctx.getCurrentView() === 'task' && ctx.getFocusTaskId && String(ctx.getFocusTaskId()) === String(id)){
       if (typeof window !== "undefined") window.location.hash = '#/';
     } else {
@@ -138,6 +149,11 @@ export function TodayTasksExecution(ctx, helpers){
     const state = getState();
     const t = state.tasks.find(t => String(t.id) === String(id));
     if(!t || t.status !== "completed") return;
+
+    if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+      ctx.undoModule.pushSnapshot(`Restaurar tarea "${t.title}"`);
+    }
+
     const maxOrder = state.tasks.filter(t2=>t2.status!=="completed").reduce((m,t2)=>Math.max(m,t2.order),0);
     const savedElapsed = t.actualDuration ?? t.elapsedBefore ?? 0;
     t.status = savedElapsed > 0 ? "paused" : "pending";

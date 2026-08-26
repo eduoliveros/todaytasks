@@ -2,7 +2,7 @@
 export function TodayTasksShortcuts(appCtx){
   const {
     getState, actionsModule, routerModule, viewsModule,
-    switchHeaderTab, togglePlanningMode
+    switchHeaderTab, togglePlanningMode, undoModule
   } = appCtx;
 
   function getMeetingEdit() { return appCtx.getMeetingEdit ? appCtx.getMeetingEdit() : null; }
@@ -73,6 +73,21 @@ export function TodayTasksShortcuts(appCtx){
       const tag = active ? active.tagName.toLowerCase() : "";
       const isInput = tag === "input" || tag === "textarea" || tag === "select" || (active && active.isContentEditable);
       if(isInput) return;
+
+      if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !e.shiftKey){
+        e.preventDefault();
+        if(undoModule && undoModule.undo) {
+          undoModule.undo();
+        }
+        return;
+      }
+      if(((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") || ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "z")){
+        e.preventDefault();
+        if(undoModule && undoModule.redo) {
+          undoModule.redo();
+        }
+        return;
+      }
 
       if(e.key === "?" || (e.shiftKey && e.key === "/")){
         e.preventDefault();

@@ -191,6 +191,13 @@
   color: var(--ink);
   border: 1px solid var(--line);
 }
+[data-theme="dark"] .toast-action-btn {
+  background: #6366F1;
+  color: #FFFFFF;
+}
+[data-theme="dark"] .toast-action-btn:hover {
+  background: #4F46E5;
+}
 
 [data-theme="dark"] .progress-banner-wrap {
   background: #181C23;

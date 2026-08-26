@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { defaultState } from '../js/state.js';
 import { TodayTasksActions } from '../js/actions.js';
+import { TodayTasksShortcuts } from '../js/app/shortcuts.js';
 import { getTodayStr } from '../js/utils.js';
 
 describe('Atajo de teclado "D" (Tiempo y fecha de Hoy)', () => {
@@ -132,5 +133,31 @@ describe('Atajo de teclado "D" (Tiempo y fecha de Hoy)', () => {
     window.dispatchEvent(event);
 
     expect(planningBtn.classList.contains('active')).toBe(initialActive);
+  });
+
+  it('al pulsar Ctrl+Z o Cmd+Z ejecuta deshacer (Undo)', () => {
+    const mockUndoModule = { undo: vi.fn(), redo: vi.fn() };
+    TodayTasksShortcuts({
+      getState: () => state,
+      undoModule: mockUndoModule
+    });
+
+    const eventCtrlZ = new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true });
+    window.dispatchEvent(eventCtrlZ);
+
+    expect(mockUndoModule.undo).toHaveBeenCalled();
+  });
+
+  it('al pulsar Ctrl+Y o Cmd+Shift+Z ejecuta rehacer (Redo)', () => {
+    const mockUndoModule = { undo: vi.fn(), redo: vi.fn() };
+    TodayTasksShortcuts({
+      getState: () => state,
+      undoModule: mockUndoModule
+    });
+
+    const eventCtrlY = new KeyboardEvent('keydown', { key: 'y', ctrlKey: true, bubbles: true });
+    window.dispatchEvent(eventCtrlY);
+
+    expect(mockUndoModule.redo).toHaveBeenCalled();
   });
 });

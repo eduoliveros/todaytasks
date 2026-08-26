@@ -2,7 +2,7 @@
 import TodayTasksConfig from './config.js';
 import { nowMinutes, fmt, fmtDur, fmtRemaining, timeToMinutes, getTodayStr, getDayOfWeek, getTaskElapsed } from './utils.js';
 import { escapeHtml, escapeAttr, showToast, scrollToElement } from './ui.js';
-import { defaultState, loadState } from './state.js';
+import { defaultState, loadState, wrapState } from './state.js';
 import { computeSchedule } from './scheduler.js';
 import { TodayTasksActions } from './actions.js';
 import { TodayTasksViews } from './views.js';
@@ -13,6 +13,7 @@ import { TodayTasksWeeklySchedule } from './app/weekly-schedule.js';
 import { TodayTasksForms } from './app/forms.js';
 import { TodayTasksShortcuts } from './app/shortcuts.js';
 import { TodayTasksHistory } from './history.js';
+import { TodayTasksUndo } from './undo.js';
 
 const STORAGE_KEY = (TodayTasksConfig && TodayTasksConfig.storageKey) ? TodayTasksConfig.storageKey : "todaytasks_state_v1";
 
@@ -70,7 +71,7 @@ let actionsModule, viewsModule, cloudModule, routerModule;
 const ctx = {
   STORAGE_KEY,
   getState: () => state,
-  setState: (newState) => { state = newState; },
+  setState: (newState) => { state = wrapState(newState); },
   getMeetingEdit: () => meetingEdit,
   setMeetingEdit: (v) => { meetingEdit = v; },
   getTaskEdit: () => taskEdit,
@@ -92,8 +93,16 @@ const ctx = {
   syncFormInputsFromState: () => viewsModule && viewsModule.syncFormInputsFromState(),
   refreshPlanningModeBtn: () => viewsModule && viewsModule.refreshPlanningModeBtn(),
   resetBoardScroll: () => viewsModule && viewsModule.resetBoardScroll && viewsModule.resetBoardScroll(),
-  countPendingAutoMoveTasks: (targetDate) => actionsModule ? actionsModule.countPendingAutoMoveTasks(targetDate) : 0
 };
+
+let undoModule = TodayTasksUndo({
+  getState: () => state,
+  setState: (newState) => { state = wrapState(newState); },
+  saveState,
+  renderAll: () => viewsModule && viewsModule.renderAll(),
+  showToast
+});
+ctx.undoModule = undoModule;
 
 actionsModule = TodayTasksActions(ctx);
 viewsModule = TodayTasksViews(ctx);
@@ -353,7 +362,8 @@ function switchHeaderTab(target){
     routerModule,
     viewsModule,
     switchHeaderTab,
-    togglePlanningMode
+    togglePlanningMode,
+    undoModule
   });
 
   /* ---------------- History metrics UI ---------------- */
@@ -419,6 +429,8 @@ function switchHeaderTab(target){
 
   /* ---------------- Public API (window.app & export app) ---------------- */
   export const app = {
+    undo: () => undoModule.undo(),
+    redo: () => undoModule.redo(),
     togglePlanningMode,
     switchEnvironment: actionsModule.switchEnvironment,
     selectDate: actionsModule.selectDate,

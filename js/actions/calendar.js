@@ -136,6 +136,9 @@ export function TodayTasksCalendar(ctx, helpers){
     });
 
     if (movedCount > 0) {
+      if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+        ctx.undoModule.pushSnapshot(`Mover ${movedCount} tareas automáticas a ${targetDateStr}`);
+      }
       saveState();
       smartRender ? smartRender() : renderAll();
       const taskLabel = movedCount === 1 ? `"${movedTitles[0]}"` : `${movedCount} tareas pendientes`;
@@ -297,6 +300,10 @@ export function TodayTasksCalendar(ctx, helpers){
       actualDuration: null
     };
 
+    if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+      ctx.undoModule.pushSnapshot(`Copiar tarea "${originalTask.title}" al ${targetDateStr}`);
+    }
+
     targetDayObj.tasks.push(copiedTask);
 
     saveState();
@@ -352,6 +359,10 @@ export function TodayTasksCalendar(ctx, helpers){
     if (sourceDateStr === targetDateStr) {
       showToast("La tarea ya está en esta fecha.");
       return;
+    }
+
+    if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+      ctx.undoModule.pushSnapshot(`Mover tarea "${originalTask.title}" al ${targetDateStr}`);
     }
 
     if (!env.days[targetDateStr]) {

@@ -15,14 +15,48 @@ export function escapeAttr(str) {
 }
 
 let toastTimer = null;
-export function showToast(message) {
+export function showToast(message, action = null) {
   if (typeof document === "undefined") return;
   const el = document.getElementById("toast");
   if (!el) return;
-  el.textContent = message;
+
+  if (toastTimer) {
+    clearTimeout(toastTimer);
+    toastTimer = null;
+  }
+
+  el.innerHTML = "";
+  if (!action) {
+    el.textContent = message;
+  } else {
+    const textSpan = document.createElement("span");
+    textSpan.className = "toast-msg";
+    textSpan.textContent = message;
+    el.appendChild(textSpan);
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "toast-action-btn";
+    btn.textContent = action.label || "Deshacer";
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      el.classList.remove("visible");
+      if (toastTimer) {
+        clearTimeout(toastTimer);
+        toastTimer = null;
+      }
+      if (typeof action.onClick === "function") {
+        action.onClick();
+      }
+    });
+    el.appendChild(btn);
+  }
+
   el.classList.add("visible");
-  if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.classList.remove("visible"); }, 4000);
+  toastTimer = setTimeout(() => {
+    el.classList.remove("visible");
+    toastTimer = null;
+  }, 4000);
 }
 
 export function scrollToElement(elementId) {

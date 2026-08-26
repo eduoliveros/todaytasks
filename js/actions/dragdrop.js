@@ -54,6 +54,11 @@ export function TodayTasksDragDrop(ctx){
     const fromIdx = queue.findIndex(t => String(t.id) === String(fromId));
     const toIdx = queue.findIndex(t => String(t.id) === String(toId));
     if(fromIdx === -1 || toIdx === -1) return;
+
+    if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+      ctx.undoModule.pushSnapshot('Reordenar tareas');
+    }
+
     const [moved] = queue.splice(fromIdx, 1);
     queue.splice(toIdx, 0, moved);
     queue.forEach((t, i) => { t.order = i + 1; });

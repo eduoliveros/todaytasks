@@ -370,6 +370,47 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
     // Comprobar que se actualizó a 45 min
     await expect(tasksList).toContainText('Planificado: 45 min');
   });
+
+  test('Deshacer acción (Ctrl+Z y botón Deshacer en toast) recupera tareas y preserva la lista', async ({ page }) => {
+    // 1. Crear Tarea A y Tarea B
+    await page.fill('#taskTitle', 'Tarea Primera');
+    await page.fill('#taskDuration', '30');
+    await page.click('#addTaskBtn');
+
+    await page.fill('#taskTitle', 'Tarea Segunda');
+    await page.fill('#taskDuration', '20');
+    await page.click('#addTaskBtn');
+
+    const tasksList = page.locator('#tasksList');
+    await expect(tasksList).toContainText('Tarea Primera');
+    await expect(tasksList).toContainText('Tarea Segunda');
+
+    // 2. Eliminar Tarea Segunda
+    const deleteBtn = page.locator('#tasksList .task-item:has-text("Tarea Segunda") .icon-btn[title="Eliminar"]');
+    await deleteBtn.click();
+    await expect(tasksList).not.toContainText('Tarea Segunda');
+
+    // 3. Pulsar el botón Deshacer del toast
+    const toastActionBtn = page.locator('#toast .toast-action-btn');
+    await expect(toastActionBtn).toBeVisible();
+    await toastActionBtn.click();
+
+    // Comprobar que ambas tareas siguen visibles e intactas
+    await expect(tasksList).toContainText('Tarea Primera');
+    await expect(tasksList).toContainText('Tarea Segunda');
+
+    // 4. Completar Tarea Primera
+    const completeBtn = page.locator('#tasksList .task-item:has-text("Tarea Primera") button:has-text("✓ Completar")');
+    await completeBtn.click();
+    await expect(tasksList).not.toContainText('Tarea Primera');
+
+    // 5. Pulsar atajo de teclado Control+z
+    await page.keyboard.press('Control+z');
+
+    // Comprobar que Tarea Primera vuelve a estar en pendientes y Tarea Segunda sigue presente
+    await expect(tasksList).toContainText('Tarea Primera');
+    await expect(tasksList).toContainText('Tarea Segunda');
+  });
 });
 
 

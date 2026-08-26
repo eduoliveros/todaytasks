@@ -100,6 +100,7 @@ export function TodayTasksTasks(ctx, helpers){
     }
 
     if (recurringData && recurringData.isRecurring) {
+      if (ctx.undoModule && ctx.undoModule.pushSnapshot) ctx.undoModule.pushSnapshot(`Añadir tarea recurrente "${title}"`);
       if (!Array.isArray(state.recurringTasks)) {
         state.recurringTasks = [];
       }
@@ -118,6 +119,7 @@ export function TodayTasksTasks(ctx, helpers){
       materializeRecurringTasks();
       showToast(`Tarea recurrente "${title}" añadida 🔁`);
     } else {
+      if (ctx.undoModule && ctx.undoModule.pushSnapshot) ctx.undoModule.pushSnapshot(`Añadir tarea "${title}"`);
       let newOrder;
       if (toTop) {
         state.tasks.forEach(t => {
@@ -149,16 +151,32 @@ export function TodayTasksTasks(ctx, helpers){
       showRecurringModal(
         `Eliminar "${t.title}" 🔁`,
         `¿Deseas eliminar solo la tarea del día ${dateStr} o eliminar toda la serie recurrente?`,
-        () => deleteRecurringTaskInstance(ruleId, dateStr),
-        () => deleteRecurringTaskSeries(ruleId)
+        () => {
+          if (ctx.undoModule && ctx.undoModule.pushSnapshot) ctx.undoModule.pushSnapshot(`Eliminar ocurrencia "${t.title}"`);
+          deleteRecurringTaskInstance(ruleId, dateStr);
+        },
+        () => {
+          if (ctx.undoModule && ctx.undoModule.pushSnapshot) ctx.undoModule.pushSnapshot(`Eliminar serie "${t.title}"`);
+          deleteRecurringTaskSeries(ruleId);
+        }
       );
       return;
+    }
+
+    if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+      ctx.undoModule.pushSnapshot(`Eliminar tarea "${t ? t.title : ''}"`);
     }
 
     state.tasks = state.tasks.filter(t => String(t.id) !== String(id));
     if(getTaskEdit() && String(getTaskEdit().id) === String(id)) setTaskEdit(null);
     saveState();
     renderAll();
+    if (showToast) {
+      showToast(`Tarea "${t ? t.title : ''}" eliminada.`, {
+        label: "Deshacer",
+        onClick: () => { if (ctx.undoModule && ctx.undoModule.undo) ctx.undoModule.undo(); }
+      });
+    }
   }
 
   function startEditTask(id){
@@ -217,6 +235,10 @@ export function TodayTasksTasks(ctx, helpers){
       return;
     }
 
+    if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+      ctx.undoModule.pushSnapshot(`Editar tarea "${t.title}"`);
+    }
+
     if(!isNaN(actual) && actual >= 0) {
       if(t.status === "completed") {
         t.actualDuration = actual;
@@ -256,6 +278,9 @@ export function TodayTasksTasks(ctx, helpers){
     const parsed = parseDuration(actualMin);
     const actual = parsed !== null ? Math.round(parsed * 10) / 10 : Math.round(parseFloat(actualMin) * 10) / 10;
     if(!isNaN(actual) && actual >= 0) {
+      if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+        ctx.undoModule.pushSnapshot(`Modificar tiempo consumido "${t.title}"`);
+      }
       if(t.status === "completed") {
         t.actualDuration = actual;
         t.elapsedBefore = actual;
@@ -278,6 +303,10 @@ export function TodayTasksTasks(ctx, helpers){
     const idx = list.findIndex(t => String(t.id) === String(id));
     const swapIdx = idx + dir;
     if(idx<0 || swapIdx<0 || swapIdx>=list.length) return;
+
+    if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+      ctx.undoModule.pushSnapshot('Reordenar tarea');
+    }
 
     let beforeRect = null;
     if (typeof document !== "undefined") {

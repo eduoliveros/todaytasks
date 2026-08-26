@@ -227,10 +227,36 @@ input:focus, button:focus, select:focus { outline: 2px solid var(--accent-pendin
   pointer-events: none;
   transition: opacity .25s ease, transform .25s ease;
   z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
 }
 .toast.visible {
   opacity: 1;
   transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+.toast-msg {
+  flex: 1;
+}
+.toast-action-btn {
+  background: #4F46E5;
+  color: #ffffff;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.toast-action-btn:hover {
+  background: #4338CA;
+  transform: translateY(-1px);
+}
+.toast-action-btn:active {
+  transform: translateY(0);
 }
 @media (prefers-reduced-motion: reduce) {
   .toast { transition: opacity .01s; }
