@@ -1,0 +1,403 @@
+/* ---------- Board (Calendar Day View) ---------- */
+.board {
+  background: var(--board);
+  color: var(--board-text);
+  border-radius: var(--radius);
+  padding: 18px 18px 20px;
+  min-height: 480px;
+  display: flex;
+  flex-direction: column;
+}
+.board h2 {
+  color: #9FB2C9;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.board h2 .now-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--accent-running);
+  font-size: 12px;
+  letter-spacing: .04em;
+}
+
+.board-calendar-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+}
+
+.board-calendar-scroll {
+  position: relative;
+  max-height: 560px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.14);
+  border: 1px solid var(--board-line);
+  padding: 12px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--board-line) transparent;
+}
+
+.board-calendar-canvas {
+  position: relative;
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Time axis */
+.calendar-time-axis {
+  position: relative;
+  height: 100%;
+  user-select: none;
+}
+
+.calendar-hour-mark {
+  position: absolute;
+  right: 8px;
+  transform: translateY(-50%);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: #8FA1B8;
+  letter-spacing: -0.02em;
+}
+
+/* Grid & Lines */
+.calendar-grid-track {
+  position: relative;
+  height: 100%;
+  border-left: 1px solid var(--board-line);
+  margin-right: 10px;
+}
+
+.calendar-grid-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--board-line);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.calendar-grid-line-half {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  border-top: 1px dashed var(--board-line);
+  opacity: 0.22;
+  pointer-events: none;
+}
+
+/* Extended zone (+2h past workEnd) */
+.calendar-extended-zone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(0, 0, 0, 0.08),
+    rgba(0, 0, 0, 0.08) 8px,
+    rgba(0, 0, 0, 0.16) 8px,
+    rgba(0, 0, 0, 0.16) 16px
+  );
+  border-top: 1px dashed rgba(249, 115, 22, 0.45);
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.calendar-extended-label {
+  position: absolute;
+  right: 8px;
+  top: 4px;
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: #E0A030;
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Work end marker */
+.calendar-work-end-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-top: 2px dashed #94A3B8;
+  z-index: 6;
+  pointer-events: none;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.calendar-work-end-badge {
+  position: absolute;
+  right: 4px;
+  transform: translateY(-50%);
+  background: #1E293B;
+  color: #E2E8F0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 500;
+  border: 1px solid #475569;
+}
+
+/* Red/Orange NOW Indicator Bar */
+.calendar-now-indicator {
+  position: absolute;
+  left: -54px;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #F97316 0%, #EF4444 65%, #DC2626 100%);
+  z-index: 15;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.7);
+}
+
+.calendar-now-badge {
+  position: absolute;
+  left: 2px;
+  transform: translateY(-50%);
+  background: linear-gradient(135deg, #F97316, #EF4444);
+  color: #FFFFFF;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.45);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: -0.02em;
+  pointer-events: auto;
+}
+
+.calendar-now-dot {
+  width: 6px;
+  height: 6px;
+  background: #FFFFFF;
+  border-radius: 50%;
+  display: inline-block;
+  animation: pulse-now 1.6s infinite ease-in-out;
+}
+
+@keyframes pulse-now {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.4); }
+}
+
+/* Event Slots positioned in Calendar */
+.calendar-grid-track .slot {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  box-sizing: border-box;
+  margin-bottom: 0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12.5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  z-index: 8;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.calendar-grid-track .slot:hover {
+  z-index: 12;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+}
+
+.calendar-grid-track .slot.slot-interactive {
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: rgba(79,70,229,0.2);
+}
+
+.calendar-grid-track .slot.slot-interactive:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+}
+
+.calendar-grid-track .slot.slot-interactive:active {
+  transform: scale(0.98);
+}
+
+.calendar-grid-track .slot .time-label {
+  position: static;
+  width: auto;
+  text-align: left;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: inherit;
+  opacity: 0.88;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.calendar-grid-track .slot .time-label .sep {
+  color: inherit;
+  opacity: 0.6;
+}
+
+.calendar-grid-track .slot .slot-title {
+  flex: 1;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendar-grid-track .slot .dur {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  opacity: 0.85;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.calendar-grid-track .slot.slot-multi-col {
+  padding: 2px 6px;
+  font-size: 11.5px;
+  gap: 4px;
+}
+.calendar-grid-track .slot.slot-multi-col .time-label {
+  font-size: 10px;
+}
+.calendar-grid-track .slot.slot-multi-col .dur {
+  font-size: 10px;
+}
+.calendar-grid-track .slot.slot-compact {
+  padding: 1px 5px;
+  font-size: 11px;
+}
+
+/* Event Slot Types */
+.slot-meeting {
+  background: rgba(194, 94, 62, 0.3);
+  border: 1px solid rgba(194, 94, 62, 0.65) !important;
+  border-left: 4px solid #C25E3E !important;
+  color: #FCE7DE;
+}
+
+.slot-buffer {
+  background: rgba(76, 175, 80, 0.18);
+  border: 1px dashed rgba(129, 199, 132, 0.55) !important;
+  border-left: 3px dashed var(--accent-break) !important;
+  font-style: italic;
+  color: #C8E6C9;
+  font-size: 11px;
+}
+
+.slot-break {
+  background: rgba(76, 175, 80, 0.22);
+  border: 1px dashed rgba(129, 199, 132, 0.6) !important;
+  border-left: 4px solid var(--accent-break) !important;
+  font-weight: 500;
+  color: #C8E6C9;
+  font-size: 11px;
+}
+
+.slot-task.pending {
+  background: rgba(91, 127, 166, 0.28);
+  border: 1px solid rgba(91, 127, 166, 0.55) !important;
+  border-left: 4px solid #5B7FA6 !important;
+  color: #DCE3EC;
+}
+
+.slot-task.running {
+  background: rgba(224, 160, 48, 0.32);
+  border: 1px solid var(--accent-running) !important;
+  border-left: 4px solid var(--accent-running) !important;
+  color: #FFF3D6;
+  box-shadow: 0 0 10px rgba(224, 160, 48, 0.25);
+}
+
+.slot-task.paused {
+  background: rgba(154, 107, 158, 0.28);
+  border: 1px solid var(--accent-paused) !important;
+  border-left: 4px solid var(--accent-paused) !important;
+  color: #F3E2F6;
+}
+
+.slot-overflow {
+  border-style: dashed !important;
+  opacity: 0.95;
+}
+
+.slot-overflow-tag {
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(239, 68, 68, 0.25);
+  color: #FCA5A5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  flex-shrink: 0;
+}
+
+.slot-past {
+  opacity: 0.48;
+  filter: grayscale(0.2);
+}
+
+.overflow-note {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(180, 72, 58, 0.2);
+  border: 1px solid rgba(180, 72, 58, 0.45);
+  font-size: 12px;
+  color: #F1C4BC;
+}
+
+.board-empty {
+  color: #7C8DA1;
+  font-size: 13px;
+  padding: 14px 0;
+  text-align: center;
+}
+
+/* ---------- Summary ---------- */
+.summary-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+.summary-body { margin-top: 12px; }
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.summary-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+@media (max-width: 900px) { .summary-grid-3 { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .summary-grid { grid-template-columns: 1fr; } }
+.summary-col h3 { font-size: 12.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); margin-bottom: 8px; }
+.summary-row {
+  display: flex; flex-direction: column; gap: 2px; font-size: 13px;
+  padding: 8px 0; border-bottom: 1px solid var(--line);
+}
+.summary-row:last-child { border-bottom: none; }
+.summary-row .row-top { display: flex; justify-content: space-between; gap: 8px; }
+.summary-row .dur { font-family: 'IBM Plex Mono', monospace; color: var(--ink-soft); font-size: 12px; }
+.summary-row .time-range { margin-top: 1px; font-size: 12px; }
+.agenda-panel { margin: 0 28px 20px; }
+@media (max-width: 920px) { .agenda-panel { margin: 0 28px 20px; } }

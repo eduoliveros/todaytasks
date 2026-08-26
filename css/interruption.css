@@ -1,0 +1,124 @@
+/* ---------- Interruption View ---------- */
+#view-interruption {
+  min-height: calc(100vh - 74px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  background: linear-gradient(155deg, #FFF8F6 0%, #FFF4F1 100%);
+}
+.interruption-view {
+  width: 100%;
+  max-width: 560px;
+}
+.interruption-card {
+  background: #FFFFFF;
+  border: 1.5px solid #F0C4BB;
+  border-radius: 24px;
+  padding: 48px 44px 44px;
+  box-shadow: 0 20px 60px rgba(180,60,40,0.10), 0 4px 16px rgba(180,60,40,0.07);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 28px;
+}
+.interruption-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  padding: 6px 18px;
+  border-radius: 30px;
+  background: #FDECEA;
+  color: var(--danger);
+  border: 1px solid #F4C4BC;
+}
+.interruption-input-group {
+  width: 100%;
+}
+.interruption-input {
+  width: 100%;
+  font-size: 18px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  padding: 16px 20px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  text-align: center;
+  box-sizing: border-box;
+  color: var(--ink);
+  background: #FAFAF8;
+  transition: border-color 0.2s;
+}
+.interruption-input::placeholder {
+  color: var(--ink-soft);
+  font-weight: 400;
+}
+.interruption-input:focus {
+  border-color: var(--danger);
+  background: #FFFFFF;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(200,60,40,0.08);
+}
+.interruption-timer-box {
+  background: #FDF4F3;
+  border: 1.5px solid #F0C4BB;
+  border-radius: 16px;
+  padding: 24px 40px;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.interruption-time-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  color: var(--ink-soft);
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+}
+.interruption-time-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 58px;
+  font-weight: 700;
+  color: var(--danger);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.interruption-start-meta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+.interruption-finish-btn {
+  padding: 16px 36px !important;
+  font-size: 16px !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  width: 100%;
+  letter-spacing: .01em;
+}
+.summary-row-interruption {
+  border-left: 3px solid #F1C4BC !important;
+  background: #FFF8F6 !important;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+.time-range.tr-interruption {
+  background: #FEF2F0;
+  border: 1px solid #F1C4BC;
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--danger);
+  width: fit-content;
+}
+.time-range.tr-interruption .tag {
+  color: var(--danger);
+}

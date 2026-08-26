@@ -1,0 +1,64 @@
+:root {
+  --bg: #F6F5F1;
+  --panel: #FFFFFF;
+  --ink: #1B1F23;
+  --ink-soft: #5B6169;
+  --line: #E2E0D8;
+  --board: #1E2A3A;
+  --board-line: #33455C;
+  --board-text: #DCE3EC;
+  --accent-running: #E0A030;
+  --accent-meeting: #8A5A44;
+  --accent-buffer: #B99B7D;
+  --accent-break: #4CAF50;
+  --accent-done: #4C7A5B;
+  --accent-pending: #5B7FA6;
+  --accent-paused: #9A6B9E;
+  --danger: #B4483A;
+  --radius: 10px;
+
+  /* Chart / Card variables */
+  --bg-card: var(--panel);
+  --border: var(--line);
+  --text-muted: var(--ink-soft);
+  --bg-body: var(--bg);
+  --primary: #4F46E5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: 'Space Grotesk', 'Segoe UI Semibold', sans-serif;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.mono {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+a {
+  font-family: inherit;
+}
+
+button {
+  font-family: inherit;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}

@@ -7,7 +7,10 @@ describe('Header responsivo en móvil (Opción A)', () => {
   let htmlContent;
 
   beforeAll(() => {
-    cssContent = fs.readFileSync(path.resolve(__dirname, '../css/styles.css'), 'utf-8');
+    const stylesPath = path.resolve(__dirname, '../css/styles.css');
+    const headerPath = path.resolve(__dirname, '../css/header.css');
+    const rawStyles = fs.readFileSync(stylesPath, 'utf-8');
+    cssContent = fs.existsSync(headerPath) ? fs.readFileSync(headerPath, 'utf-8') : rawStyles;
     htmlContent = fs.readFileSync(path.resolve(__dirname, '../index.html'), 'utf-8');
     document.documentElement.innerHTML = htmlContent;
   });
