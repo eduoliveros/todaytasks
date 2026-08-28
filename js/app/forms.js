@@ -49,6 +49,56 @@ export function TodayTasksForms(appCtx){
         if (daysWrap) daysWrap.style.display = e.target.value === "daily" ? "none" : "block";
       });
     }
+
+    /* Task search input & clear button listeners */
+    const taskSearchInputEl = document.getElementById("taskSearchInput");
+    const taskSearchClearBtnEl = document.getElementById("taskSearchClearBtn");
+
+    if (taskSearchInputEl) {
+      taskSearchInputEl.addEventListener("input", (e) => {
+        const val = e.target.value;
+        if (taskSearchClearBtnEl) {
+          taskSearchClearBtnEl.style.display = val ? "block" : "none";
+        }
+        if (appCtx.setTaskSearchQuery) {
+          appCtx.setTaskSearchQuery(val);
+        }
+        if (appCtx.renderTasks) {
+          appCtx.renderTasks();
+        } else if (appCtx.renderAll) {
+          appCtx.renderAll();
+        }
+      });
+
+      taskSearchInputEl.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          taskSearchInputEl.value = "";
+          if (taskSearchClearBtnEl) taskSearchClearBtnEl.style.display = "none";
+          if (appCtx.setTaskSearchQuery) appCtx.setTaskSearchQuery("");
+          if (appCtx.renderTasks) appCtx.renderTasks();
+          taskSearchInputEl.blur();
+        }
+      });
+    }
+
+    if (taskSearchClearBtnEl) {
+      taskSearchClearBtnEl.addEventListener("click", () => {
+        if (taskSearchInputEl) {
+          taskSearchInputEl.value = "";
+          taskSearchInputEl.focus();
+        }
+        taskSearchClearBtnEl.style.display = "none";
+        if (appCtx.setTaskSearchQuery) {
+          appCtx.setTaskSearchQuery("");
+        }
+        if (appCtx.renderTasks) {
+          appCtx.renderTasks();
+        } else if (appCtx.renderAll) {
+          appCtx.renderAll();
+        }
+      });
+    }
   }
 
   /* Meeting submit */

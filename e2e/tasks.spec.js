@@ -411,7 +411,73 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
     await expect(tasksList).toContainText('Tarea Primera');
     await expect(tasksList).toContainText('Tarea Segunda');
   });
+
+  test('Búsqueda inteligente: filtra tareas multi-token, ignora acentos/mayúsculas y separa activas de completadas', async ({ page }) => {
+    // 1. Crear 3 tareas
+    await page.fill('#taskTitle', 'Revisar API de facturación');
+    await page.fill('#taskDuration', '30');
+    await page.click('#addTaskBtn');
+
+    await page.fill('#taskTitle', 'Comprar en el supermercado');
+    await page.fill('#taskDuration', '15');
+    await page.click('#addTaskBtn');
+
+    await page.fill('#taskTitle', 'Diseñar pantalla de login');
+    await page.fill('#taskDuration', '45');
+    await page.click('#addTaskBtn');
+
+    const tasksList = page.locator('#tasksList');
+    await expect(tasksList).toContainText('Revisar API de facturación');
+    await expect(tasksList).toContainText('Comprar en el supermercado');
+    await expect(tasksList).toContainText('Diseñar pantalla de login');
+
+    // 2. Completar "Revisar API de facturación"
+    const completeBtn = page.locator('#tasksList .task-item:has-text("Revisar API de facturación") button:has-text("✓ Completar")');
+    await completeBtn.click();
+    await expect(tasksList).not.toContainText('Revisar API de facturación');
+
+    // 3. Probar atajo de teclado '/' para enfocar el buscador
+    await page.keyboard.press('/');
+    const searchInput = page.locator('#taskSearchInput');
+    await expect(searchInput).toBeFocused();
+
+    // 4. Buscar "facturacion api" (orden inverso y sin acento)
+    await searchInput.fill('facturacion api');
+
+    // Debe mostrar la sección de completadas con la tarea completada encontrada
+    await expect(tasksList.locator('.completed-heading')).toContainText('Tareas completadas (1)');
+    await expect(tasksList).toContainText('Revisar API de facturación');
+    await expect(tasksList.locator('.active-heading')).toContainText('Tareas activas (0)');
+    await expect(tasksList).toContainText('Sin tareas activas que coincidan');
+
+    // 5. Buscar "merca" (substring dentro de 'supermercado')
+    await searchInput.fill('merca');
+    await expect(tasksList.locator('.active-heading')).toContainText('Tareas activas (1)');
+    await expect(tasksList).toContainText('Comprar en el supermercado');
+    await expect(tasksList.locator('.completed-heading')).toContainText('Tareas completadas (0)');
+    await expect(tasksList).toContainText('Sin tareas completadas que coincidan');
+
+    // 6. Probar botón de limpiar búsqueda (✕)
+    const clearBtn = page.locator('#taskSearchClearBtn');
+    await expect(clearBtn).toBeVisible();
+    await clearBtn.click();
+
+    // Debe volver a la lista normal de tareas activas
+    await expect(searchInput).toHaveValue('');
+    await expect(tasksList).toContainText('Comprar en el supermercado');
+    await expect(tasksList).toContainText('Diseñar pantalla de login');
+    await expect(tasksList).not.toContainText('Revisar API de facturación');
+
+    // 7. Probar tecla Escape en el input para limpiar búsqueda
+    await searchInput.fill('login');
+    await expect(tasksList).toContainText('Diseñar pantalla de login');
+    await searchInput.press('Escape');
+    await expect(searchInput).toHaveValue('');
+    await expect(tasksList).toContainText('Comprar en el supermercado');
+    await expect(tasksList).toContainText('Diseñar pantalla de login');
+  });
 });
+
 
 
 

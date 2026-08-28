@@ -183,5 +183,56 @@ describe('TodayTasksUtils (ES Module)', () => {
       expect(utils.computeOccupiedMeetingTime(meetings)).toBe(180);
     });
   });
+
+  describe('Búsqueda inteligente (normalizeSearchText & matchesSearchQuery)', () => {
+    it('normalizeSearchText elimina acentos, convierte a minúsculas y recorta espacios', () => {
+      expect(utils.normalizeSearchText('  Árbol Éxito Índice Ópera Único  ')).toBe('arbol exito indice opera unico');
+      expect(utils.normalizeSearchText('DISEÑO Gráfico')).toBe('diseno grafico');
+      expect(utils.normalizeSearchText('')).toBe('');
+      expect(utils.normalizeSearchText(null)).toBe('');
+      expect(utils.normalizeSearchText(undefined)).toBe('');
+    });
+
+    it('matchesSearchQuery devuelve true con query vacío o solo espacios', () => {
+      expect(utils.matchesSearchQuery('Revisar API', '')).toBe(true);
+      expect(utils.matchesSearchQuery('Revisar API', '   ')).toBe(true);
+      expect(utils.matchesSearchQuery('Revisar API', null)).toBe(true);
+      expect(utils.matchesSearchQuery('Revisar API', undefined)).toBe(true);
+    });
+
+    it('matchesSearchQuery encuentra palabras individuales ignorando mayúsculas y acentos', () => {
+      expect(utils.matchesSearchQuery('Revisión de la API', 'revision')).toBe(true);
+      expect(utils.matchesSearchQuery('Revisión de la API', 'REVISION')).toBe(true);
+      expect(utils.matchesSearchQuery('Revisión de la API', 'api')).toBe(true);
+      expect(utils.matchesSearchQuery('Revisión de la API', 'API')).toBe(true);
+    });
+
+    it('matchesSearchQuery busca múltiples tokens en cualquier orden (multi-token)', () => {
+      const title = 'Revisar la API de facturación mensual';
+      expect(utils.matchesSearchQuery(title, 'api facturacion')).toBe(true);
+      expect(utils.matchesSearchQuery(title, 'facturacion api')).toBe(true);
+      expect(utils.matchesSearchQuery(title, 'mensual api revisar')).toBe(true);
+      expect(utils.matchesSearchQuery(title, 'revisar mensual')).toBe(true);
+    });
+
+    it('matchesSearchQuery busca dentro de las palabras (substrings no completos)', () => {
+      const title = 'Comprar en el supermercado';
+      expect(utils.matchesSearchQuery(title, 'merca comp')).toBe(true);
+      expect(utils.matchesSearchQuery(title, 'permercado')).toBe(true);
+      expect(utils.matchesSearchQuery(title, 'super')).toBe(true);
+    });
+
+    it('matchesSearchQuery devuelve false si alguno de los tokens no coincide', () => {
+      const title = 'Revisar la API de facturación mensual';
+      expect(utils.matchesSearchQuery(title, 'api pagos')).toBe(false);
+      expect(utils.matchesSearchQuery(title, 'revisar inexistente')).toBe(false);
+    });
+
+    it('matchesSearchQuery maneja texto destino nulo o no string', () => {
+      expect(utils.matchesSearchQuery(null, 'test')).toBe(false);
+      expect(utils.matchesSearchQuery(undefined, 'test')).toBe(false);
+    });
+  });
 });
+
 

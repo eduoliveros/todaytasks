@@ -30,6 +30,7 @@ let state = loadState(STORAGE_KEY);
 
 let meetingEdit = null;
 let taskEdit = null;
+let taskSearchQuery = "";
 let notifyState = {taskId:null, lastNotifiedAt:null, timeEndNotified:false};
 
 const RING_R = 85;
@@ -76,6 +77,8 @@ const ctx = {
   setMeetingEdit: (v) => { meetingEdit = v; },
   getTaskEdit: () => taskEdit,
   setTaskEdit: (v) => { taskEdit = v; },
+  getTaskSearchQuery: () => taskSearchQuery,
+  setTaskSearchQuery: (v) => { taskSearchQuery = v; },
   getNotifyState: () => notifyState,
   setNotifyState: (v) => { notifyState = v; },
   getCurrentView: () => routerModule ? routerModule.getCurrentView() : 'main',
@@ -87,6 +90,7 @@ const ctx = {
   RING_R,
   RING_C,
   renderAll: () => viewsModule && viewsModule.renderAll(),
+  renderTasks: (sched) => viewsModule && viewsModule.renderTasks(sched || computeScheduleFn()),
   smartRender: () => viewsModule && viewsModule.smartRender(),
   renderInterruptionView: () => viewsModule && viewsModule.renderInterruptionView(),
   renderTaskFocusView: () => viewsModule && viewsModule.renderTaskFocusView(),
@@ -312,7 +316,10 @@ function switchHeaderTab(target){
     actionsModule,
     showToast,
     fmt,
-    timeToMinutes
+    timeToMinutes,
+    setTaskSearchQuery: ctx.setTaskSearchQuery,
+    renderTasks: ctx.renderTasks,
+    renderAll: ctx.renderAll
   });
 
   /* ---------------- Summary accordion toggle ---------------- */
@@ -548,6 +555,26 @@ function switchHeaderTab(target){
       const input = document.getElementById('timePopoverInput');
       actionsModule.updateTaskTimeFast(this.currentPopoverTaskId, input.value);
       this.closeTimePopover();
+    },
+    setTaskSearch: function(query) {
+      taskSearchQuery = typeof query === "string" ? query : "";
+      const input = document.getElementById("taskSearchInput");
+      if (input && input.value !== taskSearchQuery) {
+        input.value = taskSearchQuery;
+      }
+      const clearBtn = document.getElementById("taskSearchClearBtn");
+      if (clearBtn) {
+        clearBtn.style.display = taskSearchQuery ? "block" : "none";
+      }
+      const schedule = computeScheduleFn();
+      viewsModule.renderTasks(schedule);
+    },
+    clearTaskSearch: function() {
+      this.setTaskSearch("");
+      const input = document.getElementById("taskSearchInput");
+      if (input) {
+        input.focus();
+      }
     }
   };
 

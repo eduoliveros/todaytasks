@@ -89,7 +89,7 @@ export function TodayTasksShortcuts(appCtx){
         return;
       }
 
-      if(e.key === "?" || (e.shiftKey && e.key === "/")){
+      if(e.key === "?"){
         e.preventDefault();
         toggleShortcutsModal();
       } else if(e.key === "1" || e.key === "2" || e.key === "3"){
@@ -142,6 +142,18 @@ export function TodayTasksShortcuts(appCtx){
         setTimeout(() => {
           const el = document.getElementById("taskTitle");
           if(el) el.focus();
+        }, 50);
+      } else if(e.key === "/"){
+        e.preventDefault();
+        if(routerModule && routerModule.getCurrentView() !== 'main'){
+          window.location.hash = '#/';
+        }
+        setTimeout(() => {
+          const el = document.getElementById("taskSearchInput");
+          if(el) {
+            el.focus();
+            el.select();
+          }
         }, 50);
       } else if(e.key === "r" || e.key === "R"){
         e.preventDefault();

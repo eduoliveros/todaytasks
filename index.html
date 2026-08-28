@@ -18,7 +18,7 @@
   <!-- Barra superior: logo + switcher + pestañas -->
   <div class="topbar-title-row">
     <div class="brand">
-      <h1>Tablero del día <span class="app-version">v1.85</span></h1>
+      <h1>Tablero del día <span class="app-version">v1.86</span></h1>
       <span class="db-status-badge" id="appModeLabel" title="Tipo de base de datos en uso">💾 local · persistente</span>
       <div class="env-switcher" id="envSwitcher">
         <button class="env-btn active" data-env="work" id="envBtnWork" title="Cambiar a ambiente de Trabajo (Tecla 'E')">
@@ -160,6 +160,11 @@
             <input type="date" id="recTaskEndDate" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;">
           </label>
         </div>
+      </div>
+      <div class="task-search-bar" id="taskSearchBar">
+        <span class="task-search-icon" aria-hidden="true">🔍</span>
+        <input type="text" id="taskSearchInput" class="task-search-input" placeholder="Buscar tareas..." autocomplete="off" spellcheck="false" title="Buscar en tareas activas y completadas del día (Atajo: /)">
+        <button type="button" id="taskSearchClearBtn" class="task-search-clear-btn" title="Limpiar búsqueda" style="display:none;" aria-label="Limpiar búsqueda">✕</button>
       </div>
       <div id="tasksAutoMoveBanner" style="display:none;margin-bottom:12px;"></div>
       <div id="tasksList"></div>
@@ -338,6 +343,7 @@
       </div>
 
       <div class="shortcuts-group">
+        <div class="shortcut-row"><kbd class="shortcut-key">/</kbd><span class="shortcut-desc">Buscar tareas</span></div>
         <div class="shortcut-row"><kbd class="shortcut-key">T</kbd><span class="shortcut-desc">Crear nueva Tarea</span></div>
         <div class="shortcut-row"><kbd class="shortcut-key">R</kbd><span class="shortcut-desc">Crear nueva Reunión</span></div>
         <div class="shortcut-row"><kbd class="shortcut-key">I</kbd><span class="shortcut-desc">Iniciar una Interrupción</span></div>

@@ -279,6 +279,25 @@ export function computeOccupiedMeetingTime(meetings) {
   return merged.reduce((total, iv) => total + (iv.end - iv.start), 0);
 }
 
+export function normalizeSearchText(str) {
+  if (!str || typeof str !== "string") return "";
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+export function matchesSearchQuery(text, query) {
+  if (!query || typeof query !== "string") return true;
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return true;
+  if (!text || typeof text !== "string") return false;
+  const normalizedText = normalizeSearchText(text);
+  const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
+  return tokens.every(token => normalizedText.includes(token));
+}
+
 export const TodayTasksUtils = {
   nowMinutes,
   getTaskElapsed,
@@ -297,7 +316,9 @@ export const TodayTasksUtils = {
   getStartOfWeekMonday,
   diffWeeks,
   matchesRecurrenceRule,
-  computeOccupiedMeetingTime
+  computeOccupiedMeetingTime,
+  normalizeSearchText,
+  matchesSearchQuery
 };
 
 export default TodayTasksUtils;
