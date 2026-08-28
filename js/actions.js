@@ -46,9 +46,70 @@ export function TodayTasksActions(ctx) {
     if (btnCancel) btnCancel.onclick = () => { cleanup(); };
   }
 
+  /* Helper compartido: modal de límite de tareas destacadas (máx 5) */
+  function showFeaturedLimitModal(targetTaskId, onResolve) {
+    if (typeof document === "undefined") {
+      return;
+    }
+    const modal = document.getElementById("featuredLimitModal");
+    const state = ctx.getState();
+    const targetTask = targetTaskId ? (state.tasks || []).find(t => String(t.id) === String(targetTaskId)) : null;
+    const featuredTasks = (state.tasks || []).filter(t => t.featured && (!targetTaskId || String(t.id) !== String(targetTaskId)));
+
+    if (!modal) {
+      if (typeof window !== "undefined" && window.confirm(`Has alcanzado el límite de 5 tareas destacadas.\n\n¿Deseas quitar el destacado de alguna para destacar "${targetTask ? targetTask.title : 'la nueva tarea'}"?`)) {
+        if (featuredTasks.length > 0 && onResolve) {
+          onResolve(featuredTasks[0].id);
+        }
+      }
+      return;
+    }
+
+    const descEl = document.getElementById("featuredLimitModalDesc");
+    const listEl = document.getElementById("featuredLimitModalList");
+    const btnCancel = document.getElementById("featuredLimitModalBtnCancel");
+
+    if (descEl) {
+      descEl.innerHTML = targetTask
+        ? `Para destacar <strong>"${targetTask.title}"</strong>`
+        : `Para que la nueva tarea sea <strong>destacada</strong>`;
+    }
+
+    function cleanup() {
+      modal.style.display = "none";
+      if (btnCancel) btnCancel.onclick = null;
+      modal.onclick = null;
+    }
+
+    if (listEl) {
+      listEl.innerHTML = featuredTasks.map(t => `
+        <button class="featured-limit-task-row" data-unfeature-id="${t.id}" title="Quitar destacado de esta tarea">
+          <span class="featured-limit-task-star">⭐</span>
+          <span class="featured-limit-task-name">${t.title}</span>
+          <span class="featured-limit-task-action">Quitar ✕</span>
+        </button>
+      `).join("");
+
+      listEl.querySelectorAll(".featured-limit-task-row").forEach(btn => {
+        btn.onclick = () => {
+          const unfeatureId = btn.dataset.unfeatureId;
+          cleanup();
+          if (onResolve) onResolve(unfeatureId);
+        };
+      });
+    }
+
+    modal.style.display = "flex";
+
+    if (btnCancel) btnCancel.onclick = () => { cleanup(); };
+    modal.onclick = (e) => {
+      if (e.target === modal) cleanup();
+    };
+  }
+
   /* Helpers compartidos que se inyectan en los sub-módulos */
   const helpers = {
-    nowMinutes, fmt, fmtDur, timeToMinutes, showToast, showRecurringModal
+    nowMinutes, fmt, fmtDur, timeToMinutes, showToast, showRecurringModal, showFeaturedLimitModal
   };
 
   /* Instanciar sub-módulos */
@@ -100,6 +161,11 @@ export function TodayTasksActions(ctx) {
     saveEditTask:           tasks.saveEditTask,
     updateTaskTimeFast:     tasks.updateTaskTimeFast,
     moveTask:               tasks.moveTask,
+    setTaskUrgency:         tasks.setTaskUrgency,
+    setTaskFeatured:        tasks.setTaskFeatured,
+    toggleTaskFeatured:     tasks.toggleTaskFeatured,
+    resolveFeaturedLimit:   tasks.resolveFeaturedLimit,
+    showFeaturedLimitModal,
     /* Drag & Drop */
     armTaskDrag:            dragdrop.armTaskDrag,
     taskDragStart:          dragdrop.taskDragStart,

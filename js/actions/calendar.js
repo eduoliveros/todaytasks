@@ -297,7 +297,9 @@ export function TodayTasksCalendar(ctx, helpers){
       runningStart: null,
       elapsedBefore: 0,
       completedAt: null,
-      actualDuration: null
+      actualDuration: null,
+      urgency: originalTask.urgency || "days",
+      featured: false
     };
 
     if (ctx.undoModule && ctx.undoModule.pushSnapshot) {

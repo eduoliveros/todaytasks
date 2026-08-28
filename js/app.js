@@ -556,6 +556,210 @@ function switchHeaderTab(target){
       actionsModule.updateTaskTimeFast(this.currentPopoverTaskId, input.value);
       this.closeTimePopover();
     },
+    setTaskUrgency: actionsModule.setTaskUrgency,
+    setTaskFeatured: actionsModule.setTaskFeatured,
+    toggleTaskFeatured: actionsModule.toggleTaskFeatured,
+    resolveFeaturedLimit: actionsModule.resolveFeaturedLimit,
+    /* Open the shared urgency dropdown anchored to the edit-form pill */
+    openEditUrgencyDropdown: function(taskId, event) {
+      this._editUrgencyTaskId = taskId;
+      this._formUrgencyMode = false;
+      this.currentUrgencyTaskId = null;
+      this.openUrgencyDropdown('__edit__', event);
+      // override task lookup to highlight current taskEdit urgency
+      const dropdown = document.getElementById('urgencyDropdownMenu');
+      if (dropdown) {
+        const taskEdit = typeof actionsModule.getTaskEdit === 'function' ? actionsModule.getTaskEdit() : null;
+        const currentUrgency = (taskEdit && taskEdit.urgency) || (state.tasks || []).find(x => String(x.id) === String(taskId))?.urgency || 'days';
+        dropdown.querySelectorAll('.urgency-option-item').forEach(item => {
+          item.classList.toggle('active', item.dataset.urgency === currentUrgency);
+        });
+      }
+    },
+    toggleEditFeatured: function(taskId, event) {
+      try {
+        if (event) {
+          if (typeof event.stopPropagation === 'function') event.stopPropagation();
+          if (typeof event.preventDefault === 'function') event.preventDefault();
+        }
+        // Determine current featured state from taskEdit
+        const taskInState = (state.tasks || []).find(t => String(t.id) === String(taskId));
+        // We need to read taskEdit; actionsModule doesn't expose getTaskEdit, so read state directly
+        // toggleTaskFeatured checks limit and calls showFeaturedLimitModal internally
+        actionsModule.toggleTaskFeatured(taskId);
+      } catch (err) {
+        console.error("Error in toggleEditFeatured:", err);
+      }
+    },
+    openUrgencyDropdown: function(taskId, event) {
+      try {
+        if (event) {
+          if (typeof event.stopPropagation === 'function') event.stopPropagation();
+          if (typeof event.preventDefault === 'function') event.preventDefault();
+        }
+        this.currentUrgencyTaskId = taskId;
+        const dropdown = document.getElementById('urgencyDropdownMenu');
+        const overlay = document.getElementById('urgencyDropdownOverlay');
+        if (!dropdown) return;
+
+        const currentState = state;
+        const t = (currentState.tasks || []).find(x => String(x.id) === String(taskId));
+        const currentUrgency = t ? (t.urgency || "days") : "days";
+
+        // Highlight selected urgency item in menu
+        dropdown.querySelectorAll('.urgency-option-item').forEach(item => {
+          const val = item.dataset.urgency;
+          item.classList.toggle('active', val === currentUrgency);
+        });
+
+        if (overlay) overlay.style.display = 'block';
+        dropdown.style.display = 'block';
+
+        let target = null;
+        if (event) {
+          if (event.currentTarget && typeof event.currentTarget.getBoundingClientRect === 'function') {
+            target = event.currentTarget;
+          } else if (event.target && typeof event.target.getBoundingClientRect === 'function') {
+            target = event.target;
+          }
+        }
+
+        const menuWidth = 170;
+        let left = Math.max(10, (window.innerWidth - menuWidth) / 2);
+        let top = Math.max(10, (window.innerHeight - 180) / 2);
+
+        if (target) {
+          const rect = target.getBoundingClientRect();
+          if (rect && (rect.width > 0 || rect.height > 0 || rect.top > 0 || rect.left > 0)) {
+            left = rect.left;
+            top = rect.bottom + 4;
+            if (left + menuWidth > window.innerWidth - 10) {
+              left = window.innerWidth - menuWidth - 10;
+            }
+            if (left < 10) left = 10;
+            if (top + 180 > window.innerHeight && rect.top > 180) {
+              top = rect.top - 180;
+            }
+          }
+        }
+
+        dropdown.style.left = `${left + window.scrollX}px`;
+        dropdown.style.top = `${top + window.scrollY}px`;
+      } catch (err) {
+        console.error("Error in openUrgencyDropdown:", err);
+      }
+    },
+    selectTaskUrgency: function(urgency) {
+      if (this._formUrgencyMode) {
+        // Update the new-task form pill
+        this._formUrgencyMode = false;
+        const hiddenInput = document.getElementById('taskUrgencySelect');
+        if (hiddenInput) hiddenInput.value = urgency;
+        const pill = document.getElementById('formUrgencyPill');
+        const iconEl = document.getElementById('formUrgencyIcon');
+        const labelEl = document.getElementById('formUrgencyLabel');
+        const urgencyMap = { today: { icon: '🟠', label: 'Hoy', cls: 'urgency-btn-today' }, days: { icon: '🔵', label: 'Días', cls: 'urgency-btn-days' }, week: { icon: '🟣', label: 'Semana', cls: 'urgency-btn-week' }, later: { icon: '⚪', label: 'Más adelante', cls: 'urgency-btn-later' } };
+        const info = urgencyMap[urgency] || urgencyMap.days;
+        if (pill) { pill.className = `urgency-pill-btn ${info.cls}`; pill.setAttribute('aria-label', `Urgencia ${info.label}`); }
+        if (iconEl) iconEl.textContent = info.icon;
+        if (labelEl) labelEl.textContent = info.label;
+      } else if (this._editUrgencyTaskId) {
+        // Update the inline edit form via the action (triggers re-render with updated pill)
+        actionsModule.updateTaskEditField('urgency', urgency);
+        this._editUrgencyTaskId = null;
+      } else if (this.currentUrgencyTaskId) {
+        actionsModule.setTaskUrgency(this.currentUrgencyTaskId, urgency);
+      }
+      this.closeUrgencyDropdown();
+    },
+    openFormUrgencyDropdown: function(event) {
+      try {
+        if (event) {
+          if (typeof event.stopPropagation === 'function') event.stopPropagation();
+          if (typeof event.preventDefault === 'function') event.preventDefault();
+        }
+        this._formUrgencyMode = true;
+        this.currentUrgencyTaskId = null;
+        const dropdown = document.getElementById('urgencyDropdownMenu');
+        const overlay = document.getElementById('urgencyDropdownOverlay');
+        if (!dropdown) return;
+
+        // Highlight current form urgency
+        const currentUrgency = (document.getElementById('taskUrgencySelect') || {}).value || 'days';
+        dropdown.querySelectorAll('.urgency-option-item').forEach(item => {
+          item.classList.toggle('active', item.dataset.urgency === currentUrgency);
+        });
+
+        if (overlay) overlay.style.display = 'block';
+        dropdown.style.display = 'block';
+
+        const menuWidth = 170;
+        let left = Math.max(10, (window.innerWidth - menuWidth) / 2);
+        let top = Math.max(10, (window.innerHeight - 180) / 2);
+        if (event && event.currentTarget && typeof event.currentTarget.getBoundingClientRect === 'function') {
+          const rect = event.currentTarget.getBoundingClientRect();
+          if (rect && (rect.width > 0 || rect.height > 0 || rect.top > 0 || rect.left > 0)) {
+            left = rect.left;
+            top = rect.bottom + 4;
+            if (left + menuWidth > window.innerWidth - 10) left = window.innerWidth - menuWidth - 10;
+            if (left < 10) left = 10;
+            if (top + 180 > window.innerHeight && rect.top > 180) top = rect.top - 180;
+          }
+        }
+        dropdown.style.left = `${left + window.scrollX}px`;
+        dropdown.style.top = `${top + window.scrollY}px`;
+      } catch (err) {
+        console.error("Error in openFormUrgencyDropdown:", err);
+      }
+    },
+    toggleFormFeatured: function(event) {
+      try {
+        if (event) {
+          if (typeof event.stopPropagation === 'function') event.stopPropagation();
+          if (typeof event.preventDefault === 'function') event.preventDefault();
+        }
+        const hiddenInput = document.getElementById('isFeaturedTaskCheckbox');
+        const starBtn = document.getElementById('formFeaturedStarBtn');
+        const currentVal = hiddenInput ? hiddenInput.value === 'true' : false;
+        const newVal = !currentVal;
+
+        if (newVal) {
+          // Check the featured limit
+          const currentState = state;
+          const featuredCount = (currentState.tasks || []).filter(t => t.featured).length;
+          if (featuredCount >= 5) {
+            if (actionsModule && actionsModule.showFeaturedLimitModal) {
+              actionsModule.showFeaturedLimitModal(null, (unfeatureId) => {
+                actionsModule.setTaskFeatured(unfeatureId, false);
+                if (hiddenInput) hiddenInput.value = 'true';
+                if (starBtn) {
+                  starBtn.textContent = '⭐';
+                  starBtn.classList.add('is-featured');
+                  starBtn.title = 'Quitar destacado';
+                }
+              });
+            }
+            return;
+          }
+        }
+
+        if (hiddenInput) hiddenInput.value = String(newVal);
+        if (starBtn) {
+          starBtn.textContent = newVal ? '⭐' : '☆';
+          starBtn.classList.toggle('is-featured', newVal);
+          starBtn.title = newVal ? 'Quitar destacado' : 'Marcar como destacada (máx. 5 al día)';
+        }
+      } catch (err) {
+        console.error("Error in toggleFormFeatured:", err);
+      }
+    },
+    closeUrgencyDropdown: function() {
+      const dropdown = document.getElementById('urgencyDropdownMenu');
+      const overlay = document.getElementById('urgencyDropdownOverlay');
+      if (dropdown) dropdown.style.display = 'none';
+      if (overlay) overlay.style.display = 'none';
+      this.currentUrgencyTaskId = null;
+    },
     setTaskSearch: function(query) {
       taskSearchQuery = typeof query === "string" ? query : "";
       const input = document.getElementById("taskSearchInput");

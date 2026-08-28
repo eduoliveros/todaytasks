@@ -298,6 +298,92 @@ export function matchesSearchQuery(text, query) {
   return tokens.every(token => normalizedText.includes(token));
 }
 
+export function getTaskSearchableText(task) {
+  if (!task) return "";
+  const parts = [];
+  if (task.title) parts.push(task.title);
+
+  // Urgencia (Hoy, Días, Semana, Más adelante)
+  const urgency = task.urgency || DEFAULT_URGENCY;
+  if (urgency === 'today') {
+    parts.push('hoy today');
+  } else if (urgency === 'days') {
+    parts.push('dias dia días days');
+  } else if (urgency === 'week') {
+    parts.push('semana week');
+  } else if (urgency === 'later') {
+    parts.push('mas adelante más adelante adelante later');
+  }
+  if (URGENCY_LEVELS[urgency] && URGENCY_LEVELS[urgency].label) {
+    parts.push(URGENCY_LEVELS[urgency].label);
+  }
+
+  // Destacada
+  if (task.featured) {
+    parts.push('destacada destacadas destacado destacados estrella star featured ⭐');
+  }
+
+  // Atributos adicionales
+  if (task.isRecurring) {
+    parts.push('recurrente recurring');
+  }
+  if (task.autoMoveToToday) {
+    parts.push('pasar a hoy automove');
+  }
+
+  return parts.join(" ");
+}
+
+export function matchesTaskSearch(task, query) {
+  if (!query || typeof query !== "string") return true;
+  if (!task) return false;
+  const searchableText = getTaskSearchableText(task);
+  return matchesSearchQuery(searchableText, query);
+}
+
+export const URGENCY_LEVELS = {
+  today: { id: 'today', label: 'Hoy', shortLabel: 'Hoy', order: 1, icon: '🟠', color: '#F97316', bg: 'rgba(249, 115, 22, 0.12)' },
+  days:  { id: 'days',  label: 'Días', shortLabel: 'Días', order: 2, icon: '🔵', color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.12)' },
+  week:  { id: 'week',  label: 'Semana', shortLabel: 'Semana', order: 3, icon: '🟣', color: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.12)' },
+  later: { id: 'later', label: 'Más adelante', shortLabel: 'Más adelante', order: 4, icon: '⚪', color: '#6B7280', bg: 'rgba(107, 114, 128, 0.12)' }
+};
+
+export const DEFAULT_URGENCY = 'days';
+export const MAX_FEATURED_TASKS = 5;
+
+export function getUrgencyWeight(urgency) {
+  if (!urgency || !URGENCY_LEVELS[urgency]) return URGENCY_LEVELS[DEFAULT_URGENCY].order;
+  return URGENCY_LEVELS[urgency].order;
+}
+
+export function compareTasksByPriority(a, b) {
+  // Tarea en ejecución siempre va primera
+  if (a.status === "running" && b.status !== "running") return -1;
+  if (b.status === "running" && a.status !== "running") return 1;
+
+  // 1. Urgencia (ascendente: Hoy(1) > Días(2) > Semana(3) > Más adelante(4))
+  const uA = getUrgencyWeight(a.urgency);
+  const uB = getUrgencyWeight(b.urgency);
+  if (uA !== uB) return uA - uB;
+
+  // 2. Destacado (true antes que false dentro del mismo grupo de urgencia)
+  const fA = a.featured ? 1 : 0;
+  const fB = b.featured ? 1 : 0;
+  if (fA !== fB) return fB - fA;
+
+  // 3. Orden manual / relativo
+  return (a.order || 0) - (b.order || 0);
+}
+
+export function sortTasksByPriority(tasks) {
+  if (!Array.isArray(tasks)) return [];
+  const sorted = [...tasks].sort(compareTasksByPriority);
+  sorted.forEach((t, i) => {
+    t.order = i + 1;
+  });
+  return sorted;
+}
+
 export const TodayTasksUtils = {
   nowMinutes,
   getTaskElapsed,
@@ -318,7 +404,15 @@ export const TodayTasksUtils = {
   matchesRecurrenceRule,
   computeOccupiedMeetingTime,
   normalizeSearchText,
-  matchesSearchQuery
+  matchesSearchQuery,
+  getTaskSearchableText,
+  matchesTaskSearch,
+  URGENCY_LEVELS,
+  DEFAULT_URGENCY,
+  MAX_FEATURED_TASKS,
+  getUrgencyWeight,
+  compareTasksByPriority,
+  sortTasksByPriority
 };
 
 export default TodayTasksUtils;

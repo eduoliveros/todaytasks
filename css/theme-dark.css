@@ -428,3 +428,40 @@
   background: rgba(92, 154, 113, 0.06);
 }
 
+[data-theme="dark"] .urgency-dropdown-menu {
+  background: #1B1F26;
+  border-color: var(--line);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+[data-theme="dark"] .urgency-option-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .urgency-option-item.active {
+  background: rgba(129, 140, 248, 0.2);
+}
+[data-theme="dark"] .urgency-btn-today {
+  background: rgba(249, 115, 22, 0.16);
+  color: #FB923C;
+  border-color: rgba(249, 115, 22, 0.35);
+}
+[data-theme="dark"] .task-item.featured-task {
+  background: linear-gradient(to right, rgba(245, 158, 11, 0.08), #1B1F26) !important;
+}
+[data-theme="dark"] .featured-limit-task-row {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.25);
+  color: var(--ink);
+}
+[data-theme="dark"] .featured-limit-task-row:hover {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.45);
+}
+[data-theme="dark"] .featured-limit-task-action {
+  color: #FBBF24;
+}
+[data-theme="dark"] .task-urgency-select {
+  background: #232832;
+  color: var(--ink);
+  border-color: var(--line);
+}
+

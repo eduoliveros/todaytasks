@@ -130,7 +130,20 @@ export function wrapState(rawState) {
             env.days[d] = defaultDayState(key);
           } else {
             if (!Array.isArray(dayObj.meetings)) dayObj.meetings = [];
-            if (!Array.isArray(dayObj.tasks)) dayObj.tasks = [];
+            if (!Array.isArray(dayObj.tasks)) {
+              dayObj.tasks = [];
+            } else {
+              dayObj.tasks.forEach(t => {
+                if (t && typeof t === "object") {
+                  if (typeof t.urgency !== "string" || !["today", "days", "week", "later"].includes(t.urgency)) {
+                    t.urgency = "days";
+                  }
+                  if (typeof t.featured !== "boolean") {
+                    t.featured = false;
+                  }
+                }
+              });
+            }
             if (!Array.isArray(dayObj.interruptions)) dayObj.interruptions = [];
             if (typeof dayObj.planningMode !== "boolean") dayObj.planningMode = false;
           }

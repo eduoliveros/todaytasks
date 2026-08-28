@@ -155,21 +155,42 @@ export function TodayTasksForms(appCtx){
     let autoMoveToToday = true;
     const recurringTaskCb = document.getElementById("isRecurringTaskCheckbox");
     const autoMoveCb = document.getElementById("isAutoMoveTaskCheckbox");
+    const urgencyEl = document.getElementById("taskUrgencySelect");
+    const urgency = urgencyEl ? urgencyEl.value : "days";
+    const featuredEl = document.getElementById("isFeaturedTaskCheckbox");
+    // featuredEl is now a hidden input with value "true"/"false"
+    const featured = featuredEl ? featuredEl.value === 'true' : false;
+
     if (recurringTaskCb && recurringTaskCb.checked) {
       const freq = document.getElementById("recTaskFreq").value;
       const interval = parseInt(document.getElementById("recTaskInterval").value, 10) || 1;
       const dayCbs = document.querySelectorAll(".rec-task-day-cb:checked");
       const daysOfWeek = Array.from(dayCbs).map(cb => parseInt(cb.value, 10));
       const endDate = document.getElementById("recTaskEndDate").value || null;
-      recurringData = { isRecurring: true, freq, interval, daysOfWeek, endDate };
+      recurringData = { isRecurring: true, freq, interval, daysOfWeek, endDate, urgency, featured };
     } else {
       autoMoveToToday = autoMoveCb ? autoMoveCb.checked : true;
     }
 
-    actionsModule.addTask(title, dur, toTop, recurringData, autoMoveToToday);
+    actionsModule.addTask(title, dur, toTop, recurringData, autoMoveToToday, urgency, featured);
     titleEl.value = "";
     document.getElementById("taskDuration").value = "";
     if (autoMoveCb) autoMoveCb.checked = true;
+
+    // Reset urgency pill to "Días"
+    if (urgencyEl) urgencyEl.value = "days";
+    const pill = document.getElementById("formUrgencyPill");
+    const iconEl = document.getElementById("formUrgencyIcon");
+    const labelEl = document.getElementById("formUrgencyLabel");
+    if (pill) { pill.className = "urgency-pill-btn urgency-btn-days"; }
+    if (iconEl) iconEl.textContent = "🔵";
+    if (labelEl) labelEl.textContent = "Días";
+
+    // Reset star button
+    if (featuredEl) featuredEl.value = "false";
+    const starBtn = document.getElementById("formFeaturedStarBtn");
+    if (starBtn) { starBtn.textContent = "☆"; starBtn.classList.remove("is-featured"); starBtn.title = "Marcar como destacada (máx. 5 al día)"; }
+
     if (recurringTaskCb) {
       recurringTaskCb.checked = false;
       const opts = document.getElementById("recurringTaskFormOptions");

@@ -232,6 +232,49 @@ describe('TodayTasksUtils (ES Module)', () => {
       expect(utils.matchesSearchQuery(null, 'test')).toBe(false);
       expect(utils.matchesSearchQuery(undefined, 'test')).toBe(false);
     });
+
+    it('matchesTaskSearch busca por urgencia (hoy, dias, semana, mas adelante)', () => {
+      const taskToday = { title: 'Llamar al cliente', urgency: 'today', featured: false };
+      const taskDays = { title: 'Comprar suministros', urgency: 'days', featured: false };
+      const taskWeek = { title: 'Preparar presentación', urgency: 'week', featured: false };
+      const taskLater = { title: 'Archivar documentos', urgency: 'later', featured: false };
+
+      expect(utils.matchesTaskSearch(taskToday, 'hoy')).toBe(true);
+      expect(utils.matchesTaskSearch(taskToday, 'today')).toBe(true);
+      expect(utils.matchesTaskSearch(taskToday, 'cliente hoy')).toBe(true);
+      expect(utils.matchesTaskSearch(taskToday, 'dias')).toBe(false);
+
+      expect(utils.matchesTaskSearch(taskDays, 'dias')).toBe(true);
+      expect(utils.matchesTaskSearch(taskDays, 'días')).toBe(true);
+      expect(utils.matchesTaskSearch(taskDays, 'dia')).toBe(true);
+      expect(utils.matchesTaskSearch(taskDays, 'suministros dias')).toBe(true);
+
+      expect(utils.matchesTaskSearch(taskWeek, 'semana')).toBe(true);
+      expect(utils.matchesTaskSearch(taskWeek, 'week')).toBe(true);
+      expect(utils.matchesTaskSearch(taskWeek, 'presentacion semana')).toBe(true);
+
+      expect(utils.matchesTaskSearch(taskLater, 'adelante')).toBe(true);
+      expect(utils.matchesTaskSearch(taskLater, 'mas adelante')).toBe(true);
+      expect(utils.matchesTaskSearch(taskLater, 'later')).toBe(true);
+    });
+
+    it('matchesTaskSearch busca por tareas destacadas (destacada, estrella, star, ⭐)', () => {
+      const taskFeatured = { title: 'Revisión crítica', urgency: 'today', featured: true };
+      const taskNormal = { title: 'Revisión general', urgency: 'today', featured: false };
+
+      expect(utils.matchesTaskSearch(taskFeatured, 'destacada')).toBe(true);
+      expect(utils.matchesTaskSearch(taskFeatured, 'destacadas')).toBe(true);
+      expect(utils.matchesTaskSearch(taskFeatured, 'destacado')).toBe(true);
+      expect(utils.matchesTaskSearch(taskFeatured, 'estrella')).toBe(true);
+      expect(utils.matchesTaskSearch(taskFeatured, 'star')).toBe(true);
+      expect(utils.matchesTaskSearch(taskFeatured, '⭐')).toBe(true);
+      expect(utils.matchesTaskSearch(taskFeatured, 'critica destacada')).toBe(true);
+      expect(utils.matchesTaskSearch(taskFeatured, 'hoy estrella')).toBe(true);
+
+      expect(utils.matchesTaskSearch(taskNormal, 'destacada')).toBe(false);
+      expect(utils.matchesTaskSearch(taskNormal, 'estrella')).toBe(false);
+      expect(utils.matchesTaskSearch(taskNormal, '⭐')).toBe(false);
+    });
   });
 });
 

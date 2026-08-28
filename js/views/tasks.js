@@ -1,21 +1,45 @@
 /* views/tasks.js — Renderizado de la lista de tareas activas */
-import { nowMinutes, fmt, fmtDur, fmtRemaining, getTaskElapsed, getTodayStr, matchesSearchQuery } from '../utils.js';
+import {
+  nowMinutes, fmt, fmtDur, fmtRemaining, getTaskElapsed, getTodayStr, matchesSearchQuery,
+  matchesTaskSearch,
+  URGENCY_LEVELS, DEFAULT_URGENCY
+} from '../utils.js';
 import { escapeHtml, escapeAttr } from '../ui.js';
 
 export function TodayTasksTasksView(ctx){
   const { getState, getTaskEdit } = ctx;
 
   function renderTaskItem(t, schedule, taskEdit){
+    const urgencyKey = t.urgency || DEFAULT_URGENCY;
+    const urgencyInfo = URGENCY_LEVELS[urgencyKey] || URGENCY_LEVELS[DEFAULT_URGENCY];
+
     if(taskEdit && String(taskEdit.id) === String(t.id)){
       const isRecurring = t.isRecurring || !!taskEdit.ruleId;
+      const editUrgency = taskEdit.urgency || urgencyKey;
+      const editUrgencyInfo = URGENCY_LEVELS[editUrgency] || URGENCY_LEVELS[DEFAULT_URGENCY];
       return `
-      <div class="item task-item editing" id="task-item-${escapeAttr(t.id)}">
+      <div class="item task-item editing ${taskEdit.featured ? 'featured-task' : ''}" id="task-item-${escapeAttr(t.id)}">
         <div class="row">
           <input type="text" value="${escapeAttr(taskEdit.title)}" oninput="app.updateTaskEditField('title', this.value)" placeholder="Título de la tarea">
         </div>
         <div class="row" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
           <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Planificado:<br><input type="text" value="${escapeAttr(taskEdit.duration)}" placeholder="ej. 30, 1h 30m" style="width:110px;margin-top:4px;" oninput="app.updateTaskEditField('duration', this.value)"></label>
           <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Consumido:<br><input type="text" value="${escapeAttr(taskEdit.actual||0)}" placeholder="ej. 15, 1h" style="width:110px;margin-top:4px;" oninput="app.updateTaskEditField('actual', this.value)"></label>
+        </div>
+        <div class="row" style="align-items:center;gap:8px;margin-bottom:10px;">
+          <button type="button" class="urgency-pill-btn urgency-btn-${escapeAttr(editUrgency)}"
+                  onclick="app.openEditUrgencyDropdown('${escapeAttr(t.id)}', event)"
+                  title="Urgencia: ${escapeAttr(editUrgencyInfo.label)} (clic para cambiar)"
+                  id="edit-urgency-pill-${escapeAttr(t.id)}">
+            <span>${editUrgencyInfo.icon}</span>
+            <span>${escapeHtml(editUrgencyInfo.label)}</span>
+            <span class="urgency-pill-chevron">▾</span>
+          </button>
+          <button type="button" class="icon-btn star-btn ${taskEdit.featured ? 'is-featured' : ''}"
+                  title="${taskEdit.featured ? 'Quitar destacado' : 'Marcar como destacada (máx. 5 al día)'}"
+                  onclick="app.toggleEditFeatured('${escapeAttr(t.id)}', event)">
+            ${taskEdit.featured ? '⭐' : '☆'}
+          </button>
         </div>
         ${!isRecurring ? `
         <div style="margin-bottom:8px;">
@@ -73,15 +97,28 @@ export function TodayTasksTasksView(ctx){
       : '';
     const recurringTag = t.isRecurring ? `<span class="tag" style="margin-left:4px;background:rgba(16,185,129,0.1);color:#059669;border-color:rgba(16,185,129,0.25);" title="Tarea recurrente diaria/semanal">🔁 Recurrente</span>` : '';
     const autoMoveTag = (!t.isRecurring && t.autoMoveToToday) ? `<span class="tag tag-automove" title="Se trasladará automáticamente a hoy si no se completa">⏩ Pasar a hoy</span>` : '';
+    const featuredClass = t.featured ? 'featured-task' : '';
+
+    const urgencyPill = `
+      <button type="button" class="urgency-pill-btn urgency-btn-${escapeAttr(urgencyKey)}"
+              onclick="app.openUrgencyDropdown('${escapeAttr(t.id)}', event)"
+              title="Urgencia: ${escapeAttr(urgencyInfo.label)} (Clic para cambiar)"
+              aria-label="Urgencia ${escapeAttr(urgencyInfo.label)}">
+        <span class="urgency-pill-dot">${urgencyInfo.icon}</span>
+        <span class="urgency-pill-label">${escapeHtml(urgencyInfo.label)}</span>
+        <span class="urgency-pill-chevron">▾</span>
+      </button>
+    `;
 
     return `
-      <div class="item task-item ${t.status}" id="task-item-${escapeAttr(t.id)}" data-task-id="${escapeAttr(t.id)}" ${dragAttrs}>
+      <div class="item task-item ${t.status} ${featuredClass}" id="task-item-${escapeAttr(t.id)}" data-task-id="${escapeAttr(t.id)}" ${dragAttrs}>
         <div class="top">
           <div style="display:flex;align-items:flex-start;gap:6px;flex:1;min-width:0;">
             ${dragHandle}
             <div style="flex:1;min-width:0;">
               <div class="title">${escapeHtml(t.title)}</div>
               <div class="time-range ${trClass}">
+                ${urgencyPill}
                 <span class="tag">${startTag}</span>${startVal}<span class="arrow">→</span><span class="tag">${endTag}</span>${endVal}
                 ${remainingChip}
                 ${recurringTag}
@@ -96,6 +133,7 @@ export function TodayTasksTasksView(ctx){
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:2px;">
+            <button class="icon-btn star-btn ${t.featured ? 'is-featured' : ''}" title="${t.featured ? 'Quitar destacado' : 'Marcar como destacada (máx. 5 al día)'}" onclick="app.toggleTaskFeatured('${escapeAttr(t.id)}')">${t.featured ? '⭐' : '☆'}</button>
             ${!t.isRecurring && t.autoMoveToToday ? `
               <button class="icon-btn" title="Mover a otro día" onclick="app.openCopyTaskModal('${escapeAttr(t.id)}')">➡️</button>
             ` : `
@@ -231,10 +269,10 @@ export function TodayTasksTasksView(ctx){
       return;
     }
 
-    // Búsqueda inteligente activa
-    const matchingActive = active.filter(t => matchesSearchQuery(t.title, searchQuery));
+    // Búsqueda inteligente activa (título, urgencia y destacado)
+    const matchingActive = active.filter(t => matchesTaskSearch(t, searchQuery));
     const matchingCompleted = (state.tasks || [])
-      .filter(t => t.status === "completed" && matchesSearchQuery(t.title, searchQuery))
+      .filter(t => t.status === "completed" && matchesTaskSearch(t, searchQuery))
       .sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
 
     if(matchingActive.length === 0 && matchingCompleted.length === 0){

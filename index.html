@@ -18,7 +18,7 @@
   <!-- Barra superior: logo + switcher + pestañas -->
   <div class="topbar-title-row">
     <div class="brand">
-      <h1>Tablero del día <span class="app-version">v1.86</span></h1>
+      <h1>Tablero del día <span class="app-version">v1.87</span></h1>
       <span class="db-status-badge" id="appModeLabel" title="Tipo de base de datos en uso">💾 local · persistente</span>
       <div class="env-switcher" id="envSwitcher">
         <button class="env-btn active" data-env="work" id="envBtnWork" title="Cambiar a ambiente de Trabajo (Tecla 'E')">
@@ -121,7 +121,26 @@
         <input type="text" id="taskDuration" placeholder="Duración (ej. 30, 1h 30m)" style="width:180px">
         <button class="btn" id="addTaskBtn">Añadir</button>
       </div>
-      <div style="margin-top:6px;margin-bottom:14px;display:flex;flex-direction:column;gap:6px;">
+      <div class="row" style="align-items:center;margin-top:4px;margin-bottom:8px;gap:6px;">
+        <!-- Urgency pill button (like task items) -->
+        <button type="button" class="urgency-pill-btn urgency-btn-days" id="formUrgencyPill"
+                onclick="app.openFormUrgencyDropdown(event)"
+                title="Urgencia (por defecto Días)"
+                aria-label="Urgencia Días">
+          <span class="urgency-pill-dot" id="formUrgencyIcon">🔵</span>
+          <span class="urgency-pill-label" id="formUrgencyLabel">Días</span>
+          <span class="urgency-pill-chevron">▾</span>
+        </button>
+        <!-- Star button (like task items) -->
+        <button type="button" class="icon-btn star-btn" id="formFeaturedStarBtn"
+                title="Marcar como destacada (máx. 5 al día)"
+                onclick="app.toggleFormFeatured(event)"
+                aria-label="Destacar tarea">☆</button>
+        <!-- Hidden inputs to carry state -->
+        <input type="hidden" id="taskUrgencySelect" value="days">
+        <input type="hidden" id="isFeaturedTaskCheckbox" value="false">
+      </div>
+      <div style="margin-top:4px;margin-bottom:14px;display:flex;flex-direction:column;gap:6px;">
         <div id="autoMoveTaskOptionWrap">
           <label style="font-size:0.85rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
             <input type="checkbox" id="isAutoMoveTaskCheckbox" checked> Auto-mover si no se completa a hoy
@@ -299,6 +318,41 @@
   <div class="time-popover-controls">
     <input type="text" id="timePopoverInput" placeholder="ej. 25, 1h 30m" onkeydown="if(event.key==='Enter') app.saveTimePopover()" />
     <button class="btn small done" onclick="app.saveTimePopover()" style="padding: 6px 12px; font-weight: 600;">Guardar</button>
+  </div>
+</div>
+
+<!-- Menú flotante estilo Linear para seleccionar urgencia -->
+<div class="urgency-dropdown-overlay" id="urgencyDropdownOverlay" onclick="app.closeUrgencyDropdown()"></div>
+<div class="urgency-dropdown-menu" id="urgencyDropdownMenu" style="display:none;">
+  <div class="urgency-option-item" data-urgency="today" onclick="app.selectTaskUrgency('today')">
+    <span class="urgency-opt-icon">🟠</span>
+    <span class="urgency-opt-label">Hoy</span>
+  </div>
+  <div class="urgency-option-item" data-urgency="days" onclick="app.selectTaskUrgency('days')">
+    <span class="urgency-opt-icon">🔵</span>
+    <span class="urgency-opt-label">Días</span>
+  </div>
+  <div class="urgency-option-item" data-urgency="week" onclick="app.selectTaskUrgency('week')">
+    <span class="urgency-opt-icon">🟣</span>
+    <span class="urgency-opt-label">Semana</span>
+  </div>
+  <div class="urgency-option-item" data-urgency="later" onclick="app.selectTaskUrgency('later')">
+    <span class="urgency-opt-icon">⚪</span>
+    <span class="urgency-opt-label">Más adelante</span>
+  </div>
+</div>
+
+<!-- Modal: Límite de tareas destacadas alcanzado (máx 5) -->
+<div id="featuredLimitModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="featuredLimitModalTitle">
+  <div class="modal-box featured-limit-modal-box">
+    <button class="close-modal-btn" id="featuredLimitModalBtnCancel" title="Cerrar (Esc)" aria-label="Cerrar">&times;</button>
+    <div class="featured-limit-modal-header">
+      <div class="featured-limit-modal-icon">⭐</div>
+      <h3 id="featuredLimitModalTitle">Límite de destacadas alcanzado</h3>
+      <p id="featuredLimitModalDesc"></p>
+    </div>
+    <p class="featured-limit-modal-hint">Toca una tarea para quitarle el destacado</p>
+    <div id="featuredLimitModalList" class="featured-limit-list"></div>
   </div>
 </div>
 

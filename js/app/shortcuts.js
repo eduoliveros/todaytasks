@@ -37,10 +37,60 @@ export function TodayTasksShortcuts(appCtx){
       const state = getState ? getState() : {};
 
       if(e.key === "Escape" || e.key === "Esc"){
+        const fModal = document.getElementById("featuredLimitModal");
+        if(fModal && fModal.style.display === "flex"){
+          e.preventDefault();
+          const cancelBtn = document.getElementById("featuredLimitModalBtnCancel");
+          if(cancelBtn && typeof cancelBtn.click === "function") {
+            cancelBtn.click();
+          } else {
+            fModal.style.display = "none";
+          }
+          return;
+        }
+
         const sModal = document.getElementById("shortcutsModal");
         if(sModal && sModal.style.display === "flex"){
           e.preventDefault();
           toggleShortcutsModal(false);
+          return;
+        }
+
+        const wsModal = document.getElementById("weeklyScheduleModal");
+        if(wsModal && wsModal.style.display === "flex"){
+          e.preventDefault();
+          const wsBtn = document.getElementById("closeWeeklyScheduleBtn") || document.getElementById("cancelWeeklyScheduleBtn");
+          if(wsBtn && typeof wsBtn.click === "function") wsBtn.click();
+          else wsModal.style.display = "none";
+          return;
+        }
+
+        const recModal = document.getElementById("recurringModal");
+        if(recModal && recModal.style.display === "flex"){
+          e.preventDefault();
+          const recBtn = document.getElementById("recModalBtnCancel");
+          if(recBtn && typeof recBtn.click === "function") recBtn.click();
+          else recModal.style.display = "none";
+          return;
+        }
+
+        const copyModal = document.getElementById("copyTaskModal");
+        if(copyModal && copyModal.style.display === "flex"){
+          e.preventDefault();
+          const copyBtn = document.getElementById("cancelCopyTaskBtn");
+          if(copyBtn && typeof copyBtn.click === "function") copyBtn.click();
+          else copyModal.style.display = "none";
+          return;
+        }
+
+        const urgencyMenu = document.getElementById("urgencyDropdownMenu");
+        if(urgencyMenu && urgencyMenu.style.display === "block"){
+          e.preventDefault();
+          if(window.app && typeof window.app.closeUrgencyDropdown === "function") {
+            window.app.closeUrgencyDropdown();
+          } else {
+            urgencyMenu.style.display = "none";
+          }
           return;
         }
 

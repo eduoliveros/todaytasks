@@ -140,4 +140,54 @@ describe('Tasks View - Búsqueda Inteligente de Tareas', () => {
     expect(el.querySelector('button[onclick*="app.uncompleteTask(\'comp_1\')"]')).not.toBeNull();
     expect(el.querySelector('button[onclick*="app.openTimePopover(\'comp_1\'"]')).not.toBeNull();
   });
+
+  it('permite buscar tareas por nivel de urgencia (hoy, dias, semana, mas adelante)', () => {
+    state.tasks = [
+      { id: '1', title: 'Tarea Urgente', planned: 30, status: 'pending', urgency: 'today', featured: false, order: 1 },
+      { id: '2', title: 'Tarea Media', planned: 45, status: 'pending', urgency: 'days', featured: false, order: 2 },
+      { id: '3', title: 'Tarea Semanal', planned: 60, status: 'pending', urgency: 'week', featured: false, order: 3 },
+      { id: '4', title: 'Tarea Futura', planned: 15, status: 'pending', urgency: 'later', featured: false, order: 4 }
+    ];
+
+    // Buscar "semana"
+    taskSearchQuery = 'semana';
+    tasksView.renderTasks({ segmentsByTask: {}, overflowIds: new Set() });
+    let el = document.getElementById('tasksList');
+    expect(el.innerHTML).toContain('Tarea Semanal');
+    expect(el.innerHTML).not.toContain('Tarea Urgente');
+    expect(el.innerHTML).not.toContain('Tarea Media');
+    expect(el.innerHTML).not.toContain('Tarea Futura');
+
+    // Buscar "dias"
+    taskSearchQuery = 'dias';
+    tasksView.renderTasks({ segmentsByTask: {}, overflowIds: new Set() });
+    el = document.getElementById('tasksList');
+    expect(el.innerHTML).toContain('Tarea Media');
+    expect(el.innerHTML).not.toContain('Tarea Semanal');
+
+    // Buscar "adelante"
+    taskSearchQuery = 'adelante';
+    tasksView.renderTasks({ segmentsByTask: {}, overflowIds: new Set() });
+    el = document.getElementById('tasksList');
+    expect(el.innerHTML).toContain('Tarea Futura');
+  });
+
+  it('permite buscar tareas por estado destacado (destacada, estrella, ⭐)', () => {
+    state.tasks = [
+      { id: '1', title: 'Módulo Principal', planned: 30, status: 'pending', urgency: 'days', featured: true, order: 1 },
+      { id: '2', title: 'Documentación', planned: 45, status: 'pending', urgency: 'days', featured: false, order: 2 }
+    ];
+
+    taskSearchQuery = 'destacada';
+    tasksView.renderTasks({ segmentsByTask: {}, overflowIds: new Set() });
+    let el = document.getElementById('tasksList');
+    expect(el.innerHTML).toContain('Módulo Principal');
+    expect(el.innerHTML).not.toContain('Documentación');
+
+    taskSearchQuery = 'estrella';
+    tasksView.renderTasks({ segmentsByTask: {}, overflowIds: new Set() });
+    el = document.getElementById('tasksList');
+    expect(el.innerHTML).toContain('Módulo Principal');
+    expect(el.innerHTML).not.toContain('Documentación');
+  });
 });
