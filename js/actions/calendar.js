@@ -65,6 +65,19 @@ export function TodayTasksCalendar(ctx, helpers){
     const envKey = state.activeEnv || "work";
     const env = state.environments[envKey] || state.environments.work;
     if (!env || !env.days) return 0;
+
+    const futureOrTargetTaskIds = new Set();
+    Object.keys(env.days)
+      .filter(d => d >= dateStr)
+      .forEach(d => {
+        const dayObj = env.days[d];
+        if (dayObj && Array.isArray(dayObj.tasks)) {
+          dayObj.tasks.forEach(t => {
+            if (t && t.id != null) futureOrTargetTaskIds.add(String(t.id));
+          });
+        }
+      });
+
     const pastDates = Object.keys(env.days).filter(d => d < dateStr);
     let count = 0;
     pastDates.forEach(d => {
@@ -72,6 +85,9 @@ export function TodayTasksCalendar(ctx, helpers){
       if (dayObj && Array.isArray(dayObj.tasks)) {
         dayObj.tasks.forEach(t => {
           if (t.status !== "completed" && t.autoMoveToToday) {
+            if (t.id != null && futureOrTargetTaskIds.has(String(t.id))) {
+              return;
+            }
             count++;
           }
         });
@@ -99,6 +115,18 @@ export function TodayTasksCalendar(ctx, helpers){
     const targetDayObj = env.days[targetDateStr];
     if (!Array.isArray(targetDayObj.tasks)) targetDayObj.tasks = [];
 
+    const futureOrTargetTaskIds = new Set();
+    Object.keys(env.days)
+      .filter(d => d >= targetDateStr)
+      .forEach(d => {
+        const dayObj = env.days[d];
+        if (dayObj && Array.isArray(dayObj.tasks)) {
+          dayObj.tasks.forEach(t => {
+            if (t && t.id != null) futureOrTargetTaskIds.add(String(t.id));
+          });
+        }
+      });
+
     const pastDates = Object.keys(env.days).filter(d => d < targetDateStr).sort();
     let movedCount = 0;
     const movedTitles = [];
@@ -110,8 +138,8 @@ export function TodayTasksCalendar(ctx, helpers){
       const remainingTasks = [];
       dayObj.tasks.forEach(t => {
         if (t.status !== "completed" && t.autoMoveToToday) {
-          const alreadyInTarget = targetDayObj.tasks.some(existing => String(existing.id) === String(t.id));
-          if (!alreadyInTarget) {
+          const isAlreadyInFutureOrTarget = (t.id != null && futureOrTargetTaskIds.has(String(t.id)));
+          if (!isAlreadyInFutureOrTarget) {
             const maxOrder = targetDayObj.tasks.reduce((m, task) => Math.max(m, task.order || 0), 0);
             const savedElapsed = getTaskElapsed(t);
             const taskStatus = savedElapsed > 0 ? "paused" : "pending";
@@ -125,6 +153,7 @@ export function TodayTasksCalendar(ctx, helpers){
               completedAt: null,
               actualDuration: null
             });
+            if (t.id != null) futureOrTargetTaskIds.add(String(t.id));
             movedCount++;
             movedTitles.push(t.title);
           }

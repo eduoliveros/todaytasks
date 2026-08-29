@@ -294,5 +294,77 @@ describe('TodayTasksActions - Auto-mover tareas pendientes a Hoy (Rollover)', ()
       autoMoveToToday: true
     });
   });
+
+  it('NO traslada a hoy una tarea si ya está programada en un día futuro y limpia la copia del día pasado', () => {
+    const today = getTodayStr();
+    const yesterday = addDays(today, -1);
+    const futureDate = addDays(today, 5);
+    const envKey = state.activeEnv || 'work';
+    const env = state.environments[envKey];
+
+    // La tarea 601 está en ayer, pero ya fue movida/programada en futureDate
+    env.days[yesterday] = {
+      meetings: [],
+      interruptions: [],
+      planningMode: false,
+      tasks: [
+        { id: 601, title: 'Tarea movida al futuro', planned: 40, status: 'pending', autoMoveToToday: true }
+      ]
+    };
+
+    env.days[futureDate] = {
+      meetings: [],
+      interruptions: [],
+      planningMode: false,
+      tasks: [
+        { id: 601, title: 'Tarea movida al futuro', planned: 40, status: 'pending', autoMoveToToday: true }
+      ]
+    };
+
+    state.selectedDate = today;
+    const moved = actions.rolloverPendingTasks();
+
+    // No debe haberse movido ninguna tarea a hoy
+    expect(moved).toBe(0);
+
+    const todayTasks = (env.days[today] && env.days[today].tasks) || [];
+    expect(todayTasks.some(t => t.id === 601)).toBe(false);
+
+    // Debe haberse limpiado del día pasado para evitar inconsistencias
+    expect(env.days[yesterday].tasks.some(t => t.id === 601)).toBe(false);
+
+    // En futureDate sigue existiendo
+    expect(env.days[futureDate].tasks.some(t => t.id === 601)).toBe(true);
+  });
+
+  it('countPendingAutoMoveTasks no contabiliza tareas cuyo id ya está en días futuros', () => {
+    const today = getTodayStr();
+    const yesterday = addDays(today, -1);
+    const futureDate = addDays(today, 3);
+    const envKey = state.activeEnv || 'work';
+    const env = state.environments[envKey];
+
+    env.days[yesterday] = {
+      meetings: [],
+      interruptions: [],
+      planningMode: false,
+      tasks: [
+        { id: 701, title: 'Tarea en ayer y futuro', planned: 20, status: 'pending', autoMoveToToday: true },
+        { id: 702, title: 'Tarea solo en ayer', planned: 30, status: 'pending', autoMoveToToday: true }
+      ]
+    };
+
+    env.days[futureDate] = {
+      meetings: [],
+      interruptions: [],
+      planningMode: false,
+      tasks: [
+        { id: 701, title: 'Tarea en ayer y futuro', planned: 20, status: 'pending', autoMoveToToday: true }
+      ]
+    };
+
+    // Para today, solo debe contar la 702 (1 tarea), ignorando la 701 que ya está en el futuro
+    expect(actions.countPendingAutoMoveTasks(today)).toBe(1);
+  });
 });
 

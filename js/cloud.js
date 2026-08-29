@@ -134,6 +134,13 @@ export function TodayTasksCloud(ctx){
           ...Object.keys(remoteEnv.days || {})
         ]);
 
+        const allRemoteTaskIds = new Set();
+        Object.values(remoteEnv.days || {}).forEach(d => {
+          (d.tasks || []).forEach(t => {
+            if (t && t.id != null) allRemoteTaskIds.add(String(t.id));
+          });
+        });
+
         allDates.forEach(dateStr => {
           const lDay = (localEnv.days && localEnv.days[dateStr]) || {};
           const rDay = (remoteEnv.days && remoteEnv.days[dateStr]) || {};
@@ -150,12 +157,20 @@ export function TodayTasksCloud(ctx){
           mMeetings.sort((a, b) => a.start - b.start);
 
           const mTasks = [...(rDay.tasks || [])];
+          const taskIdsInDay = new Set(mTasks.filter(t => t && t.id != null).map(t => String(t.id)));
           const taskTitles = new Set(mTasks.map(t => (t.title || "").toLowerCase().trim()));
           (lDay.tasks || []).forEach(t => {
+            if (!t) return;
+            // Si la tarea ya existe en el estado remoto (en este u otro día),
+            // no la añadimos desde local para respetar la ubicación y estado de la nube
+            if (t.id != null && allRemoteTaskIds.has(String(t.id))) {
+              return;
+            }
             const normTitle = (t.title || "").toLowerCase().trim();
-            if (!taskTitles.has(normTitle)) {
+            if (!taskTitles.has(normTitle) && (t.id == null || !taskIdsInDay.has(String(t.id)))) {
               mTasks.push(t);
               taskTitles.add(normTitle);
+              if (t.id != null) taskIdsInDay.add(String(t.id));
             }
           });
 

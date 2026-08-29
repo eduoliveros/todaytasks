@@ -210,6 +210,45 @@ describe('TodayTasksCloud - mergeStates', () => {
     });
     expect(merged.environments.personal.weeklySchedule[5]).toBeUndefined();
   });
+
+  it('no duplica una tarea entre días si la nube la tiene en un día futuro y el estado local la tiene en hoy', () => {
+    const local = defaultState();
+    const today = '2026-08-29';
+    const futureDate = '2026-09-05';
+
+    // Local tiene la tarea 99 en today (por ejemplo por rollover previo)
+    local.environments.work.days = {
+      [today]: {
+        meetings: [],
+        interruptions: [],
+        tasks: [
+          { id: 99, title: 'Tarea Auto-Move Importante', planned: 45, status: 'pending', autoMoveToToday: true }
+        ]
+      }
+    };
+
+    // Remote (Nube) tiene la tarea 99 en futureDate porque el usuario la movió allí
+    const remote = defaultState();
+    remote.environments.work.days = {
+      [futureDate]: {
+        meetings: [],
+        interruptions: [],
+        tasks: [
+          { id: 99, title: 'Tarea Auto-Move Importante', planned: 45, status: 'pending', autoMoveToToday: true }
+        ]
+      }
+    };
+
+    const merged = cloud.mergeStates(local, remote);
+
+    // En today NO debe aparecer la tarea 99
+    const todayTasks = (merged.environments.work.days[today] && merged.environments.work.days[today].tasks) || [];
+    expect(todayTasks.some(t => t.id === 99)).toBe(false);
+
+    // En futureDate SÍ debe aparecer la tarea 99
+    const futureTasks = (merged.environments.work.days[futureDate] && merged.environments.work.days[futureDate].tasks) || [];
+    expect(futureTasks.some(t => t.id === 99)).toBe(true);
+  });
 });
 
 describe('TodayTasksCloud - detección de origen y sincronización', () => {
