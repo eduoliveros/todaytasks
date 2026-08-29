@@ -4,6 +4,9 @@ Este archivo define las reglas, contexto y estándares operativos para los agent
 
 ---
 
+## Stack tecnológico
+JavaScript Vanilla nativo con ES Modules.
+
 ## 1. Entorno de Ejecución y Servidor Local
 
 - **Entorno:** El sistema utiliza **Node.js** (v24+) y **npm**. No utilizar Python para levantar servidores locales.
@@ -24,6 +27,8 @@ Este archivo define las reglas, contexto y estándares operativos para los agent
 - Con cada cambio de funcionalidad importante actualiza la versión en index.html, por ejemplo, de 1.50 a 1.51.
 <h1>Tablero del día <span class="app-version">v1.50</span></h1>
 
+- Si se pide una modificación sobre la misma funcionalidad, o un fix de algún bug, NO actualices la versión.
+
 ---
 
 ## 3. Pruebas y Calidad de Código
@@ -43,3 +48,9 @@ Este archivo define las reglas, contexto y estándares operativos para los agent
 ## 4. Desarrollo
 1. Si es un cambio importante, plantea un plan de implementación y las posibles opciones que existan.
 2. No repitas bloque de código, separa en nuevas funciones si es necesario.
+3. Manten el repositorio manejable: Considera separar archivos si crecen mucho.
+4. Mantén el código limpio y documentado, con comentarios claros y concisos.
+5. Mantén actualizado el documento [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) con los cambios estructurales para que sirva de guía a futuros agentes.
+6. **Registro de Decisiones de Arquitectura (ADR):** Si se toma una decisión de diseño relevante o cambio estructural no trivial, documéntala en `docs/adr/` (Architecture Decision Records) detallando contexto, alternativas y justificación.
+7. **Registro de Cambios (`CHANGELOG.md`):** Al incrementar la versión por una funcionalidad importante, documenta las novedades, mejoras o correcciones en [CHANGELOG.md](./CHANGELOG.md).
+8. **Modelo de Datos (`docs/DATA_SCHEMA.md`):** Consulta y respeta la especificación en [docs/DATA_SCHEMA.md](./docs/DATA_SCHEMA.md) antes de añadir o modificar propiedades en el estado, tareas, reuniones o entornos.
