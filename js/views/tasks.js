@@ -22,9 +22,10 @@ export function TodayTasksTasksView(ctx){
         <div class="row">
           <input type="text" value="${escapeAttr(taskEdit.title)}" oninput="app.updateTaskEditField('title', this.value)" placeholder="Título de la tarea">
         </div>
-        <div class="row" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
-          <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Planificado:<br><input type="text" value="${escapeAttr(taskEdit.duration)}" placeholder="ej. 30, 1h 30m" style="width:110px;margin-top:4px;" oninput="app.updateTaskEditField('duration', this.value)"></label>
-          <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Consumido:<br><input type="text" value="${escapeAttr(taskEdit.actual||0)}" placeholder="ej. 15, 1h" style="width:110px;margin-top:4px;" oninput="app.updateTaskEditField('actual', this.value)"></label>
+        <div class="row" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Planificado:<br><input type="text" value="${escapeAttr(taskEdit.duration)}" placeholder="ej. 30, 1h 30m" style="width:95px;margin-top:4px;" oninput="app.updateTaskEditField('duration', this.value)"></label>
+          <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Consumido:<br><input type="text" value="${escapeAttr(taskEdit.actual||0)}" placeholder="ej. 15, 1h" style="width:95px;margin-top:4px;" oninput="app.updateTaskEditField('actual', this.value)"></label>
+          <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">A partir de:<br><input type="time" value="${escapeAttr(taskEdit.startAfter || '')}" style="width:110px;margin-top:4px;" oninput="app.updateTaskEditField('startAfter', this.value)"></label>
         </div>
         <div class="row" style="align-items:center;gap:8px;margin-bottom:10px;">
           <button type="button" class="urgency-pill-btn urgency-btn-${escapeAttr(editUrgency)}"
@@ -110,6 +111,18 @@ export function TodayTasksTasksView(ctx){
       </button>
     `;
 
+    const hasStartAfter = (t.startAfter !== null && t.startAfter !== undefined && !isNaN(t.startAfter));
+    const startAfterPill = hasStartAfter ? `
+      <button type="button" class="start-after-pill-btn"
+              onclick="app.openStartAfterPopover('${escapeAttr(t.id)}', event)"
+              title="Programada a partir de las ${fmt(t.startAfter)} (Clic para cambiar o quitar)"
+              aria-label="A partir de las ${fmt(t.startAfter)}">
+        <span class="start-after-icon">⏰</span>
+        <span class="start-after-label">${fmt(t.startAfter)}+</span>
+        <span class="start-after-chevron">▾</span>
+      </button>
+    ` : '';
+
     return `
       <div class="item task-item ${t.status} ${featuredClass}" id="task-item-${escapeAttr(t.id)}" data-task-id="${escapeAttr(t.id)}" ${dragAttrs}>
         <div class="top">
@@ -119,6 +132,7 @@ export function TodayTasksTasksView(ctx){
               <div class="title">${escapeHtml(t.title)}</div>
               <div class="time-range ${trClass}">
                 ${urgencyPill}
+                ${startAfterPill}
                 <span class="tag">${startTag}</span>${startVal}<span class="arrow">→</span><span class="tag">${endTag}</span>${endVal}
                 ${remainingChip}
                 ${recurringTag}
@@ -134,6 +148,7 @@ export function TodayTasksTasksView(ctx){
           </div>
           <div style="display:flex;align-items:center;gap:2px;">
             <button class="icon-btn star-btn ${t.featured ? 'is-featured' : ''}" title="${t.featured ? 'Quitar destacado' : 'Marcar como destacada (máx. 5 al día)'}" onclick="app.toggleTaskFeatured('${escapeAttr(t.id)}')">${t.featured ? '⭐' : '☆'}</button>
+            <button class="icon-btn" title="Fijar hora de inicio (a partir de...)" onclick="app.openStartAfterPopover('${escapeAttr(t.id)}', event)">⏰</button>
             ${!t.isRecurring && t.autoMoveToToday ? `
               <button class="icon-btn" title="Mover a otro día" onclick="app.openCopyTaskModal('${escapeAttr(t.id)}')">➡️</button>
             ` : `

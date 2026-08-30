@@ -146,7 +146,7 @@ export function TodayTasksBoardView(ctx){
       const segs = (schedule && schedule.segmentsByTask && schedule.segmentsByTask[t.id]) ? schedule.segmentsByTask[t.id] : [];
       for(const s of segs){
         const isOverflow = s.end > workEnd || (schedule && schedule.overflowIds && schedule.overflowIds.has(t.id));
-        events.push({start: s.start, end: s.end, kind: "task-" + t.status, label: t.title, isOverflow, id: t.id, targetKind: "task"});
+        events.push({start: s.start, end: s.end, kind: "task-" + t.status, label: t.title, isOverflow, id: t.id, targetKind: "task", startAfter: t.startAfter});
       }
     }
 
@@ -266,10 +266,14 @@ export function TodayTasksBoardView(ctx){
         ? `☕ Descanso de ${fmtDur(e.end - e.start)} (${fmt(e.start)} – ${fmt(e.end)})`
         : `${escapeAttr(e.label)} (${fmt(e.start)} – ${fmt(e.end)} · ${fmtDur(e.end - e.start)})${actionHint}`;
 
+      const hasStartAfter = (e.startAfter !== null && e.startAfter !== undefined && !isNaN(e.startAfter));
+      const startAfterTag = hasStartAfter ? `<span class="slot-startafter-tag" title="Programada a partir de las ${fmt(e.startAfter)}">⏰ ${fmt(e.startAfter)}+</span>` : '';
+
       slotsHtml += `
         <div class="slot ${kindClass} ${overflowClass} ${pastClass} ${multiColClass} ${compactClass} ${interactiveClass}" style="${posStyles}" title="${tooltip}" ${clickAttrs}>
           <span class="time-label">${fmt(e.start)}<span class="sep">–</span>${fmt(e.end)}</span>
           <span class="slot-title">${label}</span>
+          ${startAfterTag}
           ${overflowTag}
           <span class="dur">${fmtDur(e.end - e.start)}</span>
         </div>`;
@@ -403,6 +407,10 @@ export function TodayTasksBoardView(ctx){
           }
         }
         const elapsedReal = getTaskElapsed(t);
+        const hasStartAfter = (t.startAfter !== null && t.startAfter !== undefined && !isNaN(t.startAfter));
+        const startAfterTag = hasStartAfter
+          ? ` <span class="tag" style="background:rgba(245,158,11,0.12);color:#b45309;border-color:rgba(245,158,11,0.35);font-weight:600;font-family:'IBM Plex Mono',monospace;" title="Programada a partir de las ${fmt(t.startAfter)}">⏰ ${fmt(t.startAfter)}+</span>`
+          : '';
         const autoMoveTag = (!t.isRecurring && t.autoMoveToToday)
           ? ' <span class="tag tag-automove" title="Se trasladará a hoy si no se completa">⏩ Pasar a hoy</span>'
           : '';
@@ -411,7 +419,7 @@ export function TodayTasksBoardView(ctx){
         const transferBtnTitle = isAutoMove ? 'Mover esta tarea a otra fecha' : 'Copiar esta tarea a otra fecha';
         return `
         <div class="summary-row">
-          <div class="row-top"><span>${escapeHtml(t.title)}${autoMoveTag}</span><span class="dur">${fmtDur(t.planned)} plan. · <span class="task-duration-clickable" title="Clic para ajustar tiempo consumido" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">${elapsedReal > 0 ? fmtDur(elapsedReal) : '0m'} realizados</span> · ${t.status === 'paused' ? 'en pausa' : t.status}</span></div>
+          <div class="row-top"><span>${escapeHtml(t.title)}${startAfterTag}${autoMoveTag}</span><span class="dur">${fmtDur(t.planned)} plan. · <span class="task-duration-clickable" title="Clic para ajustar tiempo consumido" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">${elapsedReal > 0 ? fmtDur(elapsedReal) : '0m'} realizados</span> · ${t.status === 'paused' ? 'en pausa' : t.status}</span></div>
           ${rangeHtml}
           <div style="margin-top:6px">
             <button class="btn small secondary" onclick="app.openCopyTaskModal('${escapeAttr(t.id)}')" title="${transferBtnTitle}">${transferBtnLabel}</button>

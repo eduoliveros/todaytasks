@@ -585,6 +585,175 @@ input:focus, button:focus, select:focus { outline: 2px solid var(--accent-pendin
   margin-left: 1px;
 }
 
+.start-after-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 12px;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  cursor: pointer;
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  line-height: 1.3;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  vertical-align: middle;
+  text-decoration: none;
+  user-select: none;
+}
+.start-after-pill-btn:hover {
+  filter: brightness(0.95);
+  transform: translateY(-1px);
+}
+.start-after-chevron {
+  font-size: 9px;
+  opacity: 0.7;
+  margin-left: 1px;
+}
+.start-after-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* --- Task Advanced Options Section --- */
+.task-advanced-wrapper {
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
+.task-advanced-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--bg-body, #F8FAFC);
+  border: 1px solid var(--border, #E2E8F0);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--ink, #0F172A);
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.task-advanced-toggle:hover {
+  background: var(--bg-card, #ffffff);
+  border-color: var(--line, #CBD5E1);
+}
+.task-advanced-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.task-advanced-icon {
+  font-size: 0.85rem;
+}
+.task-advanced-chevron {
+  font-size: 0.75rem;
+  color: var(--text-muted, #64748B);
+  transition: transform 0.2s ease;
+}
+.task-advanced-body {
+  margin-top: 6px;
+  padding: 10px;
+  background: var(--bg-body, #F8FAFC);
+  border: 1px solid var(--border, #E2E8F0);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.task-advanced-indicators {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 2px;
+}
+.badge-adv-icon {
+  font-size: 11px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+.badge-startafter-summary {
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.task-form-startafter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 6px;
+  border-top: 1px solid var(--border, #E2E8F0);
+  font-size: 0.85rem;
+}
+.task-form-startafter-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink, #0F172A);
+  font-weight: 500;
+}
+.task-form-startafter-input-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.task-form-startafter-time-input {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.85rem;
+  padding: 3px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border, #CBD5E1);
+  background: var(--bg-card, #ffffff);
+  color: var(--ink, #0F172A);
+  width: 105px;
+  box-sizing: border-box;
+}
+.task-form-startafter-time-input:focus {
+  outline: none;
+  border-color: var(--primary, #4F46E5);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+}
+.btn-clear-startafter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--border, #CBD5E1);
+  background: var(--bg-card, #ffffff);
+  color: var(--text-muted, #64748B);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.btn-clear-startafter:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+
 .urgency-dropdown-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;

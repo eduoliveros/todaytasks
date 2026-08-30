@@ -120,5 +120,32 @@ describe('Tasks View - Main Page Active Tasks List', () => {
     expect(editingEl).not.toBeNull();
     expect(editingEl.classList.contains('editing')).toBe(true);
   });
+
+  it('renderTasks renderiza el chip interactivo start-after-pill-btn con la notación HH:MM+ si tiene startAfter', () => {
+    state.tasks = [
+      { id: 501, title: 'Tarea Tarde', planned: 30, status: 'pending', startAfter: 960, order: 1 } // 16:00
+    ];
+
+    tasksView.renderTasks({ segmentsByTask: {}, overflowIds: new Set() });
+
+    const pill = document.querySelector('.start-after-pill-btn');
+    expect(pill).not.toBeNull();
+    expect(pill.textContent).toContain('16:00+');
+    expect(pill.getAttribute('onclick')).toContain("app.openStartAfterPopover('501'");
+  });
+
+  it('renderTasks renderiza el input A partir de en modo de edición', () => {
+    state.tasks = [
+      { id: 502, title: 'Tarea Editable', planned: 45, status: 'pending', startAfter: 930, order: 1 }
+    ];
+
+    taskEdit = { id: 502, title: 'Tarea Editable', duration: '45', actual: '0', startAfter: '15:30' };
+    tasksView.renderTasks({ segmentsByTask: {}, overflowIds: new Set() });
+
+    const inputTime = document.querySelector('.task-item.editing input[type="time"]');
+    expect(inputTime).not.toBeNull();
+    expect(inputTime.value).toBe('15:30');
+    expect(inputTime.getAttribute('oninput')).toContain("app.updateTaskEditField('startAfter'");
+  });
 });
 

@@ -556,6 +556,132 @@ function switchHeaderTab(target){
       actionsModule.updateTaskTimeFast(this.currentPopoverTaskId, input.value);
       this.closeTimePopover();
     },
+    openStartAfterPopover: function(taskId, event) {
+      try {
+        if (event) {
+          if (typeof event.stopPropagation === 'function') event.stopPropagation();
+          if (typeof event.preventDefault === 'function') event.preventDefault();
+        }
+        this._isFormStartAfter = false;
+        this.currentStartAfterTaskId = taskId;
+        const overlay = document.getElementById('startAfterPopoverOverlay');
+        const popover = document.getElementById('startAfterPopover');
+        const input = document.getElementById('startAfterPopoverInput');
+        if (!overlay || !popover || !input) return;
+
+        const currentState = state;
+        const t = (currentState.tasks || []).find(t => String(t.id) === String(taskId));
+        if(!t) return;
+
+        input.value = (t.startAfter !== null && t.startAfter !== undefined) ? fmt(t.startAfter) : '';
+
+        overlay.style.display = 'block';
+        popover.style.display = 'flex';
+
+        let target = null;
+        if (event) {
+          if (event.currentTarget && typeof event.currentTarget.getBoundingClientRect === 'function') {
+            target = event.currentTarget;
+          } else if (event.target && typeof event.target.getBoundingClientRect === 'function') {
+            target = event.target;
+          }
+        }
+
+        const popWidth = 230;
+        let left = Math.max(10, (window.innerWidth - popWidth) / 2);
+        let top = Math.max(10, (window.innerHeight - 140) / 2);
+
+        if (target) {
+          const rect = target.getBoundingClientRect();
+          if (rect && (rect.width > 0 || rect.height > 0 || rect.top > 0 || rect.left > 0)) {
+            left = rect.left;
+            top = rect.bottom + 6;
+            if (left + popWidth > window.innerWidth - 10) {
+              left = window.innerWidth - popWidth - 10;
+            }
+            if (left < 10) left = 10;
+
+            if (top + 130 > window.innerHeight && rect.top > 130) {
+              top = rect.top - 120;
+            }
+          }
+        }
+
+        popover.style.left = `${left}px`;
+        popover.style.top = `${top}px`;
+        setTimeout(() => {
+          input.focus();
+        }, 50);
+      } catch (err) {
+        console.error("Error in openStartAfterPopover:", err);
+      }
+    },
+    closeStartAfterPopover: function() {
+      const overlay = document.getElementById('startAfterPopoverOverlay');
+      const popover = document.getElementById('startAfterPopover');
+      if (overlay) overlay.style.display = 'none';
+      if (popover) popover.style.display = 'none';
+      this.currentStartAfterTaskId = null;
+    },
+    saveStartAfterPopover: function() {
+      if(!this.currentStartAfterTaskId) return;
+      const input = document.getElementById('startAfterPopoverInput');
+      const val = input ? input.value : '';
+      actionsModule.setTaskStartAfter(this.currentStartAfterTaskId, val || null);
+      this.closeStartAfterPopover();
+    },
+    clearStartAfterPopover: function() {
+      if(!this.currentStartAfterTaskId) return;
+      actionsModule.setTaskStartAfter(this.currentStartAfterTaskId, null);
+      this.closeStartAfterPopover();
+    },
+    updateTaskAdvancedIndicators: function() {
+      const autoMoveCb = document.getElementById('isAutoMoveTaskCheckbox');
+      const recCb = document.getElementById('isRecurringTaskCheckbox');
+      const startAfterInput = document.getElementById('taskStartAfterInput');
+
+      const autoMoveBadge = document.getElementById('formAutoMoveBadge');
+      const recBadge = document.getElementById('formRecurringBadge');
+      const startAfterBadge = document.getElementById('formStartAfterBadge');
+
+      if (autoMoveBadge) {
+        autoMoveBadge.style.display = (autoMoveCb && autoMoveCb.checked && (!recCb || !recCb.checked)) ? 'inline-flex' : 'none';
+      }
+      if (recBadge) {
+        recBadge.style.display = (recCb && recCb.checked) ? 'inline-flex' : 'none';
+      }
+      if (startAfterBadge) {
+        const val = startAfterInput ? startAfterInput.value.trim() : '';
+        if (val) {
+          startAfterBadge.textContent = val + '+';
+          startAfterBadge.style.display = 'inline-flex';
+        } else {
+          startAfterBadge.style.display = 'none';
+        }
+      }
+    },
+    onFormStartAfterChange: function(val) {
+      this.updateTaskAdvancedIndicators();
+    },
+    clearFormStartAfterDirect: function() {
+      const input = document.getElementById('taskStartAfterInput');
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+      this.updateTaskAdvancedIndicators();
+    },
+    toggleTaskAdvancedOptions: function() {
+      const wrap = document.getElementById('taskAdvancedOptionsWrap');
+      const btn = document.getElementById('taskAdvancedToggleBtn');
+      const chevron = document.getElementById('taskAdvancedChevron');
+      if (!wrap) return;
+      const isOpen = wrap.style.display === 'block';
+      wrap.style.display = isOpen ? 'none' : 'block';
+      if (btn) btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+      if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+    },
+    setTaskStartAfter: actionsModule.setTaskStartAfter,
     setTaskUrgency: actionsModule.setTaskUrgency,
     setTaskFeatured: actionsModule.setTaskFeatured,
     toggleTaskFeatured: actionsModule.toggleTaskFeatured,

@@ -18,7 +18,7 @@
   <!-- Barra superior: logo + switcher + pestañas -->
   <div class="topbar-title-row">
     <div class="brand">
-      <h1>Tablero del día <span class="app-version">v1.88</span></h1>
+      <h1>Tablero del día <span class="app-version">v1.89</span></h1>
       <span class="db-status-badge" id="appModeLabel" title="Tipo de base de datos en uso">💾 local · persistente</span>
       <div class="env-switcher" id="envSwitcher">
         <button class="env-btn active" data-env="work" id="envBtnWork" title="Cambiar a ambiente de Trabajo (Tecla 'E')">
@@ -140,44 +140,77 @@
         <input type="hidden" id="taskUrgencySelect" value="days">
         <input type="hidden" id="isFeaturedTaskCheckbox" value="false">
       </div>
-      <div style="margin-top:4px;margin-bottom:14px;display:flex;flex-direction:column;gap:6px;">
-        <div id="autoMoveTaskOptionWrap">
-          <label style="font-size:0.85rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
-            <input type="checkbox" id="isAutoMoveTaskCheckbox" checked> Auto-mover si no se completa a hoy
-          </label>
-        </div>
-        <label style="font-size:0.85rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
-          <input type="checkbox" id="isRecurringTaskCheckbox"> Repetir tarea 🔁
-        </label>
-      </div>
-      <div id="recurringTaskFormOptions" style="display:none;margin-top:8px;margin-bottom:14px;padding:10px;background:rgba(79,70,229,0.04);border:1px solid rgba(79,70,229,0.15);border-radius:6px;font-size:0.85rem;">
-        <div class="row" style="margin-bottom:6px;">
-          <label style="flex:1;">Frecuencia:
-            <select id="recTaskFreq" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;">
-              <option value="daily">Diaria</option>
-              <option value="weekly" selected>Semanal</option>
-            </select>
-          </label>
-          <label style="flex:1;">Intervalo:
-            <input type="number" id="recTaskInterval" value="1" min="1" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;" title="Número de días o semanas entre repeticiones">
-          </label>
-        </div>
-        <div id="recTaskDaysWrap" style="margin-bottom:6px;">
-          <div style="font-weight:500;margin-bottom:2px;">Días de repetición:</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;">
-            <label><input type="checkbox" class="rec-task-day-cb" value="1" checked> L</label>
-            <label><input type="checkbox" class="rec-task-day-cb" value="2"> M</label>
-            <label><input type="checkbox" class="rec-task-day-cb" value="3"> X</label>
-            <label><input type="checkbox" class="rec-task-day-cb" value="4"> J</label>
-            <label><input type="checkbox" class="rec-task-day-cb" value="5"> V</label>
-            <label><input type="checkbox" class="rec-task-day-cb" value="6"> S</label>
-            <label><input type="checkbox" class="rec-task-day-cb" value="7"> D</label>
+      <!-- Opciones avanzadas colapsables -->
+      <div class="task-advanced-wrapper">
+        <button type="button" class="task-advanced-toggle" id="taskAdvancedToggleBtn" onclick="app.toggleTaskAdvancedOptions()" aria-expanded="false" aria-controls="taskAdvancedOptionsWrap">
+          <div class="task-advanced-toggle-label">
+            <span class="task-advanced-icon">⚙️</span>
+            <span>Opciones avanzadas</span>
+            <div class="task-advanced-indicators" id="taskAdvancedIndicators">
+              <span id="formAutoMoveBadge" class="badge-adv-icon" title="Auto-mover a hoy si no se completa">⏩</span>
+              <span id="formRecurringBadge" class="badge-adv-icon" title="Tarea recurrente" style="display:none;">🔁</span>
+              <span id="formStartAfterBadge" class="badge-startafter-summary" style="display:none;"></span>
+            </div>
           </div>
-        </div>
-        <div>
-          <label>Fecha límite (opcional):
-            <input type="date" id="recTaskEndDate" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;">
-          </label>
+          <span class="task-advanced-chevron" id="taskAdvancedChevron">▾</span>
+        </button>
+
+        <div id="taskAdvancedOptionsWrap" class="task-advanced-body" style="display:none;">
+          <!-- 1. Auto-mover (marcado por defecto) -->
+          <div id="autoMoveTaskOptionWrap">
+            <label style="font-size:0.85rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
+              <input type="checkbox" id="isAutoMoveTaskCheckbox" checked> Auto-mover si no se completa a hoy
+            </label>
+          </div>
+
+          <!-- 2. Repetir tarea -->
+          <div>
+            <label style="font-size:0.85rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
+              <input type="checkbox" id="isRecurringTaskCheckbox"> Repetir tarea 🔁
+            </label>
+
+            <div id="recurringTaskFormOptions" style="display:none;margin-top:8px;padding:10px;background:rgba(79,70,229,0.04);border:1px solid rgba(79,70,229,0.15);border-radius:6px;font-size:0.85rem;">
+              <div class="row" style="margin-bottom:6px;">
+                <label style="flex:1;">Frecuencia:
+                  <select id="recTaskFreq" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;">
+                    <option value="daily">Diaria</option>
+                    <option value="weekly" selected>Semanal</option>
+                  </select>
+                </label>
+                <label style="flex:1;">Intervalo:
+                  <input type="number" id="recTaskInterval" value="1" min="1" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;" title="Número de días o semanas entre repeticiones">
+                </label>
+              </div>
+              <div id="recTaskDaysWrap" style="margin-bottom:6px;">
+                <div style="font-weight:500;margin-bottom:2px;">Días de repetición:</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;">
+                  <label><input type="checkbox" class="rec-task-day-cb" value="1" checked> L</label>
+                  <label><input type="checkbox" class="rec-task-day-cb" value="2"> M</label>
+                  <label><input type="checkbox" class="rec-task-day-cb" value="3"> X</label>
+                  <label><input type="checkbox" class="rec-task-day-cb" value="4"> J</label>
+                  <label><input type="checkbox" class="rec-task-day-cb" value="5"> V</label>
+                  <label><input type="checkbox" class="rec-task-day-cb" value="6"> S</label>
+                  <label><input type="checkbox" class="rec-task-day-cb" value="7"> D</label>
+                </div>
+              </div>
+              <div>
+                <label>Fecha límite (opcional):
+                  <input type="date" id="recTaskEndDate" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;">
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. A partir de una hora (Control directo HH:mm con opción de borrar) -->
+          <div class="task-form-startafter-row">
+            <label for="taskStartAfterInput" class="task-form-startafter-label">
+              <span>⏰</span> Iniciar a partir de:
+            </label>
+            <div class="task-form-startafter-input-wrap">
+              <input type="time" id="taskStartAfterInput" class="task-form-startafter-time-input" oninput="app.onFormStartAfterChange(this.value)" title="Hora mínima de inicio (opcional)">
+              <button type="button" class="btn-clear-startafter" id="clearTaskStartAfterBtn" onclick="app.clearFormStartAfterDirect()" title="Borrar hora" aria-label="Borrar hora">✕</button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="task-search-bar" id="taskSearchBar">
@@ -318,6 +351,21 @@
   <div class="time-popover-controls">
     <input type="text" id="timePopoverInput" placeholder="ej. 25, 1h 30m" onkeydown="if(event.key==='Enter') app.saveTimePopover()" />
     <button class="btn small done" onclick="app.saveTimePopover()" style="padding: 6px 12px; font-weight: 600;">Guardar</button>
+  </div>
+</div>
+
+<div class="time-popover-overlay" id="startAfterPopoverOverlay" onclick="app.closeStartAfterPopover()"></div>
+<div class="time-popover start-after-popover" id="startAfterPopover" style="display:none;">
+  <div class="time-popover-header">
+    <span>⏰ Iniciar a partir de</span>
+    <button type="button" class="close-popover-x" onclick="app.closeStartAfterPopover()" aria-label="Cerrar">&times;</button>
+  </div>
+  <div class="start-after-popover-body">
+    <input type="time" id="startAfterPopoverInput" onkeydown="if(event.key==='Enter') app.saveStartAfterPopover()" />
+    <div class="start-after-popover-actions">
+      <button type="button" class="btn small secondary" onclick="app.clearStartAfterPopover()">Quitar</button>
+      <button type="button" class="btn small done" onclick="app.saveStartAfterPopover()">Guardar</button>
+    </div>
   </div>
 </div>
 

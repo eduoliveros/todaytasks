@@ -39,15 +39,19 @@ describe('TodayTasksForms - Formularios y Menú de Posición', () => {
         <input type="number" id="recTaskInterval" value="1" />
         <input type="checkbox" class="rec-task-day-cb" value="1" checked />
         <input type="date" id="recTaskEndDate" value="" />
-      </div>
+      <input type="time" id="taskStartAfterInput" value="" />
+      <button type="button" id="clearTaskStartAfterBtn">✕</button>
+      <span id="formAutoMoveBadge">⏩</span>
+      <span id="formRecurringBadge" style="display:none;">🔁</span>
+      <span id="formStartAfterBadge" style="display:none;"></span>
       <button class="btn" id="addTaskBtn">Añadir</button>
     `;
 
     const appCtx = {
       getState: () => state,
       actionsModule: {
-        addTask: (title, dur, toTop, recurringData, autoMoveToToday) => {
-          addedTasks.push({ title, dur, toTop, recurringData, autoMoveToToday });
+        addTask: (title, dur, toTop, recurringData, autoMoveToToday, urgency, featured, startAfter) => {
+          addedTasks.push({ title, dur, toTop, recurringData, autoMoveToToday, urgency, featured, startAfter });
         },
         addMeeting: (title, start, end, recurringData) => {
           addedMeetings.push({ title, start, end, recurringData });
@@ -84,7 +88,7 @@ describe('TodayTasksForms - Formularios y Menú de Posición', () => {
       forms.handleTaskSubmit(false);
 
       expect(addedTasks).toHaveLength(1);
-      expect(addedTasks[0]).toEqual({
+      expect(addedTasks[0]).toMatchObject({
         title: 'Nueva Tarea',
         dur: '25',
         toTop: false,
@@ -113,6 +117,20 @@ describe('TodayTasksForms - Formularios y Menú de Posición', () => {
 
       expect(addedTasks).toHaveLength(1);
       expect(addedTasks[0].toTop).toBe(true);
+    });
+
+    it('añade tarea con startAfter y resetea el input y badge del formulario', () => {
+      document.getElementById('taskTitle').value = 'Tarea Diferida';
+      document.getElementById('taskDuration').value = '30';
+      document.getElementById('taskStartAfterInput').value = '16:00';
+      document.getElementById('formStartAfterBadge').style.display = 'inline-block';
+
+      forms.handleTaskSubmit(false);
+
+      expect(addedTasks).toHaveLength(1);
+      expect(addedTasks[0].startAfter).toBe('16:00');
+      expect(document.getElementById('taskStartAfterInput').value).toBe('');
+      expect(document.getElementById('formStartAfterBadge').style.display).toBe('none');
     });
   });
 

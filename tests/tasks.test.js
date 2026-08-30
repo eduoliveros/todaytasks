@@ -75,6 +75,19 @@ describe('TodayTasksActions - Tareas', () => {
       expect(window.alert).toHaveBeenCalledWith('Indica un título para la tarea.');
       expect(state.tasks).toHaveLength(0);
     });
+
+    it('añade una tarea con hora mínima de inicio (startAfter)', () => {
+      actions.addTask('Tarea con Hora', '30', false, null, true, 'days', false, '16:00');
+      expect(state.tasks).toHaveLength(1);
+      expect(state.tasks[0].startAfter).toBe(960);
+    });
+
+    it('añade una tarea recurrente con hora mínima de inicio (startAfter)', () => {
+      const recData = { isRecurring: true, freq: 'daily', interval: 1, daysOfWeek: [1, 2, 3] };
+      actions.addTask('Tarea Recurrente con Hora', '45', false, recData, true, 'days', false, '10:30');
+      expect(state.recurringTasks).toHaveLength(1);
+      expect(state.recurringTasks[0].startAfter).toBe(630);
+    });
   });
 
   describe('Edición de tareas', () => {
@@ -120,6 +133,96 @@ describe('TodayTasksActions - Tareas', () => {
 
       expect(state.tasks[0].title).toBe('Tarea Intacta');
       expect(taskEdit).toBeNull();
+    });
+
+    it('modifica y guarda la hora de inicio mínima (startAfter) en la edición de tarea', () => {
+      actions.addTask('Tarea Con Hora', '30');
+      const taskId = state.tasks[0].id;
+
+      actions.startEditTask(taskId);
+      expect(taskEdit.startAfter).toBe('');
+
+      actions.updateTaskEditField('startAfter', '15:30');
+      actions.saveEditTask(taskId);
+
+      expect(state.tasks[0].startAfter).toBe(930); // 15*60 + 30 = 930 min
+
+      // Comprobar que al volver a editar se carga el formato HH:MM
+      actions.startEditTask(taskId);
+      expect(taskEdit.startAfter).toBe('15:30');
+
+      // Comprobar que al vaciar el campo se borra la restricción
+      actions.updateTaskEditField('startAfter', '');
+      actions.saveEditTask(taskId);
+      expect(state.tasks[0].startAfter).toBeNull();
+    });
+
+    it('establece y elimina startAfter directamente mediante setTaskStartAfter', () => {
+      actions.addTask('Tarea Popover', '45');
+      const taskId = state.tasks[0].id;
+
+      actions.setTaskStartAfter(taskId, '16:00');
+      expect(state.tasks[0].startAfter).toBe(960);
+
+      actions.setTaskStartAfter(taskId, null);
+      expect(state.tasks[0].startAfter).toBeNull();
+
+      actions.setTaskStartAfter(taskId, 600); // 10:00
+      expect(state.tasks[0].startAfter).toBe(600);
+    });
+
+    it('al cambiar startAfter en una tarea recurrente mediante setTaskStartAfter se actualiza la regla y todas las instancias en todos los días', () => {
+      const recData = { isRecurring: true, freq: 'daily', interval: 1, daysOfWeek: [1, 2, 3, 4, 5, 6, 7] };
+      actions.addTask('Daily Standup', '15', false, recData, true, 'days', false, '09:30');
+
+      const env = state.environments[state.activeEnv || 'work'];
+      const rule = env.recurringTasks[0];
+      expect(rule.startAfter).toBe(570); // 09:30
+
+      // Crear instancias simuladas en dos días distintos
+      env.days['2026-08-30'] = { tasks: [{ id: 101, ruleId: rule.id, title: 'Daily Standup', startAfter: 570 }] };
+      env.days['2026-08-31'] = { tasks: [{ id: 102, ruleId: rule.id, title: 'Daily Standup', startAfter: 570 }] };
+      state.tasks = env.days['2026-08-30'].tasks;
+
+      // Cambiar hora en la tarea de hoy a las 11:00 (660 min)
+      actions.setTaskStartAfter(101, '11:00');
+
+      // Comprobar que se actualizó la tarea actual
+      expect(state.tasks[0].startAfter).toBe(660);
+      // Comprobar que se actualizó la regla de la serie
+      expect(rule.startAfter).toBe(660);
+      // Comprobar que se actualizó la instancia del día de mañana
+      expect(env.days['2026-08-31'].tasks[0].startAfter).toBe(660);
+    });
+
+    it('al editar una tarea recurrente en modo series se propaga startAfter a la regla y todas las instancias', () => {
+      const recData = { isRecurring: true, freq: 'daily', interval: 1, daysOfWeek: [1, 2, 3, 4, 5, 6, 7] };
+      actions.addTask('Sync Equipo', '30', false, recData, true, 'days', false, '10:00');
+
+      const env = state.environments[state.activeEnv || 'work'];
+      const rule = env.recurringTasks[0];
+
+      env.days['2026-08-30'] = { tasks: [{ id: 201, ruleId: rule.id, title: 'Sync Equipo', planned: 30, startAfter: 600 }] };
+      env.days['2026-08-31'] = { tasks: [{ id: 202, ruleId: rule.id, title: 'Sync Equipo', planned: 30, startAfter: 600 }] };
+      state.tasks = env.days['2026-08-30'].tasks;
+
+      // Simular edición en modo series
+      taskEdit = {
+        id: 201,
+        ruleId: rule.id,
+        mode: 'series',
+        title: 'Sync Equipo Refactor',
+        duration: '45',
+        actual: '0',
+        startAfter: '14:30'
+      };
+
+      actions.saveEditTask(201);
+
+      expect(rule.startAfter).toBe(870); // 14:30
+      expect(rule.title).toBe('Sync Equipo Refactor');
+      expect(env.days['2026-08-30'].tasks[0].startAfter).toBe(870);
+      expect(env.days['2026-08-31'].tasks[0].startAfter).toBe(870);
     });
   });
 

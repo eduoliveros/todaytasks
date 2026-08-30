@@ -97,7 +97,47 @@ export function computeSchedule(state, nowMinutes) {
     .filter(t => t.status === "pending" || t.status === "paused")
     .sort((a, b) => a.order - b.order);
 
-  for (const t of queue) {
+  const remainingQueue = [...queue];
+
+  while (remainingQueue.length > 0) {
+    if (cursor >= 24 * 60) {
+      remainingQueue.forEach(t => overflowIds.add(t.id));
+      break;
+    }
+    const activeBlock = blocked.find(b => b.start <= cursor && cursor < b.end);
+    if (activeBlock) {
+      continuousWork = 0;
+      cursor = activeBlock.end;
+      lastPlacedEnd = cursor;
+      continue;
+    }
+
+    // Buscar la siguiente tarea elegible (sin startAfter o con startAfter <= cursor)
+    const eligibleIndex = remainingQueue.findIndex(t => {
+      if (t.startAfter === null || t.startAfter === undefined || isNaN(t.startAfter)) return true;
+      return t.startAfter <= cursor;
+    });
+
+    if (eligibleIndex === -1) {
+      // Ninguna tarea puede empezar en el cursor actual.
+      // Avanzar cursor a la hora mínima startAfter de las tareas restantes.
+      const validStarts = remainingQueue
+        .map(t => (t.startAfter !== null && t.startAfter !== undefined && !isNaN(t.startAfter)) ? t.startAfter : Infinity)
+        .filter(st => st > cursor);
+      const minStartAfter = validStarts.length > 0 ? Math.min(...validStarts) : Infinity;
+
+      if (minStartAfter === Infinity || minStartAfter <= cursor) {
+        remainingQueue.forEach(t => overflowIds.add(t.id));
+        break;
+      }
+      cursor = minStartAfter;
+      continuousWork = 0;
+      lastPlacedEnd = cursor;
+      continue;
+    }
+
+    const [t] = remainingQueue.splice(eligibleIndex, 1);
+
     let remaining = Math.max(0, t.planned - (t.elapsedBefore || 0));
 
     const segs = [];

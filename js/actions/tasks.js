@@ -1,7 +1,8 @@
 /* actions/tasks.js — Acciones de tareas (CRUD, edición, recurrencia, prioridades) */
 import {
   getTodayStr, matchesRecurrenceRule, getTaskElapsed, parseDuration,
-  DEFAULT_URGENCY, MAX_FEATURED_TASKS, sortTasksByPriority, URGENCY_LEVELS
+  DEFAULT_URGENCY, MAX_FEATURED_TASKS, sortTasksByPriority, URGENCY_LEVELS,
+  fmt, timeToMinutes
 } from '../utils.js';
 
 export function TodayTasksTasks(ctx, helpers){
@@ -84,14 +85,15 @@ export function TodayTasksTasks(ctx, helpers){
         ruleId: rule.id,
         isRecurring: true,
         urgency: rule.urgency || DEFAULT_URGENCY,
-        featured: !!rule.featured
+        featured: !!rule.featured,
+        startAfter: rule.startAfter ?? null
       });
       changed = true;
     });
     return changed;
   }
 
-  function addTask(title, durationStr, toTop = false, recurringData = null, autoMoveToToday = true, urgency = DEFAULT_URGENCY, featured = false){
+  function addTask(title, durationStr, toTop = false, recurringData = null, autoMoveToToday = true, urgency = DEFAULT_URGENCY, featured = false, startAfter = null){
     if(!title){
       alert("Indica un título para la tarea.");
       return;
@@ -108,6 +110,16 @@ export function TodayTasksTasks(ctx, helpers){
       ? urgency
       : DEFAULT_URGENCY;
     let cleanFeatured = !!featured;
+
+    let cleanStartAfter = null;
+    if (typeof startAfter === "number" && !isNaN(startAfter) && startAfter >= 0 && startAfter < 1440) {
+      cleanStartAfter = Math.round(startAfter);
+    } else if (typeof startAfter === "string" && startAfter.trim()) {
+      const parsedSA = timeToMinutes(startAfter.trim());
+      if (parsedSA !== null && !isNaN(parsedSA) && parsedSA >= 0 && parsedSA < 1440) {
+        cleanStartAfter = parsedSA;
+      }
+    }
 
     // Verificar límite de 5 destacadas en el día
     if (cleanFeatured) {
@@ -135,7 +147,8 @@ export function TodayTasksTasks(ctx, helpers){
         endDate: recurringData.endDate || null,
         exceptions: {},
         urgency: cleanUrgency,
-        featured: cleanFeatured
+        featured: cleanFeatured,
+        startAfter: cleanStartAfter ?? (recurringData.startAfter ?? null)
       });
       materializeRecurringTasks();
       showToast(`Tarea recurrente "${title}" añadida 🔁`);
@@ -163,7 +176,8 @@ export function TodayTasksTasks(ctx, helpers){
         actualDuration: null,
         autoMoveToToday: !!autoMoveToToday,
         urgency: cleanUrgency,
-        featured: cleanFeatured
+        featured: cleanFeatured,
+        startAfter: cleanStartAfter
       });
 
       // Reordenar automáticamente respetando la prioridad
@@ -318,7 +332,8 @@ export function TodayTasksTasks(ctx, helpers){
           const actual = getTaskElapsed(t);
           setTaskEdit({
             id, ruleId, mode: "instance", title: t.title, duration: String(t.planned), actual: String(actual),
-            urgency: t.urgency || DEFAULT_URGENCY, featured: !!t.featured
+            urgency: t.urgency || DEFAULT_URGENCY, featured: !!t.featured,
+            startAfter: (t.startAfter !== null && t.startAfter !== undefined) ? fmt(t.startAfter) : ""
           });
           renderAll();
         },
@@ -326,7 +341,8 @@ export function TodayTasksTasks(ctx, helpers){
           const actual = getTaskElapsed(t);
           setTaskEdit({
             id, ruleId, mode: "series", title: t.title, duration: String(t.planned), actual: String(actual),
-            urgency: t.urgency || DEFAULT_URGENCY, featured: !!t.featured
+            urgency: t.urgency || DEFAULT_URGENCY, featured: !!t.featured,
+            startAfter: (t.startAfter !== null && t.startAfter !== undefined) ? fmt(t.startAfter) : ""
           });
           renderAll();
         }
@@ -339,7 +355,8 @@ export function TodayTasksTasks(ctx, helpers){
       id, title: t.title, duration: String(t.planned), actual: String(actual),
       autoMoveToToday: !!t.autoMoveToToday,
       urgency: t.urgency || DEFAULT_URGENCY,
-      featured: !!t.featured
+      featured: !!t.featured,
+      startAfter: (t.startAfter !== null && t.startAfter !== undefined) ? fmt(t.startAfter) : ""
     });
     renderAll();
   }
@@ -394,6 +411,17 @@ export function TodayTasksTasks(ctx, helpers){
       t.urgency = taskEdit.urgency;
     }
 
+    if (taskEdit.startAfter !== undefined) {
+      if (typeof taskEdit.startAfter === "string" && taskEdit.startAfter.trim()) {
+        const parsed = timeToMinutes(taskEdit.startAfter.trim());
+        t.startAfter = (parsed !== null && !isNaN(parsed)) ? parsed : null;
+      } else if (typeof taskEdit.startAfter === "number" && !isNaN(taskEdit.startAfter)) {
+        t.startAfter = taskEdit.startAfter;
+      } else {
+        t.startAfter = null;
+      }
+    }
+
     if (taskEdit.featured !== undefined) {
       const wantFeatured = !!taskEdit.featured;
       if (wantFeatured && !t.featured) {
@@ -416,12 +444,37 @@ export function TodayTasksTasks(ctx, helpers){
       const envKey = state.activeEnv || "work";
       const env = state.environments[envKey] || state.environments.work;
       const rule = (env.recurringTasks || []).find(r => String(r.id) === String(taskEdit.ruleId));
+      let seriesStartAfter = undefined;
+      if (taskEdit.startAfter !== undefined) {
+        if (typeof taskEdit.startAfter === "string" && taskEdit.startAfter.trim()) {
+          const parsed = timeToMinutes(taskEdit.startAfter.trim());
+          seriesStartAfter = (parsed !== null && !isNaN(parsed)) ? parsed : null;
+        } else if (typeof taskEdit.startAfter === "number" && !isNaN(taskEdit.startAfter)) {
+          seriesStartAfter = taskEdit.startAfter;
+        } else {
+          seriesStartAfter = null;
+        }
+      }
       if (rule) {
         rule.title = title;
         rule.planned = planned;
         if (taskEdit.urgency) rule.urgency = taskEdit.urgency;
         if (taskEdit.featured !== undefined) rule.featured = !!taskEdit.featured;
+        if (seriesStartAfter !== undefined) rule.startAfter = seriesStartAfter;
       }
+      Object.values(env.days || {}).forEach(dayObj => {
+        if (Array.isArray(dayObj.tasks)) {
+          dayObj.tasks.forEach(dt => {
+            if (String(dt.ruleId) === String(taskEdit.ruleId)) {
+              dt.title = title;
+              dt.planned = planned;
+              if (taskEdit.urgency) dt.urgency = taskEdit.urgency;
+              if (taskEdit.featured !== undefined) dt.featured = !!taskEdit.featured;
+              if (seriesStartAfter !== undefined) dt.startAfter = seriesStartAfter;
+            }
+          });
+        }
+      });
     }
 
     t.title = title; t.planned = planned;
@@ -497,11 +550,69 @@ export function TodayTasksTasks(ctx, helpers){
     }
   }
 
+  function setTaskStartAfter(id, startAfterVal){
+    const state = getState();
+    const t = state.tasks.find(t => String(t.id) === String(id));
+    if(!t) return;
+
+    let cleanStartAfter = null;
+    if (typeof startAfterVal === "number" && !isNaN(startAfterVal) && startAfterVal >= 0 && startAfterVal < 1440) {
+      cleanStartAfter = Math.round(startAfterVal);
+    } else if (typeof startAfterVal === "string" && startAfterVal.trim()) {
+      const parsed = timeToMinutes(startAfterVal.trim());
+      if (parsed !== null && !isNaN(parsed) && parsed >= 0 && parsed < 1440) {
+        cleanStartAfter = parsed;
+      }
+    }
+
+    if (t.startAfter === cleanStartAfter) return;
+
+    if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+      const desc = cleanStartAfter !== null
+        ? `Fijar hora de inicio de "${t.title}" a las ${fmt(cleanStartAfter)}`
+        : `Quitar hora de inicio de "${t.title}"`;
+      ctx.undoModule.pushSnapshot(desc);
+    }
+
+    t.startAfter = cleanStartAfter;
+
+    // Si es una tarea recurrente, actualizar la regla general y todas las ocurrencias en todos los días
+    if (t.ruleId) {
+      const envKey = state.activeEnv || "work";
+      const env = state.environments[envKey] || state.environments.work;
+      const rule = (env.recurringTasks || []).find(r => String(r.id) === String(t.ruleId));
+      if (rule) {
+        rule.startAfter = cleanStartAfter;
+      }
+      Object.values(env.days || {}).forEach(dayObj => {
+        if (Array.isArray(dayObj.tasks)) {
+          dayObj.tasks.forEach(dt => {
+            if (String(dt.ruleId) === String(t.ruleId)) {
+              dt.startAfter = cleanStartAfter;
+            }
+          });
+        }
+      });
+    }
+
+    saveState();
+    smartRender ? smartRender() : renderAll();
+    if (showToast) {
+      const extraMsg = t.ruleId ? ' (actualizada en toda la serie 🔁)' : '';
+      if (cleanStartAfter !== null) {
+        showToast(`"${t.title}" programada a partir de las ${fmt(cleanStartAfter)} ⏰${extraMsg}`);
+      } else {
+        showToast(`Restricción horaria eliminada de "${t.title}"${extraMsg}`);
+      }
+    }
+  }
+
   return {
     materializeRecurringTasks,
     addTask, deleteTask, startEditTask, updateTaskEditField,
     cancelEditTask, saveEditTask, updateTaskTimeFast, moveTask,
-    setTaskUrgency, setTaskFeatured, toggleTaskFeatured, resolveFeaturedLimit
+    setTaskUrgency, setTaskFeatured, toggleTaskFeatured, resolveFeaturedLimit,
+    setTaskStartAfter
   };
 }
 

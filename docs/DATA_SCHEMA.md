@@ -86,6 +86,7 @@ interface Task {
   actualDuration: number | null;       // Minutos totales consumidos al finalizar la tarea
   urgency: "today" | "days" | "week" | "later"; // Nivel de urgencia / prioridad (def: "days")
   featured: boolean;                   // Tarea destacada en el top del día (máx. 5 por día)
+  startAfter?: number | null;          // Minuto del día (0..1439, ej: 960 = 16:00) a partir del cual planificar la tarea
   autoMoveToToday?: boolean;           // Si true, se traslada automáticamente a hoy si queda pendiente
   isRecurring?: boolean;               // true si fue materializada desde una RecurringTaskRule
   ruleId?: string | null;              // ID de la regla de recurrencia de origen
@@ -133,6 +134,7 @@ interface RecurringTaskRule {
   exceptions: Record<string, { type: "cancelled" | "modified" }>; // Excepciones por fecha
   urgency: "today" | "days" | "week" | "later";
   featured: boolean;
+  startAfter?: number | null;          // Minuto del día (0..1439) a partir del cual planificar
 }
 ```
 

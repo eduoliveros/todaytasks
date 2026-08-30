@@ -94,6 +94,28 @@ export function TodayTasksShortcuts(appCtx){
           return;
         }
 
+        const startAfterPopover = document.getElementById("startAfterPopover");
+        if(startAfterPopover && startAfterPopover.style.display === "flex"){
+          e.preventDefault();
+          if(window.app && typeof window.app.closeStartAfterPopover === "function") {
+            window.app.closeStartAfterPopover();
+          } else {
+            startAfterPopover.style.display = "none";
+          }
+          return;
+        }
+
+        const timePopover = document.getElementById("timePopover");
+        if(timePopover && timePopover.style.display === "flex"){
+          e.preventDefault();
+          if(window.app && typeof window.app.closeTimePopover === "function") {
+            window.app.closeTimePopover();
+          } else {
+            timePopover.style.display = "none";
+          }
+          return;
+        }
+
         if(state.activeInterruption || (routerModule && routerModule.getCurrentView() === 'interruption')){
           e.preventDefault();
           if (actionsModule && actionsModule.cancelInterruption) actionsModule.cancelInterruption();

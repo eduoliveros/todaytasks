@@ -165,6 +165,7 @@ export function TodayTasksActions(ctx) {
     setTaskFeatured:        tasks.setTaskFeatured,
     toggleTaskFeatured:     tasks.toggleTaskFeatured,
     resolveFeaturedLimit:   tasks.resolveFeaturedLimit,
+    setTaskStartAfter:      tasks.setTaskStartAfter,
     showFeaturedLimitModal,
     /* Drag & Drop */
     armTaskDrag:            dragdrop.armTaskDrag,

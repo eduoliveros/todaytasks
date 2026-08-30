@@ -69,5 +69,62 @@ describe('TodayTasksScheduler (ES Module)', () => {
     // Tarea 2 necesita 30 min pero solo hay 15 min disponibles (585->600) -> Entra en overflow
     expect(schedule.overflowIds.has(2)).toBe(true);
   });
+
+  it('planifica tareas con startAfter respetando la hora mínima y rellenando huecos previos con tareas elegibles (gap-filling)', () => {
+    const state = defaultState();
+    state.workStart = 540; // 09:00
+    state.workEnd = 1080; // 18:00
+    state.autoBreakEnabled = false;
+    state.meetings = [];
+    state.tasks = [
+      { id: 't1', title: 'Tarea Prioritaria para la Tarde', planned: 60, status: 'pending', order: 1, startAfter: 900 }, // a partir de las 15:00
+      { id: 't2', title: 'Tarea Mañanera 1', planned: 60, status: 'pending', order: 2 },
+      { id: 't3', title: 'Tarea Mañanera 2', planned: 30, status: 'pending', order: 3 }
+    ];
+
+    const mockNowMins = () => 540; // 09:00
+    const schedule = computeSchedule(state, mockNowMins);
+
+    expect(schedule.overflowIds.size).toBe(0);
+    // Tarea 2 y 3 ocupan la mañana desde 09:00
+    expect(schedule.segmentsByTask['t2']).toEqual([{ start: 540, end: 600 }]); // 09:00 - 10:00
+    expect(schedule.segmentsByTask['t3']).toEqual([{ start: 600, end: 630 }]); // 10:00 - 10:30
+    // Tarea 1 se planifica a partir de las 15:00 (900 -> 960)
+    expect(schedule.segmentsByTask['t1']).toEqual([{ start: 900, end: 960 }]); // 15:00 - 16:00
+  });
+
+  it('avanza el cursor temporal si todas las tareas pendientes tienen startAfter posterior al tiempo actual', () => {
+    const state = defaultState();
+    state.workStart = 540; // 09:00
+    state.workEnd = 1080; // 18:00
+    state.autoBreakEnabled = false;
+    state.meetings = [];
+    state.tasks = [
+      { id: 't1', title: 'Tarea Tarde', planned: 45, status: 'pending', order: 1, startAfter: 960 } // 16:00
+    ];
+
+    const mockNowMins = () => 540; // 09:00
+    const schedule = computeSchedule(state, mockNowMins);
+
+    expect(schedule.overflowIds.size).toBe(0);
+    expect(schedule.segmentsByTask['t1']).toEqual([{ start: 960, end: 1005 }]); // 16:00 - 16:45
+  });
+
+  it('marca desbordamiento si una tarea con startAfter excede el fin de jornada laboral', () => {
+    const state = defaultState();
+    state.workStart = 540; // 09:00
+    state.workEnd = 1080; // 18:00
+    state.autoBreakEnabled = false;
+    state.meetings = [];
+    state.tasks = [
+      { id: 't1', title: 'Tarea Nocturna', planned: 60, status: 'pending', order: 1, startAfter: 1050 } // 17:30 (17:30 -> 18:30 > 18:00)
+    ];
+
+    const mockNowMins = () => 540; // 09:00
+    const schedule = computeSchedule(state, mockNowMins);
+
+    expect(schedule.overflowIds.has('t1')).toBe(true);
+    expect(schedule.segmentsByTask['t1']).toEqual([{ start: 1050, end: 1110 }]);
+  });
 });
 

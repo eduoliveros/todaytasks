@@ -157,6 +157,47 @@
   background: var(--bg-body, #F8FAFC);
   color: var(--ink, #0F172A);
 }
+.start-after-popover {
+  width: 230px;
+}
+.start-after-popover-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+.start-after-popover-body input[type="time"] {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 14px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--border, #CBD5E1);
+  background: var(--bg-body, #F8FAFC);
+  color: var(--ink, #0F172A);
+  box-sizing: border-box;
+}
+.start-after-popover-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.close-popover-x {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-muted, #64748B);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+.close-popover-x:hover {
+  color: var(--ink, #0F172A);
+  background: rgba(0, 0, 0, 0.05);
+}
 
 /* Shortcuts Modal Styles */
 .shortcuts-modal-box {

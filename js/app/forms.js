@@ -31,6 +31,18 @@ export function TodayTasksForms(appCtx){
         if (opts) opts.style.display = e.target.checked ? "block" : "none";
         const autoMoveWrap = document.getElementById("autoMoveTaskOptionWrap");
         if (autoMoveWrap) autoMoveWrap.style.display = e.target.checked ? "none" : "block";
+        if (window.app && typeof window.app.updateTaskAdvancedIndicators === "function") {
+          window.app.updateTaskAdvancedIndicators();
+        }
+      });
+    }
+
+    const isAutoMoveTaskCb = document.getElementById("isAutoMoveTaskCheckbox");
+    if (isAutoMoveTaskCb) {
+      isAutoMoveTaskCb.addEventListener("change", () => {
+        if (window.app && typeof window.app.updateTaskAdvancedIndicators === "function") {
+          window.app.updateTaskAdvancedIndicators();
+        }
       });
     }
 
@@ -155,6 +167,8 @@ export function TodayTasksForms(appCtx){
     let autoMoveToToday = true;
     const recurringTaskCb = document.getElementById("isRecurringTaskCheckbox");
     const autoMoveCb = document.getElementById("isAutoMoveTaskCheckbox");
+    const startAfterEl = document.getElementById("taskStartAfterInput");
+    const startAfter = startAfterEl ? startAfterEl.value : null;
     const urgencyEl = document.getElementById("taskUrgencySelect");
     const urgency = urgencyEl ? urgencyEl.value : "days";
     const featuredEl = document.getElementById("isFeaturedTaskCheckbox");
@@ -167,15 +181,20 @@ export function TodayTasksForms(appCtx){
       const dayCbs = document.querySelectorAll(".rec-task-day-cb:checked");
       const daysOfWeek = Array.from(dayCbs).map(cb => parseInt(cb.value, 10));
       const endDate = document.getElementById("recTaskEndDate").value || null;
-      recurringData = { isRecurring: true, freq, interval, daysOfWeek, endDate, urgency, featured };
+      recurringData = { isRecurring: true, freq, interval, daysOfWeek, endDate, urgency, featured, startAfter };
     } else {
       autoMoveToToday = autoMoveCb ? autoMoveCb.checked : true;
     }
 
-    actionsModule.addTask(title, dur, toTop, recurringData, autoMoveToToday, urgency, featured);
+    actionsModule.addTask(title, dur, toTop, recurringData, autoMoveToToday, urgency, featured, startAfter);
     titleEl.value = "";
     document.getElementById("taskDuration").value = "";
     if (autoMoveCb) autoMoveCb.checked = true;
+
+    // Reset startAfter
+    if (startAfterEl) startAfterEl.value = "";
+    const summaryBadge = document.getElementById("formStartAfterBadge");
+    if (summaryBadge) summaryBadge.style.display = "none";
 
     // Reset urgency pill to "Días"
     if (urgencyEl) urgencyEl.value = "days";
@@ -197,6 +216,10 @@ export function TodayTasksForms(appCtx){
       if (opts) opts.style.display = "none";
       const autoMoveWrap = document.getElementById("autoMoveTaskOptionWrap");
       if (autoMoveWrap) autoMoveWrap.style.display = "block";
+    }
+
+    if (window.app && typeof window.app.updateTaskAdvancedIndicators === "function") {
+      window.app.updateTaskAdvancedIndicators();
     }
     titleEl.focus();
   }
