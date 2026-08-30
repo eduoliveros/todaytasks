@@ -59,6 +59,8 @@ export function TodayTasksViews(ctx){
     renderMeetings:         meetingsV.renderMeetings,
     /* Tasks */
     renderTasks:            tasksV.renderTasks,
+    toggleTaskNotes:        tasksV.toggleTaskNotes,
+    isTaskNotesExpanded:    tasksV.isTaskNotesExpanded,
     /* Board */
     renderBoard:            boardV.renderBoard,
     renderSummary:          boardV.renderSummary,

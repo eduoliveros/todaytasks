@@ -1,6 +1,6 @@
 # Funcionalidades Actuales de TodayTasks
 
-Este documento detalla el catálogo completo de funcionalidades operativas en **TodayTasks** (versión actual `v1.89`).
+Este documento detalla el catálogo completo de funcionalidades operativas en **TodayTasks** (versión actual `v1.90`).
 
 ---
 
@@ -44,10 +44,17 @@ El corazón de TodayTasks es su algoritmo de proyección temporal continua:
   * Límite de hasta 5 tareas prioritarias destacadas por día.
   * Modal inteligente de intercambio si se intenta destacar una sexta tarea.
 * **Auto-traslado de Pendientes (*Auto-move to Today*):** Las tareas no completadas con esta opción activa se mueven automáticamente al día actual en el cambio de fecha.
-* **Opciones Avanzadas Colapsables:** Formulario de creación con panel desplegable para hora mínima (`startAfter`), recurrencia y auto-move.
+* **Notas Enriquecidas con Markdown Ligero:**
+  * Soporte para adjuntar notas y enlaces a cada tarea (`notes`).
+  * Micro-parser nativo con soporte para **negrita** (`**texto**`), *cursiva* (`*texto*`), enlaces nombrados (`[Título](https://...)`) y detección automática de URLs (`https://...`).
+  * Enlaces accionables que abren de forma segura en nueva pestaña (`target="_blank" rel="noopener noreferrer"` con glifo visual `↗`).
+  * Píldora interactiva `📝 Notas` en la tarjeta de la lista que despliega un panel colapsable.
+  * Barra de herramientas rápida en la edición (`[B]`, `[I]`, `[🔗 Link]`) y previsualización en vivo.
+  * Panel de consulta de notas integrado en la vista de foco (Focus View).
+* **Opciones Avanzadas Colapsables:** Formulario de creación con panel desplegable para notas/enlaces, hora mínima (`startAfter`), recurrencia y auto-move.
 * **Ajuste Rápido de Hora Mínima:** Píldora interactiva en la tarjeta de la tarea (`16:00+ ▾`) y popover flotante para modificarla o eliminarla con 1 clic.
 * **Reordenación por Arrastre (Drag & Drop):** Manija táctil y visual para reorganizar el orden de ejecución de la cola.
-* **Búsqueda y Filtrado en Tiempo Real:** Barra de búsqueda accesible con `/` para filtrar tareas por texto.
+* **Búsqueda y Filtrado en Tiempo Real:** Barra de búsqueda accesible con `/` para filtrar tareas tanto por título como por el contenido de sus notas.
 
 ---
 

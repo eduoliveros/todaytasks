@@ -39,7 +39,7 @@ todaytasks/
 │   ├── undo.js                  # Pila de Deshacer / Rehacer (Undo / Redo)
 │   ├── router.js                # Enrutador basado en Hash (#main, #task/:id, #interruption)
 │   ├── notifications.js         # Sub-sistema de notificaciones Web para tareas y reuniones
-│   ├── ui.js                    # Utilidades de UI (toasts, modales de confirmación, sanitización)
+│   ├── ui.js                    # Utilidades de UI (toasts, modales, sanitización y micro-parser Markdown de notas)
 │   ├── utils.js                 # Utilidades puras de tiempo, formateo, fechas y recurrencias
 │   ├── config.js                # Configuración de Firebase y constantes globales
 │   ├── actions/                 # Submódulos especializados de acciones

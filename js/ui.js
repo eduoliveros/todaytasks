@@ -1,8 +1,10 @@
 export function escapeHtml(str) {
-  if (typeof document === "undefined") return String(str == null ? "" : str);
-  const d = document.createElement("div");
-  d.textContent = str;
-  return d.innerHTML;
+  return String(str == null ? "" : str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 export function escapeAttr(str) {
@@ -12,6 +14,43 @@ export function escapeAttr(str) {
     .replace(/'/g, "&#39;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+/**
+ * Renderiza texto en formato Markdown ligero a HTML seguro:
+ * - Sanitiza primero con escapeHtml (seguridad estricta anti-XSS).
+ * - Enlaces explícitos [Texto](https://...) y URLs directas https://... -> <a target="_blank" rel="noopener noreferrer">.
+ * - Negrita (**texto** o __texto__) -> <strong>.
+ * - Cursiva (*texto* o _texto_) -> <em>.
+ * - Saltos de línea -> <br>.
+ */
+export function renderNotesMarkdown(rawText) {
+  if (!rawText || typeof rawText !== "string") return "";
+  // 1. Sanitizar primero contra cualquier inyección HTML
+  let safe = escapeHtml(rawText);
+
+  // 2. Negrita (**texto** o __texto__)
+  safe = safe.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  safe = safe.replace(/__([^_]+)__/g, "<strong>$1</strong>");
+
+  // 3. Cursiva (*texto* o _texto_)
+  safe = safe.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  safe = safe.replace(/(^|[\s(])_([^_]+)_(?=[\s).,;!?]|$)/g, "$1<em>$2</em>");
+
+  // 4. Enlaces Markdown explícitos: [Texto](http[s]://...)
+  safe = safe.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_match, label, url) => {
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="task-note-link">${label}</a>`;
+  });
+
+  // 5. URLs directas (que no formen ya parte de un atributo href)
+  safe = safe.replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, (_match, prefix, url) => {
+    return `${prefix}<a href="${url}" target="_blank" rel="noopener noreferrer" class="task-note-link">${url}</a>`;
+  });
+
+  // 6. Saltos de línea
+  safe = safe.replace(/\r\n|\r|\n/g, "<br>");
+
+  return safe;
 }
 
 let toastTimer = null;
@@ -84,7 +123,7 @@ export function scrollToElement(elementId) {
   return true;
 }
 
-export const TodayTasksUi = { escapeHtml, escapeAttr, showToast, scrollToElement };
+export const TodayTasksUi = { escapeHtml, escapeAttr, renderNotesMarkdown, showToast, scrollToElement };
 
 export default TodayTasksUi;
 

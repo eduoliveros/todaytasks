@@ -1,7 +1,7 @@
 /* app.js — Coordinador principal de la aplicación */
 import TodayTasksConfig from './config.js';
 import { nowMinutes, fmt, fmtDur, fmtRemaining, timeToMinutes, getTodayStr, getDayOfWeek, getTaskElapsed } from './utils.js';
-import { escapeHtml, escapeAttr, showToast, scrollToElement } from './ui.js';
+import { escapeHtml, escapeAttr, showToast, scrollToElement, renderNotesMarkdown } from './ui.js';
 import { defaultState, loadState, wrapState } from './state.js';
 import { computeSchedule } from './scheduler.js';
 import { TodayTasksActions } from './actions.js';
@@ -639,10 +639,12 @@ function switchHeaderTab(target){
       const autoMoveCb = document.getElementById('isAutoMoveTaskCheckbox');
       const recCb = document.getElementById('isRecurringTaskCheckbox');
       const startAfterInput = document.getElementById('taskStartAfterInput');
+      const notesInput = document.getElementById('taskNotesInput');
 
       const autoMoveBadge = document.getElementById('formAutoMoveBadge');
       const recBadge = document.getElementById('formRecurringBadge');
       const startAfterBadge = document.getElementById('formStartAfterBadge');
+      const notesBadge = document.getElementById('formNotesBadge');
 
       if (autoMoveBadge) {
         autoMoveBadge.style.display = (autoMoveCb && autoMoveCb.checked && (!recCb || !recCb.checked)) ? 'inline-flex' : 'none';
@@ -658,6 +660,82 @@ function switchHeaderTab(target){
         } else {
           startAfterBadge.style.display = 'none';
         }
+      }
+      if (notesBadge) {
+        const val = notesInput ? notesInput.value.trim() : '';
+        notesBadge.style.display = val ? 'inline-flex' : 'none';
+      }
+    },
+    insertFormNotesFormat: function(prefix, suffix) {
+      const textarea = document.getElementById('taskNotesInput');
+      if (!textarea) return;
+      const start = textarea.selectionStart || 0;
+      const end = textarea.selectionEnd || 0;
+      const val = textarea.value || '';
+      const selected = val.substring(start, end) || 'texto';
+      textarea.value = val.substring(0, start) + prefix + selected + suffix + val.substring(end);
+      textarea.focus();
+      textarea.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
+      this.updateTaskAdvancedIndicators();
+    },
+    insertFormNotesLink: function() {
+      const textarea = document.getElementById('taskNotesInput');
+      if (!textarea) return;
+      const url = (typeof window !== "undefined" && window.prompt) ? window.prompt('Introduce la URL (ej: https://...):', 'https://') : 'https://';
+      if (!url) return;
+      const title = (typeof window !== "undefined" && window.prompt) ? (window.prompt('Texto del enlace (opcional):', 'Enlace') || 'Enlace') : 'Enlace';
+      const start = textarea.selectionStart || 0;
+      const val = textarea.value || '';
+      const linkMd = `[${title}](${url})`;
+      textarea.value = val.substring(0, start) + linkMd + val.substring(start);
+      textarea.focus();
+      this.updateTaskAdvancedIndicators();
+    },
+    insertEditNotesFormat: function(taskId, prefix, suffix) {
+      const textarea = document.getElementById(`task-edit-notes-${taskId}`);
+      if (!textarea) return;
+      const start = textarea.selectionStart || 0;
+      const end = textarea.selectionEnd || 0;
+      const val = textarea.value || '';
+      const selected = val.substring(start, end) || 'texto';
+      textarea.value = val.substring(0, start) + prefix + selected + suffix + val.substring(end);
+      actionsModule.updateTaskEditField('notes', textarea.value);
+      textarea.focus();
+      textarea.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
+    },
+    insertEditNotesLink: function(taskId) {
+      const textarea = document.getElementById(`task-edit-notes-${taskId}`);
+      if (!textarea) return;
+      const url = (typeof window !== "undefined" && window.prompt) ? window.prompt('Introduce la URL (ej: https://...):', 'https://') : 'https://';
+      if (!url) return;
+      const title = (typeof window !== "undefined" && window.prompt) ? (window.prompt('Texto del enlace (opcional):', 'Enlace') || 'Enlace') : 'Enlace';
+      const start = textarea.selectionStart || 0;
+      const val = textarea.value || '';
+      const linkMd = `[${title}](${url})`;
+      textarea.value = val.substring(0, start) + linkMd + val.substring(start);
+      actionsModule.updateTaskEditField('notes', textarea.value);
+      textarea.focus();
+    },
+    toggleEditNotesPreview: function(taskId) {
+      const textarea = document.getElementById(`task-edit-notes-${taskId}`);
+      const preview = document.getElementById(`task-edit-notes-preview-${taskId}`);
+      const btn = document.getElementById(`btn-preview-edit-${taskId}`);
+      if (!textarea || !preview) return;
+      const isHidden = preview.style.display === 'none';
+      if (isHidden) {
+        preview.innerHTML = renderNotesMarkdown(textarea.value || '');
+        preview.style.display = 'block';
+        textarea.style.display = 'none';
+        if (btn) btn.textContent = '✏️';
+      } else {
+        preview.style.display = 'none';
+        textarea.style.display = 'block';
+        if (btn) btn.textContent = '👁️';
+      }
+    },
+    toggleTaskNotes: function(taskId, event) {
+      if (viewsModule && viewsModule.toggleTaskNotes) {
+        viewsModule.toggleTaskNotes(taskId, event);
       }
     },
     onFormStartAfterChange: function(val) {

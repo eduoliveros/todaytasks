@@ -75,6 +75,7 @@ export function TodayTasksTasks(ctx, helpers){
       dayObj.tasks.push({
         id: newId(),
         title: rule.title,
+        notes: rule.notes || "",
         planned: rule.planned,
         order: maxOrder + 1,
         status: "pending",
@@ -93,7 +94,7 @@ export function TodayTasksTasks(ctx, helpers){
     return changed;
   }
 
-  function addTask(title, durationStr, toTop = false, recurringData = null, autoMoveToToday = true, urgency = DEFAULT_URGENCY, featured = false, startAfter = null){
+  function addTask(title, durationStr, toTop = false, recurringData = null, autoMoveToToday = true, urgency = DEFAULT_URGENCY, featured = false, startAfter = null, notes = ""){
     if(!title){
       alert("Indica un título para la tarea.");
       return;
@@ -121,6 +122,8 @@ export function TodayTasksTasks(ctx, helpers){
       }
     }
 
+    const cleanNotes = (typeof notes === "string") ? notes : (notes ? String(notes) : "");
+
     // Verificar límite de 5 destacadas en el día
     if (cleanFeatured) {
       const currentFeaturedCount = (state.tasks || []).filter(t => t.featured).length;
@@ -139,6 +142,7 @@ export function TodayTasksTasks(ctx, helpers){
       state.recurringTasks.push({
         id: ruleId,
         title,
+        notes: cleanNotes || (recurringData && recurringData.notes ? recurringData.notes : ""),
         planned,
         freq: recurringData.freq || "weekly",
         interval: recurringData.interval || 1,
@@ -167,6 +171,7 @@ export function TodayTasksTasks(ctx, helpers){
       state.tasks.push({
         id: newId(),
         title,
+        notes: cleanNotes,
         planned,
         order: newOrder,
         status: "pending",
@@ -332,6 +337,7 @@ export function TodayTasksTasks(ctx, helpers){
           const actual = getTaskElapsed(t);
           setTaskEdit({
             id, ruleId, mode: "instance", title: t.title, duration: String(t.planned), actual: String(actual),
+            notes: t.notes || "",
             urgency: t.urgency || DEFAULT_URGENCY, featured: !!t.featured,
             startAfter: (t.startAfter !== null && t.startAfter !== undefined) ? fmt(t.startAfter) : ""
           });
@@ -341,6 +347,7 @@ export function TodayTasksTasks(ctx, helpers){
           const actual = getTaskElapsed(t);
           setTaskEdit({
             id, ruleId, mode: "series", title: t.title, duration: String(t.planned), actual: String(actual),
+            notes: t.notes || "",
             urgency: t.urgency || DEFAULT_URGENCY, featured: !!t.featured,
             startAfter: (t.startAfter !== null && t.startAfter !== undefined) ? fmt(t.startAfter) : ""
           });
@@ -353,6 +360,7 @@ export function TodayTasksTasks(ctx, helpers){
     const actual = getTaskElapsed(t);
     setTaskEdit({
       id, title: t.title, duration: String(t.planned), actual: String(actual),
+      notes: t.notes || "",
       autoMoveToToday: !!t.autoMoveToToday,
       urgency: t.urgency || DEFAULT_URGENCY,
       featured: !!t.featured,
@@ -401,6 +409,10 @@ export function TodayTasksTasks(ctx, helpers){
           t.runningStartEpoch = Date.now();
         }
       }
+    }
+
+    if (taskEdit.notes !== undefined) {
+      t.notes = typeof taskEdit.notes === "string" ? taskEdit.notes : String(taskEdit.notes || "");
     }
 
     if (taskEdit.autoMoveToToday !== undefined) {
@@ -458,6 +470,7 @@ export function TodayTasksTasks(ctx, helpers){
       if (rule) {
         rule.title = title;
         rule.planned = planned;
+        if (taskEdit.notes !== undefined) rule.notes = t.notes;
         if (taskEdit.urgency) rule.urgency = taskEdit.urgency;
         if (taskEdit.featured !== undefined) rule.featured = !!taskEdit.featured;
         if (seriesStartAfter !== undefined) rule.startAfter = seriesStartAfter;
@@ -468,6 +481,7 @@ export function TodayTasksTasks(ctx, helpers){
             if (String(dt.ruleId) === String(taskEdit.ruleId)) {
               dt.title = title;
               dt.planned = planned;
+              if (taskEdit.notes !== undefined) dt.notes = t.notes;
               if (taskEdit.urgency) dt.urgency = taskEdit.urgency;
               if (taskEdit.featured !== undefined) dt.featured = !!taskEdit.featured;
               if (seriesStartAfter !== undefined) dt.startAfter = seriesStartAfter;

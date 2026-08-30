@@ -18,7 +18,7 @@
   <!-- Barra superior: logo + switcher + pestañas -->
   <div class="topbar-title-row">
     <div class="brand">
-      <h1>Tablero del día <span class="app-version">v1.89</span></h1>
+      <h1>Tablero del día <span class="app-version">v1.90</span></h1>
       <span class="db-status-badge" id="appModeLabel" title="Tipo de base de datos en uso">💾 local · persistente</span>
       <div class="env-switcher" id="envSwitcher">
         <button class="env-btn active" data-env="work" id="envBtnWork" title="Cambiar a ambiente de Trabajo (Tecla 'E')">
@@ -149,6 +149,7 @@
             <div class="task-advanced-indicators" id="taskAdvancedIndicators">
               <span id="formAutoMoveBadge" class="badge-adv-icon" title="Auto-mover a hoy si no se completa">⏩</span>
               <span id="formRecurringBadge" class="badge-adv-icon" title="Tarea recurrente" style="display:none;">🔁</span>
+              <span id="formNotesBadge" class="badge-adv-icon" title="Tiene notas / enlaces" style="display:none;">📝</span>
               <span id="formStartAfterBadge" class="badge-startafter-summary" style="display:none;"></span>
             </div>
           </div>
@@ -210,6 +211,21 @@
               <input type="time" id="taskStartAfterInput" class="task-form-startafter-time-input" oninput="app.onFormStartAfterChange(this.value)" title="Hora mínima de inicio (opcional)">
               <button type="button" class="btn-clear-startafter" id="clearTaskStartAfterBtn" onclick="app.clearFormStartAfterDirect()" title="Borrar hora" aria-label="Borrar hora">✕</button>
             </div>
+          </div>
+
+          <!-- 4. Notas y enlaces (Markdown ligero) -->
+          <div class="task-form-notes-row">
+            <div class="task-form-notes-header">
+              <label for="taskNotesInput" class="task-form-notes-label">
+                <span>📝</span> Notas / Enlaces:
+              </label>
+              <div class="task-notes-mini-toolbar">
+                <button type="button" class="btn-notes-tool" onclick="app.insertFormNotesFormat('**', '**')" title="Negrita (**texto**)">B</button>
+                <button type="button" class="btn-notes-tool italic" onclick="app.insertFormNotesFormat('*', '*')" title="Cursiva (*texto*)">I</button>
+                <button type="button" class="btn-notes-tool" onclick="app.insertFormNotesLink()" title="Insertar enlace">🔗 Link</button>
+              </div>
+            </div>
+            <textarea id="taskNotesInput" class="task-form-notes-textarea" rows="2" placeholder="Notas, enlaces o contexto (ej. **importante**, https://... o [PR](url))" oninput="if(app.updateTaskAdvancedIndicators) app.updateTaskAdvancedIndicators()"></textarea>
           </div>
         </div>
       </div>

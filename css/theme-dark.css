@@ -509,3 +509,21 @@
   border-color: var(--line);
 }
 
+[data-theme="dark"] .task-notes-pill-btn {
+  background: rgba(129, 140, 248, 0.18);
+  color: #a5b4fc;
+  border-color: rgba(129, 140, 248, 0.35);
+}
+[data-theme="dark"] .task-notes-pill-btn.expanded {
+  background: rgba(129, 140, 248, 0.3);
+  border-color: rgba(129, 140, 248, 0.6);
+}
+[data-theme="dark"] .task-card-notes-panel {
+  background: rgba(255, 255, 255, 0.03);
+}
+[data-theme="dark"] .btn-notes-tool:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--ink);
+}
+
+

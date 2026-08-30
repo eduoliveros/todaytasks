@@ -330,6 +330,9 @@ export function getTaskSearchableText(task) {
   if (task.autoMoveToToday) {
     parts.push('pasar a hoy automove');
   }
+  if (task.notes) {
+    parts.push(task.notes);
+  }
 
   return parts.join(" ");
 }

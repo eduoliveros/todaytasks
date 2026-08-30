@@ -4,10 +4,40 @@ import {
   matchesTaskSearch,
   URGENCY_LEVELS, DEFAULT_URGENCY
 } from '../utils.js';
-import { escapeHtml, escapeAttr } from '../ui.js';
+import { escapeHtml, escapeAttr, renderNotesMarkdown } from '../ui.js';
 
 export function TodayTasksTasksView(ctx){
   const { getState, getTaskEdit } = ctx;
+  const expandedNotesTasks = new Set();
+
+  function isTaskNotesExpanded(id) {
+    return expandedNotesTasks.has(String(id));
+  }
+
+  function toggleTaskNotes(id, event) {
+    if (event) {
+      if (typeof event.stopPropagation === 'function') event.stopPropagation();
+      if (typeof event.preventDefault === 'function') event.preventDefault();
+    }
+    const strId = String(id);
+    if (expandedNotesTasks.has(strId)) {
+      expandedNotesTasks.delete(strId);
+    } else {
+      expandedNotesTasks.add(strId);
+    }
+    const panel = document.getElementById(`task-notes-panel-${strId}`);
+    if (panel) {
+      const isNowOpen = expandedNotesTasks.has(strId);
+      panel.style.display = isNowOpen ? 'block' : 'none';
+      panel.classList.toggle('visible', isNowOpen);
+    }
+    // Redraw pill chevron if needed or smartRender
+    if (ctx.smartRender) {
+      ctx.smartRender();
+    } else if (ctx.renderAll) {
+      ctx.renderAll();
+    }
+  }
 
   function renderTaskItem(t, schedule, taskEdit){
     const urgencyKey = t.urgency || DEFAULT_URGENCY;
@@ -41,6 +71,21 @@ export function TodayTasksTasksView(ctx){
                   onclick="app.toggleEditFeatured('${escapeAttr(t.id)}', event)">
             ${taskEdit.featured ? '⭐' : '☆'}
           </button>
+        </div>
+        <div class="row task-edit-notes-wrap" style="margin-bottom:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;width:100%;">
+            <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">
+              <span>📝</span> Notas / Enlaces:
+            </label>
+            <div class="task-notes-mini-toolbar">
+              <button type="button" class="btn-notes-tool" onclick="app.insertEditNotesFormat('${escapeAttr(t.id)}', '**', '**')" title="Negrita (**texto**)">B</button>
+              <button type="button" class="btn-notes-tool italic" onclick="app.insertEditNotesFormat('${escapeAttr(t.id)}', '*', '*')" title="Cursiva (*texto*)">I</button>
+              <button type="button" class="btn-notes-tool" onclick="app.insertEditNotesLink('${escapeAttr(t.id)}')" title="Insertar enlace">🔗 Link</button>
+              <button type="button" class="btn-notes-tool" id="btn-preview-edit-${escapeAttr(t.id)}" onclick="app.toggleEditNotesPreview('${escapeAttr(t.id)}')" title="Alternar vista previa">👁️</button>
+            </div>
+          </div>
+          <textarea id="task-edit-notes-${escapeAttr(t.id)}" class="task-edit-notes-textarea" rows="2" style="width:100%;box-sizing:border-box;" placeholder="Notas, enlaces o contexto (ej. **importante**, https://... o [PR](url))" oninput="app.updateTaskEditField('notes', this.value)">${escapeHtml(taskEdit.notes || '')}</textarea>
+          <div id="task-edit-notes-preview-${escapeAttr(t.id)}" class="task-edit-notes-preview task-note-content" style="display:none;"></div>
         </div>
         ${!isRecurring ? `
         <div style="margin-bottom:8px;">
@@ -123,6 +168,27 @@ export function TodayTasksTasksView(ctx){
       </button>
     ` : '';
 
+    const hasNotes = !!(t.notes && t.notes.trim());
+    const isNotesExpanded = isTaskNotesExpanded(t.id);
+    const notesPill = hasNotes ? `
+      <button type="button" class="task-notes-pill-btn ${isNotesExpanded ? 'expanded' : ''}"
+              onclick="app.toggleTaskNotes('${escapeAttr(t.id)}', event)"
+              title="Ver notas y enlaces de la tarea"
+              aria-label="Notas de la tarea">
+        <span class="task-notes-icon">📝</span>
+        <span class="task-notes-label">Notas</span>
+        <span class="task-notes-chevron">${isNotesExpanded ? '▲' : '▾'}</span>
+      </button>
+    ` : '';
+
+    const notesPanel = hasNotes ? `
+      <div class="task-card-notes-panel ${isNotesExpanded ? 'visible' : ''}" id="task-notes-panel-${escapeAttr(t.id)}" style="${isNotesExpanded ? 'display:block;' : 'display:none;'}">
+        <div class="task-note-content">
+          ${renderNotesMarkdown(t.notes)}
+        </div>
+      </div>
+    ` : '';
+
     return `
       <div class="item task-item ${t.status} ${featuredClass}" id="task-item-${escapeAttr(t.id)}" data-task-id="${escapeAttr(t.id)}" ${dragAttrs}>
         <div class="top">
@@ -133,6 +199,7 @@ export function TodayTasksTasksView(ctx){
               <div class="time-range ${trClass}">
                 ${urgencyPill}
                 ${startAfterPill}
+                ${notesPill}
                 <span class="tag">${startTag}</span>${startVal}<span class="arrow">→</span><span class="tag">${endTag}</span>${endVal}
                 ${remainingChip}
                 ${recurringTag}
@@ -158,6 +225,7 @@ export function TodayTasksTasksView(ctx){
             <button class="icon-btn" title="Eliminar" onclick="app.deleteTask('${escapeAttr(t.id)}')">✕</button>
           </div>
         </div>
+        ${notesPanel}
         <div class="task-actions">
           ${t.status==="pending" ? `
             <button class="btn small run" onclick="app.startTask('${escapeAttr(t.id)}')">▶ Iniciar</button>
@@ -188,6 +256,25 @@ export function TodayTasksTasksView(ctx){
   function renderCompletedSearchItem(t){
     const realStart = (t.completedAt !== null && t.completedAt !== undefined && t.actualDuration !== null) ? (t.completedAt - t.actualDuration) : null;
     const recurringTag = t.isRecurring ? `<span class="tag" style="margin-left:4px;background:rgba(16,185,129,0.1);color:#059669;border-color:rgba(16,185,129,0.25);" title="Tarea recurrente diaria/semanal">🔁 Recurrente</span>` : '';
+    const hasNotes = !!(t.notes && t.notes.trim());
+    const isNotesExpanded = isTaskNotesExpanded(t.id);
+    const notesPill = hasNotes ? `
+      <button type="button" class="task-notes-pill-btn ${isNotesExpanded ? 'expanded' : ''}"
+              onclick="app.toggleTaskNotes('${escapeAttr(t.id)}', event)"
+              title="Ver notas y enlaces de la tarea"
+              aria-label="Notas de la tarea">
+        <span class="task-notes-icon">📝</span>
+        <span class="task-notes-label">Notas</span>
+        <span class="task-notes-chevron">${isNotesExpanded ? '▲' : '▾'}</span>
+      </button>
+    ` : '';
+    const notesPanel = hasNotes ? `
+      <div class="task-card-notes-panel ${isNotesExpanded ? 'visible' : ''}" id="task-notes-panel-${escapeAttr(t.id)}" style="${isNotesExpanded ? 'display:block;' : 'display:none;'}">
+        <div class="task-note-content">
+          ${renderNotesMarkdown(t.notes)}
+        </div>
+      </div>
+    ` : '';
     return `
       <div class="item task-item completed-search-item" id="task-item-${escapeAttr(t.id)}" data-task-id="${escapeAttr(t.id)}">
         <div class="top">
@@ -197,6 +284,7 @@ export function TodayTasksTasksView(ctx){
               <span class="tag">Completada</span>
               ${t.completedAt !== null && t.completedAt !== undefined ? fmt(t.completedAt) : ''}
               ${realStart !== null ? `<span class="arrow">·</span> <span class="tag">Duración real</span> ${fmtDur(t.actualDuration)}` : ''}
+              ${notesPill}
               ${recurringTag}
             </div>
             <div class="meta">
@@ -209,6 +297,7 @@ export function TodayTasksTasksView(ctx){
             <button class="icon-btn" title="Eliminar" onclick="app.deleteTask('${escapeAttr(t.id)}')">✕</button>
           </div>
         </div>
+        ${notesPanel}
         <div class="task-actions" style="margin-top:6px;display:flex;gap:6px;">
           <button class="btn small secondary" onclick="app.uncompleteTask('${escapeAttr(t.id)}')" title="Deshacer completado y volver a pendiente">↩ Reabrir</button>
           <button class="btn small secondary" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)" title="Ajustar tiempo consumido">⏱ Ajustar tiempo</button>
@@ -335,7 +424,7 @@ export function TodayTasksTasksView(ctx){
     el.innerHTML = html;
   }
 
-  return { renderTasks, renderTaskItem, renderCompletedSearchItem };
+  return { renderTasks, renderTaskItem, renderCompletedSearchItem, toggleTaskNotes, isTaskNotesExpanded };
 }
 
 export default TodayTasksTasksView;

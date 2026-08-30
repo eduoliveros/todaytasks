@@ -174,6 +174,8 @@ export function TodayTasksForms(appCtx){
     const featuredEl = document.getElementById("isFeaturedTaskCheckbox");
     // featuredEl is now a hidden input with value "true"/"false"
     const featured = featuredEl ? featuredEl.value === 'true' : false;
+    const notesEl = document.getElementById("taskNotesInput");
+    const notes = notesEl ? notesEl.value : "";
 
     if (recurringTaskCb && recurringTaskCb.checked) {
       const freq = document.getElementById("recTaskFreq").value;
@@ -181,14 +183,15 @@ export function TodayTasksForms(appCtx){
       const dayCbs = document.querySelectorAll(".rec-task-day-cb:checked");
       const daysOfWeek = Array.from(dayCbs).map(cb => parseInt(cb.value, 10));
       const endDate = document.getElementById("recTaskEndDate").value || null;
-      recurringData = { isRecurring: true, freq, interval, daysOfWeek, endDate, urgency, featured, startAfter };
+      recurringData = { isRecurring: true, freq, interval, daysOfWeek, endDate, urgency, featured, startAfter, notes };
     } else {
       autoMoveToToday = autoMoveCb ? autoMoveCb.checked : true;
     }
 
-    actionsModule.addTask(title, dur, toTop, recurringData, autoMoveToToday, urgency, featured, startAfter);
+    actionsModule.addTask(title, dur, toTop, recurringData, autoMoveToToday, urgency, featured, startAfter, notes);
     titleEl.value = "";
     document.getElementById("taskDuration").value = "";
+    if (notesEl) notesEl.value = "";
     if (autoMoveCb) autoMoveCb.checked = true;
 
     // Reset startAfter

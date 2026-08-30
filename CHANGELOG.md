@@ -4,6 +4,22 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.90] - 2026-08-31
+
+### Añadido
+- **Notas y Enlaces Enriquecidos con Markdown en Tareas:**
+  - Micro-parser nativo de Markdown ligero con soporte para **negrita** (`**texto**` y `__texto__`), *cursiva* (`*texto*` y `_texto_`), enlaces nombrados (`[Título](https://...)`) y URLs directas (`https://...`).
+  - Enlaces accionables que abren de forma segura en nueva pestaña (`target="_blank" rel="noopener noreferrer"` con icono indicador `↗`).
+  - Sanitización estricta anti-XSS previa a la transformación de sintaxis.
+  - Píldora interactiva `📝 Notas` en las tarjetas de tarea de la lista principal con panel desplegable animado.
+  - Sección de notas en el formulario de creación (Opciones avanzadas) y en el formulario de edición rápida con barra de herramientas de formato (`[B]`, `[I]`, `[🔗 Link]`) y alternador de previsualización en vivo.
+  - Panel de consulta de notas integrado en la vista de foco a pantalla completa (Focus View `#/task/:id`).
+  - Indexación de notas en el buscador en tiempo real (`/`).
+  - Soporte y propagación de notas en tareas recurrentes (`RecurringTaskRule`).
+  - Registro de decisión arquitectónica `docs/adr/002-task-notes-markdown.md`.
+
+---
+
 ## [1.89] - 2026-08-30
 
 ### Añadido

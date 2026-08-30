@@ -1,6 +1,6 @@
 /* views/focus.js — Vistas de pantalla completa: interrupción y foco de tarea */
 import { nowMinutes, fmt, fmtDur, getTaskElapsed } from '../utils.js';
-import { escapeHtml, escapeAttr } from '../ui.js';
+import { escapeHtml, escapeAttr, renderNotesMarkdown } from '../ui.js';
 
 export function TodayTasksFocusView(ctx){
   const { getState, getCurrentView, getFocusTaskId, fmtMMSS, RING_R, RING_C } = ctx;
@@ -221,7 +221,8 @@ export function TodayTasksFocusView(ctx){
           <div class="focus-meta-item">
             <span class="meta-label">Reunión en curso</span>
             <span class="meta-value warning-text" title="${escapeAttr(ongoingMeeting.title)}">${escapeHtml(ongoingMeeting.title)} (hasta ${fmt(ongoingMeeting.end)})</span>
-          </div>` : nextMeeting ? `
+          </div>` : ''}
+          ${nextMeeting && !ongoingMeeting ? `
           <div class="focus-meta-item">
             <span class="meta-label">Siguiente reunión</span>
             <span class="meta-value ${isCutoff ? 'warning-text' : ''}" title="${escapeAttr(nextMeeting.title)}">
@@ -229,6 +230,16 @@ export function TodayTasksFocusView(ctx){
             </span>
           </div>` : ''}
         </div>
+
+        ${(t.notes && t.notes.trim()) ? `
+        <div class="focus-notes-card">
+          <div class="focus-notes-header">
+            <span class="focus-notes-title">📝 Notas y Enlaces</span>
+          </div>
+          <div class="task-note-content">
+            ${renderNotesMarkdown(t.notes)}
+          </div>
+        </div>` : ''}
 
         <div class="focus-actions">
           ${t.status === 'running' ? `
