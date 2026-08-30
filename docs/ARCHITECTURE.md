@@ -24,8 +24,8 @@ todaytasks/
 │   ├── ARCHITECTURE.md          # Este documento de arquitectura
 │   ├── DATA_SCHEMA.md           # Especificación formal del modelo de datos
 │   ├── adr/                     # Registros de decisiones de arquitectura
-│   └── features/                # Catálogo de funcionalidades e ideas de mejora
-│       ├── FEATURES.md          # Catálogo de funcionalidades actuales
+│   └── features/                # Catálogo de funcionalidades y posibles mejoras
+│       ├── FEATURES.md          # Catálogo de funcionalidades e funcionalidades actuales
 │       └── IMPROVEMENT_IDEAS.md # Propuestas y backlog de mejoras
 ├── CHANGELOG.md                 # Historial de versiones y cambios
 ├── js/
