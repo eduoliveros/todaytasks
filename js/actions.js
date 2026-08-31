@@ -54,7 +54,7 @@ export function TodayTasksActions(ctx) {
     const modal = document.getElementById("featuredLimitModal");
     const state = ctx.getState();
     const targetTask = targetTaskId ? (state.tasks || []).find(t => String(t.id) === String(targetTaskId)) : null;
-    const featuredTasks = (state.tasks || []).filter(t => t.featured && (!targetTaskId || String(t.id) !== String(targetTaskId)));
+    const featuredTasks = (state.tasks || []).filter(t => t.featured && t.status !== 'completed' && (!targetTaskId || String(t.id) !== String(targetTaskId)));
 
     if (!modal) {
       if (typeof window !== "undefined" && window.confirm(`Has alcanzado el límite de 5 tareas destacadas.\n\n¿Deseas quitar el destacado de alguna para destacar "${targetTask ? targetTask.title : 'la nueva tarea'}"?`)) {

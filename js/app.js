@@ -1234,9 +1234,9 @@ function switchHeaderTab(target){
         const newVal = !currentVal;
 
         if (newVal) {
-          // Check the featured limit
+          // Check the featured limit (only active/non-completed tasks)
           const currentState = state;
-          const featuredCount = (currentState.tasks || []).filter(t => t.featured).length;
+          const featuredCount = (currentState.tasks || []).filter(t => t.status !== 'completed' && t.featured).length;
           if (featuredCount >= 5) {
             if (actionsModule && actionsModule.showFeaturedLimitModal) {
               actionsModule.showFeaturedLimitModal(null, (unfeatureId) => {

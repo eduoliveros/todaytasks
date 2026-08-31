@@ -1,4 +1,5 @@
 /* actions/execution.js — Ejecución de tareas e interrupciones */
+import { MAX_FEATURED_TASKS, sortTasksByPriority } from '../utils.js';
 
 export function TodayTasksExecution(ctx, helpers){
   const {
@@ -27,6 +28,10 @@ export function TodayTasksExecution(ctx, helpers){
     if(!targetTask) return;
 
     if(targetTask.status === "completed"){
+      const activeFeatured = (state.tasks || []).filter(t2 => String(t2.id) !== String(id) && t2.status !== "completed" && t2.featured).length;
+      if (targetTask.featured && activeFeatured >= MAX_FEATURED_TASKS) {
+        targetTask.featured = false;
+      }
       const savedElapsed = targetTask.actualDuration ?? targetTask.elapsedBefore ?? 0;
       targetTask.status = "pending";
       targetTask.completedAt = null;
@@ -154,6 +159,11 @@ export function TodayTasksExecution(ctx, helpers){
       ctx.undoModule.pushSnapshot(`Restaurar tarea "${t.title}"`);
     }
 
+    const activeFeatured = (state.tasks || []).filter(t2 => String(t2.id) !== String(id) && t2.status !== "completed" && t2.featured).length;
+    if (t.featured && activeFeatured >= MAX_FEATURED_TASKS) {
+      t.featured = false;
+    }
+
     const maxOrder = state.tasks.filter(t2=>t2.status!=="completed").reduce((m,t2)=>Math.max(m,t2.order),0);
     const savedElapsed = t.actualDuration ?? t.elapsedBefore ?? 0;
     t.status = savedElapsed > 0 ? "paused" : "pending";
@@ -163,6 +173,7 @@ export function TodayTasksExecution(ctx, helpers){
     t.runningStart = null;
     t.runningStartEpoch = null;
     t.order = maxOrder + 1;
+    state.tasks = sortTasksByPriority(state.tasks);
     saveState();
     smartRender ? smartRender() : renderAll();
     showToast(`"${t.title}" se ha devuelto a ${t.status === "paused" ? "en pausa" : "pendientes"}.`);

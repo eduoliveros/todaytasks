@@ -9,6 +9,7 @@ import {
 } from '../js/utils.js';
 import { defaultState, wrapState } from '../js/state.js';
 import { TodayTasksTasks } from '../js/actions/tasks.js';
+import { TodayTasksExecution } from '../js/actions/execution.js';
 import { TodayTasksUndo } from '../js/undo.js';
 
 describe('Task Priorities (Urgency & Featured)', () => {
@@ -225,6 +226,85 @@ describe('Task Priorities (Urgency & Featured)', () => {
 
       ctx.undoModule.redo();
       expect(state.tasks[0].urgency).toBe('today');
+    });
+
+    it('completed featured tasks do not count towards the 5 limit and completing a featured task frees a slot', () => {
+      // Crear 5 tareas destacadas
+      for (let i = 1; i <= 5; i++) {
+        tasksModule.addTask(`Featured ${i}`, '30', false, null, true, 'days', true);
+      }
+      expect(state.tasks.filter(t => t.featured).length).toBe(5);
+
+      // Completar una de las tareas destacadas
+      const task1 = state.tasks.find(t => t.title === 'Featured 1');
+      task1.status = 'completed';
+
+      // Añadir una sexta tarea
+      tasksModule.addTask('Task 6', '30', false, null, true, 'days', false);
+      const id6 = state.tasks.find(t => t.title === 'Task 6').id;
+
+      // Destacar la tarea 6 no debe abrir el modal de límite, porque solo hay 4 activas destacadas
+      const res = tasksModule.setTaskFeatured(id6, true);
+      expect(res).toBe(true);
+      expect(helpers.showFeaturedLimitModal).not.toHaveBeenCalled();
+      expect(state.tasks.find(t => t.id === id6).featured).toBe(true);
+
+      // Ahora hay 5 activas destacadas (Featured 2..5 + Task 6)
+      // Intentar añadir una 7ª con featured=true se creará como normal al haber alcanzado el límite de 5 activas
+      tasksModule.addTask('Task 7 Featured', '30', false, null, true, 'days', true);
+      expect(state.tasks.find(t => t.title === 'Task 7 Featured').featured).toBe(false);
+
+      // Completar otra tarea destacada libera otro cupo
+      const task2 = state.tasks.find(t => t.title === 'Featured 2');
+      task2.status = 'completed';
+
+      // Ahora añadir una tarea con featured=true sí se destaca
+      tasksModule.addTask('Task 8 Featured', '30', false, null, true, 'days', true);
+      expect(state.tasks.find(t => t.title === 'Task 8 Featured').featured).toBe(true);
+    });
+
+    it('uncompleteTask handles featured tasks respecting the 5 active limit', () => {
+      const executionModule = TodayTasksExecution(ctx, helpers);
+
+      // Creamos 5 tareas destacadas activas
+      for (let i = 1; i <= 5; i++) {
+        tasksModule.addTask(`Active Featured ${i}`, '30', false, null, true, 'days', true);
+      }
+
+      // Añadimos una tarea completada que tenía featured: true
+      state.tasks.push({
+        id: 'comp_feat',
+        title: 'Completed Featured',
+        status: 'completed',
+        urgency: 'days',
+        featured: true,
+        order: 10,
+        actualDuration: 20
+      });
+
+      // Al restaurarla habiendo ya 5 activas destacadas, se le quita el destacado
+      executionModule.uncompleteTask('comp_feat');
+      const restored = state.tasks.find(t => t.id === 'comp_feat');
+      expect(restored.status).toBe('paused');
+      expect(restored.featured).toBe(false);
+
+      // Si se restaura habiendo solo 4 activas destacadas, conserva featured: true
+      const task1 = state.tasks.find(t => t.title === 'Active Featured 1');
+      tasksModule.setTaskFeatured(task1.id, false);
+
+      state.tasks.push({
+        id: 'comp_feat_2',
+        title: 'Completed Featured 2',
+        status: 'completed',
+        urgency: 'days',
+        featured: true,
+        order: 11,
+        actualDuration: 15
+      });
+
+      executionModule.uncompleteTask('comp_feat_2');
+      const restored2 = state.tasks.find(t => t.id === 'comp_feat_2');
+      expect(restored2.featured).toBe(true);
     });
   });
 

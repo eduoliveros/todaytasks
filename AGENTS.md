@@ -10,6 +10,8 @@ JavaScript Vanilla nativo con ES Modules.
 ## 1. Entorno de Ejecución y Servidor Local
 
 - **Entorno:** El sistema utiliza **Node.js** (v24+) y **npm**. No utilizar Python para levantar servidores locales.
+- **Comandos Autorizados:**
+  - Se autoriza la ejecución de cualquier comando `npm` (por ejemplo: `npm test`, `npm run test:e2e`, `npm start`), `npx` (por ejemplo: `npx vitest`, `npx playwright`) y `git` (`git status`, `git diff`, `git log`, etc.) requeridos para el diagnóstico, pruebas o desarrollo en el repositorio.
 - **Lanzamiento del Servidor Web:**
   - Debe ejecutarse en el puerto **8080**.
   - Comando principal:

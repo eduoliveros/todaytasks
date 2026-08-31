@@ -140,9 +140,9 @@ export function TodayTasksTasks(ctx, helpers){
 
     const cleanNotes = (typeof notes === "string") ? notes : (notes ? String(notes) : "");
 
-    // Verificar límite de 5 destacadas en el día
+    // Verificar límite de 5 destacadas activas en el día
     if (cleanFeatured) {
-      const currentFeaturedCount = (state.tasks || []).filter(t => t.featured).length;
+      const currentFeaturedCount = (state.tasks || []).filter(t => t.status !== 'completed' && t.featured).length;
       if (currentFeaturedCount >= MAX_FEATURED_TASKS) {
         cleanFeatured = false;
         showToast(`Límite alcanzado (${MAX_FEATURED_TASKS} destacadas). La tarea se creó como normal.`);
@@ -237,7 +237,7 @@ export function TodayTasksTasks(ctx, helpers){
     if(t.featured === shouldFeature) return true;
 
     if(shouldFeature){
-      const currentFeatured = (state.tasks || []).filter(task => String(task.id) !== String(id) && task.featured);
+      const currentFeatured = (state.tasks || []).filter(task => String(task.id) !== String(id) && task.status !== 'completed' && task.featured);
       if(currentFeatured.length >= MAX_FEATURED_TASKS){
         if(showFeaturedLimitModal){
           showFeaturedLimitModal(id, (unfeatureId) => resolveFeaturedLimit(id, unfeatureId));
@@ -464,7 +464,7 @@ export function TodayTasksTasks(ctx, helpers){
     if (taskEdit.featured !== undefined) {
       const wantFeatured = !!taskEdit.featured;
       if (wantFeatured && !t.featured) {
-        const currentFeatured = (state.tasks || []).filter(task => String(task.id) !== String(id) && task.featured);
+        const currentFeatured = (state.tasks || []).filter(task => String(task.id) !== String(id) && task.status !== 'completed' && task.featured);
         if (currentFeatured.length >= MAX_FEATURED_TASKS) {
           if (showFeaturedLimitModal) {
             showFeaturedLimitModal(id, (unfeatureId) => resolveFeaturedLimit(id, unfeatureId));
