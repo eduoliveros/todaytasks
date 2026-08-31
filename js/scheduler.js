@@ -75,6 +75,9 @@ export function computeSchedule(state, nowMinutes) {
     const plannedEnd = running.runningStart + (running.planned - (running.elapsedBefore || 0));
     const effectiveEnd = Math.max(plannedEnd, now);
     segmentsByTask[running.id] = [{ start: running.runningStart, end: effectiveEnd }];
+    if (effectiveEnd > workEndVal) {
+      overflowIds.add(running.id);
+    }
     continuousWork = Math.max(0, effectiveEnd - running.runningStart);
 
     cursor = state.planningMode ? Math.max(effectiveEnd, workStartVal) : effectiveEnd;

@@ -526,4 +526,23 @@
   color: var(--ink);
 }
 
+/* --- Dark Mode: Out-of-Workday Overflow Tasks --- */
+[data-theme="dark"] .task-item.task-overflow {
+  border-left: 3.5px solid #F87171 !important;
+  background: rgba(69, 26, 26, 0.28) !important;
+  border-color: rgba(239, 68, 68, 0.35) var(--line) var(--line) #F87171 !important;
+}
+
+[data-theme="dark"] .task-item.featured-task.task-overflow {
+  background: linear-gradient(to right, rgba(245, 158, 11, 0.12), rgba(69, 26, 26, 0.38)) !important;
+  border-left: 3.5px solid #F87171 !important;
+  border-color: rgba(245, 158, 11, 0.4) var(--line) var(--line) #F87171 !important;
+}
+
+[data-theme="dark"] .overflow-badge {
+  background: rgba(239, 68, 68, 0.22);
+  color: #FCA5A5;
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
 

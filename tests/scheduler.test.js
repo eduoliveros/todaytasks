@@ -126,5 +126,22 @@ describe('TodayTasksScheduler (ES Module)', () => {
     expect(schedule.overflowIds.has('t1')).toBe(true);
     expect(schedule.segmentsByTask['t1']).toEqual([{ start: 1050, end: 1110 }]);
   });
+
+  it('marca desbordamiento en tarea en ejecución (running) si su finalización supera el fin de jornada laboral', () => {
+    const state = defaultState();
+    state.workStart = 540; // 09:00
+    state.workEnd = 1080; // 18:00
+    state.autoBreakEnabled = false;
+    state.meetings = [];
+    state.tasks = [
+      { id: 't_run', title: 'Tarea Larga en Ejecución', planned: 120, status: 'running', runningStart: 1020, elapsedBefore: 0, order: 1 } // 17:00 -> 19:00 > 18:00
+    ];
+
+    const mockNowMins = () => 1020; // 17:00
+    const schedule = computeSchedule(state, mockNowMins);
+
+    expect(schedule.overflowIds.has('t_run')).toBe(true);
+  });
 });
+
 

@@ -43,12 +43,14 @@ export function TodayTasksTasksView(ctx){
     const urgencyKey = t.urgency || DEFAULT_URGENCY;
     const urgencyInfo = URGENCY_LEVELS[urgencyKey] || URGENCY_LEVELS[DEFAULT_URGENCY];
 
+    const isOverflow = (schedule && schedule.overflowIds) ? schedule.overflowIds.has(t.id) : false;
+
     if(taskEdit && String(taskEdit.id) === String(t.id)){
       const isRecurring = t.isRecurring || !!taskEdit.ruleId;
       const editUrgency = taskEdit.urgency || urgencyKey;
       const editUrgencyInfo = URGENCY_LEVELS[editUrgency] || URGENCY_LEVELS[DEFAULT_URGENCY];
       return `
-      <div class="item task-item editing ${taskEdit.featured ? 'featured-task' : ''}" id="task-item-${escapeAttr(t.id)}">
+      <div class="item task-item editing ${taskEdit.featured ? 'featured-task' : ''} ${isOverflow ? 'task-overflow' : ''}" id="task-item-${escapeAttr(t.id)}">
         <div class="row">
           <input type="text" value="${escapeAttr(taskEdit.title)}" oninput="app.updateTaskEditField('title', this.value)" placeholder="Título de la tarea">
         </div>
@@ -101,7 +103,6 @@ export function TodayTasksTasksView(ctx){
     }
     const elapsedReal = getTaskElapsed(t);
     const segs = (schedule && schedule.segmentsByTask && schedule.segmentsByTask[t.id]) ? schedule.segmentsByTask[t.id] : [];
-    const isOverflow = (schedule && schedule.overflowIds) ? schedule.overflowIds.has(t.id) : false;
     const label = t.status === "running" ? "en ejecución"
                 : t.status === "paused" ? "en pausa"
                 : "pendiente";
@@ -203,8 +204,10 @@ export function TodayTasksTasksView(ctx){
       </div>
     ` : '';
 
+    const overflowClass = isOverflow ? 'task-overflow' : '';
+
     return `
-      <div class="item task-item ${t.status} ${featuredClass}" id="task-item-${escapeAttr(t.id)}" data-task-id="${escapeAttr(t.id)}" ${dragAttrs}>
+      <div class="item task-item ${t.status} ${featuredClass} ${overflowClass}" id="task-item-${escapeAttr(t.id)}" data-task-id="${escapeAttr(t.id)}" ${dragAttrs}>
         <div class="top">
           <div style="display:flex;align-items:flex-start;gap:6px;flex:1;min-width:0;">
             ${dragHandle}
@@ -222,7 +225,7 @@ export function TodayTasksTasksView(ctx){
               <div class="meta">
                 Planificado: ${fmtDur(t.planned)} · Consumido: <span class="task-duration-clickable" title="Clic para ajustar tiempo consumido" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">${fmtDur(elapsedReal)}</span>
                 <span class="status-badge ${badgeClass}">${label}</span>
-                ${isOverflow ? '<span class="overflow-badge">⚠ No cabe en la jornada</span>' : ''}
+                ${isOverflow ? '<span class="overflow-badge" title="Esta tarea finaliza fuera de la jornada laboral estimada">⚠ Fuera de jornada</span>' : ''}
               </div>
               ${splitNote}
             </div>

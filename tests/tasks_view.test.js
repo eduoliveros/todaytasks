@@ -147,5 +147,45 @@ describe('Tasks View - Main Page Active Tasks List', () => {
     expect(inputTime.value).toBe('15:30');
     expect(inputTime.getAttribute('oninput')).toContain("app.updateTaskEditField('startAfter'");
   });
+
+  it('renderTasks aplica la clase task-overflow y la insignia ⚠ Fuera de jornada a tareas fuera del horario laboral', () => {
+    state.tasks = [
+      { id: 601, title: 'Tarea Que Cabe', planned: 30, status: 'pending', order: 1 },
+      { id: 602, title: 'Tarea Desbordada', planned: 60, status: 'pending', order: 2 }
+    ];
+
+    const overflowIds = new Set([602]);
+    tasksView.renderTasks({ segmentsByTask: { 601: [{ start: 540, end: 570 }], 602: [{ start: 1050, end: 1110 }] }, overflowIds });
+
+    const item1 = document.getElementById('task-item-601');
+    const item2 = document.getElementById('task-item-602');
+
+    expect(item1).not.toBeNull();
+    expect(item2).not.toBeNull();
+
+    expect(item1.classList.contains('task-overflow')).toBe(false);
+    expect(item1.querySelector('.overflow-badge')).toBeNull();
+
+    expect(item2.classList.contains('task-overflow')).toBe(true);
+    const badge = item2.querySelector('.overflow-badge');
+    expect(badge).not.toBeNull();
+    expect(badge.textContent).toContain('Fuera de jornada');
+  });
+
+  it('renderTasks mantiene la clase task-overflow en modo de edición si la tarea está desbordada', () => {
+    state.tasks = [
+      { id: 603, title: 'Tarea Desbordada Editando', planned: 60, status: 'pending', order: 1 }
+    ];
+
+    taskEdit = { id: 603, title: 'Tarea Desbordada Editando', duration: '60', actual: '0' };
+    const overflowIds = new Set([603]);
+    tasksView.renderTasks({ segmentsByTask: { 603: [{ start: 1050, end: 1110 }] }, overflowIds });
+
+    const item = document.getElementById('task-item-603');
+    expect(item).not.toBeNull();
+    expect(item.classList.contains('editing')).toBe(true);
+    expect(item.classList.contains('task-overflow')).toBe(true);
+  });
 });
+
 

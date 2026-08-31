@@ -172,7 +172,7 @@ Para simplificar el acceso y no obligar al código a navegar por `state.environm
 * **Bloqueos por Reuniones:** `computeMeetingClusters` agrupa reuniones solapadas o consecutivas y reserva automáticamente descansos post-reunión.
 * **Pausas Automáticas (*Auto-breaks*):** Si está activado `autoBreakEnabled`, el algoritmo inserta bloques de descanso recomendados (por defecto 10 min por cada 60 min de trabajo) entre las tareas del día.
 * **Restricción de Inicio Mínimo (`startAfter`):** Si una tarea tiene configurada una hora mínima de inicio (`startAfter`), el planificador aplica un algoritmo de *relleno inteligente de huecos (gap-filling)*: programa las tareas sin restricción en los espacios libres matutinos y programa la tarea diferida a partir de la hora requerida, evitando huecos muertos.
-* **Proyección Temporal:** `computeSchedule` calcula la hora estimada de inicio (`schedStart`) y fin (`schedEnd`) para cada tarea según la hora actual (`nowMinutes`) o el horario laboral fijado.
+* **Proyección Temporal y Detección de Desbordamiento (`overflowIds`):** `computeSchedule` calcula la hora estimada de inicio (`schedStart`) y fin (`schedEnd`) para cada tarea según la hora actual (`nowMinutes`) o el inicio de jornada (`planningMode`). Las tareas cuya finalización proyectada excede la hora de fin de jornada (`workEnd`) se agregan a `overflowIds`, lo que permite destacarlas visualmente en la lista de tareas (`.task-overflow` y `.overflow-badge`) tanto en Modo Planificación ON como OFF.
 
 ---
 

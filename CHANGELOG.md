@@ -4,6 +4,21 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.93] - 2026-08-31
+
+### Añadido
+- **Identificación visual de tareas fuera de jornada laboral en la lista de tareas:**
+  - Marcado visual destacado para las tareas que, según la proyección del planificador (`computeSchedule`), finalizan después de la hora de fin de jornada (`state.workEnd`).
+  - Funciona de forma reactiva tanto en **Modo Planificación ON** (simulación del día completo desde el inicio de jornada) como en **Modo Planificación OFF** (proyección en tiempo real a partir de la hora actual y la tarea en marcha).
+  - Estilo visual de alta visibilidad:
+    - Borde lateral izquierdo acentuado en color rojo/coral (`3.5px solid #EF4444` en tema claro, `#F87171` en tema oscuro).
+    - Fondo con sutil tinte rojizo (`rgba(254, 242, 242, 0.55)` en claro y `rgba(69, 26, 26, 0.28)` en oscuro) y marco perimetral suave.
+    - Insignia de advertencia `⚠ Fuera de jornada` integrada en los metadatos de la tarjeta.
+    - Coexistencia y compatibilidad armónica con tarjetas destacadas con estrella (`.featured-task`).
+  - Detección coherente de desbordamiento también en tareas en ejecución (`running`) que superan el límite horario.
+
+---
+
 ## [1.92] - 2026-08-31
 
 ### Corregido
