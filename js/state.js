@@ -10,7 +10,8 @@ export function defaultDayState(envKey) {
     meetings: [],
     tasks: [],
     interruptions: [],
-    planningMode: false
+    planningMode: false,
+    _deletedIds: []
   };
 }
 
@@ -26,7 +27,8 @@ export function defaultEnvState(envKey) {
     history: [],
     recurringMeetings: [],
     recurringTasks: [],
-    activeInterruption: null
+    activeInterruption: null,
+    _deletedRecurringIds: []
   };
 }
 
@@ -120,6 +122,7 @@ export function wrapState(rawState) {
         if (!Array.isArray(env.history)) env.history = [];
         if (!Array.isArray(env.recurringMeetings)) env.recurringMeetings = [];
         if (!Array.isArray(env.recurringTasks)) env.recurringTasks = [];
+        if (!Array.isArray(env._deletedRecurringIds)) env._deletedRecurringIds = [];
         if (env.activeInterruption === undefined) env.activeInterruption = null;
         if (!("weeklySchedule" in env)) env.weeklySchedule = null;
 
@@ -146,6 +149,7 @@ export function wrapState(rawState) {
             }
             if (!Array.isArray(dayObj.interruptions)) dayObj.interruptions = [];
             if (typeof dayObj.planningMode !== "boolean") dayObj.planningMode = false;
+            if (!Array.isArray(dayObj._deletedIds)) dayObj._deletedIds = [];
           }
         });
       }

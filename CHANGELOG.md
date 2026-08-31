@@ -4,6 +4,19 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.92] - 2026-08-31
+
+### Corregido
+- **Prevención de duplicación y resurrección de tareas/reuniones borradas en la sincronización:**
+  - Implementación del patrón de **Tombstones (lápidas de borrado)** mediante `_deletedIds` en cada día y `_deletedRecurringIds` en cada entorno.
+  - Al borrar una tarea, reunión o interrupción (o reiniciar el día con `startNewDay`), sus identificadores quedan registrados como lápidas.
+  - La función de resolución de conflictos `mergeStates()` verifica bidireccionalmente los tombstones locales y remotos, asegurando que un dispositivo con datos antiguos nunca resucite elementos eliminados en otro dispositivo al aceptar un *merge*.
+  - Las series recurrentes eliminadas quedan protegidas mediante `_deletedRecurringIds` para evitar su reaparición.
+  - Limpieza y reciclaje automático de lápidas con el ciclo de vida habitual de poda (*pruning*) de días antiguos (> 10 días).
+  - Registro de decisión arquitectónica [`docs/adr/004-sync-tombstones.md`](./docs/adr/004-sync-tombstones.md).
+
+---
+
 ## [1.91] - 2026-08-31
 
 ### Añadido

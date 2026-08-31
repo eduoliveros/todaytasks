@@ -45,6 +45,7 @@ interface EnvState {
   recurringMeetings: RecurringMeetingRule[];  // Reglas maestras de reuniones periódicas
   recurringTasks: RecurringTaskRule[];        // Reglas maestras de tareas periódicas
   activeInterruption: Interruption | null;    // Interrupción en curso (si la hubiera)
+  _deletedRecurringIds?: string[];            // IDs de reglas periódicas eliminadas (tombstones para sync)
 }
 ```
 
@@ -63,6 +64,7 @@ interface DayState {
   hasCustomHours?: boolean;            // Si es true, usa workStart/workEnd específicos en lugar del horario semanal
   workStart?: number;                  // Minuto del día (0..1439, ej: 540 = 09:00)
   workEnd?: number;                    // Minuto del día (0..1439, ej: 1080 = 18:00)
+  _deletedIds?: string[];              // IDs de tareas, reuniones o interrupciones eliminadas en este día (tombstones para sync)
 }
 ```
 

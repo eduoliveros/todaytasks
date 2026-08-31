@@ -249,6 +249,143 @@ describe('TodayTasksCloud - mergeStates', () => {
     const futureTasks = (merged.environments.work.days[futureDate] && merged.environments.work.days[futureDate].tasks) || [];
     expect(futureTasks.some(t => t.id === 99)).toBe(true);
   });
+
+  it('no resucita tareas locales si su ID está registrado en _deletedIds de la nube (tombstone)', () => {
+    const today = '2026-08-31';
+    const local = defaultState();
+    local.environments.work.days[today] = {
+      meetings: [],
+      interruptions: [],
+      tasks: [
+        { id: 'task-1', title: 'Tarea Borrada En Otro Dispositivo', planned: 30, status: 'pending' },
+        { id: 'task-2', title: 'Tarea Local Que Sí Sigue Viva', planned: 20, status: 'pending' }
+      ],
+      _deletedIds: []
+    };
+
+    const remote = defaultState();
+    remote.environments.work.days[today] = {
+      meetings: [],
+      interruptions: [],
+      tasks: [],
+      _deletedIds: ['task-1']
+    };
+
+    const merged = cloud.mergeStates(local, remote);
+    const mergedTasks = (merged.environments.work.days[today] && merged.environments.work.days[today].tasks) || [];
+
+    // task-1 NO debe resucitar
+    expect(mergedTasks.some(t => String(t.id) === 'task-1')).toBe(false);
+    // task-2 SÍ debe preservarse
+    expect(mergedTasks.some(t => String(t.id) === 'task-2')).toBe(true);
+    // _deletedIds debe incluir task-1
+    expect(merged.environments.work.days[today]._deletedIds).toContain('task-1');
+  });
+
+  it('no resucita tareas remotas si fueron borradas localmente (_deletedIds local)', () => {
+    const today = '2026-08-31';
+    const local = defaultState();
+    local.environments.work.days[today] = {
+      meetings: [],
+      interruptions: [],
+      tasks: [],
+      _deletedIds: ['task-cloud-1']
+    };
+
+    const remote = defaultState();
+    remote.environments.work.days[today] = {
+      meetings: [],
+      interruptions: [],
+      tasks: [
+        { id: 'task-cloud-1', title: 'Tarea Cloud Borrada Localmente', planned: 30, status: 'pending' }
+      ],
+      _deletedIds: []
+    };
+
+    const merged = cloud.mergeStates(local, remote);
+    const mergedTasks = (merged.environments.work.days[today] && merged.environments.work.days[today].tasks) || [];
+
+    expect(mergedTasks.some(t => String(t.id) === 'task-cloud-1')).toBe(false);
+    expect(merged.environments.work.days[today]._deletedIds).toContain('task-cloud-1');
+  });
+
+  it('no resucita reuniones borradas en remoto si están en _deletedIds de la nube', () => {
+    const today = '2026-08-31';
+    const local = defaultState();
+    local.environments.work.days[today] = {
+      meetings: [
+        { id: 'meet-1', title: 'Daily Sync Borrada', start: 600, end: 630 },
+        { id: 'meet-2', title: 'Sprint Review', start: 700, end: 760 }
+      ],
+      interruptions: [],
+      tasks: [],
+      _deletedIds: []
+    };
+
+    const remote = defaultState();
+    remote.environments.work.days[today] = {
+      meetings: [],
+      interruptions: [],
+      tasks: [],
+      _deletedIds: ['meet-1']
+    };
+
+    const merged = cloud.mergeStates(local, remote);
+    const mergedMeetings = (merged.environments.work.days[today] && merged.environments.work.days[today].meetings) || [];
+
+    expect(mergedMeetings.some(m => String(m.id) === 'meet-1')).toBe(false);
+    expect(mergedMeetings.some(m => String(m.id) === 'meet-2')).toBe(true);
+    expect(merged.environments.work.days[today]._deletedIds).toContain('meet-1');
+  });
+
+  it('no resucita interrupciones borradas en remoto si están en _deletedIds de la nube', () => {
+    const today = '2026-08-31';
+    const local = defaultState();
+    local.environments.work.days[today] = {
+      meetings: [],
+      interruptions: [
+        { id: 'int-1', title: 'Llamada urgente', start: 600, startEpoch: 1000, end: 620, duration: 20 }
+      ],
+      tasks: [],
+      _deletedIds: []
+    };
+
+    const remote = defaultState();
+    remote.environments.work.days[today] = {
+      meetings: [],
+      interruptions: [],
+      tasks: [],
+      _deletedIds: ['int-1']
+    };
+
+    const merged = cloud.mergeStates(local, remote);
+    const mergedInts = (merged.environments.work.days[today] && merged.environments.work.days[today].interruptions) || [];
+
+    expect(mergedInts.some(i => String(i.id) === 'int-1')).toBe(false);
+    expect(merged.environments.work.days[today]._deletedIds).toContain('int-1');
+  });
+
+  it('no resucita series recurrentes eliminadas registradas en _deletedRecurringIds', () => {
+    const local = defaultState();
+    local.environments.work.recurringTasks = [
+      { id: 'rec_task_1', title: 'Revisión Diaria', planned: 15, freq: 'daily', interval: 1, startDate: '2026-08-01' }
+    ];
+    local.environments.work.recurringMeetings = [
+      { id: 'rec_meet_1', title: 'Comité Semanal', start: 600, end: 660, freq: 'weekly', interval: 1, startDate: '2026-08-01', daysOfWeek: [1] }
+    ];
+
+    const remote = defaultState();
+    remote.environments.work.recurringTasks = [];
+    remote.environments.work.recurringMeetings = [];
+    remote.environments.work._deletedRecurringIds = ['rec_task_1', 'rec_meet_1'];
+
+    const merged = cloud.mergeStates(local, remote);
+
+    expect(merged.environments.work.recurringTasks.some(r => String(r.id) === 'rec_task_1')).toBe(false);
+    expect(merged.environments.work.recurringMeetings.some(r => String(r.id) === 'rec_meet_1')).toBe(false);
+    expect(merged.environments.work._deletedRecurringIds).toContain('rec_task_1');
+    expect(merged.environments.work._deletedRecurringIds).toContain('rec_meet_1');
+  });
 });
 
 describe('TodayTasksCloud - detección de origen y sincronización', () => {

@@ -5,6 +5,12 @@ Este directorio contiene los registros de decisiones técnicas y estructurales t
 ## ¿Qué es un ADR?
 Un **Architecture Decision Record (ADR)** es un documento breve que captura una decisión arquitectónica importante junto con su contexto y consecuencias.
 
+## Índice de ADRs
+* [001. Planificación de tareas a partir de una hora determinada (`startAfter`)](./001-task-start-after-scheduling.md)
+* [002. Soporte de Markdown ligero en notas de tareas](./002-task-notes-markdown.md)
+* [003. Menú contextual / Popover para reglas de recurrencia](./003-recurring-rules-popover.md)
+* [004. Prevención de resurrección de tareas eliminadas mediante Tombstones en la sincronización](./004-sync-tombstones.md)
+
 ## Plantilla sugerida para nuevos ADRs (`docs/adr/NNN-titulo.md`)
 
 ```markdown

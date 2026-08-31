@@ -25,6 +25,12 @@ export function TodayTasksTasks(ctx, helpers){
     }
     const dayObj = env.days && env.days[dateStr];
     if (dayObj && Array.isArray(dayObj.tasks)) {
+      if (!Array.isArray(dayObj._deletedIds)) dayObj._deletedIds = [];
+      dayObj.tasks.forEach(t => {
+        if (t.ruleId === ruleId && t.id != null && !dayObj._deletedIds.includes(String(t.id))) {
+          dayObj._deletedIds.push(String(t.id));
+        }
+      });
       dayObj.tasks = dayObj.tasks.filter(t => t.ruleId !== ruleId);
     }
     saveState();
@@ -36,11 +42,21 @@ export function TodayTasksTasks(ctx, helpers){
     const envKey = state.activeEnv || "work";
     const env = state.environments[envKey] || state.environments.work;
     if (Array.isArray(env.recurringTasks)) {
-      env.recurringTasks = env.recurringTasks.filter(r => r.id !== ruleId);
+      env.recurringTasks = env.recurringTasks.filter(r => String(r.id) !== String(ruleId));
+    }
+    if (!Array.isArray(env._deletedRecurringIds)) env._deletedRecurringIds = [];
+    if (!env._deletedRecurringIds.includes(String(ruleId))) {
+      env._deletedRecurringIds.push(String(ruleId));
     }
     Object.values(env.days || {}).forEach(dayObj => {
       if (Array.isArray(dayObj.tasks)) {
-        dayObj.tasks = dayObj.tasks.filter(t => t.ruleId !== ruleId);
+        if (!Array.isArray(dayObj._deletedIds)) dayObj._deletedIds = [];
+        dayObj.tasks.forEach(t => {
+          if (String(t.ruleId) === String(ruleId) && t.id != null && !dayObj._deletedIds.includes(String(t.id))) {
+            dayObj._deletedIds.push(String(t.id));
+          }
+        });
+        dayObj.tasks = dayObj.tasks.filter(t => String(t.ruleId) !== String(ruleId));
       }
     });
     saveState();
@@ -308,6 +324,17 @@ export function TodayTasksTasks(ctx, helpers){
 
     if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
       ctx.undoModule.pushSnapshot(`Eliminar tarea "${t ? t.title : ''}"`);
+    }
+
+    const envKey = state.activeEnv || "work";
+    const env = state.environments[envKey] || state.environments.work;
+    const dateStr = state.selectedDate || getTodayStr();
+    const dayObj = env.days && env.days[dateStr];
+    if (dayObj) {
+      if (!Array.isArray(dayObj._deletedIds)) dayObj._deletedIds = [];
+      if (!dayObj._deletedIds.includes(String(id))) {
+        dayObj._deletedIds.push(String(id));
+      }
     }
 
     state.tasks = state.tasks.filter(t => String(t.id) !== String(id));

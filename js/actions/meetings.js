@@ -18,10 +18,22 @@ export function TodayTasksMeetings(ctx, helpers) {
 
   function deleteMeetingInstance(ruleId, dateStr) {
     const state = getState();
+    const envKey = state.activeEnv || "work";
+    const env = state.environments[envKey] || state.environments.work;
     const rule = (state.recurringMeetings || []).find(r => String(r.id) === String(ruleId));
     if (rule) {
       if (!rule.exceptions) rule.exceptions = {};
       rule.exceptions[dateStr] = { type: "cancelled" };
+      const dayObj = env.days && env.days[dateStr];
+      if (dayObj && Array.isArray(dayObj.meetings)) {
+        if (!Array.isArray(dayObj._deletedIds)) dayObj._deletedIds = [];
+        dayObj.meetings.forEach(m => {
+          if (String(m.ruleId || m.id) === String(ruleId) && m.id != null && !dayObj._deletedIds.includes(String(m.id))) {
+            dayObj._deletedIds.push(String(m.id));
+          }
+        });
+        dayObj.meetings = dayObj.meetings.filter(m => String(m.ruleId || m.id) !== String(ruleId));
+      }
       if (getMeetingEdit() && String(getMeetingEdit().id) === String(ruleId)) setMeetingEdit(null);
       saveState();
       renderAll();
@@ -31,9 +43,26 @@ export function TodayTasksMeetings(ctx, helpers) {
 
   function deleteMeetingSeries(ruleId) {
     const state = getState();
+    const envKey = state.activeEnv || "work";
+    const env = state.environments[envKey] || state.environments.work;
     if (Array.isArray(state.recurringMeetings)) {
       state.recurringMeetings = state.recurringMeetings.filter(r => String(r.id) !== String(ruleId));
     }
+    if (!Array.isArray(env._deletedRecurringIds)) env._deletedRecurringIds = [];
+    if (!env._deletedRecurringIds.includes(String(ruleId))) {
+      env._deletedRecurringIds.push(String(ruleId));
+    }
+    Object.values(env.days || {}).forEach(dayObj => {
+      if (Array.isArray(dayObj.meetings)) {
+        if (!Array.isArray(dayObj._deletedIds)) dayObj._deletedIds = [];
+        dayObj.meetings.forEach(m => {
+          if (String(m.ruleId || m.id) === String(ruleId) && m.id != null && !dayObj._deletedIds.includes(String(m.id))) {
+            dayObj._deletedIds.push(String(m.id));
+          }
+        });
+        dayObj.meetings = dayObj.meetings.filter(m => String(m.ruleId || m.id) !== String(ruleId));
+      }
+    });
     if (getMeetingEdit() && String(getMeetingEdit().id) === String(ruleId)) setMeetingEdit(null);
     saveState();
     renderAll();
@@ -114,8 +143,14 @@ export function TodayTasksMeetings(ctx, helpers) {
     const envKey = state.activeEnv || "work";
     const env = state.environments[envKey] || state.environments.work;
     const dayObj = env.days && env.days[dateStr];
-    if (dayObj && Array.isArray(dayObj.meetings)) {
-      dayObj.meetings = dayObj.meetings.filter(m => String(m.id) !== String(id));
+    if (dayObj) {
+      if (!Array.isArray(dayObj._deletedIds)) dayObj._deletedIds = [];
+      if (!dayObj._deletedIds.includes(String(id))) {
+        dayObj._deletedIds.push(String(id));
+      }
+      if (Array.isArray(dayObj.meetings)) {
+        dayObj.meetings = dayObj.meetings.filter(m => String(m.id) !== String(id));
+      }
     }
     if (getMeetingEdit() && String(getMeetingEdit().id) === String(id)) setMeetingEdit(null);
     saveState();

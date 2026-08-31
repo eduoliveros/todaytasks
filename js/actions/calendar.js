@@ -271,6 +271,29 @@ export function TodayTasksCalendar(ctx, helpers){
       snapshotAndPrune(state);
     }
 
+    const envKey = state.activeEnv || "work";
+    const env = state.environments[envKey] || state.environments.work;
+    const dateStr = state.selectedDate || getTodayStr();
+    const dayObj = env.days && env.days[dateStr];
+    if (dayObj) {
+      if (!Array.isArray(dayObj._deletedIds)) dayObj._deletedIds = [];
+      (dayObj.tasks || []).forEach(t => {
+        if (t && t.id != null && !dayObj._deletedIds.includes(String(t.id))) {
+          dayObj._deletedIds.push(String(t.id));
+        }
+      });
+      (dayObj.meetings || []).forEach(m => {
+        if (m && m.id != null && !dayObj._deletedIds.includes(String(m.id))) {
+          dayObj._deletedIds.push(String(m.id));
+        }
+      });
+      (dayObj.interruptions || []).forEach(i => {
+        if (i && i.id != null && !dayObj._deletedIds.includes(String(i.id))) {
+          dayObj._deletedIds.push(String(i.id));
+        }
+      });
+    }
+
     state.meetings = [];
     state.tasks = [];
     state.interruptions = [];

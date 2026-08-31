@@ -163,6 +163,7 @@ Para simplificar el acceso y no obligar al código a navegar por `state.environm
 * **Debounce de Escritura:** `pushToCloudDebounced(500)` previene llamadas excesivas a Firestore durante ediciones rápidas.
 * **Garantía al Salir (`flushPendingCloudPush`):** En los eventos `beforeunload` y `pagehide`, cualquier envío pendiente en el debounce se descarga y envía de inmediato.
 * **Combinación de Datos (`mergeStates`):** Si entran cambios remotos desde otro dispositivo, `mergeStates` combina tareas, reuniones y horarios sin sobreescribir destructivamente el trabajo local.
+* **Registro de Borrados y Tombstones (`_deletedIds` / `_deletedRecurringIds`):** Para evitar que tareas o reuniones eliminadas en un dispositivo resuciten al sincronizar con otro que aún las conserva en memoria local, las acciones de borrado registran los IDs eliminados en un array de lápidas (*tombstones*). Durante `mergeStates`, estos IDs son excluidos de la combinación y propagados entre dispositivos, asegurando que las eliminaciones prevalezcan de forma bidireccional sin contaminar la lista de tareas activas. Los tombstones diarios se limpian automáticamente mediante la poda (*pruning*) de días antiguos (> 10 días).
 
 ---
 

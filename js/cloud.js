@@ -135,32 +135,64 @@ export function TodayTasksCloud(ctx){
         ]);
 
         const allRemoteTaskIds = new Set();
+        const allRemoteDeletedIds = new Set();
         Object.values(remoteEnv.days || {}).forEach(d => {
           (d.tasks || []).forEach(t => {
             if (t && t.id != null) allRemoteTaskIds.add(String(t.id));
           });
+          (d._deletedIds || []).forEach(id => {
+            if (id != null) allRemoteDeletedIds.add(String(id));
+          });
         });
+
+        const allLocalDeletedIds = new Set();
+        Object.values(localEnv.days || {}).forEach(d => {
+          (d._deletedIds || []).forEach(id => {
+            if (id != null) allLocalDeletedIds.add(String(id));
+          });
+        });
+
+        const allRemoteDeletedRecurringIds = new Set((remoteEnv._deletedRecurringIds || []).map(String));
+        const allLocalDeletedRecurringIds = new Set((localEnv._deletedRecurringIds || []).map(String));
+        const mergedDeletedRecurringIds = new Set([
+          ...(remoteEnv._deletedRecurringIds || []).map(String),
+          ...(localEnv._deletedRecurringIds || []).map(String)
+        ]);
+        mergedEnv._deletedRecurringIds = Array.from(mergedDeletedRecurringIds);
 
         allDates.forEach(dateStr => {
           const lDay = (localEnv.days && localEnv.days[dateStr]) || {};
           const rDay = (remoteEnv.days && remoteEnv.days[dateStr]) || {};
 
-          const mMeetings = [...(rDay.meetings || [])];
+          // Iniciar reuniones con las de la nube que no hayan sido borradas localmente
+          const mMeetings = (rDay.meetings || []).filter(m => m && (m.id == null || !allLocalDeletedIds.has(String(m.id))));
           const meetingKeys = new Set(mMeetings.map(m => `${m.title}_${m.start}_${m.end}`));
+          const meetingIdsInDay = new Set(mMeetings.filter(m => m && m.id != null).map(m => String(m.id)));
           (lDay.meetings || []).forEach(m => {
+            if (!m) return;
+            // Si la reunión fue borrada en la nube, no resucitarla
+            if (m.id != null && allRemoteDeletedIds.has(String(m.id))) return;
+            if (m.id != null && meetingIdsInDay.has(String(m.id))) return;
+
             const key = `${m.title}_${m.start}_${m.end}`;
             if (!meetingKeys.has(key)) {
               mMeetings.push(m);
               meetingKeys.add(key);
+              if (m.id != null) meetingIdsInDay.add(String(m.id));
             }
           });
           mMeetings.sort((a, b) => a.start - b.start);
 
-          const mTasks = [...(rDay.tasks || [])];
+          // Iniciar tareas con las de la nube que no hayan sido borradas localmente
+          const mTasks = (rDay.tasks || []).filter(t => t && (t.id == null || !allLocalDeletedIds.has(String(t.id))));
           const taskIdsInDay = new Set(mTasks.filter(t => t && t.id != null).map(t => String(t.id)));
           const taskTitles = new Set(mTasks.map(t => (t.title || "").toLowerCase().trim()));
           (lDay.tasks || []).forEach(t => {
             if (!t) return;
+            // Si la tarea fue borrada intencionalmente en la nube, no resucitarla
+            if (t.id != null && allRemoteDeletedIds.has(String(t.id))) {
+              return;
+            }
             // Si la tarea ya existe en el estado remoto (en este u otro día),
             // no la añadimos desde local para respetar la ubicación y estado de la nube
             if (t.id != null && allRemoteTaskIds.has(String(t.id))) {
@@ -174,14 +206,23 @@ export function TodayTasksCloud(ctx){
             }
           });
 
-          const mInts = [...(rDay.interruptions || [])];
-          const intIds = new Set(mInts.map(i => i.id));
+          // Iniciar interrupciones con las de la nube que no hayan sido borradas localmente
+          const mInts = (rDay.interruptions || []).filter(i => i && (i.id == null || !allLocalDeletedIds.has(String(i.id))));
+          const intIds = new Set(mInts.map(i => String(i.id)));
           (lDay.interruptions || []).forEach(i => {
-            if (!intIds.has(i.id)) {
+            if (!i) return;
+            if (i.id != null && allRemoteDeletedIds.has(String(i.id))) return;
+            if (!intIds.has(String(i.id))) {
               mInts.push(i);
-              intIds.add(i.id);
+              intIds.add(String(i.id));
             }
           });
+
+          // Combinar los IDs eliminados del día
+          const mergedDeletedIds = new Set([
+            ...(rDay._deletedIds || []).map(String),
+            ...(lDay._deletedIds || []).map(String)
+          ]);
 
           mergedEnv.days[dateStr] = {
             workStart: rDay.workStart !== undefined ? rDay.workStart : (lDay.workStart !== undefined ? lDay.workStart : (envKey === 'personal' ? 18 * 60 : 9 * 60)),
@@ -189,7 +230,8 @@ export function TodayTasksCloud(ctx){
             planningMode: rDay.planningMode !== undefined ? rDay.planningMode : (lDay.planningMode || false),
             meetings: mMeetings,
             tasks: mTasks,
-            interruptions: mInts
+            interruptions: mInts,
+            _deletedIds: Array.from(mergedDeletedIds)
           };
         });
 
@@ -205,15 +247,20 @@ export function TodayTasksCloud(ctx){
 
         // Merge recurringMeetings array
         const recMeetingsMap = new Map();
-        (remoteEnv.recurringMeetings || []).forEach(r => { if (r && r.id) recMeetingsMap.set(r.id, JSON.parse(JSON.stringify(r))); });
+        (remoteEnv.recurringMeetings || []).forEach(r => {
+          if (r && r.id && !allLocalDeletedRecurringIds.has(String(r.id))) {
+            recMeetingsMap.set(String(r.id), JSON.parse(JSON.stringify(r)));
+          }
+        });
         (localEnv.recurringMeetings || []).forEach(l => {
-          if (l && l.id) {
-            if (!recMeetingsMap.has(l.id)) {
-              recMeetingsMap.set(l.id, JSON.parse(JSON.stringify(l)));
+          if (l && l.id && !allRemoteDeletedRecurringIds.has(String(l.id))) {
+            const key = String(l.id);
+            if (!recMeetingsMap.has(key)) {
+              recMeetingsMap.set(key, JSON.parse(JSON.stringify(l)));
             } else {
-              const existing = recMeetingsMap.get(l.id);
+              const existing = recMeetingsMap.get(key);
               const combinedExceptions = { ...(existing.exceptions || {}), ...(l.exceptions || {}) };
-              recMeetingsMap.set(l.id, { ...existing, ...l, exceptions: combinedExceptions });
+              recMeetingsMap.set(key, { ...existing, ...l, exceptions: combinedExceptions });
             }
           }
         });
@@ -221,15 +268,20 @@ export function TodayTasksCloud(ctx){
 
         // Merge recurringTasks array
         const recTasksMap = new Map();
-        (remoteEnv.recurringTasks || []).forEach(r => { if (r && r.id) recTasksMap.set(r.id, JSON.parse(JSON.stringify(r))); });
+        (remoteEnv.recurringTasks || []).forEach(r => {
+          if (r && r.id && !allLocalDeletedRecurringIds.has(String(r.id))) {
+            recTasksMap.set(String(r.id), JSON.parse(JSON.stringify(r)));
+          }
+        });
         (localEnv.recurringTasks || []).forEach(l => {
-          if (l && l.id) {
-            if (!recTasksMap.has(l.id)) {
-              recTasksMap.set(l.id, JSON.parse(JSON.stringify(l)));
+          if (l && l.id && !allRemoteDeletedRecurringIds.has(String(l.id))) {
+            const key = String(l.id);
+            if (!recTasksMap.has(key)) {
+              recTasksMap.set(key, JSON.parse(JSON.stringify(l)));
             } else {
-              const existing = recTasksMap.get(l.id);
+              const existing = recTasksMap.get(key);
               const combinedExceptions = { ...(existing.exceptions || {}), ...(l.exceptions || {}) };
-              recTasksMap.set(l.id, { ...existing, ...l, exceptions: combinedExceptions });
+              recTasksMap.set(key, { ...existing, ...l, exceptions: combinedExceptions });
             }
           }
         });

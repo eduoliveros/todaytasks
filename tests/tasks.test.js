@@ -391,12 +391,14 @@ describe('TodayTasksActions - Tareas', () => {
 
 
   describe('Eliminación de tareas', () => {
-    it('elimina una tarea existente de la lista', () => {
+    it('elimina una tarea existente de la lista y registra su tombstone en _deletedIds', () => {
       actions.addTask('Tarea a borrar', '30');
       const taskId = state.tasks[0].id;
 
       actions.deleteTask(taskId);
       expect(state.tasks).toHaveLength(0);
+      const dayObj = state.environments.work.days[state.selectedDate];
+      expect(dayObj._deletedIds).toContain(String(taskId));
     });
   });
 

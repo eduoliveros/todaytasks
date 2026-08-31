@@ -73,12 +73,14 @@ describe('TodayTasksActions - Reuniones (Simples y Recurrentes)', () => {
       expect(meetingEdit).toBeNull();
     });
 
-    it('elimina una reunión puntual', () => {
+    it('elimina una reunión puntual y registra su tombstone en _deletedIds', () => {
       actions.addMeeting('Para borrar', '09:00', '09:30');
       const mId = state.meetings[0].id;
 
       actions.deleteMeeting(mId);
       expect(state.meetings).toHaveLength(0);
+      const dayObj = state.environments.work.days[state.selectedDate];
+      expect(dayObj._deletedIds).toContain(String(mId));
     });
   });
 
