@@ -170,34 +170,52 @@
               <input type="checkbox" id="isRecurringTaskCheckbox"> Repetir tarea 🔁
             </label>
 
-            <div id="recurringTaskFormOptions" style="display:none;margin-top:8px;padding:10px;background:rgba(79,70,229,0.04);border:1px solid rgba(79,70,229,0.15);border-radius:6px;font-size:0.85rem;">
-              <div class="row" style="margin-bottom:6px;">
-                <label style="flex:1;">Frecuencia:
-                  <select id="recTaskFreq" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;">
-                    <option value="daily">Diaria</option>
-                    <option value="weekly" selected>Semanal</option>
+            <div id="recurringTaskFormOptions" class="recurring-form-options-panel" style="display:none;">
+              <div class="rec-form-grid">
+                <div class="rec-form-field">
+                  <label class="rec-form-label" for="recTaskFreq">Frecuencia:</label>
+                  <select id="recTaskFreq" class="rec-form-select">
+                    <option value="weekly" selected>Semanal (días específicos)</option>
+                    <option value="daily">Diaria (todos los días)</option>
                   </select>
-                </label>
-                <label style="flex:1;">Intervalo:
-                  <input type="number" id="recTaskInterval" value="1" min="1" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;" title="Número de días o semanas entre repeticiones">
-                </label>
-              </div>
-              <div id="recTaskDaysWrap" style="margin-bottom:6px;">
-                <div style="font-weight:500;margin-bottom:2px;">Días de repetición:</div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;">
-                  <label><input type="checkbox" class="rec-task-day-cb" value="1" checked> L</label>
-                  <label><input type="checkbox" class="rec-task-day-cb" value="2"> M</label>
-                  <label><input type="checkbox" class="rec-task-day-cb" value="3"> X</label>
-                  <label><input type="checkbox" class="rec-task-day-cb" value="4"> J</label>
-                  <label><input type="checkbox" class="rec-task-day-cb" value="5"> V</label>
-                  <label><input type="checkbox" class="rec-task-day-cb" value="6"> S</label>
-                  <label><input type="checkbox" class="rec-task-day-cb" value="7"> D</label>
+                </div>
+                <div class="rec-form-field">
+                  <label class="rec-form-label" for="recTaskInterval">Repetir cada:</label>
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <input type="number" id="recTaskInterval" value="1" min="1" max="99" class="rec-form-input-number" style="width:65px;" title="Número de días o semanas entre repeticiones">
+                    <span id="recTaskIntervalUnit" class="rec-form-unit-label">semana(s)</span>
+                  </div>
                 </div>
               </div>
-              <div>
-                <label>Fecha límite (opcional):
-                  <input type="date" id="recTaskEndDate" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;">
-                </label>
+
+              <div id="recTaskDaysWrap" class="rec-form-field" style="margin-top:8px;">
+                <label class="rec-form-label">Días de repetición:</label>
+                <div class="rec-pop-days-row" id="recTaskDaysRow">
+                  <button type="button" class="rec-pop-day-btn active" data-day="1" onclick="app.toggleTaskFormRecurrenceDay(1)" title="Lunes">L</button>
+                  <button type="button" class="rec-pop-day-btn" data-day="2" onclick="app.toggleTaskFormRecurrenceDay(2)" title="Martes">M</button>
+                  <button type="button" class="rec-pop-day-btn" data-day="3" onclick="app.toggleTaskFormRecurrenceDay(3)" title="Miércoles">X</button>
+                  <button type="button" class="rec-pop-day-btn" data-day="4" onclick="app.toggleTaskFormRecurrenceDay(4)" title="Jueves">J</button>
+                  <button type="button" class="rec-pop-day-btn" data-day="5" onclick="app.toggleTaskFormRecurrenceDay(5)" title="Viernes">V</button>
+                  <button type="button" class="rec-pop-day-btn" data-day="6" onclick="app.toggleTaskFormRecurrenceDay(6)" title="Sábado">S</button>
+                  <button type="button" class="rec-pop-day-btn" data-day="7" onclick="app.toggleTaskFormRecurrenceDay(7)" title="Domingo">D</button>
+                </div>
+                <div style="display:none;">
+                  <input type="checkbox" class="rec-task-day-cb" value="1" id="recTaskDayCb1" checked>
+                  <input type="checkbox" class="rec-task-day-cb" value="2" id="recTaskDayCb2">
+                  <input type="checkbox" class="rec-task-day-cb" value="3" id="recTaskDayCb3">
+                  <input type="checkbox" class="rec-task-day-cb" value="4" id="recTaskDayCb4">
+                  <input type="checkbox" class="rec-task-day-cb" value="5" id="recTaskDayCb5">
+                  <input type="checkbox" class="rec-task-day-cb" value="6" id="recTaskDayCb6">
+                  <input type="checkbox" class="rec-task-day-cb" value="7" id="recTaskDayCb7">
+                </div>
+              </div>
+
+              <div class="rec-form-field" style="margin-top:8px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <label class="rec-form-label" for="recTaskEndDate">Fecha límite (opcional):</label>
+                  <button type="button" class="rec-pop-link-btn" onclick="document.getElementById('recTaskEndDate').value=''">Sin límite</button>
+                </div>
+                <input type="date" id="recTaskEndDate" class="rec-form-input-date" style="width:100%;">
               </div>
             </div>
           </div>
@@ -253,34 +271,52 @@
           <input type="checkbox" id="isRecurringCheckbox"> Repetir reunión 🔁
         </label>
       </div>
-      <div id="recurringFormOptions" style="display:none;margin-top:8px;padding:10px;background:rgba(79,70,229,0.04);border:1px solid rgba(79,70,229,0.15);border-radius:6px;font-size:0.85rem;">
-        <div class="row" style="margin-bottom:6px;">
-          <label style="flex:1;">Frecuencia:
-            <select id="recFreq" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;">
-              <option value="daily">Diaria</option>
-              <option value="weekly" selected>Semanal</option>
+      <div id="recurringFormOptions" class="recurring-form-options-panel" style="display:none;">
+        <div class="rec-form-grid">
+          <div class="rec-form-field">
+            <label class="rec-form-label" for="recFreq">Frecuencia:</label>
+            <select id="recFreq" class="rec-form-select">
+              <option value="weekly" selected>Semanal (días específicos)</option>
+              <option value="daily">Diaria (todos los días)</option>
             </select>
-          </label>
-          <label style="flex:1;">Intervalo:
-            <input type="number" id="recInterval" value="1" min="1" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;" title="Número de días o semanas entre repeticiones">
-          </label>
-        </div>
-        <div id="recDaysWrap" style="margin-bottom:6px;">
-          <div style="font-weight:500;margin-bottom:2px;">Días de repetición:</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;">
-            <label><input type="checkbox" class="rec-day-cb" value="1" checked> L</label>
-            <label><input type="checkbox" class="rec-day-cb" value="2"> M</label>
-            <label><input type="checkbox" class="rec-day-cb" value="3"> X</label>
-            <label><input type="checkbox" class="rec-day-cb" value="4"> J</label>
-            <label><input type="checkbox" class="rec-day-cb" value="5"> V</label>
-            <label><input type="checkbox" class="rec-day-cb" value="6"> S</label>
-            <label><input type="checkbox" class="rec-day-cb" value="7"> D</label>
+          </div>
+          <div class="rec-form-field">
+            <label class="rec-form-label" for="recInterval">Repetir cada:</label>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <input type="number" id="recInterval" value="1" min="1" max="99" class="rec-form-input-number" style="width:65px;" title="Número de días o semanas entre repeticiones">
+              <span id="recMeetingIntervalUnit" class="rec-form-unit-label">semana(s)</span>
+            </div>
           </div>
         </div>
-        <div>
-          <label>Fecha límite (opcional):
-            <input type="date" id="recEndDate" style="width:100%;margin-top:2px;padding:4px;border-radius:4px;border:1px solid #ccc;">
-          </label>
+
+        <div id="recDaysWrap" class="rec-form-field" style="margin-top:8px;">
+          <label class="rec-form-label">Días de repetición:</label>
+          <div class="rec-pop-days-row" id="recMeetingDaysRow">
+            <button type="button" class="rec-pop-day-btn active" data-day="1" onclick="app.toggleMeetingFormRecurrenceDay(1)" title="Lunes">L</button>
+            <button type="button" class="rec-pop-day-btn" data-day="2" onclick="app.toggleMeetingFormRecurrenceDay(2)" title="Martes">M</button>
+            <button type="button" class="rec-pop-day-btn" data-day="3" onclick="app.toggleMeetingFormRecurrenceDay(3)" title="Miércoles">X</button>
+            <button type="button" class="rec-pop-day-btn" data-day="4" onclick="app.toggleMeetingFormRecurrenceDay(4)" title="Jueves">J</button>
+            <button type="button" class="rec-pop-day-btn" data-day="5" onclick="app.toggleMeetingFormRecurrenceDay(5)" title="Viernes">V</button>
+            <button type="button" class="rec-pop-day-btn" data-day="6" onclick="app.toggleMeetingFormRecurrenceDay(6)" title="Sábado">S</button>
+            <button type="button" class="rec-pop-day-btn" data-day="7" onclick="app.toggleMeetingFormRecurrenceDay(7)" title="Domingo">D</button>
+          </div>
+          <div style="display:none;">
+            <input type="checkbox" class="rec-day-cb" value="1" id="recDayCb1" checked>
+            <input type="checkbox" class="rec-day-cb" value="2" id="recDayCb2">
+            <input type="checkbox" class="rec-day-cb" value="3" id="recDayCb3">
+            <input type="checkbox" class="rec-day-cb" value="4" id="recDayCb4">
+            <input type="checkbox" class="rec-day-cb" value="5" id="recDayCb5">
+            <input type="checkbox" class="rec-day-cb" value="6" id="recDayCb6">
+            <input type="checkbox" class="rec-day-cb" value="7" id="recDayCb7">
+          </div>
+        </div>
+
+        <div class="rec-form-field" style="margin-top:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <label class="rec-form-label" for="recEndDate">Fecha límite (opcional):</label>
+            <button type="button" class="rec-pop-link-btn" onclick="document.getElementById('recEndDate').value=''">Sin límite</button>
+          </div>
+          <input type="date" id="recEndDate" class="rec-form-input-date" style="width:100%;">
         </div>
       </div>
       <div id="meetingsList" style="margin-top:10px;"></div>
@@ -385,7 +421,7 @@
   </div>
 </div>
 
-<!-- Popover de información y gestión de recurrencia -->
+<!-- Popover de información y edición de recurrencia -->
 <div class="time-popover-overlay" id="recurringInfoPopoverOverlay" onclick="app.closeRecurringInfoPopover()"></div>
 <div class="time-popover recurring-info-popover" id="recurringInfoPopover" style="display:none;">
   <div class="time-popover-header">
@@ -395,7 +431,9 @@
     </div>
     <button type="button" class="close-popover-x" onclick="app.closeRecurringInfoPopover()" aria-label="Cerrar">&times;</button>
   </div>
-  <div class="recurring-popover-body">
+  
+  <!-- Modo Consulta -->
+  <div class="recurring-popover-body" id="recurringPopoverViewMode">
     <div class="rec-pop-title" id="recurringPopoverTitle">—</div>
     <div class="rec-pop-grid">
       <div class="rec-pop-field">
@@ -416,7 +454,54 @@
     </div>
     <div class="recurring-popover-actions">
       <button type="button" class="btn small secondary" onclick="app.closeRecurringInfoPopover()">Cerrar</button>
-      <button type="button" class="btn small run" id="recurringPopoverEditBtn" onclick="app.editRecurringFromPopover()">✎ Editar serie</button>
+      <button type="button" class="btn small run" id="recurringPopoverEditBtn" onclick="app.toggleEditRecurrenceInPopover(true)">✎ Editar recurrencia</button>
+    </div>
+  </div>
+
+  <!-- Modo Edición Directa de Recurrencia -->
+  <div class="recurring-popover-body rec-pop-edit-mode" id="recurringPopoverEditMode" style="display:none;">
+    <div class="rec-pop-edit-title">Modificar patrón recurrente</div>
+    
+    <div class="rec-pop-field">
+      <label class="rec-pop-label" for="recPopEditFreq">Frecuencia:</label>
+      <select id="recPopEditFreq" class="rec-pop-select" onchange="app.onRecurrencePopoverFreqChange(this.value)">
+        <option value="weekly">Semanal (días específicos)</option>
+        <option value="daily">Diaria (todos los días)</option>
+      </select>
+    </div>
+
+    <div class="rec-pop-field">
+      <label class="rec-pop-label" for="recPopEditInterval">Repetir cada:</label>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <input type="number" id="recPopEditInterval" min="1" max="99" value="1" class="rec-pop-input-number" style="width:65px;" />
+        <span class="rec-pop-unit-label" id="recPopEditIntervalUnit" style="font-size:0.8rem;color:var(--text-muted);">semana(s)</span>
+      </div>
+    </div>
+
+    <div class="rec-pop-field" id="recPopEditDaysWrap">
+      <label class="rec-pop-label">Días de la semana:</label>
+      <div class="rec-pop-days-row">
+        <button type="button" class="rec-pop-day-btn" data-day="1" onclick="app.toggleRecurrencePopoverDay(1)" title="Lunes">L</button>
+        <button type="button" class="rec-pop-day-btn" data-day="2" onclick="app.toggleRecurrencePopoverDay(2)" title="Martes">M</button>
+        <button type="button" class="rec-pop-day-btn" data-day="3" onclick="app.toggleRecurrencePopoverDay(3)" title="Miércoles">X</button>
+        <button type="button" class="rec-pop-day-btn" data-day="4" onclick="app.toggleRecurrencePopoverDay(4)" title="Jueves">J</button>
+        <button type="button" class="rec-pop-day-btn" data-day="5" onclick="app.toggleRecurrencePopoverDay(5)" title="Viernes">V</button>
+        <button type="button" class="rec-pop-day-btn" data-day="6" onclick="app.toggleRecurrencePopoverDay(6)" title="Sábado">S</button>
+        <button type="button" class="rec-pop-day-btn" data-day="7" onclick="app.toggleRecurrencePopoverDay(7)" title="Domingo">D</button>
+      </div>
+    </div>
+
+    <div class="rec-pop-field">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <label class="rec-pop-label" for="recPopEditEndDate">Fecha fin (opcional):</label>
+        <button type="button" class="rec-pop-link-btn" onclick="document.getElementById('recPopEditEndDate').value = ''">Sin límite</button>
+      </div>
+      <input type="date" id="recPopEditEndDate" class="rec-pop-input-date" />
+    </div>
+
+    <div class="recurring-popover-actions">
+      <button type="button" class="btn small secondary" onclick="app.toggleEditRecurrenceInPopover(false)">Cancelar</button>
+      <button type="button" class="btn small done" onclick="app.saveRecurrenceFromPopover()">Guardar</button>
     </div>
   </div>
 </div>

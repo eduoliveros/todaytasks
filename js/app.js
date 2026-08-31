@@ -703,6 +703,11 @@ function switchHeaderTab(target){
           }
         }
 
+        const viewModeEl = document.getElementById('recurringPopoverViewMode');
+        const editModeEl = document.getElementById('recurringPopoverEditMode');
+        if (viewModeEl) viewModeEl.style.display = 'flex';
+        if (editModeEl) editModeEl.style.display = 'none';
+
         overlay.style.display = 'block';
         popover.style.display = 'flex';
 
@@ -715,9 +720,9 @@ function switchHeaderTab(target){
           }
         }
 
-        const popWidth = 280;
+        const popWidth = 300;
         let left = Math.max(10, (window.innerWidth - popWidth) / 2);
-        let top = Math.max(10, (window.innerHeight - 200) / 2);
+        let top = Math.max(10, (window.innerHeight - 250) / 2);
 
         if (target) {
           const rect = target.getBoundingClientRect();
@@ -729,8 +734,8 @@ function switchHeaderTab(target){
             }
             if (left < 10) left = 10;
 
-            if (top + 220 > window.innerHeight && rect.top > 220) {
-              top = rect.top - 210;
+            if (top + 270 > window.innerHeight && rect.top > 270) {
+              top = rect.top - 260;
             }
           }
         }
@@ -748,17 +753,193 @@ function switchHeaderTab(target){
       if (popover) popover.style.display = 'none';
       this.currentRecurringEntityId = null;
       this.currentRecurringEntityType = null;
+      this._popoverSelectedDays = [];
     },
-    editRecurringFromPopover: function() {
-      const id = this.currentRecurringEntityId;
-      const type = this.currentRecurringEntityType;
-      this.closeRecurringInfoPopover();
-      if (!id) return;
-      if (type === 'meeting') {
-        actionsModule.startEditMeeting(id);
-      } else {
-        actionsModule.startEditTask(id);
+    toggleEditRecurrenceInPopover: function(showEdit) {
+      const viewModeEl = document.getElementById('recurringPopoverViewMode');
+      const editModeEl = document.getElementById('recurringPopoverEditMode');
+      if (!viewModeEl || !editModeEl) return;
+
+      if (!showEdit) {
+        viewModeEl.style.display = 'flex';
+        editModeEl.style.display = 'none';
+        return;
       }
+
+      const currentState = state;
+      const envKey = currentState.activeEnv || 'work';
+      const env = currentState.environments ? (currentState.environments[envKey] || currentState.environments.work) : null;
+      if (!env) return;
+
+      const entityId = this.currentRecurringEntityId;
+      const isTask = (this.currentRecurringEntityType === 'task');
+      let entity = null;
+      let rule = null;
+
+      if (isTask) {
+        entity = (currentState.tasks || []).find(t => String(t.id) === String(entityId));
+        if (entity && entity.ruleId && Array.isArray(env.recurringTasks)) {
+          rule = env.recurringTasks.find(r => String(r.id) === String(entity.ruleId));
+        }
+      } else {
+        entity = (currentState.meetings || []).find(m => String(m.id) === String(entityId));
+        if (entity && entity.ruleId && Array.isArray(env.recurringMeetings)) {
+          rule = env.recurringMeetings.find(r => String(r.id) === String(entity.ruleId));
+        }
+      }
+
+      if (!rule) return;
+
+      const freqSelect = document.getElementById('recPopEditFreq');
+      const intervalInput = document.getElementById('recPopEditInterval');
+      const endDateInput = document.getElementById('recPopEditEndDate');
+
+      const freq = rule.freq || (Array.isArray(rule.daysOfWeek) ? 'weekly' : 'daily');
+      if (freqSelect) freqSelect.value = freq;
+      if (intervalInput) intervalInput.value = rule.interval || 1;
+      if (endDateInput) endDateInput.value = rule.endDate || '';
+
+      this._popoverSelectedDays = Array.isArray(rule.daysOfWeek) && rule.daysOfWeek.length > 0
+        ? [...rule.daysOfWeek]
+        : [1];
+
+      this._updateRecurrencePopoverDayButtons();
+      this.onRecurrencePopoverFreqChange(freq);
+
+      viewModeEl.style.display = 'none';
+      editModeEl.style.display = 'flex';
+    },
+    onRecurrencePopoverFreqChange: function(freq) {
+      const unitLabel = document.getElementById('recPopEditIntervalUnit');
+      const daysWrap = document.getElementById('recPopEditDaysWrap');
+      if (unitLabel) {
+        unitLabel.textContent = freq === 'daily' ? 'día(s)' : 'semana(s)';
+      }
+      if (daysWrap) {
+        daysWrap.style.display = freq === 'daily' ? 'none' : 'block';
+      }
+    },
+    toggleRecurrencePopoverDay: function(dayNum) {
+      if (!Array.isArray(this._popoverSelectedDays)) this._popoverSelectedDays = [1];
+      const d = parseInt(dayNum, 10);
+      if (this._popoverSelectedDays.includes(d)) {
+        if (this._popoverSelectedDays.length > 1) {
+          this._popoverSelectedDays = this._popoverSelectedDays.filter(x => x !== d);
+        }
+      } else {
+        this._popoverSelectedDays.push(d);
+        this._popoverSelectedDays.sort((a, b) => a - b);
+      }
+      this._updateRecurrencePopoverDayButtons();
+    },
+    _updateRecurrencePopoverDayButtons: function() {
+      const selected = this._popoverSelectedDays || [];
+      const buttons = document.querySelectorAll('#recPopEditDaysWrap .rec-pop-day-btn');
+      buttons.forEach(btn => {
+        const day = parseInt(btn.getAttribute('data-day'), 10);
+        if (selected.includes(day)) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    },
+    saveRecurrenceFromPopover: function() {
+      const entityId = this.currentRecurringEntityId;
+      const isTask = (this.currentRecurringEntityType === 'task');
+      if (!entityId) return;
+
+      const currentState = state;
+      const envKey = currentState.activeEnv || 'work';
+      const env = currentState.environments ? (currentState.environments[envKey] || currentState.environments.work) : null;
+      if (!env) return;
+
+      let entity = null;
+      let rule = null;
+
+      if (isTask) {
+        entity = (currentState.tasks || []).find(t => String(t.id) === String(entityId));
+        if (entity && entity.ruleId && Array.isArray(env.recurringTasks)) {
+          rule = env.recurringTasks.find(r => String(r.id) === String(entity.ruleId));
+        }
+      } else {
+        entity = (currentState.meetings || []).find(m => String(m.id) === String(entityId));
+        if (entity && entity.ruleId && Array.isArray(env.recurringMeetings)) {
+          rule = env.recurringMeetings.find(r => String(r.id) === String(entity.ruleId));
+        }
+      }
+
+      if (!rule) return;
+
+      const freqSelect = document.getElementById('recPopEditFreq');
+      const intervalInput = document.getElementById('recPopEditInterval');
+      const endDateInput = document.getElementById('recPopEditEndDate');
+
+      const newFreq = freqSelect ? freqSelect.value : 'weekly';
+      const newInterval = intervalInput ? Math.max(1, parseInt(intervalInput.value, 10) || 1) : 1;
+      const newDays = newFreq === 'daily'
+        ? [1, 2, 3, 4, 5, 6, 7]
+        : (Array.isArray(this._popoverSelectedDays) && this._popoverSelectedDays.length > 0 ? this._popoverSelectedDays : [1]);
+      const newEndDate = (endDateInput && endDateInput.value && endDateInput.value.trim()) ? endDateInput.value.trim() : null;
+
+      if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+        ctx.undoModule.pushSnapshot(`Modificar patrón recurrente de "${rule.title}"`);
+      }
+
+      rule.freq = newFreq;
+      rule.interval = newInterval;
+      rule.daysOfWeek = newDays;
+      rule.endDate = newEndDate;
+
+      if (isTask) {
+        // Limpiar ocurrencias pendientes no iniciadas de días que ya no coincidan con la regla modificada
+        if (env.days) {
+          Object.entries(env.days).forEach(([dStr, dayObj]) => {
+            if (dayObj && Array.isArray(dayObj.tasks)) {
+              const matches = matchesRecurrenceRule(rule, dStr);
+              if (!matches) {
+                dayObj.tasks = dayObj.tasks.filter(t => !(String(t.ruleId) === String(rule.id) && t.status === "pending" && (t.elapsedBefore || 0) === 0));
+              }
+            }
+          });
+        }
+        if (actionsModule && actionsModule.materializeRecurringTasks) {
+          actionsModule.materializeRecurringTasks();
+        }
+      }
+
+      this.closeRecurringInfoPopover();
+      saveState();
+      viewsModule.renderAll();
+      showToast(`Regla de recurrencia actualizada 🔁 (${formatRecurrenceRule(rule).summaryText})`);
+    },
+    toggleTaskFormRecurrenceDay: function(dayNum) {
+      const d = parseInt(dayNum, 10);
+      const cb = document.getElementById(`recTaskDayCb${d}`);
+      const btn = document.querySelector(`#recTaskDaysRow .rec-pop-day-btn[data-day="${d}"]`);
+      if (!cb || !btn) return;
+      
+      const allCbs = document.querySelectorAll('.rec-task-day-cb:checked');
+      if (cb.checked && allCbs.length <= 1) {
+        return;
+      }
+      
+      cb.checked = !cb.checked;
+      btn.classList.toggle('active', cb.checked);
+    },
+    toggleMeetingFormRecurrenceDay: function(dayNum) {
+      const d = parseInt(dayNum, 10);
+      const cb = document.getElementById(`recDayCb${d}`);
+      const btn = document.querySelector(`#recMeetingDaysRow .rec-pop-day-btn[data-day="${d}"]`);
+      if (!cb || !btn) return;
+      
+      const allCbs = document.querySelectorAll('.rec-day-cb:checked');
+      if (cb.checked && allCbs.length <= 1) {
+        return;
+      }
+      
+      cb.checked = !cb.checked;
+      btn.classList.toggle('active', cb.checked);
     },
     updateTaskAdvancedIndicators: function() {
       const autoMoveCb = document.getElementById('isAutoMoveTaskCheckbox');

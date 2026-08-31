@@ -188,4 +188,31 @@ describe('Recurrence Tag & Popover View Integration', () => {
     expect(listEl.innerHTML).toContain("openRecurringInfoPopover('meet_1', event, 'meeting')");
     expect(listEl.innerHTML).toContain('Diaria');
   });
+
+  it('permite modificar los días y periodicidad de una regla de recurrencia y sincroniza el estado', () => {
+    const state = defaultState();
+    const env = state.environments[state.activeEnv];
+    const rule = {
+      id: 'rec_task_555',
+      title: 'Informe',
+      freq: 'weekly',
+      interval: 1,
+      daysOfWeek: [1], // Solo Lunes
+      startDate: '2026-08-01',
+      endDate: null,
+      planned: 30
+    };
+    env.recurringTasks = [rule];
+
+    // Modificar regla: ahora Lunes y Miércoles cada 2 semanas
+    rule.daysOfWeek = [1, 3];
+    rule.interval = 2;
+    rule.endDate = '2026-12-31';
+
+    const formatted = formatRecurrenceRule(rule);
+    expect(formatted.intervalText).toBe('Cada 2 semanas');
+    expect(formatted.daysText).toBe('Lunes, Miércoles');
+    expect(formatted.summaryText).toBe('Cada 2 semanas (Lun, Mié)');
+    expect(formatted.dateRangeText).toBe('Desde 2026-08-01 · Hasta 2026-12-31');
+  });
 });

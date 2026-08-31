@@ -50,7 +50,9 @@ export function TodayTasksForms(appCtx){
     if (recFreqEl) {
       recFreqEl.addEventListener("change", (e) => {
         const daysWrap = document.getElementById("recDaysWrap");
+        const unitLabel = document.getElementById("recMeetingIntervalUnit");
         if (daysWrap) daysWrap.style.display = e.target.value === "daily" ? "none" : "block";
+        if (unitLabel) unitLabel.textContent = e.target.value === "daily" ? "día(s)" : "semana(s)";
       });
     }
 
@@ -58,7 +60,9 @@ export function TodayTasksForms(appCtx){
     if (recTaskFreqEl) {
       recTaskFreqEl.addEventListener("change", (e) => {
         const daysWrap = document.getElementById("recTaskDaysWrap");
+        const unitLabel = document.getElementById("recTaskIntervalUnit");
         if (daysWrap) daysWrap.style.display = e.target.value === "daily" ? "none" : "block";
+        if (unitLabel) unitLabel.textContent = e.target.value === "daily" ? "día(s)" : "semana(s)";
       });
     }
 
