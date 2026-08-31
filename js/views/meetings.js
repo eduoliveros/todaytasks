@@ -1,5 +1,5 @@
 /* views/meetings.js — Renderizado de la lista de reuniones */
-import { fmt, nowMinutes, getTodayStr } from '../utils.js';
+import { fmt, nowMinutes, getTodayStr, formatRecurrenceRule } from '../utils.js';
 import { escapeHtml, escapeAttr } from '../ui.js';
 
 export function TodayTasksMeetingsView(ctx){
@@ -45,7 +45,20 @@ export function TodayTasksMeetingsView(ctx){
         </div>
       </div>`;
       }
-      const recurringTag = m.isRecurring ? `<span class="tag" style="margin-left:4px;background:rgba(16,185,129,0.1);color:#059669;border-color:rgba(16,185,129,0.25);" title="Reunión recurrente${m.isModifiedInstance ? ' (Ocurrencia modificada)' : ' (Serie)'}">🔁 Recurrente${m.isModifiedInstance ? ' ✎' : ''}</span>` : '';
+      let recurringTag = '';
+      if (m.isRecurring) {
+        let ruleTooltip = `Reunión recurrente${m.isModifiedInstance ? ' (Ocurrencia modificada)' : ' (Serie)'} · Clic para detalles`;
+        if (m.ruleId) {
+          const envKey = state.activeEnv || 'work';
+          const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+          const rule = env && Array.isArray(env.recurringMeetings) ? env.recurringMeetings.find(r => String(r.id) === String(m.ruleId)) : null;
+          if (rule) {
+            const formatted = formatRecurrenceRule(rule);
+            ruleTooltip = `Reunión recurrente: ${formatted.summaryText} (${formatted.dateRangeText})${m.isModifiedInstance ? ' · Modificada hoy' : ''} · Clic para detalles`;
+          }
+        }
+        recurringTag = `<button type="button" class="tag recurring-tag-btn" onclick="app.openRecurringInfoPopover('${escapeAttr(m.id)}', event, 'meeting')" title="${escapeAttr(ruleTooltip)}" aria-label="Información de recurrencia">🔁 Recurrente${m.isModifiedInstance ? ' ✎' : ''}</button>`;
+      }
       return `
       <div class="item${pastClass}" id="meeting-item-${escapeAttr(m.id)}">
         <div class="top">

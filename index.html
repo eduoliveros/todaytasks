@@ -18,7 +18,7 @@
   <!-- Barra superior: logo + switcher + pestañas -->
   <div class="topbar-title-row">
     <div class="brand">
-      <h1>Tablero del día <span class="app-version">v1.90</span></h1>
+      <h1>Tablero del día <span class="app-version">v1.91</span></h1>
       <span class="db-status-badge" id="appModeLabel" title="Tipo de base de datos en uso">💾 local · persistente</span>
       <div class="env-switcher" id="envSwitcher">
         <button class="env-btn active" data-env="work" id="envBtnWork" title="Cambiar a ambiente de Trabajo (Tecla 'E')">
@@ -381,6 +381,42 @@
     <div class="start-after-popover-actions">
       <button type="button" class="btn small secondary" onclick="app.clearStartAfterPopover()">Quitar</button>
       <button type="button" class="btn small done" onclick="app.saveStartAfterPopover()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Popover de información y gestión de recurrencia -->
+<div class="time-popover-overlay" id="recurringInfoPopoverOverlay" onclick="app.closeRecurringInfoPopover()"></div>
+<div class="time-popover recurring-info-popover" id="recurringInfoPopover" style="display:none;">
+  <div class="time-popover-header">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span style="font-size:0.95rem;">🔁</span>
+      <span id="recurringPopoverHeading" style="font-weight:600;font-size:0.85rem;color:var(--ink,#0F172A);">Regla recurrente</span>
+    </div>
+    <button type="button" class="close-popover-x" onclick="app.closeRecurringInfoPopover()" aria-label="Cerrar">&times;</button>
+  </div>
+  <div class="recurring-popover-body">
+    <div class="rec-pop-title" id="recurringPopoverTitle">—</div>
+    <div class="rec-pop-grid">
+      <div class="rec-pop-field">
+        <span class="rec-pop-label">Frecuencia:</span>
+        <span class="rec-pop-value" id="recurringPopoverFreq">—</span>
+      </div>
+      <div class="rec-pop-field">
+        <span class="rec-pop-label">Días:</span>
+        <span class="rec-pop-value" id="recurringPopoverDays">—</span>
+      </div>
+      <div class="rec-pop-field" style="grid-column: span 2;">
+        <span class="rec-pop-label">Vigencia:</span>
+        <span class="rec-pop-value" id="recurringPopoverDates">—</span>
+      </div>
+    </div>
+    <div class="rec-pop-status-box" id="recurringPopoverStatusBox">
+      <span class="rec-pop-status-badge" id="recurringPopoverStatusBadge">✓ Ocurrencia normal</span>
+    </div>
+    <div class="recurring-popover-actions">
+      <button type="button" class="btn small secondary" onclick="app.closeRecurringInfoPopover()">Cerrar</button>
+      <button type="button" class="btn small run" id="recurringPopoverEditBtn" onclick="app.editRecurringFromPopover()">✎ Editar serie</button>
     </div>
   </div>
 </div>

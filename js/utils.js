@@ -257,6 +257,87 @@ export function matchesRecurrenceRule(rule, dateStr) {
   };
 }
 
+export function formatRecurrenceRule(rule) {
+  if (!rule || typeof rule !== 'object') {
+    return {
+      freqText: 'Recurrente',
+      intervalText: '—',
+      daysText: '—',
+      daysShortText: '—',
+      dateRangeText: '—',
+      summaryText: 'Recurrente'
+    };
+  }
+
+  const DAY_NAMES = {
+    1: { name: 'Lunes', short: 'Lun', letter: 'L' },
+    2: { name: 'Martes', short: 'Mar', letter: 'M' },
+    3: { name: 'Miércoles', short: 'Mié', letter: 'X' },
+    4: { name: 'Jueves', short: 'Jue', letter: 'J' },
+    5: { name: 'Viernes', short: 'Vie', letter: 'V' },
+    6: { name: 'Sábado', short: 'Sáb', letter: 'S' },
+    7: { name: 'Domingo', short: 'Dom', letter: 'D' }
+  };
+
+  const interval = (typeof rule.interval === 'number' && rule.interval > 0) ? Math.round(rule.interval) : 1;
+  const freq = rule.freq || (Array.isArray(rule.daysOfWeek) ? 'weekly' : 'daily');
+
+  let freqText = 'Recurrente';
+  let intervalText = '';
+  let daysText = '';
+  let daysShortText = '';
+  let summaryText = '';
+
+  if (freq === 'daily') {
+    freqText = 'Diaria';
+    intervalText = interval === 1 ? 'Cada día' : `Cada ${interval} días`;
+    daysText = interval === 1 ? 'Todos los días' : `Cada ${interval} días`;
+    daysShortText = interval === 1 ? 'Diario' : `c/${interval}d`;
+    summaryText = interval === 1 ? 'Diaria' : `Cada ${interval} días`;
+  } else if (freq === 'weekly' || freq === 'custom_weeks') {
+    freqText = 'Semanal';
+    intervalText = interval === 1 ? 'Cada semana' : `Cada ${interval} semanas`;
+
+    const sortedDays = Array.isArray(rule.daysOfWeek)
+      ? [...rule.daysOfWeek].sort((a, b) => a - b).filter(d => DAY_NAMES[d])
+      : [];
+
+    if (sortedDays.length > 0) {
+      daysText = sortedDays.map(d => DAY_NAMES[d].name).join(', ');
+      daysShortText = sortedDays.map(d => DAY_NAMES[d].short).join(', ');
+      const letters = sortedDays.map(d => DAY_NAMES[d].letter).join(', ');
+
+      if (interval === 1) {
+        summaryText = `Semanal (${letters})`;
+      } else {
+        summaryText = `Cada ${interval} semanas (${daysShortText})`;
+      }
+    } else {
+      daysText = '—';
+      daysShortText = '—';
+      summaryText = interval === 1 ? 'Semanal' : `Cada ${interval} semanas`;
+    }
+  }
+
+  let dateRangeText = '';
+  const start = rule.startDate ? `Desde ${rule.startDate}` : '';
+  const end = rule.endDate ? `Hasta ${rule.endDate}` : 'Indefinida';
+  if (start) {
+    dateRangeText = `${start} · ${end}`;
+  } else {
+    dateRangeText = end;
+  }
+
+  return {
+    freqText,
+    intervalText,
+    daysText,
+    daysShortText,
+    dateRangeText,
+    summaryText
+  };
+}
+
 export function computeOccupiedMeetingTime(meetings) {
   if (!Array.isArray(meetings) || meetings.length === 0) return 0;
   const sorted = meetings
@@ -405,6 +486,7 @@ export const TodayTasksUtils = {
   getStartOfWeekMonday,
   diffWeeks,
   matchesRecurrenceRule,
+  formatRecurrenceRule,
   computeOccupiedMeetingTime,
   normalizeSearchText,
   matchesSearchQuery,

@@ -1,6 +1,6 @@
 /* app.js — Coordinador principal de la aplicación */
 import TodayTasksConfig from './config.js';
-import { nowMinutes, fmt, fmtDur, fmtRemaining, timeToMinutes, getTodayStr, getDayOfWeek, getTaskElapsed } from './utils.js';
+import { nowMinutes, fmt, fmtDur, fmtRemaining, timeToMinutes, getTodayStr, getDayOfWeek, getTaskElapsed, formatRecurrenceRule } from './utils.js';
 import { escapeHtml, escapeAttr, showToast, scrollToElement, renderNotesMarkdown } from './ui.js';
 import { defaultState, loadState, wrapState } from './state.js';
 import { computeSchedule } from './scheduler.js';
@@ -634,6 +634,131 @@ function switchHeaderTab(target){
       if(!this.currentStartAfterTaskId) return;
       actionsModule.setTaskStartAfter(this.currentStartAfterTaskId, null);
       this.closeStartAfterPopover();
+    },
+    openRecurringInfoPopover: function(entityId, event, type = 'task') {
+      try {
+        if (event) {
+          if (typeof event.stopPropagation === 'function') event.stopPropagation();
+          if (typeof event.preventDefault === 'function') event.preventDefault();
+        }
+        this.currentRecurringEntityId = entityId;
+        this.currentRecurringEntityType = type;
+
+        const overlay = document.getElementById('recurringInfoPopoverOverlay');
+        const popover = document.getElementById('recurringInfoPopover');
+        if (!overlay || !popover) return;
+
+        const currentState = state;
+        const envKey = currentState.activeEnv || 'work';
+        const env = currentState.environments ? (currentState.environments[envKey] || currentState.environments.work) : null;
+        if (!env) return;
+
+        let entity = null;
+        let rule = null;
+        const isTask = (type === 'task');
+
+        if (isTask) {
+          entity = (currentState.tasks || []).find(t => String(t.id) === String(entityId));
+          if (entity && entity.ruleId && Array.isArray(env.recurringTasks)) {
+            rule = env.recurringTasks.find(r => String(r.id) === String(entity.ruleId));
+          }
+        } else {
+          entity = (currentState.meetings || []).find(m => String(m.id) === String(entityId));
+          if (entity && entity.ruleId && Array.isArray(env.recurringMeetings)) {
+            rule = env.recurringMeetings.find(r => String(r.id) === String(entity.ruleId));
+          }
+        }
+
+        if (!rule) {
+          rule = {
+            title: entity ? entity.title : 'Elemento recurrente',
+            freq: 'daily',
+            interval: 1,
+            startDate: currentState.selectedDate || getTodayStr()
+          };
+        }
+
+        const formatted = formatRecurrenceRule(rule);
+        const headingEl = document.getElementById('recurringPopoverHeading');
+        const titleEl = document.getElementById('recurringPopoverTitle');
+        const freqEl = document.getElementById('recurringPopoverFreq');
+        const daysEl = document.getElementById('recurringPopoverDays');
+        const datesEl = document.getElementById('recurringPopoverDates');
+        const statusBadgeEl = document.getElementById('recurringPopoverStatusBadge');
+
+        if (headingEl) headingEl.textContent = isTask ? 'Regla de tarea recurrente' : 'Regla de reunión recurrente';
+        if (titleEl) titleEl.textContent = rule.title || (entity ? entity.title : '—');
+        if (freqEl) freqEl.textContent = formatted.intervalText || formatted.freqText;
+        if (daysEl) daysEl.textContent = formatted.daysText;
+        if (datesEl) datesEl.textContent = formatted.dateRangeText;
+
+        if (statusBadgeEl) {
+          const isModified = entity && entity.isModifiedInstance;
+          if (isModified) {
+            statusBadgeEl.textContent = '✎ Ocurrencia modificada hoy';
+            statusBadgeEl.className = 'rec-pop-status-badge modified';
+          } else {
+            statusBadgeEl.textContent = '✓ Ocurrencia sincronizada con la serie';
+            statusBadgeEl.className = 'rec-pop-status-badge';
+          }
+        }
+
+        overlay.style.display = 'block';
+        popover.style.display = 'flex';
+
+        let target = null;
+        if (event) {
+          if (event.currentTarget && typeof event.currentTarget.getBoundingClientRect === 'function') {
+            target = event.currentTarget;
+          } else if (event.target && typeof event.target.getBoundingClientRect === 'function') {
+            target = event.target;
+          }
+        }
+
+        const popWidth = 280;
+        let left = Math.max(10, (window.innerWidth - popWidth) / 2);
+        let top = Math.max(10, (window.innerHeight - 200) / 2);
+
+        if (target) {
+          const rect = target.getBoundingClientRect();
+          if (rect && (rect.width > 0 || rect.height > 0 || rect.top > 0 || rect.left > 0)) {
+            left = rect.left;
+            top = rect.bottom + 6;
+            if (left + popWidth > window.innerWidth - 10) {
+              left = window.innerWidth - popWidth - 10;
+            }
+            if (left < 10) left = 10;
+
+            if (top + 220 > window.innerHeight && rect.top > 220) {
+              top = rect.top - 210;
+            }
+          }
+        }
+
+        popover.style.left = `${left}px`;
+        popover.style.top = `${top}px`;
+      } catch (err) {
+        console.error("Error in openRecurringInfoPopover:", err);
+      }
+    },
+    closeRecurringInfoPopover: function() {
+      const overlay = document.getElementById('recurringInfoPopoverOverlay');
+      const popover = document.getElementById('recurringInfoPopover');
+      if (overlay) overlay.style.display = 'none';
+      if (popover) popover.style.display = 'none';
+      this.currentRecurringEntityId = null;
+      this.currentRecurringEntityType = null;
+    },
+    editRecurringFromPopover: function() {
+      const id = this.currentRecurringEntityId;
+      const type = this.currentRecurringEntityType;
+      this.closeRecurringInfoPopover();
+      if (!id) return;
+      if (type === 'meeting') {
+        actionsModule.startEditMeeting(id);
+      } else {
+        actionsModule.startEditTask(id);
+      }
     },
     updateTaskAdvancedIndicators: function() {
       const autoMoveCb = document.getElementById('isAutoMoveTaskCheckbox');

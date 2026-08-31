@@ -116,6 +116,17 @@ export function TodayTasksShortcuts(appCtx){
           return;
         }
 
+        const recurringPopover = document.getElementById("recurringInfoPopover");
+        if(recurringPopover && recurringPopover.style.display === "flex"){
+          e.preventDefault();
+          if(window.app && typeof window.app.closeRecurringInfoPopover === "function") {
+            window.app.closeRecurringInfoPopover();
+          } else {
+            recurringPopover.style.display = "none";
+          }
+          return;
+        }
+
         if(state.activeInterruption || (routerModule && routerModule.getCurrentView() === 'interruption')){
           e.preventDefault();
           if (actionsModule && actionsModule.cancelInterruption) actionsModule.cancelInterruption();

@@ -4,6 +4,19 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.91] - 2026-08-31
+
+### Añadido
+- **Popover Interactivo de Información y Gestión de Recurrencia:**
+  - Nuevo botón interactivo en la tarjeta de tareas y reuniones (`.recurring-tag-btn`) en sustitución del tag estático.
+  - Formateo inteligente en lenguaje natural de reglas de recurrencia mediante `formatRecurrenceRule(rule)` (frecuencia, intervalos personalizados, días de la semana y periodo de vigencia).
+  - Menú contextual flotante (*popover*) que detalla el patrón periódico completo de tareas y reuniones, estado de la ocurrencia (normal vs modificada) y botón de acceso rápido para editar la serie completa.
+  - Tooltips enriquecidos al pasar el cursor sobre la etiqueta `🔁 Recurrente`.
+  - Cierre intuitivo mediante clic fuera o pulsación de la tecla `Escape`.
+  - Registro de decisión arquitectónica `docs/adr/003-recurring-rules-popover.md`.
+
+---
+
 ## [1.90] - 2026-08-31
 
 ### Añadido

@@ -1,7 +1,7 @@
 /* views/tasks.js — Renderizado de la lista de tareas activas */
 import {
   nowMinutes, fmt, fmtDur, fmtRemaining, getTaskElapsed, getTodayStr, matchesSearchQuery,
-  matchesTaskSearch,
+  matchesTaskSearch, formatRecurrenceRule,
   URGENCY_LEVELS, DEFAULT_URGENCY
 } from '../utils.js';
 import { escapeHtml, escapeAttr, renderNotesMarkdown } from '../ui.js';
@@ -141,7 +141,21 @@ export function TodayTasksTasksView(ctx){
     const dragHandle = isDraggable
       ? `<span class="drag-handle" title="Arrastra para reordenar" onmousedown="app.armTaskDrag()">⠿</span>`
       : '';
-    const recurringTag = t.isRecurring ? `<span class="tag" style="margin-left:4px;background:rgba(16,185,129,0.1);color:#059669;border-color:rgba(16,185,129,0.25);" title="Tarea recurrente diaria/semanal">🔁 Recurrente</span>` : '';
+    let recurringTag = '';
+    if (t.isRecurring) {
+      let ruleTooltip = 'Tarea recurrente · Clic para ver información de la regla';
+      if (t.ruleId) {
+        const state = getState();
+        const envKey = state.activeEnv || 'work';
+        const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+        const rule = env && Array.isArray(env.recurringTasks) ? env.recurringTasks.find(r => String(r.id) === String(t.ruleId)) : null;
+        if (rule) {
+          const formatted = formatRecurrenceRule(rule);
+          ruleTooltip = `Tarea recurrente: ${formatted.summaryText} (${formatted.dateRangeText}) · Clic para detalles`;
+        }
+      }
+      recurringTag = `<button type="button" class="tag recurring-tag-btn" onclick="app.openRecurringInfoPopover('${escapeAttr(t.id)}', event, 'task')" title="${escapeAttr(ruleTooltip)}" aria-label="Información de recurrencia">🔁 Recurrente</button>`;
+    }
     const autoMoveTag = (!t.isRecurring && t.autoMoveToToday) ? `<span class="tag tag-automove" title="Se trasladará automáticamente a hoy si no se completa">⏩ Pasar a hoy</span>` : '';
     const featuredClass = t.featured ? 'featured-task' : '';
 
@@ -255,7 +269,21 @@ export function TodayTasksTasksView(ctx){
 
   function renderCompletedSearchItem(t){
     const realStart = (t.completedAt !== null && t.completedAt !== undefined && t.actualDuration !== null) ? (t.completedAt - t.actualDuration) : null;
-    const recurringTag = t.isRecurring ? `<span class="tag" style="margin-left:4px;background:rgba(16,185,129,0.1);color:#059669;border-color:rgba(16,185,129,0.25);" title="Tarea recurrente diaria/semanal">🔁 Recurrente</span>` : '';
+    let recurringTag = '';
+    if (t.isRecurring) {
+      let ruleTooltip = 'Tarea recurrente · Clic para ver información de la regla';
+      if (t.ruleId) {
+        const state = getState();
+        const envKey = state.activeEnv || 'work';
+        const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+        const rule = env && Array.isArray(env.recurringTasks) ? env.recurringTasks.find(r => String(r.id) === String(t.ruleId)) : null;
+        if (rule) {
+          const formatted = formatRecurrenceRule(rule);
+          ruleTooltip = `Tarea recurrente: ${formatted.summaryText} (${formatted.dateRangeText}) · Clic para detalles`;
+        }
+      }
+      recurringTag = `<button type="button" class="tag recurring-tag-btn" onclick="app.openRecurringInfoPopover('${escapeAttr(t.id)}', event, 'task')" title="${escapeAttr(ruleTooltip)}" aria-label="Información de recurrencia">🔁 Recurrente</button>`;
+    }
     const hasNotes = !!(t.notes && t.notes.trim());
     const isNotesExpanded = isTaskNotesExpanded(t.id);
     const notesPill = hasNotes ? `
