@@ -24,7 +24,7 @@ Catálogo ampliado de 26 propuestas de mejora y nuevas funcionalidades para **To
 
 ---
 
-### 4. Notas y Descripción Enriquecida en Tareas
+### 4. Notas y Descripción Enriquecida en Tareas (**Implementado**)
 * **Descripción:** Campo de texto expandible (soporte para texto plano o Markdown ligero) en cada tarea para almacenar contexto, enlaces, checklists rápidos o notas de avance.
 * **Valor para el usuario:** Evita la necesidad de recurrir a herramientas externas de notas durante la ejecución de la jornada.
 
@@ -82,7 +82,7 @@ Catálogo ampliado de 26 propuestas de mejora y nuevas funcionalidades para **To
 
 ## 🎯 Tier 3 — Modo Foco, Concentración y Hábitos de Productividad
 
-### 13. Mini-Widget Flotante con Document Picture-in-Picture (PiP)
+### 13. Mini-Widget Flotante con Document Picture-in-Picture (PiP)  (**Implementado**)
 * **Descripción:** Utilizar la API nativa de navegadores `Document Picture-in-Picture` para abrir una mini-ventana flotante *"Always on Top"* mientras el usuario trabaja en otras aplicaciones (VS Code, terminal, hojas de cálculo). Muestra la tarea activa, cronómetro en vivo y botones de pausa/completar/interrupción.
 * **Valor para el usuario:** Control absoluto del tiempo y estado de la tarea sin necesidad de cambiar constantemente de ventana o pestaña.
 

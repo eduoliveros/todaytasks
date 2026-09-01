@@ -119,6 +119,16 @@ export function TodayTasksPiP(ctx) {
         if (ctx.renderAll) ctx.renderAll();
       });
 
+      // Atajos de teclado dentro de la ventana PiP
+      pipWindow.addEventListener('keydown', (e) => {
+        if (e.key === 'w' || e.key === 'W' || e.key === 'Escape') {
+          e.preventDefault();
+          focusMainWindow();
+          closePiP();
+          if (ctx.renderAll) ctx.renderAll();
+        }
+      });
+
       // Render inicial
       render();
 

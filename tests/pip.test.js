@@ -210,4 +210,21 @@ describe('TodayTasksPiP (Document Picture-in-Picture Mini-Widget)', () => {
     await pip.togglePiP();
     expect(pip.isOpen()).toBe(false);
   });
+
+  it('cierra la ventana flotante y devuelve el foco al pulsar "w" o "Escape" dentro del PiP', async () => {
+    const focusSpy = vi.spyOn(window, 'focus').mockImplementation(() => {});
+    const pip = TodayTasksPiP(ctx);
+    await pip.openPiP();
+    expect(pip.isOpen()).toBe(true);
+
+    // Disparar evento keydown con tecla 'w' en pipWindow
+    const keydownCallbacks = mockPipWindow._listeners.keydown || [];
+    keydownCallbacks.forEach(cb => cb({ key: 'w', preventDefault: vi.fn() }));
+
+    expect(focusSpy).toHaveBeenCalled();
+    expect(mockPipWindow.close).toHaveBeenCalled();
+    expect(pip.isOpen()).toBe(false);
+
+    focusSpy.mockRestore();
+  });
 });
