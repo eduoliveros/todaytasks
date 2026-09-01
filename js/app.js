@@ -14,6 +14,7 @@ import { TodayTasksForms } from './app/forms.js';
 import { TodayTasksShortcuts } from './app/shortcuts.js';
 import { TodayTasksHistory } from './history.js';
 import { TodayTasksUndo } from './undo.js';
+import { TodayTasksVersionSync } from './version.js';
 
 const STORAGE_KEY = (TodayTasksConfig && TodayTasksConfig.storageKey) ? TodayTasksConfig.storageKey : "todaytasks_state_v1";
 
@@ -112,6 +113,16 @@ actionsModule = TodayTasksActions(ctx);
 viewsModule = TodayTasksViews(ctx);
 cloudModule = TodayTasksCloud(ctx);
 routerModule = TodayTasksRouter(ctx);
+
+let versionSyncModule = TodayTasksVersionSync({
+  getState: () => state,
+  saveState,
+  getTaskEdit: () => taskEdit,
+  getMeetingEdit: () => meetingEdit,
+  flushPendingCloudPush: () => cloudModule && cloudModule.flushPendingCloudPush && cloudModule.flushPendingCloudPush(),
+  showToast
+});
+ctx.versionSyncModule = versionSyncModule;
 
 const { refreshNotifyBtn, requestNotificationPermission, checkRunningTaskNotification, checkMeetingNotifications } =
   TodayTasksNotifications({
@@ -1289,7 +1300,8 @@ function switchHeaderTab(target){
       if (input) {
         input.focus();
       }
-    }
+    },
+    versionSync: versionSyncModule
   };
 
   if (typeof window !== "undefined") {

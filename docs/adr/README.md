@@ -10,6 +10,7 @@ Un **Architecture Decision Record (ADR)** es un documento breve que captura una 
 * [002. Soporte de Markdown ligero en notas de tareas](./002-task-notes-markdown.md)
 * [003. Menú contextual / Popover para reglas de recurrencia](./003-recurring-rules-popover.md)
 * [004. Prevención de resurrección de tareas eliminadas mediante Tombstones en la sincronización](./004-sync-tombstones.md)
+* [005. Detección automática de nueva versión y auto-sincronización en inactividad](./005-version-auto-sync-idle.md)
 
 ## Plantilla sugerida para nuevos ADRs (`docs/adr/NNN-titulo.md`)
 

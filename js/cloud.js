@@ -388,35 +388,16 @@ export function TodayTasksCloud(ctx){
               showToast("Datos cargados desde la nube.");
             }
             else if(localCounts.total > 0 && cloudCounts.total > 0){
-              const msg = 
-                `Se detectaron datos en la nube y en este dispositivo:\n\n` +
-                `• Nube: ${cloudCounts.tasks} tarea(s), ${cloudCounts.meetings} reunión(es)\n` +
-                `• Este dispositivo: ${localCounts.tasks} tarea(s), ${localCounts.meetings} reunión(es)\n\n` +
-                `Aceptar = COMBINAR ambos (Recomendado, no pierde nada)\n` +
-                `Cancelar = Cargar solo de la nube`;
-
               backupLocalState();
-              const doMerge = window.confirm(msg);
-              if(doMerge){
-                applyingRemoteUpdate = true;
-                setState(mergeStates(state, cloudData));
-                setMeetingEdit(null); setTaskEdit(null);
-                applyingRemoteUpdate = false;
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
-                syncFormInputsFromState();
-                renderAll();
-                pushToCloud();
-                showToast("Datos combinados correctamente.");
-              } else {
-                applyingRemoteUpdate = true;
-                setState(wrapState(cloudData));
-                setMeetingEdit(null); setTaskEdit(null);
-                applyingRemoteUpdate = false;
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
-                syncFormInputsFromState();
-                renderAll();
-                showToast("Datos cargados desde la nube.");
-              }
+              applyingRemoteUpdate = true;
+              setState(mergeStates(state, cloudData));
+              setMeetingEdit(null); setTaskEdit(null);
+              applyingRemoteUpdate = false;
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
+              syncFormInputsFromState();
+              renderAll();
+              pushToCloud();
+              showToast("Datos combinados y sincronizados con la nube.");
             } else if(cloudHasData && !localHasData){
               // Nube tiene solo horario (sin tareas), local vacío → cargar nube
               backupLocalState();

@@ -38,6 +38,7 @@ todaytasks/
 │   ├── history.js               # Instantáneas de historial y limpieza de días pasados
 │   ├── undo.js                  # Pila de Deshacer / Rehacer (Undo / Redo)
 │   ├── router.js                # Enrutador basado en Hash (#main, #task/:id, #interruption)
+│   ├── version.js               # Detección de versiones, inactividad y sincronización entre pestañas
 │   ├── notifications.js         # Sub-sistema de notificaciones Web para tareas y reuniones
 │   ├── ui.js                    # Utilidades de UI (toasts, modales, sanitización y micro-parser Markdown de notas)
 │   ├── utils.js                 # Utilidades puras de tiempo, formateo, fechas y recurrencias
@@ -73,6 +74,7 @@ todaytasks/
 ├── e2e/                         # Pruebas End-to-End en navegador real (Playwright)
 ├── AGENTS.md                    # Reglas obligatorias para agentes de IA
 ├── index.html                   # Página principal y estructura estática del DOM
+├── version.json                 # Metadatos de versión estática para auto-sincronización
 ├── server.js                    # Servidor local Node.js (puerto 8080 con cabeceras no-cache)
 ├── package.json                 # Dependencias de desarrollo y scripts de test
 └── firestore.rules              # Reglas de seguridad para Firestore
@@ -186,7 +188,27 @@ La interfaz utiliza menús flotantes contextuales ligeros (*popovers*) para conf
 
 ---
 
-## 8. Directrices para Nuevos Desarrollos
+---
+
+## 8. Detección Automática de Versión y Sincronización en Inactividad (`version.js`)
+
+TodayTasks implementa una arquitectura híbrida de detección de actualizaciones de código y recarga segura sin intervención manual:
+* **Detección Reactiva y Periódica:**
+  - Consulta pasiva y ligera al archivo `/version.json` (con fallback a `index.html` sin caché).
+  - Verificación inmediata en eventos de ciclo de vida (`visibilitychange` / `focus`) cuando la pestaña recupera el foco.
+  - Polling pasivo cada 10 minutos de fondo.
+* **Coordinación Multi-Pestaña (`BroadcastChannel`):**
+  - Utiliza `new BroadcastChannel('todaytasks_version_channel')` para notificar a todas las pestañas abiertas en el mismo navegador cuando se detecta una nueva versión.
+* **Auto-Recarga Segura en Inactividad (*Safe Idle Reload*):**
+  - Tras 5 minutos sin interacción del usuario (o tras permanecer oculta en segundo plano), la aplicación se recarga automáticamente.
+  - **Condiciones de Seguridad:** Se valida que no existan formularios abiertos (`taskEdit === null && meetingEdit === null`), inputs con foco o modales visibles.
+  - **Persistencia Previa:** Se invocan `saveState()` y `flushPendingCloudPush()` antes de recargar para asegurar que la tarea en marcha, tiempos y estado queden 100% preservados.
+* **UI No Intrusiva:**
+  - Si el usuario está activo, se muestra la insignia interactiva `#versionUpdateBadge` en la barra superior (`✨ v1.94 lista [Actualizar]`) permitiendo actualización manual inmediata.
+
+---
+
+## 9. Directrices para Nuevos Desarrollos
 
 1. **Separación Estricta de Responsabilidades:**
    * Las vistas (`views/`) **no** deben mutar el estado directamente; deben delegar en las acciones (`actions/`).
@@ -198,3 +220,5 @@ La interfaz utiliza menús flotantes contextuales ligeros (*popovers*) para conf
 4. **Metodología de Pruebas:**
    * Toda nueva funcionalidad debe acompañarse de sus pruebas unitarias en `tests/`.
    * En corrección de errores, implementar primero el test unitario que reproduzca el fallo (TDD) antes de aplicar la solución.
+5. **Versionado:**
+   * Al realizar cambios de versión importantes, actualizar de forma sincronizada tanto `index.html` como `version.json`.

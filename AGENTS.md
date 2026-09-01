@@ -26,9 +26,9 @@ JavaScript Vanilla nativo con ES Modules.
 
 ## 2. Versionado Automático de la Aplicación
 
-- Con cada cambio de funcionalidad importante actualiza la versión en index.html, por ejemplo, de 1.50 a 1.51.
-<h1>Tablero del día <span class="app-version">v1.50</span></h1>
-
+- Con cada cambio de funcionalidad importante actualiza la versión tanto en `index.html` como en `version.json`:
+  - En `index.html`: `<h1>Tablero del día <span class="app-version">v1.94</span></h1>`
+  - En `version.json`: `{"version": "v1.94", "updatedAt": 1788277200000}`
 - Si se pide una modificación sobre la misma funcionalidad, o un fix de algún bug, NO actualices la versión.
 
 ---

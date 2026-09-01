@@ -86,7 +86,7 @@ describe('TodayTasksActions - Copiar Tareas a Otro Día', () => {
     sourceTask.elapsedBefore = 25;
     sourceTask.status = 'paused';
 
-    const targetDate = '2026-09-01';
+    const targetDate = '2026-11-20';
     actions.moveTaskToDate(sourceId, targetDate);
 
     const env = state.environments[state.activeEnv];

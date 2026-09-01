@@ -4,6 +4,22 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.94] - 2026-09-01
+
+### Añadido
+- **Detección Automática de Nueva Versión y Auto-Sincronización en Inactividad:**
+  - Nuevo módulo desacoplado `TodayTasksVersionSync` en [`js/version.js`](./js/version.js) con arquitectura híbrida.
+  - Detección autónoma y no intrusiva mediante consulta periódica a [`version.json`](./version.json) y análisis ligero de [`index.html`](./index.html) con cabeceras `no-cache`.
+  - Chequeo inmediato al reenfocar la ventana o pestaña tras periodos en segundo plano (`visibilitychange` / `focus`).
+  - Polling pasivo cada 10 minutos de fondo sin saturación de red.
+  - Coordinación multi-pestaña en tiempo real mediante API nativa `BroadcastChannel`.
+  - Mecanismo de **Auto-Recarga Segura (*Safe Idle Reload*)**: si la aplicación lleva 5 minutos inactiva o la pestaña permaneció oculta en segundo plano, se aplica la actualización preservando el 100% del estado, cronómetros y tareas en marcha sin perder datos ni interrumpir al usuario.
+  - Protección de seguridad: la recarga automática se pospone si hay tareas o reuniones en edición (`taskEdit !== null || meetingEdit !== null`), modales abiertos o campos de entrada activos.
+  - Insignia interactiva `#versionUpdateBadge` en la barra superior con opción de actualización manual con 1 clic para usuarios activos.
+  - Registro de decisión arquitectónica [`docs/adr/005-version-auto-sync-idle.md`](./docs/adr/005-version-auto-sync-idle.md).
+
+---
+
 ## [1.93] - 2026-08-31
 
 ### Añadido
