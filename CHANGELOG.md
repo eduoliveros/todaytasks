@@ -4,6 +4,31 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.95] - 2026-09-01
+
+### Añadido
+- **Mini-Widget Flotante con Document Picture-in-Picture (PiP):**
+  - Nuevo submódulo `TodayTasksPiP` en [`js/pip.js`](./js/pip.js) y estilos en [`css/pip.css`](./css/pip.css).
+  - Apertura de mini-ventana flotante Always-on-Top nativa mediante la API `window.documentPictureInPicture` para monitorizar tareas mientras se trabaja en otras aplicaciones de escritorio.
+  - **Doble Reloj en Cuenta Regresiva Reactiva:**
+    - Cronómetro en cuenta regresiva del tiempo restante de la tarea planificada (`MM:SS restante`).
+    - Conmutación automática a sobretiempo (`+MM:SS tiempo extra`) con alerta visual en rojo/ámbar si se excede la duración estimada.
+    - Pastilla de cuenta regresiva en vivo del tiempo restante hasta la próxima reunión (`en MM:SS`) con alerta pulsante cuando faltan < 5 minutos.
+    - Marca de corte por reunión (`▼`) posicionada en la barra de progreso con tooltip informativo interactivo.
+  - **Modos Dinámicos de Ejecución:**
+    - Tarea en curso (pausar, completar, interrumpir).
+    - Tarea en pausa (reanudar al instante).
+    - Modo interrupción con cronómetro propio y botones de finalización o descarte.
+    - Modo reposo que sugiere e inicia la siguiente tarea pendiente en cola.
+  - **Integración y Accesibilidad:**
+    - Botones de acceso rápido `🗖 Mini-Widget [W]` en la barra superior (pestaña Tiempo) y en la vista de foco de tarea (`#view-task`).
+    - Atajo de teclado global accesible con la tecla <kbd>W</kbd>.
+    - Sincronización instantánea de temas Claro y Oscuro (`data-theme="dark"`).
+    - Botón `↗ App` para enfocar la pestaña principal de TodayTasks (`window.focus()`).
+    - Registro de decisión arquitectónica [`docs/adr/006-document-picture-in-picture.md`](./docs/adr/006-document-picture-in-picture.md).
+
+---
+
 ## [1.94] - 2026-09-01
 
 ### Añadido

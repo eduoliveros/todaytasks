@@ -39,6 +39,7 @@ todaytasks/
 │   ├── undo.js                  # Pila de Deshacer / Rehacer (Undo / Redo)
 │   ├── router.js                # Enrutador basado en Hash (#main, #task/:id, #interruption)
 │   ├── version.js               # Detección de versiones, inactividad y sincronización entre pestañas
+│   ├── pip.js                   # Mini-Widget flotante Always-on-Top con Document Picture-in-Picture
 │   ├── notifications.js         # Sub-sistema de notificaciones Web para tareas y reuniones
 │   ├── ui.js                    # Utilidades de UI (toasts, modales, sanitización y micro-parser Markdown de notas)
 │   ├── utils.js                 # Utilidades puras de tiempo, formateo, fechas y recurrencias
@@ -69,6 +70,7 @@ todaytasks/
 │   ├── calendar.css             # Estilos de la vista calendario y selector de fechas
 │   ├── history.css              # Estilos del panel de historial y resumen
 │   ├── interruption.css         # Estilos visuales de interrupciones activas
+│   ├── pip.css                  # Estilos ultracompactos para el mini-widget Picture-in-Picture
 │   └── styles.css               # Archivo agregador de estilos
 ├── tests/                       # Pruebas unitarias y de integración (Vitest + JSDOM)
 ├── e2e/                         # Pruebas End-to-End en navegador real (Playwright)
@@ -206,9 +208,22 @@ TodayTasks implementa una arquitectura híbrida de detección de actualizaciones
 * **UI No Intrusiva:**
   - Si el usuario está activo, se muestra la insignia interactiva `#versionUpdateBadge` en la barra superior (`✨ v1.94 lista [Actualizar]`) permitiendo actualización manual inmediata.
 
+## 9. Mini-Widget Flotante Always-on-Top (`pip.js` y `css/pip.css`)
+
+TodayTasks integra la API nativa de navegadores **Document Picture-in-Picture** (`window.documentPictureInPicture`) para proyectar un visor flotante interactivo y persistente mientras el usuario trabaja en otras aplicaciones de escritorio:
+* **Contexto Compartido:** La ventana PiP comparte el mismo hilo y contexto de memoria JavaScript que la ventana principal, permitiendo que los botones invoquen directamente los métodos de negocio (`actionsModule.pauseTask()`, `actionsModule.completeTask()`, `actionsModule.startInterruption()`, etc.) sin latencia ni serialización.
+* **Sincronización Reactiva Bidireccional:**
+  - `renderAll()` y `smartRender()` notifican a `pipModule.render()` en cada mutación de estado.
+  - `applyTheme()` propaga el tema Claro/Oscuro (`data-theme="dark"`) a la ventana PiP de forma instantánea.
+* **Doble Reloj en Cuenta Regresiva:**
+  - Muestra la cuenta regresiva del tiempo restante de la tarea planificada y cambia automáticamente a sobretiempo (`+MM:SS`) con alerta visual en rojo/ámbar si se excede la duración estimada.
+  - Si hay reuniones programadas, muestra una pastilla de cuenta regresiva en vivo (`en MM:SS`) y una muesca de corte (`▼`) en la barra de progreso.
+* **Modo Interrupción:** Al iniciar una interrupción, el widget conmuta a un temporizador de interrupción activo con botones para finalizar o descartar.
+* **Progressive Enhancement:** Detección de soporte mediante `'documentPictureInPicture' in window` y atajo de teclado accesible con la tecla <kbd>W</kbd>.
+
 ---
 
-## 9. Directrices para Nuevos Desarrollos
+## 10. Directrices para Nuevos Desarrollos
 
 1. **Separación Estricta de Responsabilidades:**
    * Las vistas (`views/`) **no** deben mutar el estado directamente; deben delegar en las acciones (`actions/`).
@@ -222,3 +237,4 @@ TodayTasks implementa una arquitectura híbrida de detección de actualizaciones
    * En corrección de errores, implementar primero el test unitario que reproduzca el fallo (TDD) antes de aplicar la solución.
 5. **Versionado:**
    * Al realizar cambios de versión importantes, actualizar de forma sincronizada tanto `index.html` como `version.json`.
+

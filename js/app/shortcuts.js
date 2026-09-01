@@ -190,6 +190,13 @@ export function TodayTasksShortcuts(appCtx){
       } else if(e.key === "p" || e.key === "P"){
         e.preventDefault();
         if(togglePlanningMode) togglePlanningMode();
+      } else if(e.key === "w" || e.key === "W"){
+        e.preventDefault();
+        if(appCtx.pipModule && appCtx.pipModule.togglePiP) {
+          appCtx.pipModule.togglePiP();
+        } else if (typeof window !== "undefined" && window.app && typeof window.app.togglePiP === "function") {
+          window.app.togglePiP();
+        }
       } else if(e.key === "h" || e.key === "H"){
         e.preventDefault();
         if(routerModule && routerModule.getCurrentView() === 'history'){

@@ -141,3 +141,20 @@ El corazón de TodayTasks es su algoritmo de proyección temporal continua:
   * Sincronización bidireccional en segundo plano con *debounce* (500 ms).
   * Resolución inteligente de conflictos (`mergeStates`) basada en timestamps y prevención de ecos mediante `clientId`.
   * Vaciado y guardado seguro en eventos `beforeunload` y `pagehide`.
+
+---
+
+## 12. Mini-Widget Flotante con Document Picture-in-Picture (PiP)
+
+* **Ventana Always-on-Top Nativa:** Abre una mini-ventana flotante sobre cualquier aplicación de escritorio (VS Code, terminal, hojas de cálculo) mediante la API nativa `documentPictureInPicture`.
+* **Doble Reloj y Cuenta Regresiva Reactiva:**
+  * Cuenta regresiva del tiempo restante de la tarea activa (`MM:SS restante`) y conmutación automática a sobretiempo (`+MM:SS tiempo extra`) en rojo/ámbar si se excede la duración estimada.
+  * Pastilla de cuenta regresiva en vivo del tiempo restante hasta la próxima reunión (`en MM:SS`) con alerta de pulso cuando faltan < 5 minutos.
+  * Muesca de corte por reunión (`▼`) posicionada en la barra de progreso con tooltip interactivo.
+* **Modos Dinámicos de Ejecución:**
+  * Tarea en curso (pausar, completar, interrumpir).
+  * Tarea en pausa (reanudar al instante).
+  * Modo interrupción con cronómetro propio y botones de finalización o descarte.
+  * Modo reposo que sugiere e inicia la siguiente tarea pendiente en cola.
+* **Control por Teclado:** Atajo directo accesible pulsando la tecla <kbd>W</kbd>.
+

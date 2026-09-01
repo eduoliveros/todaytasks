@@ -33,6 +33,12 @@ export function TodayTasksViews(ctx){
     } else if(currentView === 'interruption'){
       focusV.renderInterruptionView();
     }
+    if(ctx.pipModule && ctx.pipModule.render){
+      ctx.pipModule.render();
+    }
+    if(ctx.pipModule && ctx.pipModule.updateAppPipButtons){
+      ctx.pipModule.updateAppPipButtons();
+    }
   }
 
   function smartRender(){
@@ -43,6 +49,12 @@ export function TodayTasksViews(ctx){
       focusV.renderTaskFocusView();
     } else {
       renderAll();
+    }
+    if(ctx.pipModule && ctx.pipModule.render){
+      ctx.pipModule.render();
+    }
+    if(ctx.pipModule && ctx.pipModule.updateAppPipButtons){
+      ctx.pipModule.updateAppPipButtons();
     }
   }
 

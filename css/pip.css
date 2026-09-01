@@ -1,0 +1,484 @@
+/* css/pip.css — Estilos para el mini-widget flotante Document Picture-in-Picture */
+
+:root {
+  /* Variables locales de PiP para tema claro */
+  --pip-bg: #FFFFFF;
+  --pip-border: #E2E0D8;
+  --pip-text: #1B1F23;
+  --pip-text-soft: #5B6169;
+  --pip-btn-bg: #F6F5F1;
+  --pip-btn-border: #DCD8D0;
+  --pip-card-bg: #FAF9F6;
+  --pip-track: #EFECE6;
+
+  /* Colores de estado */
+  --pip-accent-running: #E0A030;
+  --pip-accent-paused: #9A6B9E;
+  --pip-accent-done: #4C7A5B;
+  --pip-danger: #B4483A;
+  --pip-danger-bg: #FDF2F0;
+  --pip-danger-border: #F6D0CB;
+
+  /* Reuniones (Tema Claro) */
+  --pip-meeting-bg: #F5EEFC;
+  --pip-meeting-border: #D8B4FE;
+  --pip-meeting-text: #3B0764;
+  --pip-meeting-pill-bg: #FFFFFF;
+  --pip-meeting-pill-border: #C084FC;
+  --pip-meeting-pill-text: #6B21A8;
+
+  /* Reunión inminente (Tema Claro) */
+  --pip-meeting-urgent-bg: #FEF3C7;
+  --pip-meeting-urgent-border: #F59E0B;
+  --pip-meeting-urgent-text: #78350F;
+  --pip-meeting-urgent-pill-bg: #FFFFFF;
+  --pip-meeting-urgent-pill-border: #D97706;
+  --pip-meeting-urgent-pill-text: #B45309;
+
+  --pip-meeting-notch: #9333EA;
+}
+
+[data-theme="dark"] {
+  /* Variables locales de PiP para tema oscuro */
+  --pip-bg: #1B1F26;
+  --pip-border: #2D333F;
+  --pip-text: #E6E8EC;
+  --pip-text-soft: #9EA4AF;
+  --pip-btn-bg: #282E3A;
+  --pip-btn-border: #3A4250;
+  --pip-card-bg: #15181F;
+  --pip-track: #252B35;
+
+  /* Colores de estado (Oscuro) */
+  --pip-accent-running: #F0B040;
+  --pip-accent-paused: #B584B9;
+  --pip-accent-done: #5C9A71;
+  --pip-danger: #F87171;
+  --pip-danger-bg: #2A1517;
+  --pip-danger-border: #5C2B2E;
+
+  /* Reuniones (Tema Oscuro) */
+  --pip-meeting-bg: #261633;
+  --pip-meeting-border: #582C75;
+  --pip-meeting-text: #E9D5FF;
+  --pip-meeting-pill-bg: #150C1D;
+  --pip-meeting-pill-border: #8A4CB5;
+  --pip-meeting-pill-text: #F3E8FF;
+
+  /* Reunión inminente (Tema Oscuro) */
+  --pip-meeting-urgent-bg: #332007;
+  --pip-meeting-urgent-border: #92580E;
+  --pip-meeting-urgent-text: #FDE68A;
+  --pip-meeting-urgent-pill-bg: #1F1202;
+  --pip-meeting-urgent-pill-border: #F59E0B;
+  --pip-meeting-urgent-pill-text: #FCD34D;
+
+  --pip-meeting-notch: #C084FC;
+}
+
+/* Document Body en la ventana PiP */
+body.pip-window-body {
+  margin: 0;
+  padding: 0;
+  background: var(--pip-bg);
+  color: var(--pip-text);
+  font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  line-height: 1.3;
+  user-select: none;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Layout del widget PiP */
+.pip-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.pip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--pip-card-bg);
+  border-bottom: 1px solid var(--pip-border);
+  flex-shrink: 0;
+}
+
+.pip-header-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pip-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pip-status-dot.running {
+  background: var(--pip-accent-running);
+  animation: pip-pulse 1.8s infinite ease-in-out;
+}
+
+.pip-status-dot.paused {
+  background: var(--pip-accent-paused);
+}
+
+.pip-status-dot.overrun {
+  background: var(--pip-danger);
+  animation: pip-pulse 1s infinite ease-in-out;
+}
+
+.pip-status-dot.interruption {
+  background: var(--pip-danger);
+  animation: pip-pulse 0.8s infinite ease-in-out;
+}
+
+.pip-status-dot.idle {
+  background: var(--pip-text-soft);
+}
+
+.pip-status-text {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--pip-text-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pip-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pip-icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--pip-text-soft);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.15s ease;
+}
+
+.pip-icon-btn:hover {
+  background: var(--pip-btn-bg);
+  color: var(--pip-text);
+}
+
+.pip-icon-btn.close:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--pip-danger);
+}
+
+.pip-body {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* Título de tarea */
+.pip-task-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.pip-task-title {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--pip-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  flex: 1;
+}
+
+.pip-task-badge {
+  font-size: 9.5px;
+  padding: 1px 5px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+/* Banner de reunión */
+.pip-meeting-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--pip-meeting-border);
+  background: var(--pip-meeting-bg);
+  color: var(--pip-meeting-text);
+  font-size: 11px;
+  font-weight: 500;
+  gap: 6px;
+}
+
+.pip-meeting-banner.urgent {
+  background: var(--pip-meeting-urgent-bg);
+  border-color: var(--pip-meeting-urgent-border);
+  color: var(--pip-meeting-urgent-text);
+  animation: pip-banner-pulse 2s infinite ease-in-out;
+}
+
+.pip-meeting-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.pip-meeting-countdown-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--pip-meeting-pill-border);
+  background: var(--pip-meeting-pill-bg);
+  color: var(--pip-meeting-pill-text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 700;
+  font-size: 11px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.pip-meeting-banner.urgent .pip-meeting-countdown-pill {
+  border-color: var(--pip-meeting-urgent-pill-border);
+  background: var(--pip-meeting-urgent-pill-bg);
+  color: var(--pip-meeting-urgent-pill-text);
+}
+
+/* Tarjeta del temporizador y barra de progreso */
+.pip-timer-card {
+  background: var(--pip-card-bg);
+  border: 1px solid var(--pip-border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  position: relative;
+}
+
+.pip-timer-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.pip-timer-left {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.pip-timer-clock {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1;
+  color: var(--pip-text);
+}
+
+.pip-timer-clock.overrun {
+  color: var(--pip-danger);
+}
+
+.pip-timer-clock.paused {
+  color: var(--pip-accent-paused);
+}
+
+.pip-timer-label {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--pip-text-soft);
+}
+
+.pip-timer-label.overrun {
+  color: var(--pip-danger);
+  font-weight: 700;
+}
+
+.pip-timer-meta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--pip-accent-done);
+}
+
+.pip-timer-meta.overrun {
+  color: var(--pip-danger);
+}
+
+/* Barra de progreso de PiP con muesca */
+.pip-progress-track {
+  width: 100%;
+  height: 7px;
+  background: var(--pip-track);
+  border-radius: 4px;
+  position: relative;
+  overflow: visible;
+  margin: 3px 0 2px 0;
+}
+
+.pip-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--pip-accent-running);
+  transition: width 0.3s ease;
+}
+
+.pip-progress-fill.paused {
+  background: var(--pip-accent-paused);
+}
+
+.pip-progress-fill.overrun {
+  background: var(--pip-danger);
+}
+
+.pip-progress-notch {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+  cursor: pointer;
+  z-index: 5;
+}
+
+.pip-notch-caret {
+  font-size: 8px;
+  line-height: 1;
+  color: var(--pip-meeting-notch);
+}
+
+.pip-notch-bar {
+  width: 2px;
+  height: 100%;
+  background: var(--pip-meeting-notch);
+  border-radius: 1px;
+}
+
+/* Botonera de acciones */
+.pip-actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 5px;
+}
+
+.pip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 6px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.pip-btn:active {
+  transform: scale(0.97);
+}
+
+.pip-btn.play {
+  background: rgba(224, 160, 48, 0.15);
+  border-color: rgba(224, 160, 48, 0.35);
+  color: var(--pip-accent-running);
+}
+
+.pip-btn.pause {
+  background: rgba(154, 107, 158, 0.15);
+  border-color: rgba(154, 107, 158, 0.35);
+  color: var(--pip-accent-paused);
+}
+
+.pip-btn.done {
+  background: rgba(76, 122, 91, 0.15);
+  border-color: rgba(76, 122, 91, 0.35);
+  color: var(--pip-accent-done);
+}
+
+.pip-btn.danger {
+  background: rgba(180, 72, 58, 0.12);
+  border-color: rgba(180, 72, 58, 0.3);
+  color: var(--pip-danger);
+}
+
+.pip-btn.secondary {
+  background: var(--pip-btn-bg);
+  border-color: var(--pip-btn-border);
+  color: var(--pip-text);
+}
+
+/* Modo Interrupción */
+.pip-interruption-box {
+  background: var(--pip-danger-bg);
+  border: 1px solid var(--pip-danger-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pip-interruption-clock {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--pip-danger);
+}
+
+/* Animaciones */
+@keyframes pip-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.15); }
+}
+
+@keyframes pip-banner-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}

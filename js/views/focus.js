@@ -178,6 +178,9 @@ export function TodayTasksFocusView(ctx){
       <div class="focus-view">
         <div class="focus-header">
           <a href="#/" class="btn secondary small focus-back" title="Volver al tablero (Esc)">← Volver al tablero</a>
+          <button class="btn secondary small pip-toggle-btn" onclick="app.togglePiP()" title="Abrir tarea en mini-widget flotante Always on Top (Tecla 'W')">
+            <span>🗖</span> <span class="pip-btn-label">Mini-Widget [W]</span>
+          </button>
         </div>
 
         <h2 class="focus-task-name">${escapeHtml(t.title)}</h2>

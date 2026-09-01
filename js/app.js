@@ -15,6 +15,7 @@ import { TodayTasksShortcuts } from './app/shortcuts.js';
 import { TodayTasksHistory } from './history.js';
 import { TodayTasksUndo } from './undo.js';
 import { TodayTasksVersionSync } from './version.js';
+import { TodayTasksPiP } from './pip.js';
 
 const STORAGE_KEY = (TodayTasksConfig && TodayTasksConfig.storageKey) ? TodayTasksConfig.storageKey : "todaytasks_state_v1";
 
@@ -123,6 +124,14 @@ let versionSyncModule = TodayTasksVersionSync({
   showToast
 });
 ctx.versionSyncModule = versionSyncModule;
+
+let pipModule = TodayTasksPiP({
+  ...ctx,
+  actionsModule,
+  viewsModule,
+  showToast
+});
+ctx.pipModule = pipModule;
 
 const { refreshNotifyBtn, requestNotificationPermission, checkRunningTaskNotification, checkMeetingNotifications } =
   TodayTasksNotifications({
@@ -279,6 +288,9 @@ function switchHeaderTab(target){
     } else {
       document.documentElement.removeAttribute("data-theme");
     }
+    if (pipModule && pipModule.syncTheme) {
+      pipModule.syncTheme();
+    }
   }
 
   if(window.matchMedia){
@@ -369,6 +381,13 @@ function switchHeaderTab(target){
     const envBtnPersonal = document.getElementById("envBtnPersonal");
     if(envBtnWork) envBtnWork.addEventListener("click", () => actionsModule.switchEnvironment("work"));
     if(envBtnPersonal) envBtnPersonal.addEventListener("click", () => actionsModule.switchEnvironment("personal"));
+
+    const pipBtn = document.getElementById("pipBtn");
+    if(pipBtn) {
+      pipBtn.addEventListener("click", () => {
+        if(pipModule && pipModule.togglePiP) pipModule.togglePiP();
+      });
+    }
   }
 
   /* ---------------- Shortcuts sub-module ---------------- */
@@ -379,6 +398,7 @@ function switchHeaderTab(target){
     actionsModule,
     routerModule,
     viewsModule,
+    pipModule,
     switchHeaderTab,
     togglePlanningMode,
     undoModule
@@ -1301,7 +1321,12 @@ function switchHeaderTab(target){
         input.focus();
       }
     },
-    versionSync: versionSyncModule
+    versionSync: versionSyncModule,
+    togglePiP: () => pipModule && pipModule.togglePiP(),
+    openPiP: () => pipModule && pipModule.openPiP(),
+    closePiP: () => pipModule && pipModule.closePiP(),
+    isPiPOpen: () => pipModule && pipModule.isOpen(),
+    pip: pipModule
   };
 
   if (typeof window !== "undefined") {
