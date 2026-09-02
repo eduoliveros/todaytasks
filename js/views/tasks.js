@@ -207,7 +207,7 @@ export function TodayTasksTasksView(ctx){
     const overflowClass = isOverflow ? 'task-overflow' : '';
 
     return `
-      <div class="item task-item ${t.status} ${featuredClass} ${overflowClass}" id="task-item-${escapeAttr(t.id)}" data-task-id="${escapeAttr(t.id)}" ${dragAttrs}>
+      <div class="item task-item ${t.status} ${featuredClass} ${overflowClass}" id="task-item-${escapeAttr(t.id)}" data-task-id="${escapeAttr(t.id)}" ondblclick="app.startEditTask('${escapeAttr(t.id)}')" ${dragAttrs}>
         <div class="top">
           <div style="display:flex;align-items:flex-start;gap:6px;flex:1;min-width:0;">
             ${dragHandle}

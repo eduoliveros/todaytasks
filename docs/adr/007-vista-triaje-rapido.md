@@ -12,7 +12,7 @@ Las necesidades clave identificadas para abordar esta situación fueron:
    - **Viabilidad** (Caben en la jornada de hoy vs. Desbordan / Overflow).
    - **Duración** (Quick Wins ≤ 15m, Medias 20-45m, Largas > 45m).
    - **Destacadas** (Top 5 favoritas vs. resto).
-3. Ordenación interna consistente: dentro de cada grupo, las tareas deben listarse de menor duración a mayor duración para facilitar la resolución de victorias rápidas (*quick wins*).
+3. Ordenación consistente con la cola de ejecución: las tareas se listan en el mismo orden que en la pantalla principal (`a.order - b.order`), otorgando máxima prioridad a la ordenación manual establecida por el usuario e incorporando manijas de arrastre táctiles/visuales (`⠿`) para reordenar directamente con drag & drop.
 4. Agilidad individual: en cada fila de tarea, permitir cambiar fecha rápidamente (botones para los 5 próximos días laborables), urgencia, destacar y borrar sin necesidad de abrir modales complejos ni marcar checkboxes.
 5. Operaciones masivas (por lote): selección múltiple de tareas (individual o por grupo completo) y barra flotante de acciones para mover a cualquiera de los próximos 7 días laborables, cambiar urgencia, destacar o eliminar de una vez.
 6. Respeto al horario laboral semanal (`weeklySchedule`): los botones de salto rápido a fechas deben omitir automáticamente los días libres (fines de semana o días configurados como libres).
@@ -25,7 +25,7 @@ Se implementó una arquitectura modular desacoplada:
    - Se registró la ruta hash `#/triage` en `TodayTasksRouter` (`js/router.js`).
    - Se añadió el atajo global de teclado `X` para alternar entre el tablero principal y la vista de triaje, y soporte para `Esc` para salir o cerrar popovers.
    - El contenedor `#view-triage` se presenta a pantalla completa sin elementos distractores (sin recuadros de ayuda invasivos).
-   - Ordenación por defecto: Por Urgencia, con tareas ordenadas de menor a mayor duración (`(a.planned || 0) - (b.planned || 0)`).
+   - Ordenación: Mantiene el orden manual de la pantalla principal (`a.order - b.order`, con estado `running` en primera posición), con manija de arrastre (`⠿`) en cada fila y soporte completo de drag & drop reactivo.
 
 2. **Cálculo de Días Laborables Dinámicos (`getNextWorkingDays` en `js/utils.js`):**
    - Función pura que calcula los próximos $N$ días hábiles a partir de la fecha de referencia utilizando la configuración de `weeklySchedule` del entorno activo.

@@ -92,6 +92,7 @@ export function TodayTasksViews(ctx){
     toggleTriageGroup:            triageV.toggleTriageGroup,
     toggleAllTriageGroups:        triageV.toggleAllTriageGroups,
     handleTriageRowClick:         triageV.handleTriageRowClick,
+    handleTriageRowDblClick:      triageV.handleTriageRowDblClick,
     toggleTriageTaskSelect:       triageV.toggleTriageTaskSelect,
     toggleTriageGroupSelect:      triageV.toggleTriageGroupSelect,
     clearTriageSelection:         triageV.clearTriageSelection,

@@ -757,12 +757,12 @@ input:focus, button:focus, select:focus { outline: 2px solid var(--accent-pendin
 .urgency-dropdown-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  z-index: 9998;
+  z-index: 100005;
   display: none;
 }
 .urgency-dropdown-menu {
-  position: absolute;
-  z-index: 9999;
+  position: fixed;
+  z-index: 100006;
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--line, #e5e7eb);
   border-radius: 8px;

@@ -1,25 +1,30 @@
 /* views/triage.js — Vista de Triaje Rápido (#/triage) */
 import {
   nowMinutes, fmt, fmtDur, getTaskElapsed, getTodayStr, formatDateFriendly,
-  getDayOfWeek, getNextWorkingDays, URGENCY_LEVELS, DEFAULT_URGENCY, MAX_FEATURED_TASKS
+  getDayOfWeek, getNextWorkingDays, URGENCY_LEVELS, DEFAULT_URGENCY, MAX_FEATURED_TASKS,
+  formatRecurrenceRule
 } from '../utils.js';
 import { escapeHtml, escapeAttr, showToast } from '../ui.js';
 import { computeSchedule } from '../scheduler.js';
 
 export function TodayTasksTriageView(ctx) {
-  const { getState, saveState, renderAll, smartRender, actionsModule } = ctx;
+  const { getState, saveState, renderAll, smartRender, actionsModule, getTaskEdit } = ctx;
 
   let currentSort = 'urgency'; // 'urgency' | 'viability' | 'duration' | 'featured'
   const collapsedGroups = new Set(['days', 'week', 'later']); // por defecto 'today' abierto, resto plegados
   const selectedTaskIds = new Set();
   let activeSingleUrgencyTaskId = null;
+  let lastRenderedDate = null;
 
   function getTargetDateStr() {
     const state = getState();
-    if (state.planningMode && state.selectedDate) {
-      return state.selectedDate;
-    }
-    return getTodayStr();
+    return state.selectedDate || getTodayStr();
+  }
+
+  function compareTasksMainOrder(a, b) {
+    if (a.status === 'running') return -1;
+    if (b.status === 'running') return 1;
+    return (a.order || 0) - (b.order || 0);
   }
 
   function getActiveTasks(targetDateStr) {
@@ -29,13 +34,17 @@ export function TodayTasksTriageView(ctx) {
     const dayObj = env && env.days ? env.days[targetDateStr] : null;
 
     let tasksList = [];
-    if (dayObj && Array.isArray(dayObj.tasks)) {
+    if (dayObj && Array.isArray(dayObj.tasks) && dayObj.tasks.length > 0) {
       tasksList = dayObj.tasks;
-    } else if (targetDateStr === state.selectedDate && Array.isArray(state.tasks)) {
+    } else if (targetDateStr === (state.selectedDate || getTodayStr()) && Array.isArray(state.tasks) && state.tasks.length > 0) {
+      tasksList = state.tasks;
+    } else if (dayObj && Array.isArray(dayObj.tasks)) {
+      tasksList = dayObj.tasks;
+    } else if (targetDateStr === (state.selectedDate || getTodayStr()) && Array.isArray(state.tasks)) {
       tasksList = state.tasks;
     }
 
-    return tasksList.filter(t => t.status !== 'completed');
+    return tasksList.filter(t => t && t.status !== 'completed').sort(compareTasksMainOrder);
   }
 
   function formatShortDuration(mins) {
@@ -46,10 +55,73 @@ export function TodayTasksTriageView(ctx) {
     return `${h}h ${m}m`;
   }
 
-  function getGroups(activeTasks, targetDateStr) {
+  function getEffectiveSchedule(targetDateStr, activeTasks) {
     const state = getState();
-    const schedule = computeSchedule({ ...state, tasks: activeTasks, selectedDate: targetDateStr }, nowMinutes());
+    const isToday = targetDateStr === getTodayStr();
+
+    // Si coincide con la fecha seleccionada en el estado y ctx.computeSchedule existe,
+    // usamos la proyección idéntica a la pantalla principal
+    if (ctx && typeof ctx.computeSchedule === 'function' && state.selectedDate === targetDateStr) {
+      const sched = ctx.computeSchedule();
+      if (sched && sched.overflowIds) {
+        return sched;
+      }
+    }
+
+    const envKey = state.activeEnv || 'work';
+    const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+    const dayObj = env && env.days ? env.days[targetDateStr] : null;
+
+    let workStart = state.workStart;
+    let workEnd = state.workEnd;
+    let meetings = state.meetings;
+
+    if (state.selectedDate !== targetDateStr && dayObj) {
+      if (dayObj.hasCustomHours && dayObj.workStart !== undefined) {
+        workStart = dayObj.workStart;
+      }
+      if (dayObj.hasCustomHours && dayObj.workEnd !== undefined) {
+        workEnd = dayObj.workEnd;
+      }
+      if (Array.isArray(dayObj.meetings)) {
+        meetings = dayObj.meetings;
+      }
+    }
+
+    if (workStart === null || workStart === undefined) workStart = 9 * 60;
+    if (workEnd === null || workEnd === undefined) workEnd = 18 * 60;
+    if (!Array.isArray(meetings)) meetings = [];
+
+    const schedState = {
+      ...state,
+      workStart,
+      workEnd,
+      meetings,
+      tasks: activeTasks,
+      selectedDate: targetDateStr,
+      planningMode: isToday ? !!state.planningMode : true,
+      autoBreakEnabled: state.autoBreakEnabled !== false,
+      autoBreakIntervalMin: state.autoBreakIntervalMin || 60,
+      autoBreakDurationMin: state.autoBreakDurationMin || 10
+    };
+
+    const nowFn = (ctx && ctx.nowMinutes) ? ctx.nowMinutes : nowMinutes;
+    return computeSchedule(schedState, nowFn);
+  }
+
+  function getGroups(activeTasks, targetDateStr) {
+    const schedule = getEffectiveSchedule(targetDateStr, activeTasks);
     const overflowIds = schedule && schedule.overflowIds ? schedule.overflowIds : new Set();
+
+    function isTaskOverflow(t) {
+      if (!overflowIds || !t) return false;
+      const tid = t.id;
+      if (overflowIds.has(tid)) return true;
+      if (overflowIds.has(String(tid))) return true;
+      if (typeof tid === 'string' && !isNaN(Number(tid)) && overflowIds.has(Number(tid))) return true;
+      if (typeof tid === 'number' && overflowIds.has(String(tid))) return true;
+      return false;
+    }
 
     if (currentSort === 'urgency') {
       const groups = [
@@ -61,27 +133,28 @@ export function TodayTasksTriageView(ctx) {
       activeTasks.forEach(t => {
         const u = t.urgency || DEFAULT_URGENCY;
         const g = groups.find(x => x.id === u) || groups[1];
-        g.tasks.push({ ...t, overflow: overflowIds.has(t.id) });
+        g.tasks.push({ ...t, overflow: isTaskOverflow(t) });
       });
-      // Ordenar dentro de cada grupo de MENOR a MAYOR duración
-      groups.forEach(g => g.tasks.sort((a, b) => (a.planned || 0) - (b.planned || 0)));
+      // Prioridad máxima al orden manual de la pantalla principal
+      groups.forEach(g => g.tasks.sort(compareTasksMainOrder));
       return groups;
     }
 
     if (currentSort === 'viability') {
+      const isToday = targetDateStr === getTodayStr();
       const groups = [
-        { id: 'fits', title: 'Caben dentro del horario de hoy', icon: '✅', tasks: [] },
+        { id: 'fits', title: isToday ? 'Caben dentro del horario de hoy' : 'Caben dentro de la jornada', icon: '✅', tasks: [] },
         { id: 'overflow', title: 'Desbordan la jornada (Overflow)', icon: '⚠️', tasks: [] }
       ];
       activeTasks.forEach(t => {
-        const isOverflow = overflowIds.has(t.id);
+        const isOverflow = isTaskOverflow(t);
         if (!isOverflow) {
           groups[0].tasks.push({ ...t, overflow: false });
         } else {
           groups[1].tasks.push({ ...t, overflow: true });
         }
       });
-      groups.forEach(g => g.tasks.sort((a, b) => (a.planned || 0) - (b.planned || 0)));
+      groups.forEach(g => g.tasks.sort(compareTasksMainOrder));
       return groups;
     }
 
@@ -93,12 +166,12 @@ export function TodayTasksTriageView(ctx) {
       ];
       activeTasks.forEach(t => {
         const dur = t.planned || 0;
-        const item = { ...t, overflow: overflowIds.has(t.id) };
+        const item = { ...t, overflow: isTaskOverflow(t) };
         if (dur <= 15) groups[0].tasks.push(item);
         else if (dur <= 45) groups[1].tasks.push(item);
         else groups[2].tasks.push(item);
       });
-      groups.forEach(g => g.tasks.sort((a, b) => (a.planned || 0) - (b.planned || 0)));
+      groups.forEach(g => g.tasks.sort(compareTasksMainOrder));
       return groups;
     }
 
@@ -108,11 +181,11 @@ export function TodayTasksTriageView(ctx) {
         { id: 'unfeat', title: 'Otras tareas en cola', icon: '📋', tasks: [] }
       ];
       activeTasks.forEach(t => {
-        const item = { ...t, overflow: overflowIds.has(t.id) };
+        const item = { ...t, overflow: isTaskOverflow(t) };
         if (t.featured) groups[0].tasks.push(item);
         else groups[1].tasks.push(item);
       });
-      groups.forEach(g => g.tasks.sort((a, b) => (a.planned || 0) - (b.planned || 0)));
+      groups.forEach(g => g.tasks.sort(compareTasksMainOrder));
       return groups;
     }
 
@@ -157,13 +230,75 @@ export function TodayTasksTriageView(ctx) {
     renderTriageView();
   }
 
+  function getActions() {
+    return ctx.actionsModule || actionsModule || (typeof window !== 'undefined' ? window.app : null) || {};
+  }
+
+  let triageClickTimer = null;
+  let lastClickedTaskId = null;
+  let lastClickTime = 0;
+
   function handleTriageRowClick(taskId, event) {
     if (!event) return;
-    // Si el clic vino de un botón o checkbox interactivo, no conmutar selección de fila
-    if (event.target.closest('button') || event.target.closest('input[type="checkbox"]')) {
+    // Si el clic vino de un botón, checkbox o manija de arrastre, no conmutar selección de fila
+    if (event.target.closest('button') || event.target.closest('input[type="checkbox"]') || event.target.closest('.drag-handle')) {
       return;
     }
-    toggleTriageTaskSelect(taskId);
+    if (event.stopPropagation) event.stopPropagation();
+    const strId = String(taskId);
+    const now = Date.now();
+
+    // Detección de doble clic / doble tap consecutivo en la misma tarea (ventana de 450ms)
+    if (lastClickedTaskId === strId && (now - lastClickTime) < 450) {
+      if (triageClickTimer) {
+        clearTimeout(triageClickTimer);
+        triageClickTimer = null;
+      }
+      lastClickedTaskId = null;
+      lastClickTime = 0;
+      handleTriageRowDblClick(taskId, event);
+      return;
+    }
+
+    // Primer clic / tap: limpiamos selección previa pendiente si pulsó en otra fila
+    if (triageClickTimer) {
+      clearTimeout(triageClickTimer);
+      triageClickTimer = null;
+      if (lastClickedTaskId && lastClickedTaskId !== strId) {
+        toggleTriageTaskSelect(lastClickedTaskId);
+      }
+    }
+
+    lastClickedTaskId = strId;
+    lastClickTime = now;
+
+    // Esperamos 400ms para permitir doble clic/tap antes de conmutar selección
+    triageClickTimer = setTimeout(() => {
+      triageClickTimer = null;
+      lastClickedTaskId = null;
+      lastClickTime = 0;
+      toggleTriageTaskSelect(taskId);
+    }, 400);
+  }
+
+  function handleTriageRowDblClick(taskId, event) {
+    if (!event) return;
+    if (event.target.closest('button') || event.target.closest('input[type="checkbox"]') || event.target.closest('.drag-handle')) {
+      return;
+    }
+    if (event.stopPropagation) event.stopPropagation();
+    if (triageClickTimer) {
+      clearTimeout(triageClickTimer);
+      triageClickTimer = null;
+    }
+    lastClickedTaskId = null;
+    lastClickTime = 0;
+    selectedTaskIds.delete(String(taskId));
+
+    const actions = getActions();
+    if (actions && actions.startEditTask) {
+      actions.startEditTask(taskId);
+    }
   }
 
   function toggleTriageTaskSelect(taskId, event) {
@@ -203,10 +338,14 @@ export function TodayTasksTriageView(ctx) {
   function toggleTriageTaskStar(taskId, event) {
     if (event) event.stopPropagation();
     const state = getState();
-    const t = (state.tasks || []).find(x => String(x.id) === String(taskId));
+    const targetDateStr = getTargetDateStr();
+    const activeTasks = getActiveTasks(targetDateStr);
+    const t = activeTasks.find(x => String(x.id) === String(taskId)) ||
+              (state.tasks || []).find(x => String(x.id) === String(taskId));
     if (!t) return;
-    if (actionsModule && actionsModule.toggleTaskFeatured) {
-      actionsModule.toggleTaskFeatured(taskId);
+    const actions = getActions();
+    if (actions && actions.toggleTaskFeatured) {
+      actions.toggleTaskFeatured(taskId);
     }
     renderTriageView();
   }
@@ -214,8 +353,9 @@ export function TodayTasksTriageView(ctx) {
   function moveTriageTaskToDate(taskId, targetDateStr, friendlyLabel, event) {
     if (event) event.stopPropagation();
     if (!targetDateStr) return;
-    if (actionsModule && actionsModule.moveTaskToDate) {
-      actionsModule.moveTaskToDate(taskId, targetDateStr);
+    const actions = getActions();
+    if (actions && actions.moveTaskToDate) {
+      actions.moveTaskToDate(taskId, targetDateStr);
     }
     selectedTaskIds.delete(String(taskId));
     renderTriageView();
@@ -223,16 +363,12 @@ export function TodayTasksTriageView(ctx) {
 
   function deleteTriageSingleTask(taskId, event) {
     if (event) event.stopPropagation();
-    const state = getState();
-    const t = (state.tasks || []).find(x => String(x.id) === String(taskId));
-    const title = t ? t.title : 'la tarea';
-    if (typeof window !== 'undefined' && !window.confirm(`¿Eliminar "${title}"?`)) {
-      return;
-    }
-    if (actionsModule && actionsModule.deleteTask) {
-      actionsModule.deleteTask(taskId);
-    }
     selectedTaskIds.delete(String(taskId));
+
+    const actions = getActions();
+    if (actions && actions.deleteTask) {
+      actions.deleteTask(taskId);
+    }
     renderTriageView();
   }
 
@@ -242,16 +378,46 @@ export function TodayTasksTriageView(ctx) {
     const popover = document.getElementById('triageSingleUrgencyPopover');
     if (!popover) return;
     const btn = event.currentTarget || event.target;
+    if (!btn || typeof btn.getBoundingClientRect !== 'function') {
+      popover.style.display = 'block';
+      return;
+    }
     const rect = btn.getBoundingClientRect();
-    popover.style.top = `${rect.bottom + (window.scrollY || 0) + 4}px`;
-    popover.style.left = `${Math.min(rect.left + (window.scrollX || 0), window.innerWidth - 180)}px`;
+    const rectTop = (rect.top !== undefined && rect.top !== null) ? rect.top : (rect.bottom - 28);
+    const popoverWidth = 160;
+    const popoverHeight = 175;
+
+    // Posición horizontal (anclado a la izquierda del botón pero manteniéndose en pantalla)
+    let left = rect.left;
+    if (left + popoverWidth > window.innerWidth - 10) {
+      left = Math.max(10, window.innerWidth - popoverWidth - 10);
+    }
+    if (left < 10) left = 10;
+
+    // Posición vertical: por defecto justo debajo del botón
+    let top = rect.bottom + 4;
+
+    // Si desborda por abajo de la ventana, mostramos el popover hacia arriba del botón
+    if (top + popoverHeight > window.innerHeight - 10) {
+      if (rectTop - popoverHeight - 4 >= 10) {
+        // Cabe arriba
+        top = rectTop - popoverHeight - 4;
+      } else {
+        // Si no cabe completamente ni arriba ni abajo, ajustamos al borde visible de la ventana
+        top = Math.max(10, window.innerHeight - popoverHeight - 10);
+      }
+    }
+
+    popover.style.top = `${top}px`;
+    popover.style.left = `${left}px`;
     popover.style.display = 'block';
   }
 
   function applyTriageSingleUrgency(urgency) {
     if (!activeSingleUrgencyTaskId) return;
-    if (actionsModule && actionsModule.setTaskUrgency) {
-      actionsModule.setTaskUrgency(activeSingleUrgencyTaskId, urgency);
+    const actions = getActions();
+    if (actions && actions.setTaskUrgency) {
+      actions.setTaskUrgency(activeSingleUrgencyTaskId, urgency);
     }
     closeTriagePopovers();
     renderTriageView();
@@ -271,8 +437,9 @@ export function TodayTasksTriageView(ctx) {
   function executeTriageMoveSelectedDate(targetDateStr) {
     if (selectedTaskIds.size === 0 || !targetDateStr) return;
     const ids = Array.from(selectedTaskIds);
-    if (actionsModule && actionsModule.moveTasksToDate) {
-      actionsModule.moveTasksToDate(ids, targetDateStr);
+    const actions = getActions();
+    if (actions && actions.moveTasksToDate) {
+      actions.moveTasksToDate(ids, targetDateStr);
     }
     selectedTaskIds.clear();
     closeTriagePopovers();
@@ -282,8 +449,9 @@ export function TodayTasksTriageView(ctx) {
   function executeTriageBatchUrgency(urgency) {
     if (selectedTaskIds.size === 0 || !urgency) return;
     const ids = Array.from(selectedTaskIds);
-    if (actionsModule && actionsModule.setTasksUrgency) {
-      actionsModule.setTasksUrgency(ids, urgency);
+    const actions = getActions();
+    if (actions && actions.setTasksUrgency) {
+      actions.setTasksUrgency(ids, urgency);
     }
     selectedTaskIds.clear();
     closeTriagePopovers();
@@ -293,8 +461,9 @@ export function TodayTasksTriageView(ctx) {
   function executeTriageBatchStar(enable) {
     if (selectedTaskIds.size === 0) return;
     const ids = Array.from(selectedTaskIds);
-    if (actionsModule && actionsModule.setTasksFeatured) {
-      actionsModule.setTasksFeatured(ids, enable);
+    const actions = getActions();
+    if (actions && actions.setTasksFeatured) {
+      actions.setTasksFeatured(ids, enable);
     }
     renderTriageView();
   }
@@ -305,10 +474,38 @@ export function TodayTasksTriageView(ctx) {
     if (typeof window !== 'undefined' && !window.confirm(`¿Eliminar las ${count} tareas seleccionadas?`)) {
       return;
     }
+    const state = getState();
+    const targetDateStr = getTargetDateStr();
+    const activeTasks = getActiveTasks(targetDateStr);
     const ids = Array.from(selectedTaskIds);
-    if (actionsModule && actionsModule.deleteTasks) {
-      actionsModule.deleteTasks(ids);
+    const actions = getActions();
+
+    const recurringTasks = [];
+    const normalIds = [];
+
+    ids.forEach(id => {
+      const t = activeTasks.find(x => String(x.id) === String(id)) ||
+                (state.tasks || []).find(x => String(x.id) === String(id));
+      if (t && t.ruleId) {
+        recurringTasks.push(t);
+      } else {
+        normalIds.push(id);
+      }
+    });
+
+    if (recurringTasks.length > 0 && actions.deleteRecurringTaskInstance) {
+      if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+        ctx.undoModule.pushSnapshot(`Eliminar ${ids.length} tareas`);
+      }
+      recurringTasks.forEach(t => {
+        actions.deleteRecurringTaskInstance(t.ruleId, targetDateStr);
+      });
     }
+
+    if (normalIds.length > 0 && actions.deleteTasks) {
+      actions.deleteTasks(normalIds);
+    }
+
     selectedTaskIds.clear();
     renderTriageView();
   }
@@ -331,6 +528,11 @@ export function TodayTasksTriageView(ctx) {
 
     const state = getState();
     const targetDateStr = getTargetDateStr();
+    if (lastRenderedDate !== targetDateStr) {
+      lastRenderedDate = targetDateStr;
+      selectedTaskIds.clear();
+      closeTriagePopovers();
+    }
     const activeTasks = getActiveTasks(targetDateStr);
     const groups = getGroups(activeTasks, targetDateStr);
 
@@ -348,14 +550,114 @@ export function TodayTasksTriageView(ctx) {
       { id: 'featured', label: '⭐ Destacadas' }
     ];
 
+    const taskEdit = (getTaskEdit ? getTaskEdit() : (ctx.getTaskEdit ? ctx.getTaskEdit() : null));
+    // El modal de edición se inyecta en un host externo al container para
+    // que position:fixed no sea afectado por transforms del ancestro.
+    let modalHost = document.getElementById('triageEditModalHost');
+    if (!modalHost && typeof document !== 'undefined' && document.body) {
+      modalHost = document.createElement('div');
+      modalHost.id = 'triageEditModalHost';
+      document.body.appendChild(modalHost);
+    }
+    if (modalHost) {
+      if (taskEdit && taskEdit.id) {
+        const editUrgency = taskEdit.urgency || DEFAULT_URGENCY;
+        const editUrgencyInfo = URGENCY_LEVELS[editUrgency] || URGENCY_LEVELS[DEFAULT_URGENCY];
+        modalHost.innerHTML = `
+          <div class="modal-overlay" id="triageTaskEditModal" style="display:flex;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:100000;align-items:center;justify-content:center;" onclick="if(event.target===this) app.cancelEditTask()">
+            <div class="modal-box triage-edit-modal-box" onclick="event.stopPropagation()">
+              <div class="triage-edit-modal-header">
+                <h3><span>✎</span> ${taskEdit.mode === 'series' ? 'Editar Serie Recurrente 🔁' : (taskEdit.ruleId ? 'Editar Ocurrencia Recurrente 🔁' : 'Editar Tarea')}</h3>
+                <button type="button" class="close-modal-btn" onclick="app.cancelEditTask()" title="Cerrar (Esc)" aria-label="Cerrar">&times;</button>
+              </div>
+
+              <div class="triage-edit-modal-body">
+                <div style="margin-bottom:12px;">
+                  <label class="triage-edit-label">Título de la tarea:</label>
+                  <input type="text" id="triageEditTitleInput" class="triage-edit-input" value="${escapeAttr(taskEdit.title)}" oninput="app.updateTaskEditField('title', this.value)" placeholder="Título de la tarea">
+                </div>
+
+                <div class="triage-edit-time-grid">
+                  <label class="triage-edit-label">
+                    Planificado:
+                    <input type="text" class="triage-edit-input" value="${escapeAttr(taskEdit.duration)}" placeholder="ej. 30, 1h 30m" oninput="app.updateTaskEditField('duration', this.value)">
+                  </label>
+                  <label class="triage-edit-label">
+                    Consumido:
+                    <input type="text" class="triage-edit-input" value="${escapeAttr(taskEdit.actual||0)}" placeholder="ej. 15, 1h" oninput="app.updateTaskEditField('actual', this.value)">
+                  </label>
+                  <label class="triage-edit-label">
+                    A partir de:
+                    <input type="time" class="triage-edit-input" value="${escapeAttr(taskEdit.startAfter || '')}" oninput="app.updateTaskEditField('startAfter', this.value)">
+                  </label>
+                </div>
+
+                <div class="triage-edit-badges-row">
+                  <button type="button" class="urgency-pill-btn urgency-btn-${escapeAttr(editUrgency)}"
+                          onclick="app.openEditUrgencyDropdown('${escapeAttr(taskEdit.id)}', event)"
+                          title="Urgencia: ${escapeAttr(editUrgencyInfo.label)} (clic para cambiar)"
+                          id="edit-urgency-pill-${escapeAttr(taskEdit.id)}">
+                    <span>${editUrgencyInfo.icon}</span>
+                    <span>${escapeHtml(editUrgencyInfo.label)}</span>
+                    <span class="urgency-pill-chevron">▾</span>
+                  </button>
+
+                  <button type="button" class="icon-btn star-btn ${taskEdit.featured ? 'is-featured' : ''}"
+                          title="${taskEdit.featured ? 'Quitar destacado' : 'Marcar como destacada (máx. 5 al día)'}"
+                          onclick="app.toggleEditFeatured('${escapeAttr(taskEdit.id)}', event)">
+                    ${taskEdit.featured ? '⭐' : '☆'}
+                  </button>
+                </div>
+
+                <div class="row task-edit-notes-wrap" style="margin-bottom:12px;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;width:100%;">
+                    <label class="triage-edit-label" style="margin:0;">
+                      <span>📝</span> Notas / Enlaces (Markdown):
+                    </label>
+                    <div class="task-notes-mini-toolbar">
+                      <button type="button" class="btn-notes-tool" onclick="app.insertEditNotesFormat('${escapeAttr(taskEdit.id)}', '**', '**')" title="Negrita (**texto**)">B</button>
+                      <button type="button" class="btn-notes-tool italic" onclick="app.insertEditNotesFormat('${escapeAttr(taskEdit.id)}', '*', '*')" title="Cursiva (*texto*)">I</button>
+                      <button type="button" class="btn-notes-tool" onclick="app.insertEditNotesLink('${escapeAttr(taskEdit.id)}')" title="Insertar enlace">🔗 Link</button>
+                      <button type="button" class="btn-notes-tool" id="btn-preview-edit-${escapeAttr(taskEdit.id)}" onclick="app.toggleEditNotesPreview('${escapeAttr(taskEdit.id)}')" title="Alternar vista previa">👁️</button>
+                    </div>
+                  </div>
+                  <textarea id="task-edit-notes-${escapeAttr(taskEdit.id)}" class="task-edit-notes-textarea" rows="3" placeholder="Notas, enlaces o contexto (ej. **importante**, https://... o [PR](url))" oninput="app.updateTaskEditField('notes', this.value)">${escapeHtml(taskEdit.notes || '')}</textarea>
+                  <div id="task-edit-notes-preview-${escapeAttr(taskEdit.id)}" class="task-edit-notes-preview task-note-content" style="display:none;margin-top:6px;"></div>
+                </div>
+
+                ${!taskEdit.ruleId ? `
+                <div style="margin-top:6px;margin-bottom:6px;">
+                  <label style="font-size:0.82rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;color:var(--ink);">
+                    <input type="checkbox" ${taskEdit.autoMoveToToday ? 'checked' : ''} onchange="app.updateTaskEditField('autoMoveToToday', this.checked)"> Auto-mover a hoy si no se completa
+                  </label>
+                </div>` : ''}
+              </div>
+
+              <div class="triage-edit-modal-footer">
+                <button type="button" class="btn secondary small" onclick="app.cancelEditTask()">Cancelar</button>
+                <button type="button" class="btn primary small done" onclick="app.saveEditTask('${escapeAttr(taskEdit.id)}')">Guardar</button>
+              </div>
+            </div>
+          </div>
+        `;
+        // Auto-focus en el título
+        setTimeout(() => {
+          const input = document.getElementById('triageEditTitleInput');
+          if (input) input.focus();
+        }, 50);
+      } else {
+        // Sin edición activa: limpiar el host
+        modalHost.innerHTML = '';
+      }
+    }
+
     let html = `
       <div class="triage-view-inner">
         <!-- TOP BAR -->
         <header class="triage-header">
           <div class="triage-header-left">
             <button class="btn secondary small triage-btn-back" onclick="if(window.location.hash==='#/triage') window.location.hash='#/'; else if(app.showView) app.showView('main');" title="Volver al tablero (Esc o X)">
-              <span>← Tablero</span>
-              <kbd class="triage-kbd">X</kbd>
+              ← Tablero [X]
             </button>
             <div>
               <div class="triage-title-row">
@@ -433,11 +735,46 @@ export function TodayTasksTriageView(ctx) {
                     const isSelected = selectedTaskIds.has(String(t.id));
                     const urgencyKey = t.urgency || DEFAULT_URGENCY;
                     const uInfo = URGENCY_LEVELS[urgencyKey] || URGENCY_LEVELS[DEFAULT_URGENCY];
+                    const isRecurring = !!(t.isRecurring || t.ruleId);
+
+                    let recurringTag = '';
+                    if (isRecurring) {
+                      let ruleTooltip = 'Tarea recurrente · Clic para ver información de la regla';
+                      if (t.ruleId) {
+                        const envKey = state.activeEnv || 'work';
+                        const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+                        const rule = env && Array.isArray(env.recurringTasks) ? env.recurringTasks.find(r => String(r.id) === String(t.ruleId)) : null;
+                        if (rule) {
+                          const formatted = formatRecurrenceRule(rule);
+                          ruleTooltip = `Tarea recurrente: ${formatted.summaryText} (${formatted.dateRangeText}) · Clic para detalles`;
+                        }
+                      }
+                      recurringTag = `
+                        <button type="button" class="tag recurring-tag-btn triage-recurring-btn" onclick="app.openRecurringInfoPopover('${escapeAttr(t.id)}', event, 'task')" title="${escapeAttr(ruleTooltip)}" aria-label="Información de recurrencia">
+                          <span class="triage-recurring-icon">🔁</span>
+                          <span class="triage-recurring-label">Recurrente</span>
+                        </button>
+                      `;
+                    }
+
+                    const isDraggable = t.status === "pending" || t.status === "paused";
+                    const dragAttrs = isDraggable
+                      ? `draggable="true"
+                         ondragstart="app.taskDragStart(event, '${escapeAttr(t.id)}')"
+                         ondragover="app.taskDragOver(event)"
+                         ondragleave="app.taskDragLeave(event)"
+                         ondrop="app.taskDrop(event, '${escapeAttr(t.id)}')"
+                         ondragend="app.taskDragEnd(event)"`
+                      : '';
+                    const dragHandle = isDraggable
+                      ? `<span class="drag-handle triage-drag-handle" title="Arrastra para reordenar" onmousedown="app.armTaskDrag()">⠿</span>`
+                      : '';
 
                     return `
-                      <div class="triage-task-row ${isSelected ? 'selected' : ''}" data-task-id="${escapeAttr(t.id)}" onclick="app.handleTriageRowClick('${escapeAttr(t.id)}', event)">
-                        <!-- LADO IZQUIERDO: CHECKBOX, ESTRELLA, NOMBRE + DURACIÓN (EN 1 LÍNEA) -->
+                      <div class="triage-task-row ${isSelected ? 'selected' : ''} ${isRecurring ? 'is-recurring' : ''}" data-task-id="${escapeAttr(t.id)}" onclick="app.handleTriageRowClick('${escapeAttr(t.id)}', event)" ondblclick="app.handleTriageRowDblClick('${escapeAttr(t.id)}', event)" ${dragAttrs}>
+                        <!-- LADO IZQUIERDO: PUNTITOS, CHECKBOX, ESTRELLA, NOMBRE + DURACIÓN (EN 1 LÍNEA) -->
                         <div class="triage-task-left">
+                          ${dragHandle}
                           <input type="checkbox" class="triage-task-cb" ${isSelected ? 'checked' : ''} onclick="app.toggleTriageTaskSelect('${escapeAttr(t.id)}', event)">
                           <button type="button" class="triage-star-btn ${t.featured ? 'is-featured' : ''}" onclick="app.toggleTriageTaskStar('${escapeAttr(t.id)}', event)" title="${t.featured ? 'Quitar destacada' : 'Marcar destacada (máx 5)'}">
                             ${t.featured ? '⭐' : '☆'}
@@ -446,6 +783,7 @@ export function TodayTasksTriageView(ctx) {
                             ${escapeHtml(t.title)}
                           </span>
                           <span class="triage-task-duration" title="Duración estimada">${formatShortDuration(t.planned || 0)}</span>
+                          ${recurringTag}
                           ${t.overflow ? '<span class="triage-overflow-tag" title="Esta tarea desborda el fin de jornada laboral">⚠️ Desborda</span>' : ''}
                         </div>
 
@@ -600,6 +938,7 @@ export function TodayTasksTriageView(ctx) {
     toggleTriageGroup,
     toggleAllTriageGroups,
     handleTriageRowClick,
+    handleTriageRowDblClick,
     toggleTriageTaskSelect,
     toggleTriageGroupSelect,
     clearTriageSelection,

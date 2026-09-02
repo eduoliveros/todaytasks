@@ -40,7 +40,7 @@ export function TodayTasksDragDrop(ctx){
 
   function taskDragEnd(e){
     if (typeof document !== "undefined") {
-      document.querySelectorAll(".task-item.dragging, .task-item.drag-over")
+      document.querySelectorAll(".task-item.dragging, .task-item.drag-over, .triage-task-row.dragging, .triage-task-row.drag-over")
         .forEach(el => el.classList.remove("dragging","drag-over"));
     }
     dragArmed = false;

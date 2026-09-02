@@ -300,6 +300,39 @@ body[data-theme="dark"] .triage-task-row.selected {
   overflow: hidden;
 }
 
+.triage-drag-handle {
+  cursor: grab;
+  color: var(--ink-soft, #9CA3AF);
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 2px;
+  user-select: none;
+  touch-action: none;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.65;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.triage-drag-handle:hover {
+  opacity: 1;
+  color: var(--primary, #4F46E5);
+}
+
+.triage-drag-handle:active {
+  cursor: grabbing;
+}
+
+.triage-task-row.dragging {
+  opacity: 0.35;
+}
+
+.triage-task-row.drag-over {
+  outline: 2px dashed var(--accent-pending, #4F46E5);
+  outline-offset: 2px;
+}
+
 .triage-task-cb {
   cursor: pointer;
   width: 15px;
@@ -367,6 +400,24 @@ body[data-theme="dark"] .triage-task-title.is-overflow {
   border-radius: 4px;
   border: 1px solid rgba(220, 38, 38, 0.2);
   flex-shrink: 0;
+}
+
+.triage-recurring-btn {
+  font-size: 0.72rem;
+  padding: 1px 6px;
+  line-height: 1.2;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .triage-recurring-btn .triage-recurring-label {
+    display: none;
+  }
 }
 
 /* Lado derecho de la fila (acciones en 1 línea) */
@@ -616,12 +667,14 @@ body[data-theme="dark"] .triage-task-title.is-overflow {
 .triage-single-urgency-popover {
   position: fixed;
   min-width: 150px;
+  max-height: calc(100vh - 20px);
+  overflow-y: auto;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   padding: 6px;
-  z-index: 150;
+  z-index: 200;
   box-sizing: border-box;
 }
 
@@ -679,4 +732,87 @@ body[data-theme="dark"] .triage-task-title.is-overflow {
     width: 100%;
     justify-content: flex-end;
   }
+}
+
+/* Modal de edición de tarea en triaje */
+.triage-edit-modal-box {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 22px;
+  max-width: 540px;
+  width: 92%;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.triage-edit-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.triage-edit-modal-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.triage-edit-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.triage-edit-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 0.88rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: inherit;
+}
+
+.triage-edit-time-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.triage-edit-time-grid label {
+  flex: 1;
+  min-width: 110px;
+}
+
+.triage-edit-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.triage-edit-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
 }

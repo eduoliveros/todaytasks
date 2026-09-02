@@ -154,6 +154,18 @@ export function TodayTasksShortcuts(appCtx){
           return;
         }
 
+        if(getTaskEdit && getTaskEdit() && actionsModule && actionsModule.cancelEditTask){
+          e.preventDefault();
+          actionsModule.cancelEditTask();
+          return;
+        }
+
+        if(getMeetingEdit && getMeetingEdit() && actionsModule && actionsModule.cancelEditMeeting){
+          e.preventDefault();
+          actionsModule.cancelEditMeeting();
+          return;
+        }
+
         if(routerModule && routerModule.getCurrentView() !== 'main'){
           e.preventDefault();
           window.location.hash = '#/';

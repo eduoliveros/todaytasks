@@ -112,6 +112,7 @@ let undoModule = TodayTasksUndo({
 ctx.undoModule = undoModule;
 
 actionsModule = TodayTasksActions(ctx);
+ctx.actionsModule = actionsModule;
 viewsModule = TodayTasksViews(ctx);
 cloudModule = TodayTasksCloud(ctx);
 routerModule = TodayTasksRouter(ctx);
@@ -477,6 +478,7 @@ function switchHeaderTab(target){
     resetToToday: actionsModule.resetToToday,
     deleteMeeting: actionsModule.deleteMeeting,
     deleteTask: actionsModule.deleteTask,
+    deleteRecurringTaskInstance: (ruleId, dateStr) => actionsModule.deleteRecurringTaskInstance && actionsModule.deleteRecurringTaskInstance(ruleId, dateStr),
     moveTask: actionsModule.moveTask,
     startTask: actionsModule.startTask,
     pauseTask: actionsModule.pauseTask,
@@ -524,6 +526,7 @@ function switchHeaderTab(target){
     toggleTriageGroup: (groupId) => viewsModule && viewsModule.toggleTriageGroup && viewsModule.toggleTriageGroup(groupId),
     toggleAllTriageGroups: (open) => viewsModule && viewsModule.toggleAllTriageGroups && viewsModule.toggleAllTriageGroups(open),
     handleTriageRowClick: (taskId, event) => viewsModule && viewsModule.handleTriageRowClick && viewsModule.handleTriageRowClick(taskId, event),
+    handleTriageRowDblClick: (taskId, event) => viewsModule && viewsModule.handleTriageRowDblClick && viewsModule.handleTriageRowDblClick(taskId, event),
     toggleTriageTaskSelect: (taskId, event) => viewsModule && viewsModule.toggleTriageTaskSelect && viewsModule.toggleTriageTaskSelect(taskId, event),
     toggleTriageGroupSelect: (groupId, event) => viewsModule && viewsModule.toggleTriageGroupSelect && viewsModule.toggleTriageGroupSelect(groupId, event),
     clearTriageSelection: () => viewsModule && viewsModule.clearTriageSelection && viewsModule.clearTriageSelection(),
@@ -1135,7 +1138,7 @@ function switchHeaderTab(target){
       // override task lookup to highlight current taskEdit urgency
       const dropdown = document.getElementById('urgencyDropdownMenu');
       if (dropdown) {
-        const taskEdit = typeof actionsModule.getTaskEdit === 'function' ? actionsModule.getTaskEdit() : null;
+        const taskEdit = typeof ctx.getTaskEdit === 'function' ? ctx.getTaskEdit() : null;
         const currentUrgency = (taskEdit && taskEdit.urgency) || (state.tasks || []).find(x => String(x.id) === String(taskId))?.urgency || 'days';
         dropdown.querySelectorAll('.urgency-option-item').forEach(item => {
           item.classList.toggle('active', item.dataset.urgency === currentUrgency);
@@ -1148,11 +1151,18 @@ function switchHeaderTab(target){
           if (typeof event.stopPropagation === 'function') event.stopPropagation();
           if (typeof event.preventDefault === 'function') event.preventDefault();
         }
-        // Determine current featured state from taskEdit
-        const taskInState = (state.tasks || []).find(t => String(t.id) === String(taskId));
-        // We need to read taskEdit; actionsModule doesn't expose getTaskEdit, so read state directly
-        // toggleTaskFeatured checks limit and calls showFeaturedLimitModal internally
-        actionsModule.toggleTaskFeatured(taskId);
+        const taskEdit = typeof ctx.getTaskEdit === 'function' ? ctx.getTaskEdit() : null;
+        if (taskEdit) {
+          taskEdit.featured = !taskEdit.featured;
+          const starBtn = (event && (event.currentTarget || event.target)) || document.querySelector(`#task-item-${taskId} .star-btn`) || document.querySelector(`.triage-edit-modal-box .star-btn`);
+          if (starBtn) {
+            starBtn.classList.toggle('is-featured', taskEdit.featured);
+            starBtn.textContent = taskEdit.featured ? '⭐' : '☆';
+            starBtn.title = taskEdit.featured ? 'Quitar destacado' : 'Marcar como destacada (máx. 5 al día)';
+          }
+        } else {
+          actionsModule.toggleTaskFeatured(taskId);
+        }
       } catch (err) {
         console.error("Error in toggleEditFeatured:", err);
       }
@@ -1209,8 +1219,9 @@ function switchHeaderTab(target){
           }
         }
 
-        dropdown.style.left = `${left + window.scrollX}px`;
-        dropdown.style.top = `${top + window.scrollY}px`;
+        dropdown.style.position = 'fixed';
+        dropdown.style.left = `${left}px`;
+        dropdown.style.top = `${top}px`;
       } catch (err) {
         console.error("Error in openUrgencyDropdown:", err);
       }
@@ -1230,9 +1241,22 @@ function switchHeaderTab(target){
         if (iconEl) iconEl.textContent = info.icon;
         if (labelEl) labelEl.textContent = info.label;
       } else if (this._editUrgencyTaskId) {
-        // Update the inline edit form via the action (triggers re-render with updated pill)
+        const editId = this._editUrgencyTaskId;
         actionsModule.updateTaskEditField('urgency', urgency);
         this._editUrgencyTaskId = null;
+        const pill = document.getElementById(`edit-urgency-pill-${editId}`);
+        if (pill) {
+          const urgencyMap = {
+            today: { icon: '🟠', label: 'Hoy', cls: 'urgency-btn-today' },
+            days: { icon: '🔵', label: 'Días', cls: 'urgency-btn-days' },
+            week: { icon: '🟣', label: 'Semana', cls: 'urgency-btn-week' },
+            later: { icon: '⚪', label: 'Más adelante', cls: 'urgency-btn-later' }
+          };
+          const info = urgencyMap[urgency] || urgencyMap.days;
+          pill.className = `urgency-pill-btn ${info.cls}`;
+          pill.setAttribute('aria-label', `Urgencia ${info.label}`);
+          pill.innerHTML = `<span>${info.icon}</span> <span>${info.label}</span> <span class="urgency-pill-chevron">▾</span>`;
+        }
       } else if (this.currentUrgencyTaskId) {
         actionsModule.setTaskUrgency(this.currentUrgencyTaskId, urgency);
       }

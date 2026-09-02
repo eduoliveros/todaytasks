@@ -169,6 +169,7 @@ export function TodayTasksActions(ctx) {
     resolveFeaturedLimit:   tasks.resolveFeaturedLimit,
     setTaskStartAfter:      tasks.setTaskStartAfter,
     deleteTasks:            tasks.deleteTasks,
+    deleteRecurringTaskInstance: tasks.deleteRecurringTaskInstance,
     showFeaturedLimitModal,
     /* Drag & Drop */
     armTaskDrag:            dragdrop.armTaskDrag,

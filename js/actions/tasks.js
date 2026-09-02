@@ -33,6 +33,9 @@ export function TodayTasksTasks(ctx, helpers){
       });
       dayObj.tasks = dayObj.tasks.filter(t => t.ruleId !== ruleId);
     }
+    if (state.tasks && Array.isArray(state.tasks)) {
+      state.tasks = state.tasks.filter(t => t.ruleId !== ruleId);
+    }
     saveState();
     renderAll();
   }
@@ -378,7 +381,23 @@ export function TodayTasksTasks(ctx, helpers){
 
   function deleteTask(id){
     const state = getState();
-    const t = state.tasks.find(t => String(t.id) === String(id));
+    let t = (state.tasks || []).find(t => String(t.id) === String(id));
+    let foundDayStr = null;
+    const envKey = state.activeEnv || "work";
+    const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+
+    if (!t && env && env.days) {
+      for (const [d, dayData] of Object.entries(env.days)) {
+        if (dayData && Array.isArray(dayData.tasks)) {
+          const found = dayData.tasks.find(x => String(x.id) === String(id));
+          if (found) {
+            t = found;
+            foundDayStr = d;
+            break;
+          }
+        }
+      }
+    }
 
     if (t && t.ruleId) {
       const ruleId = t.ruleId;
@@ -402,14 +421,19 @@ export function TodayTasksTasks(ctx, helpers){
       ctx.undoModule.pushSnapshot(`Eliminar tarea "${t ? t.title : ''}"`);
     }
 
-    const envKey = state.activeEnv || "work";
-    const env = state.environments[envKey] || state.environments.work;
     const dateStr = state.selectedDate || getTodayStr();
-    const dayObj = env.days && env.days[dateStr];
+    const dayObj = env && env.days && env.days[dateStr];
     if (dayObj) {
       if (!Array.isArray(dayObj._deletedIds)) dayObj._deletedIds = [];
       if (!dayObj._deletedIds.includes(String(id))) {
         dayObj._deletedIds.push(String(id));
+      }
+    }
+    if (foundDayStr && env.days && env.days[foundDayStr]) {
+      env.days[foundDayStr].tasks = (env.days[foundDayStr].tasks || []).filter(t => String(t.id) !== String(id));
+      if (!Array.isArray(env.days[foundDayStr]._deletedIds)) env.days[foundDayStr]._deletedIds = [];
+      if (!env.days[foundDayStr]._deletedIds.includes(String(id))) {
+        env.days[foundDayStr]._deletedIds.push(String(id));
       }
     }
 
@@ -469,14 +493,37 @@ export function TodayTasksTasks(ctx, helpers){
     return tasksToDelete.length;
   }
 
-  function startEditTask(id){
+  function startEditTask(id, options = {}){
     const state = getState();
-    const t = state.tasks.find(t => String(t.id) === String(id));
+    let t = (state.tasks || []).find(t => String(t.id) === String(id));
+    if (!t) {
+      const envKey = state.activeEnv || "work";
+      const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+      if (env && env.days) {
+        for (const d of Object.keys(env.days)) {
+          if (env.days[d] && Array.isArray(env.days[d].tasks)) {
+            const found = env.days[d].tasks.find(x => String(x.id) === String(id));
+            if (found) { t = found; break; }
+          }
+        }
+      }
+    }
     if(!t) return;
 
     if (t.ruleId) {
       const ruleId = t.ruleId;
       const dateStr = state.selectedDate || getTodayStr();
+      if (options && options.instanceOnly) {
+        const actual = getTaskElapsed(t);
+        setTaskEdit({
+          id, ruleId, mode: "instance", title: t.title, duration: String(t.planned), actual: String(actual),
+          notes: t.notes || "",
+          urgency: t.urgency || DEFAULT_URGENCY, featured: !!t.featured,
+          startAfter: (t.startAfter !== null && t.startAfter !== undefined) ? fmt(t.startAfter) : ""
+        });
+        renderAll();
+        return;
+      }
       showRecurringModal(
         `Editar "${t.title}" 🔁`,
         `¿Deseas editar solo la tarea del día ${dateStr} o editar todas las futuras ocurrencias de la serie?`,
@@ -530,7 +577,19 @@ export function TodayTasksTasks(ctx, helpers){
     const taskEdit = getTaskEdit();
     if(!taskEdit || String(taskEdit.id) !== String(id)) return;
     const state = getState();
-    const t = state.tasks.find(t => String(t.id) === String(id));
+    let t = (state.tasks || []).find(t => String(t.id) === String(id));
+    if (!t) {
+      const envKey = state.activeEnv || "work";
+      const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+      if (env && env.days) {
+        for (const d of Object.keys(env.days)) {
+          if (env.days[d] && Array.isArray(env.days[d].tasks)) {
+            const found = env.days[d].tasks.find(x => String(x.id) === String(id));
+            if (found) { t = found; break; }
+          }
+        }
+      }
+    }
     if(!t) return;
     const title = (taskEdit.title||"").trim();
     const parsedPlanned = parseDuration(taskEdit.duration);
@@ -770,7 +829,7 @@ export function TodayTasksTasks(ctx, helpers){
 
   return {
     materializeRecurringTasks,
-    addTask, deleteTask, startEditTask, updateTaskEditField,
+    addTask, deleteTask, deleteRecurringTaskInstance, startEditTask, updateTaskEditField,
     cancelEditTask, saveEditTask, updateTaskTimeFast, moveTask,
     setTaskUrgency, setTasksUrgency, setTaskFeatured, setTasksFeatured, toggleTaskFeatured, resolveFeaturedLimit,
     setTaskStartAfter, deleteTasks
