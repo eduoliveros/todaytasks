@@ -816,6 +816,55 @@ describe('TodayTasksTriageView (UI & Sorting & Selection)', () => {
     expect(topPos + 175).toBeLessThanOrEqual(window.innerHeight);
     expect(topPos).toBeGreaterThanOrEqual(10);
   });
+
+  it('permite completar una tarea individual directamente desde triaje', () => {
+    actions.addTask('Tarea para completar', '25', false, null, true, 'today');
+    const task = state.tasks[0];
+    triageView.renderTriageView();
+
+    const container = document.getElementById('view-triage');
+    expect(container.innerHTML).toContain('Tarea para completar');
+
+    // Pulsamos el botón de completar de la fila
+    triageView.completeTriageSingleTask(task.id, { stopPropagation: () => {} });
+
+    // La tarea pasa a estar completada y desaparece del triaje de tareas activas
+    expect(task.status).toBe('completed');
+    expect(task.completedAt).not.toBeNull();
+    const updatedContainer = document.getElementById('view-triage');
+    expect(updatedContainer.innerHTML).not.toContain('Tarea para completar');
+  });
+
+  it('permite completar múltiples tareas seleccionadas por lote en triaje', () => {
+    actions.addTask('Tarea Batch 1', '15', false, null, true, 'today');
+    actions.addTask('Tarea Batch 2', '30', false, null, true, 'today');
+    actions.addTask('Tarea Batch 3', '45', false, null, true, 'today');
+
+    const id1 = state.tasks[0].id;
+    const id2 = state.tasks[1].id;
+    const id3 = state.tasks[2].id;
+
+    triageView.renderTriageView();
+
+    // Seleccionamos la 1 y la 2
+    triageView.toggleTriageTaskSelect(id1);
+    triageView.toggleTriageTaskSelect(id2);
+
+    // Ejecutamos completar por lote
+    triageView.executeTriageBatchComplete();
+
+    // Las tareas 1 y 2 quedan completadas
+    expect(state.tasks.find(t => t.id === id1).status).toBe('completed');
+    expect(state.tasks.find(t => t.id === id2).status).toBe('completed');
+    // La tarea 3 sigue pendiente
+    expect(state.tasks.find(t => t.id === id3).status).toBe('pending');
+
+    // En triaje solo permanece la Tarea Batch 3
+    const container = document.getElementById('view-triage');
+    expect(container.innerHTML).not.toContain('Tarea Batch 1');
+    expect(container.innerHTML).not.toContain('Tarea Batch 2');
+    expect(container.innerHTML).toContain('Tarea Batch 3');
+  });
 });
 
 describe('Triage Keyboard Shortcut X', () => {

@@ -480,6 +480,27 @@ body[data-theme="dark"] .triage-task-title.is-overflow {
   color: #FFFFFF;
 }
 
+.triage-complete-btn {
+  background: transparent;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: #10B981;
+  transition: all 0.12s;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+.triage-complete-btn:hover {
+  color: #FFFFFF;
+  background: #10B981;
+  border-color: #10B981;
+  transform: scale(1.05);
+}
+
 .triage-delete-btn {
   background: transparent;
   border: none;

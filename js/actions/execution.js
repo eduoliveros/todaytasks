@@ -150,6 +150,59 @@ export function TodayTasksExecution(ctx, helpers){
     }
   }
 
+  function completeTasks(ids){
+    if (!Array.isArray(ids) || ids.length === 0) return;
+    const state = getState();
+    const targetDateStr = state.selectedDate || getTodayStr();
+    const envKey = state.activeEnv || 'work';
+    const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+    const dayObj = env && env.days ? env.days[targetDateStr] : null;
+
+    if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+      ctx.undoModule.pushSnapshot(ids.length === 1 ? 'Completar tarea' : `Completar ${ids.length} tareas`);
+    }
+
+    let completedCount = 0;
+    const now = nowMinutes();
+
+    ids.forEach(id => {
+      let t = (state.tasks || []).find(x => String(x.id) === String(id));
+      if (!t && dayObj && Array.isArray(dayObj.tasks)) {
+        t = dayObj.tasks.find(x => String(x.id) === String(id));
+      }
+      if (!t || t.status === "completed") return;
+
+      let actual = t.elapsedBefore || 0;
+      if(t.status === "running"){
+        actual += getElapsedFromRunning(t);
+      }
+      actual = Math.round(actual * 10) / 10;
+      t.status = "completed";
+      t.completedAt = now;
+      t.actualDuration = actual;
+      t.elapsedBefore = actual;
+      t.runningStart = null;
+      t.runningStartEpoch = null;
+      if(getNotifyState() && String(getNotifyState().taskId) === String(id)) {
+        setNotifyState({taskId:null, lastNotifiedAt:null, timeEndNotified:false});
+      }
+      completedCount++;
+    });
+
+    if (completedCount === 0) return;
+
+    saveState();
+    if (showToast) {
+      const msg = completedCount === 1 ? '1 tarea completada.' : `${completedCount} tareas completadas.`;
+      showToast(`✓ ${msg}`, {
+        label: "Deshacer",
+        onClick: () => { if (ctx.undoModule && ctx.undoModule.undo) ctx.undoModule.undo(); }
+      });
+    }
+
+    smartRender ? smartRender() : renderAll();
+  }
+
   function uncompleteTask(id){
     const state = getState();
     const t = state.tasks.find(t => String(t.id) === String(id));
@@ -281,7 +334,7 @@ export function TodayTasksExecution(ctx, helpers){
   }
 
   return {
-    startTask, pauseTask, resumeTask, completeTask, uncompleteTask,
+    startTask, pauseTask, resumeTask, completeTask, completeTasks, uncompleteTask,
     startInterruption, updateInterruptionTitle, completeInterruption, cancelInterruption
   };
 }

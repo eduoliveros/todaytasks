@@ -484,6 +484,7 @@ function switchHeaderTab(target){
     pauseTask: actionsModule.pauseTask,
     resumeTask: actionsModule.resumeTask,
     completeTask: actionsModule.completeTask,
+    completeTasks: actionsModule.completeTasks,
     uncompleteTask: actionsModule.uncompleteTask,
     copyTaskToDate: actionsModule.copyTaskToDate,
     moveTaskToDate: actionsModule.moveTaskToDate,
@@ -532,6 +533,7 @@ function switchHeaderTab(target){
     clearTriageSelection: () => viewsModule && viewsModule.clearTriageSelection && viewsModule.clearTriageSelection(),
     toggleTriageTaskStar: (taskId, event) => viewsModule && viewsModule.toggleTriageTaskStar && viewsModule.toggleTriageTaskStar(taskId, event),
     moveTriageTaskToDate: (taskId, targetDateStr, friendlyLabel, event) => viewsModule && viewsModule.moveTriageTaskToDate && viewsModule.moveTriageTaskToDate(taskId, targetDateStr, friendlyLabel, event),
+    completeTriageSingleTask: (taskId, event) => viewsModule && viewsModule.completeTriageSingleTask && viewsModule.completeTriageSingleTask(taskId, event),
     deleteTriageSingleTask: (taskId, event) => viewsModule && viewsModule.deleteTriageSingleTask && viewsModule.deleteTriageSingleTask(taskId, event),
     openTriageSingleUrgency: (taskId, event) => viewsModule && viewsModule.openTriageSingleUrgency && viewsModule.openTriageSingleUrgency(taskId, event),
     applyTriageSingleUrgency: (urgency) => viewsModule && viewsModule.applyTriageSingleUrgency && viewsModule.applyTriageSingleUrgency(urgency),
@@ -539,6 +541,7 @@ function switchHeaderTab(target){
     executeTriageMoveSelectedDate: (targetDateStr) => viewsModule && viewsModule.executeTriageMoveSelectedDate && viewsModule.executeTriageMoveSelectedDate(targetDateStr),
     executeTriageBatchUrgency: (urgency) => viewsModule && viewsModule.executeTriageBatchUrgency && viewsModule.executeTriageBatchUrgency(urgency),
     executeTriageBatchStar: (enable) => viewsModule && viewsModule.executeTriageBatchStar && viewsModule.executeTriageBatchStar(enable),
+    executeTriageBatchComplete: () => viewsModule && viewsModule.executeTriageBatchComplete && viewsModule.executeTriageBatchComplete(),
     executeTriageBatchDelete: () => viewsModule && viewsModule.executeTriageBatchDelete && viewsModule.executeTriageBatchDelete(),
     toggleTriageDropdown: (dropdownId, event) => viewsModule && viewsModule.toggleTriageDropdown && viewsModule.toggleTriageDropdown(dropdownId, event),
     openTimePopover: function(taskId, event) {

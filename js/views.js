@@ -98,6 +98,7 @@ export function TodayTasksViews(ctx){
     clearTriageSelection:         triageV.clearTriageSelection,
     toggleTriageTaskStar:         triageV.toggleTriageTaskStar,
     moveTriageTaskToDate:         triageV.moveTriageTaskToDate,
+    completeTriageSingleTask:     triageV.completeTriageSingleTask,
     deleteTriageSingleTask:       triageV.deleteTriageSingleTask,
     openTriageSingleUrgency:      triageV.openTriageSingleUrgency,
     applyTriageSingleUrgency:     triageV.applyTriageSingleUrgency,
@@ -105,6 +106,7 @@ export function TodayTasksViews(ctx){
     executeTriageMoveSelectedDate:triageV.executeTriageMoveSelectedDate,
     executeTriageBatchUrgency:    triageV.executeTriageBatchUrgency,
     executeTriageBatchStar:       triageV.executeTriageBatchStar,
+    executeTriageBatchComplete:   triageV.executeTriageBatchComplete,
     executeTriageBatchDelete:     triageV.executeTriageBatchDelete,
     toggleTriageDropdown:         triageV.toggleTriageDropdown,
     /* Orchestration */

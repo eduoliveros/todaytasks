@@ -361,6 +361,17 @@ export function TodayTasksTriageView(ctx) {
     renderTriageView();
   }
 
+  function completeTriageSingleTask(taskId, event) {
+    if (event) event.stopPropagation();
+    selectedTaskIds.delete(String(taskId));
+
+    const actions = getActions();
+    if (actions && actions.completeTask) {
+      actions.completeTask(taskId);
+    }
+    renderTriageView();
+  }
+
   function deleteTriageSingleTask(taskId, event) {
     if (event) event.stopPropagation();
     selectedTaskIds.delete(String(taskId));
@@ -507,6 +518,21 @@ export function TodayTasksTriageView(ctx) {
     }
 
     selectedTaskIds.clear();
+    renderTriageView();
+  }
+
+  function executeTriageBatchComplete() {
+    if (selectedTaskIds.size === 0) return;
+    const ids = Array.from(selectedTaskIds);
+    selectedTaskIds.clear();
+    closeTriagePopovers();
+
+    const actions = getActions();
+    if (actions && actions.completeTasks) {
+      actions.completeTasks(ids);
+    } else if (actions && actions.completeTask) {
+      ids.forEach(id => actions.completeTask(id));
+    }
     renderTriageView();
   }
 
@@ -805,6 +831,11 @@ export function TodayTasksTriageView(ctx) {
                             `).join('')}
                           </div>
 
+                          <!-- BOTÓN COMPLETAR -->
+                          <button type="button" class="triage-complete-btn" onclick="app.completeTriageSingleTask('${escapeAttr(t.id)}', event)" title="Completar tarea">
+                            ✓
+                          </button>
+
                           <!-- BOTÓN BORRAR -->
                           <button type="button" class="triage-delete-btn" onclick="app.deleteTriageSingleTask('${escapeAttr(t.id)}', event)" title="Eliminar tarea">
                             🗑️
@@ -879,12 +910,15 @@ export function TodayTasksTriageView(ctx) {
               </div>
             </div>
 
-            <!-- BOTONES DESTACAR Y ELIMINAR POR LOTE -->
+            <!-- BOTONES DESTACAR, COMPLETAR Y ELIMINAR POR LOTE -->
             <button type="button" class="btn secondary small" onclick="app.executeTriageBatchStar(true)" title="Marcar seleccionadas con estrella">
               ⭐ Destacar
             </button>
             <button type="button" class="btn secondary small" onclick="app.executeTriageBatchStar(false)" title="Quitar destacado a seleccionadas">
               ☆ Quitar
+            </button>
+            <button type="button" class="btn done small" onclick="app.executeTriageBatchComplete()" title="Completar tareas seleccionadas">
+              ✓ Completar
             </button>
             <button type="button" class="btn danger small" onclick="app.executeTriageBatchDelete()" title="Eliminar tareas seleccionadas">
               🗑️ Borrar
@@ -944,6 +978,7 @@ export function TodayTasksTriageView(ctx) {
     clearTriageSelection,
     toggleTriageTaskStar,
     moveTriageTaskToDate,
+    completeTriageSingleTask,
     deleteTriageSingleTask,
     openTriageSingleUrgency,
     applyTriageSingleUrgency,
@@ -951,6 +986,7 @@ export function TodayTasksTriageView(ctx) {
     executeTriageMoveSelectedDate,
     executeTriageBatchUrgency,
     executeTriageBatchStar,
+    executeTriageBatchComplete,
     executeTriageBatchDelete,
     toggleTriageDropdown,
     getTargetDateStr

@@ -13,8 +13,8 @@ Las necesidades clave identificadas para abordar esta situación fueron:
    - **Duración** (Quick Wins ≤ 15m, Medias 20-45m, Largas > 45m).
    - **Destacadas** (Top 5 favoritas vs. resto).
 3. Ordenación consistente con la cola de ejecución: las tareas se listan en el mismo orden que en la pantalla principal (`a.order - b.order`), otorgando máxima prioridad a la ordenación manual establecida por el usuario e incorporando manijas de arrastre táctiles/visuales (`⠿`) para reordenar directamente con drag & drop.
-4. Agilidad individual: en cada fila de tarea, permitir cambiar fecha rápidamente (botones para los 5 próximos días laborables), urgencia, destacar y borrar sin necesidad de abrir modales complejos ni marcar checkboxes.
-5. Operaciones masivas (por lote): selección múltiple de tareas (individual o por grupo completo) y barra flotante de acciones para mover a cualquiera de los próximos 7 días laborables, cambiar urgencia, destacar o eliminar de una vez.
+4. Agilidad individual: en cada fila de tarea, permitir cambiar fecha rápidamente (botones para los 5 próximos días laborables), urgencia, destacar, completar directamente (`✓`) y borrar sin necesidad de abrir modales complejos ni marcar checkboxes.
+5. Operaciones masivas (por lote): selección múltiple de tareas (individual o por grupo completo) y barra flotante de acciones para mover a cualquiera de los próximos 7 días laborables, cambiar urgencia, destacar, completar en lote (`✓ Completar`) o eliminar de una vez.
 6. Respeto al horario laboral semanal (`weeklySchedule`): los botones de salto rápido a fechas deben omitir automáticamente los días libres (fines de semana o días configurados como libres).
 7. Capacidad de colapso y despliegue de grupos para evitar la fatiga visual.
 

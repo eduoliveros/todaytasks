@@ -183,6 +183,7 @@ export function TodayTasksActions(ctx) {
     pauseTask:              execution.pauseTask,
     resumeTask:             execution.resumeTask,
     completeTask:           execution.completeTask,
+    completeTasks:          execution.completeTasks,
     uncompleteTask:         execution.uncompleteTask,
     startInterruption:      execution.startInterruption,
     updateInterruptionTitle:execution.updateInterruptionTitle,

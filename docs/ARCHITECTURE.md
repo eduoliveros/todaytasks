@@ -235,8 +235,8 @@ Para resolver la sobrecarga cognitiva cuando se acumulan decenas de tareas pendi
   - **Duración:** ⚡ Quick Wins (≤ 15 min), ⏳ Medias (20-45 min), 🏋️ Largas (> 45 min).
   - **Destacadas:** ⭐ Top 5 destacadas vs 📋 Otras tareas en cola.
 * **Ordenación y Reordenación por Arrastre:** Las tareas se muestran en el mismo orden que en la pantalla principal (`a.order - b.order`, con las tareas en curso al principio). La ordenación manual tiene prioridad máxima sobre cualquier criterio automático y cada fila cuenta con manija de arrastre táctil/visual (puntitos `⠿`) para reordenar la cola mediante drag & drop directamente en la vista de triaje.
-* **Filas de Tarea en 1 Sola Línea:** Cada tarea muestra su manija de arrastre (`⠿`), checkbox, estrella interactiva, título truncado con elipsis (`...`), duración al lado, botón directo de urgencia con popover, 5 botones rápidos con los días hábiles calculados según `weeklySchedule` y botón de borrado directo.
-* **Operaciones Masivas y Barra Flotante (`#triageFloatingBar`):** Permite selección múltiple de tareas (individual o por grupo completo) y ofrece mover a cualquiera de los próximos 7 días laborables, cambiar urgencia en lote, destacar en lote o borrar en lote con confirmación y soporte transaccional de Undo (`Ctrl+Z`).
+* **Filas de Tarea en 1 Sola Línea:** Cada tarea muestra su manija de arrastre (`⠿`), checkbox, estrella interactiva, título truncado con elipsis (`...`), duración al lado, botón directo de urgencia con popover, 5 botones rápidos con los días hábiles calculados según `weeklySchedule`, botón de completado directo (`✓`) y botón de borrado directo (`🗑️`).
+* **Operaciones Masivas y Barra Flotante (`#triageFloatingBar`):** Permite selección múltiple de tareas (individual o por grupo completo) y ofrece mover a cualquiera de los próximos 7 días laborables, cambiar urgencia en lote, destacar en lote, completar en lote (`✓ Completar`) o borrar en lote con confirmación y soporte transaccional de Undo (`Ctrl+Z`).
 
 ---
 
