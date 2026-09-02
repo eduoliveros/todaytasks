@@ -229,6 +229,36 @@ export function TodayTasksTasks(ctx, helpers){
     }
   }
 
+  function setTasksUrgency(ids, urgency){
+    if (!Array.isArray(ids) || ids.length === 0) return;
+    if (!["today", "days", "week", "later"].includes(urgency)) return;
+    const state = getState();
+    const idsSet = new Set(ids.map(String));
+    const targetTasks = (state.tasks || []).filter(t => idsSet.has(String(t.id)));
+    if (targetTasks.length === 0) return;
+
+    const urgencyInfo = URGENCY_LEVELS[urgency] || URGENCY_LEVELS[DEFAULT_URGENCY];
+    if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+      const label = targetTasks.length === 1
+        ? `Cambiar urgencia de "${targetTasks[0].title}" a "${urgencyInfo.label}"`
+        : `Cambiar urgencia de ${targetTasks.length} tareas a "${urgencyInfo.label}"`;
+      ctx.undoModule.pushSnapshot(label);
+    }
+
+    targetTasks.forEach(t => {
+      t.urgency = urgency;
+    });
+    state.tasks = sortTasksByPriority(state.tasks);
+    saveState();
+    smartRender ? smartRender() : renderAll();
+    if (showToast) {
+      const toastLabel = targetTasks.length === 1
+        ? `Urgencia de "${targetTasks[0].title}" cambiada a ${urgencyInfo.label} ${urgencyInfo.icon}`
+        : `Urgencia de ${targetTasks.length} tareas cambiada a ${urgencyInfo.label} ${urgencyInfo.icon}`;
+      showToast(toastLabel);
+    }
+  }
+
   function setTaskFeatured(id, featured){
     const state = getState();
     const t = state.tasks.find(t => String(t.id) === String(id));
@@ -270,6 +300,52 @@ export function TodayTasksTasks(ctx, helpers){
         showToast(`Destacado quitado de "${t.title}"`);
       }
       return true;
+    }
+  }
+
+  function setTasksFeatured(ids, featured){
+    if (!Array.isArray(ids) || ids.length === 0) return;
+    const state = getState();
+    const idsSet = new Set(ids.map(String));
+    const targetTasks = (state.tasks || []).filter(t => idsSet.has(String(t.id)));
+    if (targetTasks.length === 0) return;
+
+    const shouldFeature = !!featured;
+    if (shouldFeature) {
+      const currentFeaturedIds = new Set((state.tasks || [])
+        .filter(t => t.status !== 'completed' && t.featured)
+        .map(t => String(t.id)));
+      let availableSlots = MAX_FEATURED_TASKS - currentFeaturedIds.size;
+      const toFeature = [];
+      for (const t of targetTasks) {
+        if (!currentFeaturedIds.has(String(t.id))) {
+          if (availableSlots > 0) {
+            toFeature.push(t);
+            availableSlots--;
+          }
+        }
+      }
+      if (toFeature.length === 0 && targetTasks.length > 0) {
+        if (showToast) showToast(`Límite máximo alcanzado: ya tienes ${MAX_FEATURED_TASKS} tareas destacadas.`);
+        return;
+      }
+      if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+        ctx.undoModule.pushSnapshot(`Destacar ${toFeature.length} tareas`);
+      }
+      toFeature.forEach(t => { t.featured = true; });
+      state.tasks = sortTasksByPriority(state.tasks);
+      saveState();
+      smartRender ? smartRender() : renderAll();
+      if (showToast) showToast(`${toFeature.length} tarea(s) destacadas ⭐`);
+    } else {
+      if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+        ctx.undoModule.pushSnapshot(`Quitar destacado de ${targetTasks.length} tareas`);
+      }
+      targetTasks.forEach(t => { t.featured = false; });
+      state.tasks = sortTasksByPriority(state.tasks);
+      saveState();
+      smartRender ? smartRender() : renderAll();
+      if (showToast) showToast(`Destacado quitado de ${targetTasks.length} tarea(s)`);
     }
   }
 
@@ -347,6 +423,50 @@ export function TodayTasksTasks(ctx, helpers){
         onClick: () => { if (ctx.undoModule && ctx.undoModule.undo) ctx.undoModule.undo(); }
       });
     }
+  }
+
+  function deleteTasks(ids){
+    if (!Array.isArray(ids) || ids.length === 0) return 0;
+    const state = getState();
+    const idsSet = new Set(ids.map(String));
+    const tasksToDelete = (state.tasks || []).filter(t => idsSet.has(String(t.id)));
+    if (tasksToDelete.length === 0) return 0;
+
+    if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+      const label = tasksToDelete.length === 1
+        ? `Eliminar tarea "${tasksToDelete[0].title}"`
+        : `Eliminar ${tasksToDelete.length} tareas`;
+      ctx.undoModule.pushSnapshot(label);
+    }
+
+    const envKey = state.activeEnv || "work";
+    const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+    const dateStr = state.selectedDate || getTodayStr();
+    const dayObj = env && env.days && env.days[dateStr];
+    if (dayObj) {
+      if (!Array.isArray(dayObj._deletedIds)) dayObj._deletedIds = [];
+      tasksToDelete.forEach(t => {
+        if (!dayObj._deletedIds.includes(String(t.id))) {
+          dayObj._deletedIds.push(String(t.id));
+        }
+      });
+    }
+
+    state.tasks = state.tasks.filter(t => !idsSet.has(String(t.id)));
+    if (getTaskEdit() && idsSet.has(String(getTaskEdit().id))) setTaskEdit(null);
+
+    saveState();
+    smartRender ? smartRender() : renderAll();
+    if (showToast) {
+      const toastMsg = tasksToDelete.length === 1
+        ? `Tarea "${tasksToDelete[0].title}" eliminada.`
+        : `${tasksToDelete.length} tareas eliminadas.`;
+      showToast(toastMsg, {
+        label: "Deshacer",
+        onClick: () => { if (ctx.undoModule && ctx.undoModule.undo) ctx.undoModule.undo(); }
+      });
+    }
+    return tasksToDelete.length;
   }
 
   function startEditTask(id){
@@ -652,8 +772,8 @@ export function TodayTasksTasks(ctx, helpers){
     materializeRecurringTasks,
     addTask, deleteTask, startEditTask, updateTaskEditField,
     cancelEditTask, saveEditTask, updateTaskTimeFast, moveTask,
-    setTaskUrgency, setTaskFeatured, toggleTaskFeatured, resolveFeaturedLimit,
-    setTaskStartAfter
+    setTaskUrgency, setTasksUrgency, setTaskFeatured, setTasksFeatured, toggleTaskFeatured, resolveFeaturedLimit,
+    setTaskStartAfter, deleteTasks
   };
 }
 

@@ -1,0 +1,682 @@
+/* css/triage.css — Estilos para la Vista de Triaje Rápido (#/triage) */
+
+#view-triage {
+  padding: 16px 24px 80px 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: calc(100vh - 120px);
+  box-sizing: border-box;
+}
+
+.triage-view-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Cabecera superior */
+.triage-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.triage-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.triage-btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-weight: 500;
+  border-radius: var(--radius);
+}
+
+.triage-kbd {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--ink-soft);
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+}
+
+body[data-theme="dark"] .triage-kbd {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.triage-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.triage-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.triage-badge-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #B45309;
+}
+
+body[data-theme="dark"] .triage-badge-count {
+  background: rgba(245, 158, 11, 0.25);
+  color: #FCD34D;
+}
+
+.triage-subtitle {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  margin: 2px 0 0 0;
+}
+
+.triage-header-right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Selector de ordenación */
+.triage-sort-selector {
+  display: inline-flex;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 3px;
+  gap: 2px;
+}
+
+.triage-sort-label {
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  padding: 0 6px 0 4px;
+  font-weight: 500;
+}
+
+.triage-sort-btn {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  font-weight: 500;
+}
+
+.triage-sort-btn:hover {
+  color: var(--ink);
+  background: var(--bg);
+}
+
+.triage-sort-btn.active {
+  background: var(--primary, #4F46E5);
+  color: #FFFFFF;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.triage-collapse-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Contenedor de grupos */
+.triage-groups-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Tarjeta de grupo */
+.triage-group-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.triage-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  cursor: pointer;
+  user-select: none;
+  background: var(--panel);
+  transition: background 0.12s;
+}
+
+.triage-group-header:hover {
+  background: var(--bg);
+}
+
+.triage-group-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.triage-chevron-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.triage-group-card.collapsed .triage-chevron-btn {
+  transform: rotate(-90deg);
+}
+
+.triage-group-cb {
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+}
+
+.triage-group-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.triage-group-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.triage-group-badge {
+  font-size: 0.72rem;
+  font-family: 'IBM Plex Mono', monospace;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+}
+
+.triage-group-duration {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--bg);
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+}
+
+.triage-group-body {
+  border-top: 1px solid var(--line);
+}
+
+.triage-group-empty {
+  padding: 12px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+/* Lista de tareas */
+.triage-tasks-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.triage-task-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  gap: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--line);
+  transition: background 0.12s, border-left-color 0.12s;
+  box-sizing: border-box;
+}
+
+.triage-task-row:last-child {
+  border-bottom: none;
+}
+
+.triage-task-row:hover {
+  background: rgba(79, 70, 229, 0.04);
+}
+
+body[data-theme="dark"] .triage-task-row:hover {
+  background: rgba(79, 70, 229, 0.12);
+}
+
+.triage-task-row.selected {
+  background: rgba(79, 70, 229, 0.08);
+  border-left: 3px solid var(--primary, #4F46E5);
+}
+
+body[data-theme="dark"] .triage-task-row.selected {
+  background: rgba(79, 70, 229, 0.18);
+}
+
+/* Lado izquierdo de la fila */
+.triage-task-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.triage-task-cb {
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.triage-star-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 2px;
+  color: #9CA3AF;
+  flex-shrink: 0;
+  transition: transform 0.15s, color 0.15s;
+}
+
+.triage-star-btn:hover {
+  transform: scale(1.25);
+  color: #F59E0B;
+}
+
+.triage-star-btn.is-featured {
+  color: #F59E0B;
+}
+
+.triage-task-title {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.triage-task-title.is-overflow {
+  color: #B45309;
+}
+
+body[data-theme="dark"] .triage-task-title.is-overflow {
+  color: #FBBF24;
+}
+
+.triage-task-duration {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.triage-overflow-tag {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #DC2626;
+  background: rgba(220, 38, 38, 0.1);
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  flex-shrink: 0;
+}
+
+/* Lado derecho de la fila (acciones en 1 línea) */
+.triage-task-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.triage-urgency-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  cursor: pointer;
+  transition: background 0.12s;
+  flex-shrink: 0;
+}
+
+.triage-urgency-btn:hover {
+  filter: brightness(0.95);
+}
+
+.triage-chevron-mini {
+  font-size: 0.65rem;
+  opacity: 0.6;
+}
+
+.triage-quick-days-wrap {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 1px;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.triage-quick-day-btn {
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.triage-quick-day-btn:hover {
+  background: var(--primary, #4F46E5);
+  color: #FFFFFF;
+}
+
+.triage-delete-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.82rem;
+  padding: 3px 5px;
+  border-radius: 4px;
+  color: var(--ink-soft);
+  transition: color 0.12s, background 0.12s;
+  flex-shrink: 0;
+}
+
+.triage-delete-btn:hover {
+  color: #DC2626;
+  background: rgba(220, 38, 38, 0.1);
+}
+
+/* Barra flotante inferior de acciones masivas */
+.triage-floating-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(120px);
+  width: 94%;
+  max-width: 860px;
+  background: var(--panel);
+  border: 2px solid var(--primary, #4F46E5);
+  border-radius: 14px;
+  padding: 10px 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
+  box-sizing: border-box;
+}
+
+.triage-floating-bar.visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.triage-floating-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.triage-selected-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(79, 70, 229, 0.15);
+  color: var(--primary, #4F46E5);
+  font-weight: 700;
+  font-size: 0.78rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.triage-selected-text {
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
+.triage-link-btn {
+  background: transparent;
+  border: none;
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.triage-link-btn:hover {
+  color: var(--ink);
+}
+
+.triage-floating-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.triage-dropdown-anchor {
+  position: relative;
+}
+
+/* Menús flotantes */
+.triage-floating-dropdown {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  padding: 6px;
+  z-index: 120;
+  box-sizing: border-box;
+}
+
+.triage-dropdown-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 4px;
+}
+
+.triage-dropdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.triage-dropdown-item {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 0.78rem;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.12s;
+}
+
+.triage-dropdown-item:hover {
+  background: var(--bg);
+}
+
+.triage-date-sub {
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.triage-dropdown-custom-row {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.triage-custom-date-label {
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+  font-weight: 600;
+  padding-left: 2px;
+}
+
+.triage-custom-date-input {
+  width: 100%;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink);
+  box-sizing: border-box;
+}
+
+/* Popover individual de urgencia */
+.triage-single-urgency-popover {
+  position: fixed;
+  min-width: 150px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  padding: 6px;
+  z-index: 150;
+  box-sizing: border-box;
+}
+
+/* Estado vacío */
+.triage-empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-top: 20px;
+}
+
+.triage-empty-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.triage-empty-state h3 {
+  font-size: 1.1rem;
+  margin-bottom: 6px;
+  color: var(--ink);
+}
+
+.triage-empty-state p {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-bottom: 16px;
+}
+
+/* Responsividad para pantallas pequeñas */
+@media (max-width: 768px) {
+  #view-triage {
+    padding: 12px 12px 90px 12px;
+  }
+  .triage-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .triage-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .triage-urgency-text {
+    display: none;
+  }
+  .triage-floating-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    bottom: 12px;
+    padding: 10px 12px;
+  }
+  .triage-floating-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

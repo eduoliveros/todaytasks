@@ -15,6 +15,7 @@ export function TodayTasksRouter(ctx){
     const taskEl = document.getElementById('view-task');
     const interruptionEl = document.getElementById('view-interruption');
     const historyEl = document.getElementById('view-history');
+    const triageEl = document.getElementById('view-triage');
 
     if(view === 'interruption'){
       currentView = 'interruption';
@@ -22,6 +23,7 @@ export function TodayTasksRouter(ctx){
       if(mainEl) mainEl.style.display = 'none';
       if(taskEl) taskEl.style.display = 'none';
       if(historyEl) historyEl.style.display = 'none';
+      if(triageEl) triageEl.style.display = 'none';
       if(interruptionEl) interruptionEl.style.display = 'flex';
       if(renderInterruptionView) renderInterruptionView();
       if(interruptionRefreshTimer) clearInterval(interruptionRefreshTimer);
@@ -33,10 +35,21 @@ export function TodayTasksRouter(ctx){
       if(mainEl) mainEl.style.display = 'none';
       if(taskEl) taskEl.style.display = 'none';
       if(interruptionEl) interruptionEl.style.display = 'none';
+      if(triageEl) triageEl.style.display = 'none';
       if(historyEl) historyEl.style.display = 'block';
       if(renderHistoryView){
         renderHistoryView(ctx);
       }
+    } else if(view === 'triage'){
+      currentView = 'triage';
+      if(focusRefreshTimer){ clearInterval(focusRefreshTimer); focusRefreshTimer = null; }
+      if(interruptionRefreshTimer){ clearInterval(interruptionRefreshTimer); interruptionRefreshTimer = null; }
+      if(mainEl) mainEl.style.display = 'none';
+      if(taskEl) taskEl.style.display = 'none';
+      if(interruptionEl) interruptionEl.style.display = 'none';
+      if(historyEl) historyEl.style.display = 'none';
+      if(triageEl) triageEl.style.display = 'block';
+      if(ctx.renderTriageView) ctx.renderTriageView();
     } else if(view === 'task' && taskId){
       focusTaskId = taskId;
       currentView = 'task';
@@ -44,6 +57,7 @@ export function TodayTasksRouter(ctx){
       if(mainEl) mainEl.style.display = 'none';
       if(interruptionEl) interruptionEl.style.display = 'none';
       if(historyEl) historyEl.style.display = 'none';
+      if(triageEl) triageEl.style.display = 'none';
       if(taskEl) taskEl.style.display = 'flex';
       if(renderTaskFocusView) renderTaskFocusView();
       if(focusRefreshTimer) clearInterval(focusRefreshTimer);
@@ -56,6 +70,7 @@ export function TodayTasksRouter(ctx){
       if(taskEl) taskEl.style.display = 'none';
       if(interruptionEl) interruptionEl.style.display = 'none';
       if(historyEl) historyEl.style.display = 'none';
+      if(triageEl) triageEl.style.display = 'none';
       if(focusRefreshTimer){ clearInterval(focusRefreshTimer); focusRefreshTimer = null; }
       if(ctx.resetBoardScroll) ctx.resetBoardScroll();
       if(renderAll) renderAll();
@@ -75,6 +90,10 @@ export function TodayTasksRouter(ctx){
     }
     if(hash === '#/history'){
       showView('history');
+      return;
+    }
+    if(hash === '#/triage'){
+      showView('triage');
       return;
     }
     if(hash.startsWith('#/task/')){

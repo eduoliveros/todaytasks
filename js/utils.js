@@ -195,6 +195,45 @@ export function getScheduleForDate(state, envKey, dateStr) {
   }
 }
 
+export function getNextWorkingDays(startDateStr, count = 7, state = null, envKey = null) {
+  const days = [];
+  if (!startDateStr || typeof count !== "number" || count <= 0) return days;
+  const dayLetters = ["", "L", "M", "X", "J", "V", "S", "D"];
+  const dayNames = ["", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+  const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
+  let step = 1;
+  while (days.length < count && step <= 90) {
+    const nextDateStr = addDays(startDateStr, step);
+    const sched = getScheduleForDate(state, envKey, nextDateStr);
+    if (!sched.isFreeDay) {
+      const dow = getDayOfWeek(nextDateStr);
+      const parts = nextDateStr.split("-").map(Number);
+      const dayNum = parts[2];
+      const monthNum = parts[1] - 1;
+
+      let friendlyLabel = `${dayNames[dow]} ${dayNum} ${monthNames[monthNum]}`;
+      if (days.length === 0 && step === 1) {
+        friendlyLabel = `Mañana (${dayNames[dow]} ${dayNum})`;
+      } else if (days.length === 1 && step === 2) {
+        friendlyLabel = `Pasado mañana (${dayNames[dow]} ${dayNum})`;
+      }
+
+      days.push({
+        date: nextDateStr,
+        label: friendlyLabel,
+        shortChip: `${dayLetters[dow]} ${dayNum}`,
+        dow,
+        dowName: dayNames[dow],
+        dayNum
+      });
+    }
+    step++;
+  }
+  return days;
+}
+
+
 export function getStartOfWeekMonday(dateStr) {
   const parts = dateStr.split("-").map(Number);
   const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
@@ -483,6 +522,7 @@ export const TodayTasksUtils = {
   getDayOfWeek,
   getDayAbbr,
   getScheduleForDate,
+  getNextWorkingDays,
   getStartOfWeekMonday,
   diffWeeks,
   matchesRecurrenceRule,

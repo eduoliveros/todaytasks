@@ -19,7 +19,7 @@
   <!-- Barra superior: logo + switcher + pestañas -->
   <div class="topbar-title-row">
     <div class="brand">
-      <h1>Tablero del día <span class="app-version">v1.96</span></h1>
+      <h1>Tablero del día <span class="app-version">v1.97</span></h1>
       <span class="db-status-badge" id="appModeLabel" title="Tipo de base de datos en uso">💾 local · persistente</span>
       <div class="version-update-badge" id="versionUpdateBadge" style="display:none"></div>
       <div class="env-switcher" id="envSwitcher">
@@ -116,7 +116,13 @@
   <!-- LEFT COLUMN: forms & lists -->
   <div>
     <div class="panel">
-      <h2>Tareas</h2>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <h2 style="margin:0;">Tareas</h2>
+        <a href="#/triage" class="btn secondary small" id="triageViewBtn" title="Abrir vista de triaje rápido (Atajo: X)" style="display:inline-flex;align-items:center;gap:5px;text-decoration:none;padding:3px 8px;font-size:0.75rem;font-weight:600;">
+          <span>⚡ Triaje</span>
+          <kbd style="font-size:0.65rem;font-family:'IBM Plex Mono',monospace;opacity:0.75;padding:0 3px;border-radius:3px;border:1px solid var(--line);">X</kbd>
+        </a>
+      </div>
       <div class="row">
         <input type="text" id="taskTitle" placeholder="Título de la tarea">
       </div>
@@ -362,6 +368,7 @@
 <div id="view-task" style="display:none"></div>
 <div id="view-interruption" style="display:none"></div>
 <div id="view-history" style="display:none"></div>
+<div id="view-triage" style="display:none"></div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
@@ -582,6 +589,7 @@
         <div class="shortcut-row"><kbd class="shortcut-key">E</kbd><span class="shortcut-desc">Alternar entorno (Trabajo / Personal)</span></div>
         <div class="shortcut-row"><kbd class="shortcut-key">D</kbd><span class="shortcut-desc">Ir a panel Tiempo y seleccionar Hoy</span></div>
         <div class="shortcut-row"><kbd class="shortcut-key">W</kbd><span class="shortcut-desc">Abrir / cerrar Mini-Widget flotante (PiP)</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">X</kbd><span class="shortcut-desc">Abrir / cerrar Triaje Rápido</span></div>
         <div class="shortcut-row"><kbd class="shortcut-key">P</kbd><span class="shortcut-desc">Alternar modo planificación</span></div>
       </div>
 

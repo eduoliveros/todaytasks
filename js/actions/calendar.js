@@ -460,6 +460,80 @@ export function TodayTasksCalendar(ctx, helpers){
     showToast(`Tarea "${originalTask.title}" movida al ${friendlyDate} ➡️`);
   }
 
+  function moveTasksToDate(taskIds, targetDateStr) {
+    if (!Array.isArray(taskIds) || taskIds.length === 0 || !targetDateStr) return 0;
+    const state = getState();
+    const currentDateStr = state.selectedDate || getTodayStr();
+
+    if (currentDateStr === targetDateStr) {
+      showToast("Las tareas ya están en esta fecha.");
+      return 0;
+    }
+
+    const envKey = state.activeEnv || "work";
+    const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+    if (!env || !env.days) return 0;
+
+    const sourceDayObj = env.days[currentDateStr];
+    if (!sourceDayObj || !Array.isArray(sourceDayObj.tasks)) return 0;
+
+    const idsSet = new Set(taskIds.map(String));
+    const tasksToMove = sourceDayObj.tasks.filter(t => idsSet.has(String(t.id)));
+    if (tasksToMove.length === 0) return 0;
+
+    if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+      const label = tasksToMove.length === 1
+        ? `Mover tarea "${tasksToMove[0].title}" al ${targetDateStr}`
+        : `Mover ${tasksToMove.length} tareas al ${targetDateStr}`;
+      ctx.undoModule.pushSnapshot(label);
+    }
+
+    if (!env.days[targetDateStr]) {
+      env.days[targetDateStr] = {
+        meetings: [],
+        tasks: [],
+        interruptions: [],
+        planningMode: false
+      };
+    }
+
+    const targetDayObj = env.days[targetDateStr];
+    if (!Array.isArray(targetDayObj.tasks)) targetDayObj.tasks = [];
+
+    // Quitar de día origen
+    sourceDayObj.tasks = sourceDayObj.tasks.filter(t => !idsSet.has(String(t.id)));
+
+    let maxOrder = targetDayObj.tasks.reduce((m, t) => Math.max(m, t.order || 0), 0);
+    tasksToMove.forEach(originalTask => {
+      maxOrder++;
+      const savedElapsed = getTaskElapsed(originalTask);
+      const taskStatus = originalTask.status === "completed"
+        ? "completed"
+        : (savedElapsed > 0 ? "paused" : "pending");
+
+      const movedTask = {
+        ...originalTask,
+        order: maxOrder,
+        status: taskStatus,
+        runningStart: null,
+        elapsedBefore: savedElapsed,
+        completedAt: originalTask.status === "completed" ? originalTask.completedAt : null,
+        actualDuration: originalTask.status === "completed" ? originalTask.actualDuration : null
+      };
+      targetDayObj.tasks.push(movedTask);
+    });
+
+    saveState();
+    smartRender ? smartRender() : renderAll();
+
+    const friendlyDate = formatDateFriendly ? formatDateFriendly(targetDateStr) : targetDateStr;
+    const toastLabel = tasksToMove.length === 1
+      ? `Tarea "${tasksToMove[0].title}" movida al ${friendlyDate} ➡️`
+      : `${tasksToMove.length} tareas movidas al ${friendlyDate} ➡️`;
+    showToast(toastLabel);
+    return tasksToMove.length;
+  }
+
   function openCopyTaskModal(taskId, copyTaskToDateFn, moveTaskToDateFn) {
     const state = getState();
     const today = getTodayStr();
@@ -566,7 +640,7 @@ export function TodayTasksCalendar(ctx, helpers){
     switchEnvironment, rolloverPendingTasks, rolloverPendingTasksToDate,
     countPendingAutoMoveTasks, selectDate, changeDateByDays,
     resetToToday, saveHistoryMetric, deleteHistoryMetric, startNewDay,
-    copyTaskToDate, moveTaskToDate, openCopyTaskModal
+    copyTaskToDate, moveTaskToDate, moveTasksToDate, openCopyTaskModal
   };
 }
 

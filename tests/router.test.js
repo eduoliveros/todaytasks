@@ -14,6 +14,7 @@ describe('SPA Router (js/router.js)', () => {
       <div id="view-task" style="display: none;"></div>
       <div id="view-interruption" style="display: none;"></div>
       <div id="view-history" style="display: none;"></div>
+      <div id="view-triage" style="display: none;"></div>
     `;
 
     mockState = {
@@ -114,9 +115,17 @@ describe('SPA Router (js/router.js)', () => {
     expect(routerInstance.getCurrentView()).toBe('task');
     expect(routerInstance.getFocusTaskId()).toBe('task-uuid-abc');
 
+    // Hash: #/triage
+    window.location.hash = '#/triage';
+    routerInstance.router();
+    expect(routerInstance.getCurrentView()).toBe('triage');
+    expect(document.getElementById('view-triage').style.display).toBe('block');
+    expect(document.getElementById('view-main').style.display).toBe('none');
+
     // Hash: #/ (root)
     window.location.hash = '#/';
     routerInstance.router();
     expect(routerInstance.getCurrentView()).toBe('main');
   });
 });
+

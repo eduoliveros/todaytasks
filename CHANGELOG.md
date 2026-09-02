@@ -4,6 +4,38 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.97] - 2026-09-02
+
+### Añadido
+- **Vista de Triaje Rápido de Tareas (`#/triage`):**
+  - Nueva vista dedicada a pantalla completa en [`js/views/triage.js`](./js/views/triage.js) y [`css/triage.css`](./css/triage.css) para gestionar situaciones de sobrecarga con decenas de tareas acumuladas.
+  - Atajo global de teclado <kbd>X</kbd> para alternar al instante entre el tablero principal y la vista de triaje, y tecla <kbd>Esc</kbd> para salir.
+  - Botón directo `⚡ Triaje [X]` en la cabecera del panel de Tareas.
+  - **Cuatro Modos de Agrupación:**
+    - **Urgencia (por defecto):** 🟠 Hoy, 🔵 Próximos días, 🟣 Esta semana, ⚪ Más adelante.
+    - **Viabilidad hoy:** ✅ Caben en el horario de hoy vs ⚠️ Desbordan la jornada (*overflow*).
+    - **Duración:** ⚡ Quick Wins (≤ 15 min), ⏳ Medias (20 a 45 min), 🏋️ Largas (> 45 min).
+    - **Destacadas:** ⭐ Tareas Destacadas (top 5) vs 📋 Otras tareas en cola.
+  - **Ordenación Ascendente por Duración:** Dentro de cada grupo, las tareas se ordenan automáticamente de menor a mayor duración para facilitar la resolución rápida de *quick wins*.
+  - **Filas de Tarea Compactas en 1 Sola Línea:**
+    - Truncado elíptico del título (`...`) con tooltip completo y duración estimada pegada al nombre (`[15m]`).
+    - Estrella directa para destacar o desmarcar sin tocar checkboxes.
+    - Botón interactivo de urgencia con popover contextual para cambiar nivel con un clic.
+    - 5 botones de salto rápido a los próximos días laborables (calculados dinámicamente con `getNextWorkingDays`, omitiendo fines de semana o días libres configurados en `weeklySchedule`).
+    - Botón directo de eliminación 🗑️.
+    - Clic en la fila (zona neutra) selecciona o deselecciona la tarea.
+  - **Plegado y Desplegado de Grupos:**
+    - Icono chevron desplegable `[ ▾ ]` a la izquierda del checkbox del grupo.
+    - Botones globales para plegar o desplegar todos los grupos a la vez.
+  - **Barra Flotante de Acciones Masivas (`#triageFloatingBar`):**
+    - Aparece reactivamente en la parte inferior al seleccionar una o más tareas (o marcar el checkbox de grupo).
+    - Mover tareas en lote a cualquiera de los próximos 7 días laborables calculados según horario semanal (o fecha personalizada).
+    - Cambiar urgencia en lote (Hoy, Días, Semana, Más adelante).
+    - Destacar o quitar destacado en lote respetando el límite máximo de 5 destacadas.
+    - Borrar tareas en lote con confirmación y registro de lápidas `_deletedIds` para sincronización en la nube.
+    - Soporte completo para Deshacer/Rehacer transaccional con <kbd>Ctrl+Z</kbd>.
+  - Registro de decisión arquitectónica [`docs/adr/007-vista-triaje-rapido.md`](./docs/adr/007-vista-triaje-rapido.md).
+
 ## [1.96] - 2026-09-02
 
 ### Corregido

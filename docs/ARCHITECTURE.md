@@ -55,7 +55,8 @@ todaytasks/
 │   │   ├── tasks.js             # Renderizado de lista de tareas y estados visuales
 │   │   ├── meetings.js          # Renderizado de reuniones
 │   │   ├── board.js             # Tablero visual y resumen de planificación
-│   │   └── focus.js             # Vistas de concentración de tarea e interrupciones
+│   │   ├── focus.js             # Vistas de concentración de tarea e interrupciones
+│   │   └── triage.js            # Vista de triaje rápido, agrupación y operaciones masivas
 │   └── app/                     # Submódulos auxiliares de app.js
 │       ├── forms.js             # Gestión y enlace de formularios del DOM
 │       ├── shortcuts.js         # Manejo de atajos de teclado
@@ -71,6 +72,7 @@ todaytasks/
 │   ├── history.css              # Estilos del panel de historial y resumen
 │   ├── interruption.css         # Estilos visuales de interrupciones activas
 │   ├── pip.css                  # Estilos ultracompactos para el mini-widget Picture-in-Picture
+│   ├── triage.css               # Estilos de fila única y barra flotante de triaje rápido
 │   └── styles.css               # Archivo agregador de estilos
 ├── tests/                       # Pruebas unitarias y de integración (Vitest + JSDOM)
 ├── e2e/                         # Pruebas End-to-End en navegador real (Playwright)
@@ -223,7 +225,22 @@ TodayTasks integra la API nativa de navegadores **Document Picture-in-Picture** 
 
 ---
 
-## 10. Directrices para Nuevos Desarrollos
+## 10. Vista de Triaje Rápido y Operaciones Masivas (`triage.js`, `triage.css`, `#/triage`)
+
+Para resolver la sobrecarga cognitiva cuando se acumulan decenas de tareas pendientes, TodayTasks incorpora una vista dedicada y libre de distracciones:
+* **Enrutamiento y Atajo:** Accesible en la ruta `#/triage` y conmutable mediante la tecla <kbd>X</kbd> o el botón `⚡ Triaje` en la cabecera de tareas. La tecla <kbd>Esc</kbd> permite regresar de inmediato al tablero.
+* **Agrupaciones Dinámicas:**
+  - **Urgencia (por defecto):** 🟠 Hoy, 🔵 Próximos días, 🟣 Esta semana, ⚪ Más adelante.
+  - **Viabilidad hoy:** ✅ Caben en el horario de hoy vs ⚠️ Desbordan la jornada (*overflow* proyectado por `scheduler.js`).
+  - **Duración:** ⚡ Quick Wins (≤ 15 min), ⏳ Medias (20-45 min), 🏋️ Largas (> 45 min).
+  - **Destacadas:** ⭐ Top 5 destacadas vs 📋 Otras tareas en cola.
+* **Ordenación Interna:** Dentro de cada grupo, las tareas se ordenan estrictamente en sentido ascendente de duración (`(a.planned || 0) - (b.planned || 0)`), priorizando la resolución rápida de elementos pequeños.
+* **Filas de Tarea en 1 Sola Línea:** Cada tarea muestra su checkbox, estrella interactiva, título truncado con elipsis (`...`), duración al lado, botón directo de urgencia con popover, 5 botones rápidos con los días hábiles calculados según `weeklySchedule` y botón de borrado directo.
+* **Operaciones Masivas y Barra Flotante (`#triageFloatingBar`):** Permite selección múltiple de tareas (individual o por grupo completo) y ofrece mover a cualquiera de los próximos 7 días laborables, cambiar urgencia en lote, destacar en lote o borrar en lote con confirmación y soporte transaccional de Undo (`Ctrl+Z`).
+
+---
+
+## 11. Directrices para Nuevos Desarrollos
 
 1. **Separación Estricta de Responsabilidades:**
    * Las vistas (`views/`) **no** deben mutar el estado directamente; deben delegar en las acciones (`actions/`).

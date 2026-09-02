@@ -127,6 +127,17 @@ export function TodayTasksShortcuts(appCtx){
           return;
         }
 
+        const triageUrgency = document.getElementById("triageSingleUrgencyPopover");
+        if(triageUrgency && triageUrgency.style.display === "block"){
+          e.preventDefault();
+          if(window.app && typeof window.app.closeTriagePopovers === "function") {
+            window.app.closeTriagePopovers();
+          } else {
+            triageUrgency.style.display = "none";
+          }
+          return;
+        }
+
         if(state.activeInterruption || (routerModule && routerModule.getCurrentView() === 'interruption')){
           e.preventDefault();
           if (actionsModule && actionsModule.cancelInterruption) actionsModule.cancelInterruption();
@@ -203,6 +214,13 @@ export function TodayTasksShortcuts(appCtx){
           window.location.hash = '#/';
         } else {
           window.location.hash = '#/history';
+        }
+      } else if(e.key === "x" || e.key === "X"){
+        e.preventDefault();
+        if(routerModule && routerModule.getCurrentView() === 'triage'){
+          window.location.hash = '#/';
+        } else {
+          window.location.hash = '#/triage';
         }
       } else if(e.key === "i" || e.key === "I"){
         e.preventDefault();

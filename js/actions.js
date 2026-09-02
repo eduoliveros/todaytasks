@@ -162,10 +162,13 @@ export function TodayTasksActions(ctx) {
     updateTaskTimeFast:     tasks.updateTaskTimeFast,
     moveTask:               tasks.moveTask,
     setTaskUrgency:         tasks.setTaskUrgency,
+    setTasksUrgency:        tasks.setTasksUrgency,
     setTaskFeatured:        tasks.setTaskFeatured,
+    setTasksFeatured:       tasks.setTasksFeatured,
     toggleTaskFeatured:     tasks.toggleTaskFeatured,
     resolveFeaturedLimit:   tasks.resolveFeaturedLimit,
     setTaskStartAfter:      tasks.setTaskStartAfter,
+    deleteTasks:            tasks.deleteTasks,
     showFeaturedLimitModal,
     /* Drag & Drop */
     armTaskDrag:            dragdrop.armTaskDrag,
@@ -197,6 +200,7 @@ export function TodayTasksActions(ctx) {
     startNewDay:            calendar.startNewDay,
     copyTaskToDate:         calendar.copyTaskToDate,
     moveTaskToDate:         calendar.moveTaskToDate,
+    moveTasksToDate:        calendar.moveTasksToDate,
     openCopyTaskModal
   };
 }

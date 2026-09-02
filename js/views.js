@@ -4,6 +4,7 @@ import { TodayTasksMeetingsView } from './views/meetings.js';
 import { TodayTasksTasksView } from './views/tasks.js';
 import { TodayTasksBoardView } from './views/board.js';
 import { TodayTasksFocusView } from './views/focus.js';
+import { TodayTasksTriageView } from './views/triage.js';
 
 export function TodayTasksViews(ctx){
   /* Instanciar sub-módulos */
@@ -12,6 +13,7 @@ export function TodayTasksViews(ctx){
   const tasksV    = TodayTasksTasksView(ctx);
   const boardV    = TodayTasksBoardView(ctx);
   const focusV    = TodayTasksFocusView(ctx);
+  const triageV   = TodayTasksTriageView(ctx);
 
   const { getCurrentView } = ctx;
 
@@ -32,6 +34,8 @@ export function TodayTasksViews(ctx){
       focusV.renderTaskFocusView();
     } else if(currentView === 'interruption'){
       focusV.renderInterruptionView();
+    } else if(currentView === 'triage'){
+      triageV.renderTriageView();
     }
     if(ctx.pipModule && ctx.pipModule.render){
       ctx.pipModule.render();
@@ -47,6 +51,8 @@ export function TodayTasksViews(ctx){
       focusV.renderInterruptionView();
     } else if(currentView === 'task'){
       focusV.renderTaskFocusView();
+    } else if(currentView === 'triage'){
+      triageV.renderTriageView();
     } else {
       renderAll();
     }
@@ -80,6 +86,26 @@ export function TodayTasksViews(ctx){
     /* Focus */
     renderInterruptionView: focusV.renderInterruptionView,
     renderTaskFocusView:    focusV.renderTaskFocusView,
+    /* Triage */
+    renderTriageView:             triageV.renderTriageView,
+    setTriageSortMode:            triageV.setTriageSortMode,
+    toggleTriageGroup:            triageV.toggleTriageGroup,
+    toggleAllTriageGroups:        triageV.toggleAllTriageGroups,
+    handleTriageRowClick:         triageV.handleTriageRowClick,
+    toggleTriageTaskSelect:       triageV.toggleTriageTaskSelect,
+    toggleTriageGroupSelect:      triageV.toggleTriageGroupSelect,
+    clearTriageSelection:         triageV.clearTriageSelection,
+    toggleTriageTaskStar:         triageV.toggleTriageTaskStar,
+    moveTriageTaskToDate:         triageV.moveTriageTaskToDate,
+    deleteTriageSingleTask:       triageV.deleteTriageSingleTask,
+    openTriageSingleUrgency:      triageV.openTriageSingleUrgency,
+    applyTriageSingleUrgency:     triageV.applyTriageSingleUrgency,
+    closeTriagePopovers:          triageV.closeTriagePopovers,
+    executeTriageMoveSelectedDate:triageV.executeTriageMoveSelectedDate,
+    executeTriageBatchUrgency:    triageV.executeTriageBatchUrgency,
+    executeTriageBatchStar:       triageV.executeTriageBatchStar,
+    executeTriageBatchDelete:     triageV.executeTriageBatchDelete,
+    toggleTriageDropdown:         triageV.toggleTriageDropdown,
     /* Orchestration */
     renderAll,
     smartRender
