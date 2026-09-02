@@ -1348,6 +1348,7 @@ function switchHeaderTab(target){
     });
   }
 
+  state.selectedDate = getTodayStr();
   actionsModule.materializeRecurringTasks();
   actionsModule.rolloverPendingTasks();
 

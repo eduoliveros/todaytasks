@@ -4,6 +4,13 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.96] - 2026-09-02
+
+### Corregido
+- **Arranque automático en el día de hoy y desacoplamiento de fecha en la nube:**
+  - Al abrir o reiniciar la aplicación, la vista se posiciona automáticamente siempre en la fecha actual (`getTodayStr()`), evitando quedar anclada a días pasados de sesiones previas en `localStorage`.
+  - Se excluye `selectedDate` de la persistencia en Firestore (`tableroDia`), tratándolo como estado de navegación local y efímero para evitar que la nube sobrescriba la vista con fechas anteriores.
+
 ## [1.95] - 2026-09-01
 
 ### Añadido

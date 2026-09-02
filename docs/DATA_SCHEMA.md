@@ -11,7 +11,7 @@ El estado global gestionado por [state.js](../js/state.js) y persistido en `loca
 ```typescript
 interface State {
   activeEnv: "work" | "personal";      // Entorno seleccionado actualmente (def: "work")
-  selectedDate: string;                 // Fecha en formato "YYYY-MM-DD" (def: día actual)
+  selectedDate: string;                 // Fecha en formato "YYYY-MM-DD" (def: día actual; estado de vista local de la sesión activa, no persistido en Firestore)
   environments: {
     work: EnvState;                     // Datos del entorno de Trabajo
     personal: EnvState;                 // Datos del entorno Personal

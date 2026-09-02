@@ -71,6 +71,23 @@ describe('TodayTasksState (ES Module)', () => {
       expect(state.themeMode).toBe('light');
       expect(state.nextId).toBe(5);
     });
+
+    it('siempre inicializa selectedDate en el día de hoy al arrancar aunque localStorage tenga una fecha anterior', () => {
+      const sampleData = {
+        activeEnv: 'work',
+        selectedDate: '2020-01-01'
+      };
+      localStorage.setItem('todaytasks_test_key', JSON.stringify(sampleData));
+
+      const state = loadState('todaytasks_test_key');
+      expect(state.selectedDate).not.toBe('2020-01-01');
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      const todayStr = `${y}-${m}-${d}`;
+      expect(state.selectedDate).toBe(todayStr);
+    });
   });
 });
 

@@ -190,6 +190,18 @@ describe('TodayTasksCloud - mergeStates', () => {
     expect(merged.selectedDate).toBe('2026-08-20');
   });
 
+  it('no hereda selectedDate obsoleto de la nube si local no tiene fecha', () => {
+    const local = defaultState();
+    delete local.selectedDate;
+
+    const remote = defaultState();
+    remote.selectedDate = '2020-01-01';
+
+    const merged = cloud.mergeStates(local, remote);
+    expect(merged.selectedDate).not.toBe('2020-01-01');
+    expect(merged.selectedDate).toBe(defaultState().selectedDate);
+  });
+
   it('aplica la prevalencia de weeklySchedule de la nube también en el entorno personal', () => {
     const local = defaultState();
     local.environments.personal.weeklySchedule = {
@@ -460,6 +472,17 @@ describe('TodayTasksCloud - detección de origen y sincronización', () => {
     expect(sentData).toHaveProperty('_lastUpdatedAt');
     expect(sentData._lastUpdatedBy).toBe(cloud.getClientId());
     expect(typeof sentData._lastUpdatedAt).toBe('number');
+  });
+
+  it('pushToCloud no incluye selectedDate en los datos enviados a la nube', () => {
+    const customState = defaultState();
+    customState.selectedDate = '2026-08-15';
+    ctx.getState = () => customState;
+    cloud.pushToCloud();
+
+    expect(mockDocRef.set).toHaveBeenCalled();
+    const sentData = mockDocRef.set.mock.calls[mockDocRef.set.mock.calls.length - 1][0];
+    expect(sentData.selectedDate).toBeUndefined();
   });
 
   it('onSnapshot ignora la confirmación de subida del propio dispositivo (no muestra "otro dispositivo" ni resetea edición)', () => {

@@ -301,7 +301,10 @@ export function loadState(storageKey) {
     const raw = typeof localStorage !== "undefined" ? localStorage.getItem(storageKey) : null;
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw);
-    return wrapState(parsed);
+    const state = wrapState(parsed);
+    // Al arrancar de nuevas, la aplicación siempre debe posicionarse en el día actual
+    state.selectedDate = getToday();
+    return state;
   } catch (e) {
     console.error("No se pudo leer el estado guardado", e);
     return defaultState();

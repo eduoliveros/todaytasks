@@ -44,6 +44,7 @@ export function TodayTasksCloud(ctx){
       _lastUpdatedBy: clientId,
       _lastUpdatedAt: Date.now()
     };
+    delete cloudPayload.selectedDate;
     cloudDocRef(currentUser.uid).set(cloudPayload)
       .then(()=> setSyncStatus("", "☁ Sincronizado"))
       .catch(err => {
@@ -105,7 +106,7 @@ export function TodayTasksCloud(ctx){
       const remote = wrapState(remoteRaw);
       const merged = defaultState();
       merged.activeEnv = local.activeEnv || remote.activeEnv || 'work';
-      merged.selectedDate = local.selectedDate || remote.selectedDate || merged.selectedDate;
+      merged.selectedDate = local.selectedDate || merged.selectedDate;
       merged.themeMode = local.themeMode || remote.themeMode || 'auto';
       merged.notifyIntervalMin = local.notifyIntervalMin || remote.notifyIntervalMin || 10;
       merged.notifyEnabled = (local.notifyEnabled !== undefined) ? local.notifyEnabled : ((remote.notifyEnabled !== undefined) ? remote.notifyEnabled : true);
@@ -366,7 +367,9 @@ export function TodayTasksCloud(ctx){
               // Local sin tareas ni horario → cargar nube directamente
               backupLocalState();
               applyingRemoteUpdate = true;
-              setState(wrapState(cloudData));
+              const loadedCloud = wrapState(cloudData);
+              loadedCloud.selectedDate = (getState && getState().selectedDate) || defaultState().selectedDate;
+              setState(loadedCloud);
               setMeetingEdit(null); setTaskEdit(null);
               applyingRemoteUpdate = false;
               localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
@@ -402,7 +405,9 @@ export function TodayTasksCloud(ctx){
               // Nube tiene solo horario (sin tareas), local vacío → cargar nube
               backupLocalState();
               applyingRemoteUpdate = true;
-              setState(wrapState(cloudData));
+              const loadedCloud = wrapState(cloudData);
+              loadedCloud.selectedDate = (getState && getState().selectedDate) || defaultState().selectedDate;
+              setState(loadedCloud);
               setMeetingEdit(null); setTaskEdit(null);
               applyingRemoteUpdate = false;
               localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
