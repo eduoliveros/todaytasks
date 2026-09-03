@@ -1,5 +1,5 @@
 /* views/dashboard.js — Reloj, estadísticas de cabecera, barra de progreso, entorno, formularios */
-import { nowMinutes, fmt, fmtDur, computeOccupiedMeetingTime, getTodayStr, getDayAbbr } from '../utils.js';
+import { nowMinutes, fmt, fmtDur, computeOccupiedMeetingTime, computeDayDeviation, getTodayStr, getDayAbbr } from '../utils.js';
 
 export function TodayTasksDashboard(ctx){
   const { getState, computeSchedule } = ctx;
@@ -22,6 +22,13 @@ export function TodayTasksDashboard(ctx){
       .filter(t => t.status === "completed")
       .reduce((s,t) => s + (t.actualDuration||0), 0);
     const intTotal = (state.interruptions||[]).reduce((s,i) => s + (i.duration||0), 0);
+    const dev = computeDayDeviation(state.tasks);
+
+    const isOver = dev.deviationMin > 0;
+    const isUnder = dev.deviationMin < 0;
+    const sign = isOver ? '+' : (isUnder ? '−' : '');
+    const devClass = isOver ? 'stat-dev-over' : (isUnder ? 'stat-dev-under' : 'stat-dev-neutral');
+    const devTitle = `Desviación del día: ${fmtDur(dev.realMin)} reales vs ${fmtDur(dev.plannedMin)} planificados (${dev.evaluatedCount} ${dev.evaluatedCount === 1 ? 'tarea evaluada' : 'tareas evaluadas'})`;
 
     const workStart = state.workStart;
     const workEnd = state.workEnd;
@@ -34,6 +41,13 @@ export function TodayTasksDashboard(ctx){
       <span class="stat-chip stat-task"><span class="stat-icon">🗒</span>Tareas por hacer <span class="stat-value">${fmtDur(tasksTotal)}</span></span>
       <span class="stat-chip"><span class="stat-icon">✓</span>Completado hoy <span class="stat-value">${fmtDur(completedTotal)}</span></span>
       ${intTotal > 0 ? `<span class="stat-chip"><span class="stat-icon">⚡</span>Interrupciones <span class="stat-value" style="color:var(--danger)">${fmtDur(intTotal)}</span></span>` : ''}
+      ${dev.evaluatedCount > 0 ? `
+        <span class="stat-chip stat-dev stat-dev-dual ${devClass}" title="${devTitle}">
+          <span class="stat-icon">⏱</span>
+          <span class="stat-dual-values">${fmtDur(dev.realMin)} / ${fmtDur(dev.plannedMin)}</span>
+          <span class="stat-dual-delta">${sign}${fmtDur(Math.abs(dev.deviationMin))}</span>
+        </span>
+      ` : ''}
       ${isFree
         ? `<span class="stat-chip stat-free" title="Día libre sin horario de jornada fijo"><span class="stat-icon">🏖</span>Día libre</span>`
         : `<span class="stat-chip stat-free" title="Tiempo disponible en la jornada descontando reuniones y tareas por hacer (${fmt(workStart)} - ${fmt(workEnd)})"><span class="stat-icon">⏳</span>Tiempo no asignado <span class="stat-value">${fmtDur(unassignedTime)}</span></span>`

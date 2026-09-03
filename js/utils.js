@@ -399,6 +399,51 @@ export function computeOccupiedMeetingTime(meetings) {
   return merged.reduce((total, iv) => total + (iv.end - iv.start), 0);
 }
 
+export function computeDayDeviation(tasks, nowVal) {
+  // Desviación del día (Modelo Híbrido Realista):
+  // - Tareas completadas: actualDuration - planned (ahorro o sobrecoste consolidado).
+  // - Tareas en curso (running o paused): si consumed > planned, suma el exceso como sobrecoste en vivo.
+  //   Si consumed <= planned, computa 0 para evitar falsos adelantos prematuros.
+  // Devuelve { deviationMin, realMin, plannedMin, evaluatedCount }.
+  const result = { deviationMin: 0, realMin: 0, plannedMin: 0, evaluatedCount: 0 };
+  if (!Array.isArray(tasks)) return result;
+
+  let realSum = 0;
+  let plannedSum = 0;
+  let devSum = 0;
+  let count = 0;
+
+  for (const t of tasks) {
+    if (!t || typeof t !== "object") continue;
+    const status = t.status;
+
+    if (status === "completed") {
+      const act = typeof t.actualDuration === "number" ? t.actualDuration : (t.elapsedBefore || 0);
+      const pl = (typeof t.planned === "number" && t.planned > 0) ? t.planned : 0;
+      realSum += act;
+      plannedSum += pl;
+      devSum += (act - pl);
+      count++;
+    } else if (status === "running" || status === "paused") {
+      const consumed = getTaskElapsed(t, nowVal);
+      const pl = (typeof t.planned === "number" && t.planned > 0) ? t.planned : 0;
+      if (consumed > pl) {
+        // Sobrecoste en tiempo real
+        realSum += consumed;
+        plannedSum += pl;
+        devSum += (consumed - pl);
+        count++;
+      }
+    }
+  }
+
+  result.realMin = Math.round(realSum * 10) / 10;
+  result.plannedMin = Math.round(plannedSum * 10) / 10;
+  result.deviationMin = Math.round(devSum * 10) / 10;
+  result.evaluatedCount = count;
+  return result;
+}
+
 export function normalizeSearchText(str) {
   if (!str || typeof str !== "string") return "";
   return str
@@ -634,6 +679,7 @@ export const TodayTasksUtils = {
   matchesRecurrenceRule,
   formatRecurrenceRule,
   computeOccupiedMeetingTime,
+  computeDayDeviation,
   normalizeSearchText,
   matchesSearchQuery,
   getTaskSearchableText,

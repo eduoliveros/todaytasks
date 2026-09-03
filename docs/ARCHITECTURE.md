@@ -192,9 +192,23 @@ La interfaz utiliza menús flotantes contextuales ligeros (*popovers*) para conf
 
 ---
 
+## 8. Píldora Dual de Desviación del Plan (`computeDayDeviation` y `css/header.css`)
+
+El panel *Resumen* de la cabecera incluye un indicador en formato **chip dual** (`⏱ Real / Plan [±Delta]`) que compara el tiempo real consumido frente a la duración planificada de las tareas de la jornada:
+
+* **Modelo Matemático Híbrido Realista:**
+  - Implementado en `computeDayDeviation(tasks, nowVal)` dentro de [`js/utils.js`](../js/utils.js).
+  - Devuelve `{ deviationMin, realMin, plannedMin, evaluatedCount }`.
+  - **Tareas completadas:** $\text{actualDuration} - \text{planned}$ (ahorro consolidado con signo negativo o sobrecoste con signo positivo).
+  - **Tareas en curso (`running` o `paused`):** Solo si el tiempo consumido ya ha rebasado la estimación ($\text{elapsed} > \text{planned}$), se computa el sobrecoste acumulado en tiempo real. Si la tarea está dentro del margen previsto, computa $0$ para erradicar falsos adelantos al inicio de una tarea.
+* **Presentación Visual (Chip Dual):**
+  - Muestra explícitamente ambas magnitudes y una pastilla destacada con el delta neto (ej. `⏱ 1h 15m / 1h 00m [+15m]`).
+  - **Semántica:** Rojo (`.stat-dev-over`) en retraso, verde (`.stat-dev-under`) en adelanto/ahorro y neutro (`.stat-dev-neutral`) en paridad.
+  - **Visibilidad condicionada:** El chip solo se renderiza si `evaluatedCount > 0`, evitando ruido visual antes de iniciar o concluir trabajo.
+
 ---
 
-## 8. Detección Automática de Versión y Sincronización en Inactividad (`version.js`)
+## 9. Detección Automática de Versión y Sincronización en Inactividad (`version.js`)
 
 TodayTasks implementa una arquitectura híbrida de detección de actualizaciones de código y recarga segura sin intervención manual:
 * **Detección Reactiva y Periódica:**
@@ -210,7 +224,7 @@ TodayTasks implementa una arquitectura híbrida de detección de actualizaciones
 * **UI No Intrusiva:**
   - Si el usuario está activo, se muestra la insignia interactiva `#versionUpdateBadge` en la barra superior (`✨ v1.94 lista [Actualizar]`) permitiendo actualización manual inmediata.
 
-## 9. Mini-Widget Flotante Always-on-Top (`pip.js` y `css/pip.css`)
+## 10. Mini-Widget Flotante Always-on-Top (`pip.js` y `css/pip.css`)
 
 TodayTasks integra la API nativa de navegadores **Document Picture-in-Picture** (`window.documentPictureInPicture`) para proyectar un visor flotante interactivo y persistente mientras el usuario trabaja en otras aplicaciones de escritorio:
 * **Contexto Compartido:** La ventana PiP comparte el mismo hilo y contexto de memoria JavaScript que la ventana principal, permitiendo que los botones invoquen directamente los métodos de negocio (`actionsModule.pauseTask()`, `actionsModule.completeTask()`, `actionsModule.startInterruption()`, etc.) sin latencia ni serialización.
@@ -225,7 +239,7 @@ TodayTasks integra la API nativa de navegadores **Document Picture-in-Picture** 
 
 ---
 
-## 10. Vista de Triaje Rápido y Operaciones Masivas (`triage.js`, `triage.css`, `#/triage`)
+## 11. Vista de Triaje Rápido y Operaciones Masivas (`triage.js`, `triage.css`, `#/triage`)
 
 Para resolver la sobrecarga cognitiva cuando se acumulan decenas de tareas pendientes, TodayTasks incorpora una vista dedicada y libre de distracciones:
 * **Enrutamiento y Atajo:** Accesible en la ruta `#/triage` y conmutable mediante la tecla <kbd>X</kbd> o el botón `⚡ Triaje` en la cabecera de tareas. La tecla <kbd>Esc</kbd> permite regresar de inmediato al tablero.
@@ -240,7 +254,7 @@ Para resolver la sobrecarga cognitiva cuando se acumulan decenas de tareas pendi
 
 ---
 
-## 11. Prevalencia del Orden Manual sobre el Orden Automático (`manualOrder` y `sortTasksWithManualOrder`)
+## 12. Prevalencia del Orden Manual sobre el Orden Automático (`manualOrder` y `sortTasksWithManualOrder`)
 
 TodayTasks implementa un modelo híbrido donde las decisiones explícitas de reordenación del usuario prevalecen sobre el auto-sort automático por prioridad:
 * **Tareas Ancladas (`manualOrder: number`) vs Flotantes (`manualOrder: null`):**
@@ -256,7 +270,7 @@ TodayTasks implementa un modelo híbrido donde las decisiones explícitas de reo
 
 ---
 
-## 12. Directrices para Nuevos Desarrollos
+## 13. Directrices para Nuevos Desarrollos
 
 1. **Separación Estricta de Responsabilidades:**
    * Las vistas (`views/`) **no** deben mutar el estado directamente; deben delegar en las acciones (`actions/`).

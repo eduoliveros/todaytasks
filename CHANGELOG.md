@@ -4,6 +4,19 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.99] - 2026-09-03
+
+### Añadido
+- **Píldora Dual de Desviación del Plan en la Cabecera (Real / Plan + Delta):**
+  - Nuevo indicador integrado en la barra de estadísticas del panel *Resumen* (`#headerStats`) con formato dual `⏱ Real / Plan [±Delta]`.
+  - Muestra explícitamente las dos magnitudes base y el balance neto (ej. `⏱ 1h 15m / 1h 00m [+15m]`), evitando confusiones sobre el origen de la desviación.
+  - **Modelo Matemático Híbrido Realista:**
+    - Tareas completadas: $\text{tiempo real} - \text{tiempo planificado}$ (ahorro o sobrecoste consolidado).
+    - Tareas en curso (`running` o `paused`): solo computan si el tiempo consumido ya ha rebasado el tiempo planificado ($\text{elapsed} > \text{planned}$), sumando el exceso en tiempo real como sobrecoste. Si están dentro del margen, computan 0 para eliminar falsos ahorros prematuros.
+  - Colores semánticos con micro-pastilla destacada (`.stat-dev-over` en rojo, `.stat-dev-under` en verde, `.stat-dev-neutral` en neutro) y soporte completo para modo oscuro.
+  - El chip solo se hace visible cuando hay al menos una tarea evaluada (`evaluatedCount > 0`), manteniendo la cabecera limpia al inicio de la jornada.
+  - Función pura `computeDayDeviation(tasks, nowVal)` en [`js/utils.js`](./js/utils.js) con suite de pruebas unitarias en [`tests/day_deviation.test.js`](./tests/day_deviation.test.js).
+
 ## [1.98] - 2026-09-03
 
 ### Añadido
