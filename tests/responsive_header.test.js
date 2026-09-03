@@ -36,4 +36,10 @@ describe('Header responsivo en móvil (Opción A)', () => {
     expect(cssContent).toMatch(/@media[^{]*max-width[^{]*\)\s*\{[\s\S]*?\.header-tabs\s*\{[\s\S]*?width:\s*100%/i);
     expect(cssContent).toMatch(/@media[^{]*max-width[^{]*\)\s*\{[\s\S]*?\.header-tab\s*\{[\s\S]*?flex:\s*1/i);
   });
+
+  it('el panel de configuración contiene el botón autoOrderBtn', () => {
+    const btn = document.querySelector('#htab-config #autoOrderBtn');
+    expect(btn).not.toBeNull();
+    expect(btn.textContent).toContain('Orden automático');
+  });
 });

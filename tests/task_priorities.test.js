@@ -5,7 +5,8 @@ import {
   MAX_FEATURED_TASKS,
   getUrgencyWeight,
   compareTasksByPriority,
-  sortTasksByPriority
+  sortTasksByPriority,
+  sortTasksWithManualOrder
 } from '../js/utils.js';
 import { defaultState, wrapState } from '../js/state.js';
 import { TodayTasksTasks } from '../js/actions/tasks.js';
@@ -368,6 +369,190 @@ describe('Task Priorities (Urgency & Featured)', () => {
       const escEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
       window.dispatchEvent(escEvent);
       expect(modal.style.display).toBe('none');
+    });
+  });
+
+  describe('Manual Ordering vs Automatic Priority (sortTasksWithManualOrder)', () => {
+    it('orders identically to sortTasksByPriority when all tasks have manualOrder: null', () => {
+      const tasks = [
+        { id: '1', title: 'Week Task', urgency: 'week', featured: false, manualOrder: null, order: 1 },
+        { id: '2', title: 'Today Task', urgency: 'today', featured: false, manualOrder: null, order: 2 },
+        { id: '3', title: 'Today Star', urgency: 'today', featured: true, manualOrder: null, order: 3 },
+      ];
+
+      const sorted = sortTasksWithManualOrder(tasks);
+      expect(sorted.map(t => t.id)).toEqual(['3', '2', '1']);
+      expect(sorted.map(t => t.order)).toEqual([1, 2, 3]);
+    });
+
+    it('preserves exact manualOrder when all tasks are anchored', () => {
+      // User placed 'later' at #1, 'days' at #2, and 'today' at #3
+      const tasks = [
+        { id: 't-later', title: 'Later Task', urgency: 'later', featured: false, manualOrder: 1, order: 1 },
+        { id: 't-days', title: 'Days Task', urgency: 'days', featured: false, manualOrder: 2, order: 2 },
+        { id: 't-today', title: 'Today Task', urgency: 'today', featured: true, manualOrder: 3, order: 3 },
+      ];
+
+      const sorted = sortTasksWithManualOrder(tasks);
+      expect(sorted.map(t => t.id)).toEqual(['t-later', 't-days', 't-today']);
+      expect(sorted.map(t => t.order)).toEqual([1, 2, 3]);
+    });
+
+    it('guarantees the first anchored task is never overtaken by a new or floating task, even if more urgent', () => {
+      // User triaged A0 (urgency: days) to position 1
+      const a0 = { id: 'a0', title: 'A0', urgency: 'days', manualOrder: 1, order: 1 };
+      const a1 = { id: 'a1', title: 'A1', urgency: 'later', manualOrder: 2, order: 2 };
+      // New floating task arrives with urgency 'today'
+      const f0 = { id: 'f0', title: 'F0 Urgent', urgency: 'today', manualOrder: null, order: 3 };
+
+      const sorted = sortTasksWithManualOrder([a0, a1, f0]);
+      // a0 MUST stay first! f0 goes before a1 because f0 ('today') > a1 ('later')
+      expect(sorted.map(t => t.id)).toEqual(['a0', 'f0', 'a1']);
+      expect(sorted.map(t => t.order)).toEqual([1, 2, 3]);
+    });
+
+    it('inserts a new floating task before lower-priority anchored tasks (e.g. before the last task placed by user)', () => {
+      // User manually placed a low-priority task as the last task (#3)
+      const a0 = { id: 'a0', title: 'A0', urgency: 'days', manualOrder: 1, order: 1 };
+      const a1 = { id: 'a1', title: 'A1', urgency: 'days', manualOrder: 2, order: 2 };
+      const a2 = { id: 'a2', title: 'A2 End', urgency: 'later', manualOrder: 3, order: 3 }; // user put this last!
+
+      // New floating task with urgency 'days'
+      const f0 = { id: 'f0', title: 'F0 Days', urgency: 'days', manualOrder: null, order: 4 };
+
+      const sorted = sortTasksWithManualOrder([a0, a1, a2, f0]);
+      // f0 ('days') is more urgent than a2 ('later'), so it goes before a2
+      expect(sorted.map(t => t.id)).toEqual(['a0', 'a1', 'f0', 'a2']);
+      expect(sorted.map(t => t.order)).toEqual([1, 2, 3, 4]);
+    });
+
+    it('running task always takes precedence at the top even before anchored tasks', () => {
+      const running = { id: 'r', title: 'Running', status: 'running', urgency: 'later', manualOrder: null, order: 1 };
+      const a0 = { id: 'a0', title: 'A0', status: 'pending', urgency: 'today', manualOrder: 1, order: 2 };
+
+      const sorted = sortTasksWithManualOrder([a0, running]);
+      expect(sorted[0].id).toBe('r');
+      expect(sorted[1].id).toBe('a0');
+    });
+
+    it('setTaskUrgency preserves anchor position when changing urgency of an anchored task', () => {
+      const state = defaultState();
+      let taskEdit = null;
+      const ctx = {
+        getState: () => state,
+        setState: (ns) => { state = wrapState(ns); },
+        getTaskEdit: () => taskEdit,
+        setTaskEdit: (te) => { taskEdit = te; },
+        saveState: () => {},
+        newId: () => 'id-' + Math.random(),
+        smartRender: () => {},
+        renderAll: () => {},
+        undoModule: { pushSnapshot: vi.fn() }
+      };
+
+      const tasksMod = TodayTasksTasks(ctx, {
+        nowMinutes: () => 540,
+        showToast: vi.fn(),
+        showRecurringModal: vi.fn(),
+        showFeaturedLimitModal: vi.fn()
+      });
+
+      // Añadir 3 tareas
+      tasksMod.addTask('Task 1', '30', false, null, true, 'today');
+      tasksMod.addTask('Task 2', '30', false, null, true, 'days');
+      tasksMod.addTask('Task 3', '30', false, null, true, 'later');
+
+      // Simular anclaje manual (como haría drag & drop o triage)
+      state.tasks[0].manualOrder = 1;
+      state.tasks[1].manualOrder = 2;
+      state.tasks[2].manualOrder = 3;
+
+      const id3 = state.tasks[2].id;
+
+      // Cambiar urgencia de Task 3 a 'today'
+      tasksMod.setTaskUrgency(id3, 'today');
+
+      // La posición debe mantenerse exactamente en el puesto 3, no saltar al puesto 1 o 2
+      expect(state.tasks[2].id).toBe(id3);
+      expect(state.tasks[2].urgency).toBe('today');
+      expect(state.tasks[2].manualOrder).toBe(3);
+      expect(state.tasks.map(t => t.title)).toEqual(['Task 1', 'Task 2', 'Task 3']);
+    });
+
+    it('applyAutoOrder clears manual anchors and re-sorts all tasks strictly by priority', () => {
+      const state = defaultState();
+      let taskEdit = null;
+      const ctx = {
+        getState: () => state,
+        setState: (ns) => { state = wrapState(ns); },
+        getTaskEdit: () => taskEdit,
+        setTaskEdit: (te) => { taskEdit = te; },
+        saveState: () => {},
+        newId: () => 'id-' + Math.random(),
+        smartRender: () => {},
+        renderAll: () => {},
+        undoModule: { pushSnapshot: vi.fn() }
+      };
+
+      const tasksMod = TodayTasksTasks(ctx, {
+        nowMinutes: () => 540,
+        showToast: vi.fn(),
+        showRecurringModal: vi.fn(),
+        showFeaturedLimitModal: vi.fn()
+      });
+
+      // Tareas en orden invertido respecto a urgencia pero con manualOrder fijado
+      state.tasks = [
+        { id: '1', title: 'Later #1', urgency: 'later', featured: false, manualOrder: 1, order: 1, status: 'pending' },
+        { id: '2', title: 'Today #2', urgency: 'today', featured: false, manualOrder: 2, order: 2, status: 'pending' }
+      ];
+
+      // Aplicar orden automático
+      tasksMod.applyAutoOrder();
+
+      // manualOrder debe ser null en todas las tareas
+      expect(state.tasks.every(t => t.manualOrder === null)).toBe(true);
+      // 'Today #2' debe pasar a ser la primera por urgencia
+      expect(state.tasks[0].id).toBe('2');
+      expect(state.tasks[1].id).toBe('1');
+      expect(ctx.undoModule.pushSnapshot).toHaveBeenCalledWith('Aplicar orden automático');
+    });
+
+    it('moveTask reorders and anchors all tasks in the queue with manualOrder', () => {
+      const state = defaultState();
+      let taskEdit = null;
+      const ctx = {
+        getState: () => state,
+        setState: (ns) => { state = wrapState(ns); },
+        getTaskEdit: () => taskEdit,
+        setTaskEdit: (te) => { taskEdit = te; },
+        saveState: () => {},
+        newId: () => 'id-' + Math.random(),
+        smartRender: () => {},
+        renderAll: () => {},
+        undoModule: { pushSnapshot: vi.fn() }
+      };
+
+      const tasksMod = TodayTasksTasks(ctx, {
+        nowMinutes: () => 540,
+        showToast: vi.fn(),
+        showRecurringModal: vi.fn(),
+        showFeaturedLimitModal: vi.fn()
+      });
+
+      state.tasks = [
+        { id: 'a', title: 'A', urgency: 'days', order: 1, manualOrder: null, status: 'pending' },
+        { id: 'b', title: 'B', urgency: 'days', order: 2, manualOrder: null, status: 'pending' },
+        { id: 'c', title: 'C', urgency: 'days', order: 3, manualOrder: null, status: 'pending' }
+      ];
+
+      // Mover 'b' hacia arriba (-1)
+      tasksMod.moveTask('b', -1);
+
+      // Ahora 'b' debe ser primera, 'a' segunda, 'c' tercera
+      expect(state.tasks.map(t => t.id)).toEqual(['b', 'a', 'c']);
+      // Todas deben tener manualOrder asignado (1, 2, 3)
+      expect(state.tasks.map(t => t.manualOrder)).toEqual([1, 2, 3]);
     });
   });
 });

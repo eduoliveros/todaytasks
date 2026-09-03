@@ -507,6 +507,112 @@ export function sortTasksByPriority(tasks) {
   return sorted;
 }
 
+export function sortTasksWithManualOrder(tasks) {
+  if (!Array.isArray(tasks)) return [];
+
+  const running = [];
+  const completed = [];
+  const active = [];
+
+  for (const t of tasks) {
+    if (t.status === "running") {
+      running.push(t);
+    } else if (t.status === "completed") {
+      completed.push(t);
+    } else {
+      active.push(t);
+    }
+  }
+
+  if (active.length === 0) {
+    const res = [...running, ...completed];
+    res.forEach((t, i) => { t.order = i + 1; });
+    return res;
+  }
+
+  const anchored = [];
+  const floating = [];
+
+  for (const t of active) {
+    if (t.manualOrder != null && typeof t.manualOrder === "number") {
+      anchored.push(t);
+    } else {
+      floating.push(t);
+    }
+  }
+
+  // Si no hay ancladas: todo se ordena automáticamente con compareTasksByPriority
+  if (anchored.length === 0) {
+    floating.sort(compareTasksByPriority);
+    const res = [...running, ...floating, ...completed];
+    res.forEach((t, i) => { t.order = i + 1; });
+    return res;
+  }
+
+  // Ordenar ancladas por su manualOrder ascendente
+  anchored.sort((a, b) => a.manualOrder - b.manualOrder);
+
+  // Si no hay flotantes: se mantiene el orden de las ancladas tal cual
+  if (floating.length === 0) {
+    const res = [...running, ...anchored, ...completed];
+    res.forEach((t, i) => { t.order = i + 1; });
+    return res;
+  }
+
+  // Ordenar flotantes entre sí por prioridad automática
+  floating.sort(compareTasksByPriority);
+
+  // Merge: La primera tarea anclada (anchored[0]) SIEMPRE permanece primera en la cola activa.
+  // Ninguna tarea flotante nueva o editada puede ponerse antes de anchored[0].
+  // Las tareas flotantes se van insertando antes de las siguientes ancladas (anchored[1..n-1])
+  // si tienen estrictamente mejor prioridad que esa anclada.
+  const mergedActive = [anchored[0]];
+  let ai = 1;
+  let fi = 0;
+
+  while (ai < anchored.length && fi < floating.length) {
+    const currFloating = floating[fi];
+    const currAnchored = anchored[ai];
+
+    const uF = getUrgencyWeight(currFloating.urgency);
+    const uA = getUrgencyWeight(currAnchored.urgency);
+
+    let floatingIsStrictlyBetter = false;
+    if (uF < uA) {
+      floatingIsStrictlyBetter = true;
+    } else if (uF === uA) {
+      const fF = currFloating.featured ? 1 : 0;
+      const fA = currAnchored.featured ? 1 : 0;
+      if (fF > fA) {
+        floatingIsStrictlyBetter = true;
+      }
+    }
+
+    if (floatingIsStrictlyBetter) {
+      mergedActive.push(currFloating);
+      fi++;
+    } else {
+      mergedActive.push(currAnchored);
+      ai++;
+    }
+  }
+
+  while (fi < floating.length) {
+    mergedActive.push(floating[fi++]);
+  }
+
+  while (ai < anchored.length) {
+    mergedActive.push(anchored[ai++]);
+  }
+
+  const finalTasks = [...running, ...mergedActive, ...completed];
+  finalTasks.forEach((t, i) => {
+    t.order = i + 1;
+  });
+
+  return finalTasks;
+}
+
 export const TodayTasksUtils = {
   nowMinutes,
   getTaskElapsed,
@@ -537,7 +643,8 @@ export const TodayTasksUtils = {
   MAX_FEATURED_TASKS,
   getUrgencyWeight,
   compareTasksByPriority,
-  sortTasksByPriority
+  sortTasksByPriority,
+  sortTasksWithManualOrder
 };
 
 export default TodayTasksUtils;

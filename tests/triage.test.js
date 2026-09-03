@@ -865,6 +865,30 @@ describe('TodayTasksTriageView (UI & Sorting & Selection)', () => {
     expect(container.innerHTML).not.toContain('Tarea Batch 2');
     expect(container.innerHTML).toContain('Tarea Batch 3');
   });
+
+  it('renderiza el botón de Orden automático en la cabecera de triaje y permite restablecer el orden', () => {
+    actions.addTask('Later Task', '30', false, null, true, 'later');
+    actions.addTask('Today Task', '30', false, null, true, 'today');
+
+    // Forzar un orden manual donde 'later' está primera
+    state.tasks[0].manualOrder = 1;
+    state.tasks[0].order = 1;
+    state.tasks[1].manualOrder = 2;
+    state.tasks[1].order = 2;
+
+    triageView.renderTriageView();
+    const btn = document.getElementById('triageAutoOrderBtn');
+    expect(btn).not.toBeNull();
+    expect(btn.textContent).toContain('Orden automático');
+
+    // Ejecutamos la acción de orden automático de triaje
+    triageView.applyAutoOrder();
+
+    // Las anclas deben haberse eliminado y la tarea 'today' debe ser la primera
+    expect(state.tasks.every(t => t.manualOrder === null)).toBe(true);
+    expect(state.tasks[0].urgency).toBe('today');
+    expect(state.tasks[1].urgency).toBe('later');
+  });
 });
 
 describe('Triage Keyboard Shortcut X', () => {

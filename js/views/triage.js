@@ -709,6 +709,7 @@ export function TodayTasksTriageView(ctx) {
             <div class="triage-collapse-tools">
               <button class="btn secondary small" onclick="app.toggleAllTriageGroups(false)" title="Plegar todos los grupos">▸ Plegar todo</button>
               <button class="btn secondary small" onclick="app.toggleAllTriageGroups(true)" title="Desplegar todos los grupos">▾ Desplegar todo</button>
+              <button class="btn secondary small" id="triageAutoOrderBtn" onclick="app.applyAutoOrder()" title="Reordenar las tareas automáticamente por prioridad (urgencia y destacadas)">⚡ Orden automático</button>
             </div>
           </div>
         </header>
@@ -966,6 +967,13 @@ export function TodayTasksTriageView(ctx) {
     });
   }
 
+  function applyAutoOrder() {
+    const actions = getActions();
+    if (actions && actions.applyAutoOrder) {
+      actions.applyAutoOrder();
+    }
+  }
+
   return {
     renderTriageView,
     setTriageSortMode,
@@ -989,7 +997,8 @@ export function TodayTasksTriageView(ctx) {
     executeTriageBatchComplete,
     executeTriageBatchDelete,
     toggleTriageDropdown,
-    getTargetDateStr
+    getTargetDateStr,
+    applyAutoOrder
   };
 }
 

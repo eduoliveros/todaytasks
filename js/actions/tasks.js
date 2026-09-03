@@ -1,7 +1,7 @@
 /* actions/tasks.js — Acciones de tareas (CRUD, edición, recurrencia, prioridades) */
 import {
   getTodayStr, matchesRecurrenceRule, getTaskElapsed, parseDuration,
-  DEFAULT_URGENCY, MAX_FEATURED_TASKS, sortTasksByPriority, URGENCY_LEVELS,
+  DEFAULT_URGENCY, MAX_FEATURED_TASKS, sortTasksByPriority, sortTasksWithManualOrder, URGENCY_LEVELS,
   fmt, timeToMinutes
 } from '../utils.js';
 
@@ -180,6 +180,9 @@ export function TodayTasksTasks(ctx, helpers){
       let newOrder;
       if (toTop) {
         state.tasks.forEach(t => {
+          if (t.manualOrder != null) {
+            t.manualOrder++;
+          }
           t.order = (t.order || 0) + 1;
         });
         newOrder = 1;
@@ -193,6 +196,7 @@ export function TodayTasksTasks(ctx, helpers){
         notes: cleanNotes,
         planned,
         order: newOrder,
+        manualOrder: toTop ? 1 : null,
         status: "pending",
         runningStart: null,
         elapsedBefore: 0,
@@ -204,8 +208,8 @@ export function TodayTasksTasks(ctx, helpers){
         startAfter: cleanStartAfter
       });
 
-      // Reordenar automáticamente respetando la prioridad
-      state.tasks = sortTasksByPriority(state.tasks);
+      // Reordenar respetando el orden manual y la prioridad
+      state.tasks = sortTasksWithManualOrder(state.tasks);
     }
     saveState();
     renderAll();
@@ -224,7 +228,7 @@ export function TodayTasksTasks(ctx, helpers){
     }
 
     t.urgency = urgency;
-    state.tasks = sortTasksByPriority(state.tasks);
+    state.tasks = sortTasksWithManualOrder(state.tasks);
     saveState();
     smartRender ? smartRender() : renderAll();
     if (showToast) {
@@ -251,7 +255,7 @@ export function TodayTasksTasks(ctx, helpers){
     targetTasks.forEach(t => {
       t.urgency = urgency;
     });
-    state.tasks = sortTasksByPriority(state.tasks);
+    state.tasks = sortTasksWithManualOrder(state.tasks);
     saveState();
     smartRender ? smartRender() : renderAll();
     if (showToast) {
@@ -284,7 +288,7 @@ export function TodayTasksTasks(ctx, helpers){
         ctx.undoModule.pushSnapshot(`Destacar tarea "${t.title}"`);
       }
       t.featured = true;
-      state.tasks = sortTasksByPriority(state.tasks);
+      state.tasks = sortTasksWithManualOrder(state.tasks);
       saveState();
       smartRender ? smartRender() : renderAll();
       if (showToast) {
@@ -296,7 +300,7 @@ export function TodayTasksTasks(ctx, helpers){
         ctx.undoModule.pushSnapshot(`Quitar destacado de "${t.title}"`);
       }
       t.featured = false;
-      state.tasks = sortTasksByPriority(state.tasks);
+      state.tasks = sortTasksWithManualOrder(state.tasks);
       saveState();
       smartRender ? smartRender() : renderAll();
       if (showToast) {
@@ -336,7 +340,7 @@ export function TodayTasksTasks(ctx, helpers){
         ctx.undoModule.pushSnapshot(`Destacar ${toFeature.length} tareas`);
       }
       toFeature.forEach(t => { t.featured = true; });
-      state.tasks = sortTasksByPriority(state.tasks);
+      state.tasks = sortTasksWithManualOrder(state.tasks);
       saveState();
       smartRender ? smartRender() : renderAll();
       if (showToast) showToast(`${toFeature.length} tarea(s) destacadas ⭐`);
@@ -345,7 +349,7 @@ export function TodayTasksTasks(ctx, helpers){
         ctx.undoModule.pushSnapshot(`Quitar destacado de ${targetTasks.length} tareas`);
       }
       targetTasks.forEach(t => { t.featured = false; });
-      state.tasks = sortTasksByPriority(state.tasks);
+      state.tasks = sortTasksWithManualOrder(state.tasks);
       saveState();
       smartRender ? smartRender() : renderAll();
       if (showToast) showToast(`Destacado quitado de ${targetTasks.length} tarea(s)`);
@@ -371,7 +375,7 @@ export function TodayTasksTasks(ctx, helpers){
 
     unfeatureTask.featured = false;
     targetTask.featured = true;
-    state.tasks = sortTasksByPriority(state.tasks);
+    state.tasks = sortTasksWithManualOrder(state.tasks);
     saveState();
     smartRender ? smartRender() : renderAll();
     if (showToast) {
@@ -699,7 +703,7 @@ export function TodayTasksTasks(ctx, helpers){
 
     t.title = title; t.planned = planned;
     setTaskEdit(null);
-    state.tasks = sortTasksByPriority(state.tasks);
+    state.tasks = sortTasksWithManualOrder(state.tasks);
     saveState();
     smartRender ? smartRender() : renderAll();
   }
@@ -753,6 +757,12 @@ export function TodayTasksTasks(ctx, helpers){
 
     const a = list[idx], b = list[swapIdx];
     const tmp = a.order; a.order = b.order; b.order = tmp;
+    list.sort((x, y) => x.order - y.order);
+    list.forEach((t, i) => {
+      t.order = i + 1;
+      t.manualOrder = i + 1;
+    });
+    state.tasks.sort((x, y) => (x.order || 0) - (y.order || 0));
     saveState();
     renderAll();
 
@@ -827,12 +837,28 @@ export function TodayTasksTasks(ctx, helpers){
     }
   }
 
+  function applyAutoOrder(){
+    const state = getState();
+    if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+      ctx.undoModule.pushSnapshot('Aplicar orden automático');
+    }
+    (state.tasks || []).forEach(t => {
+      t.manualOrder = null;
+    });
+    state.tasks = sortTasksByPriority(state.tasks);
+    saveState();
+    smartRender ? smartRender() : renderAll();
+    if (showToast) {
+      showToast('Orden automático por prioridad aplicado ⚡');
+    }
+  }
+
   return {
     materializeRecurringTasks,
     addTask, deleteTask, deleteRecurringTaskInstance, startEditTask, updateTaskEditField,
     cancelEditTask, saveEditTask, updateTaskTimeFast, moveTask,
     setTaskUrgency, setTasksUrgency, setTaskFeatured, setTasksFeatured, toggleTaskFeatured, resolveFeaturedLimit,
-    setTaskStartAfter, deleteTasks
+    setTaskStartAfter, deleteTasks, applyAutoOrder
   };
 }
 

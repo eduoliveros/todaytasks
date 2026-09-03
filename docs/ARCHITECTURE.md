@@ -240,7 +240,23 @@ Para resolver la sobrecarga cognitiva cuando se acumulan decenas de tareas pendi
 
 ---
 
-## 11. Directrices para Nuevos Desarrollos
+## 11. Prevalencia del Orden Manual sobre el Orden Automático (`manualOrder` y `sortTasksWithManualOrder`)
+
+TodayTasks implementa un modelo híbrido donde las decisiones explícitas de reordenación del usuario prevalecen sobre el auto-sort automático por prioridad:
+* **Tareas Ancladas (`manualOrder: number`) vs Flotantes (`manualOrder: null`):**
+  - Cuando el usuario reordena una o más tareas manualmente (mediante drag & drop en el tablero o en triaje, o mediante los botones ▲ / ▼ de subir/bajar), todas las tareas activas de la cola quedan **ancladas** asignándoles su posición ordinal en `t.manualOrder`.
+  - Las tareas nuevas, creadas por defecto o restauradas de completadas, nacen como **flotantes** (`manualOrder: null`).
+* **Invariantes del Algoritmo de Merge (`sortTasksWithManualOrder`):**
+  1. **La tarea en ejecución (`running`)** siempre tiene prioridad absoluta al inicio del día.
+  2. **La primera tarea anclada (`anchored[0]`)** nunca puede ser superada por ninguna tarea flotante nueva o editada (salvo que el usuario elija explícitamente "Añadir al inicio" con `toTop: true`).
+  3. **Preservación del ancla ante cambios de urgencia o destacado:** Modificar la urgencia o el estado destacado de una tarea anclada cambia su etiqueta e icono, pero no destruye su posición fija en la lista.
+  4. **Intercalado inteligente de nuevas tareas:** Las tareas flotantes se insertan automáticamente antes de tareas ancladas de prioridad inferior (por ejemplo, antes de una tarea que el usuario mandó conscientemente al final del día como 'más adelante').
+* **Acción para Restablecer Orden Automático (`applyAutoOrder`):**
+  - Tanto en la vista de triaje rápido (`#triageAutoOrderBtn`) como en el panel de configuración (`#autoOrderBtn`), el usuario dispone de un botón `⚡ Orden automático` que limpia todas las anclas (`manualOrder = null`), reordena estrictamente por prioridad (urgencia → destacada) y registra un snapshot en el historial de deshacer (`Ctrl+Z`).
+
+---
+
+## 12. Directrices para Nuevos Desarrollos
 
 1. **Separación Estricta de Responsabilidades:**
    * Las vistas (`views/`) **no** deben mutar el estado directamente; deben delegar en las acciones (`actions/`).

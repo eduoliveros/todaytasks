@@ -241,6 +241,8 @@ function switchHeaderTab(target){
   viewsModule.refreshPlanningModeBtn();
 
   document.getElementById("newDayBtn").addEventListener("click", actionsModule.startNewDay);
+  const autoOrderBtnEl = document.getElementById("autoOrderBtn");
+  if(autoOrderBtnEl) autoOrderBtnEl.addEventListener("click", actionsModule.applyAutoOrder);
   document.getElementById("notifyBtn").addEventListener("click", requestNotificationPermission);
   refreshNotifyBtn();
 
@@ -480,6 +482,7 @@ function switchHeaderTab(target){
     deleteTask: actionsModule.deleteTask,
     deleteRecurringTaskInstance: (ruleId, dateStr) => actionsModule.deleteRecurringTaskInstance && actionsModule.deleteRecurringTaskInstance(ruleId, dateStr),
     moveTask: actionsModule.moveTask,
+    applyAutoOrder: actionsModule.applyAutoOrder,
     startTask: actionsModule.startTask,
     pauseTask: actionsModule.pauseTask,
     resumeTask: actionsModule.resumeTask,

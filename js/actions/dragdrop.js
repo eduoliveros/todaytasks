@@ -61,7 +61,11 @@ export function TodayTasksDragDrop(ctx){
 
     const [moved] = queue.splice(fromIdx, 1);
     queue.splice(toIdx, 0, moved);
-    queue.forEach((t, i) => { t.order = i + 1; });
+    queue.forEach((t, i) => {
+      t.order = i + 1;
+      t.manualOrder = i + 1;
+    });
+    state.tasks.sort((x, y) => (x.order || 0) - (y.order || 0));
     saveState();
     renderAll();
   }

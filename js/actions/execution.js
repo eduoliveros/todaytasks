@@ -1,5 +1,5 @@
 /* actions/execution.js — Ejecución de tareas e interrupciones */
-import { MAX_FEATURED_TASKS, sortTasksByPriority } from '../utils.js';
+import { MAX_FEATURED_TASKS, sortTasksByPriority, sortTasksWithManualOrder } from '../utils.js';
 
 export function TodayTasksExecution(ctx, helpers){
   const {
@@ -65,6 +65,9 @@ export function TodayTasksExecution(ctx, helpers){
 
     newOrder.forEach((t, idx) => {
       t.order = idx + 1;
+      if (t.manualOrder != null) {
+        t.manualOrder = idx + 1;
+      }
     });
 
     targetTask.status = "running";
@@ -226,7 +229,8 @@ export function TodayTasksExecution(ctx, helpers){
     t.runningStart = null;
     t.runningStartEpoch = null;
     t.order = maxOrder + 1;
-    state.tasks = sortTasksByPriority(state.tasks);
+    t.manualOrder = null;
+    state.tasks = sortTasksWithManualOrder(state.tasks);
     saveState();
     smartRender ? smartRender() : renderAll();
     showToast(`"${t.title}" se ha devuelto a ${t.status === "paused" ? "en pausa" : "pendientes"}.`);

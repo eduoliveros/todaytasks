@@ -4,6 +4,21 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.98] - 2026-09-03
+
+### Añadido
+- **Prevalencia del Orden Manual sobre el Orden Automático (`manualOrder` y `sortTasksWithManualOrder`):**
+  - Implementación de un modelo híbrido de ordenación que garantiza que las decisiones explícitas del usuario durante el triaje o la reordenación manual prevalezcan sobre los criterios automáticos (urgencia o destacadas).
+  - Al reordenar tareas mediante drag & drop en el tablero o en triaje, o mediante los botones de desplazamiento ▲ / ▼ (`moveTask`), todas las tareas activas quedan ancladas fijando `manualOrder = 1..N`.
+  - **Inviolabilidad de la primera tarea:** Si el usuario coloca manualmente una tarea en primer lugar, ninguna nueva tarea ni edición de atributos (urgencia o estrella) puede desplazarla de su posición superior.
+  - **Intercalado inteligente de nuevas tareas:** Las tareas añadidas posteriormente (o flotantes) se insertan automáticamente antes de tareas ancladas de menor prioridad (por ejemplo, intercalándose antes de una tarea que el usuario mandó conscientemente al final del día como 'más adelante').
+  - **Preservación del ancla al cambiar urgencia:** Cambiar la urgencia de una tarea anclada actualiza su insignia visual pero preserva intacta su posición en la lista.
+  - **Botón `⚡ Orden automático`:**
+    - Nuevo botón en la cabecera de la vista de Triaje Rápido (`#triageAutoOrderBtn`).
+    - Nuevo botón en el panel 3 de Configuración de la barra superior (`#autoOrderBtn`).
+    - Permite resetear las anclas manuales (`manualOrder = null`), reordenar todas las tareas estrictamente por prioridad automática y cuenta con soporte para Deshacer (<kbd>Ctrl+Z</kbd>).
+  - Registro de decisión arquitectónica [`docs/adr/008-sistema-orden-manual-prevalente.md`](./docs/adr/008-sistema-orden-manual-prevalente.md).
+
 ## [1.97] - 2026-09-02
 
 ### Añadido

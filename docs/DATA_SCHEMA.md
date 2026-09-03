@@ -81,6 +81,7 @@ interface Task {
   notes?: string;                      // Notas y enlaces de la tarea en Markdown ligero (**bold**, *italic*, URLs)
   planned: number;                     // Duración estimada en minutos (entero > 0, def: 30)
   order: number;                       // Posición ordinal en la lista del día (1, 2, 3...)
+  manualOrder?: number | null;         // Orden manual anclado por el usuario (null = flotante con auto-sort, número = posición fija)
   status: "pending" | "running" | "paused" | "completed"; // Estado de ejecución
   runningStart: number | null;         // Minuto del día (0..1439) en que inició el tramo actual
   runningStartEpoch?: number | null;   // Timestamp ms (Date.now()) para cálculo de alta precisión

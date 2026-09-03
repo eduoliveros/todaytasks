@@ -170,6 +170,7 @@ export function TodayTasksActions(ctx) {
     setTaskStartAfter:      tasks.setTaskStartAfter,
     deleteTasks:            tasks.deleteTasks,
     deleteRecurringTaskInstance: tasks.deleteRecurringTaskInstance,
+    applyAutoOrder:         tasks.applyAutoOrder,
     showFeaturedLimitModal,
     /* Drag & Drop */
     armTaskDrag:            dragdrop.armTaskDrag,

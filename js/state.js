@@ -144,6 +144,9 @@ export function wrapState(rawState) {
                   if (typeof t.featured !== "boolean") {
                     t.featured = false;
                   }
+                  if (t.manualOrder === undefined) {
+                    t.manualOrder = null;
+                  }
                 }
               });
             }
