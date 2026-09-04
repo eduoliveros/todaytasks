@@ -2,7 +2,7 @@
 import {
   nowMinutes, fmt, fmtDur, fmtRemaining, getTaskElapsed, getTodayStr, matchesSearchQuery,
   matchesTaskSearch, formatRecurrenceRule,
-  URGENCY_LEVELS, DEFAULT_URGENCY
+  URGENCY_LEVELS, DEFAULT_URGENCY, formatTitleWithTags
 } from '../utils.js';
 import { escapeHtml, escapeAttr, renderNotesMarkdown } from '../ui.js';
 import { t } from '../i18n.js';
@@ -53,7 +53,7 @@ export function TodayTasksTasksView(ctx){
       return `
       <div class="item task-item editing ${taskEdit.featured ? 'featured-task' : ''} ${isOverflow ? 'task-overflow' : ''}" id="task-item-${escapeAttr(task.id)}">
         <div class="row">
-          <input type="text" value="${escapeAttr(taskEdit.title)}" oninput="app.updateTaskEditField('title', this.value)" placeholder="${escapeAttr(t('tasks.inputTitlePlaceholder'))}">
+          <input type="text" id="task-edit-title-${escapeAttr(task.id)}" value="${escapeAttr(taskEdit.title)}" onfocus="if(app.attachTagAutocompleteToEl) app.attachTagAutocompleteToEl(this)" oninput="app.updateTaskEditField('title', this.value)" placeholder="${escapeAttr(t('tasks.inputTitlePlaceholder'))}">
         </div>
         <div class="row" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
           <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">${t('tasks.editPlanned')}<br><input type="text" value="${escapeAttr(taskEdit.duration)}" placeholder="${escapeAttr(t('tasks.editDurationPlaceholder'))}" style="width:95px;margin-top:4px;" oninput="app.updateTaskEditField('duration', this.value)"></label>
@@ -213,7 +213,7 @@ export function TodayTasksTasksView(ctx){
           <div style="display:flex;align-items:flex-start;gap:6px;flex:1;min-width:0;">
             ${dragHandle}
             <div style="flex:1;min-width:0;">
-              <div class="title">${escapeHtml(task.title)}</div>
+              <div class="title">${formatTitleWithTags(task.title, 'app.filterByTag')}</div>
               <div class="time-range ${trClass}">
                 ${urgencyPill}
                 ${startAfterPill}
@@ -311,7 +311,7 @@ export function TodayTasksTasksView(ctx){
       <div class="item task-item completed-search-item" id="task-item-${escapeAttr(task.id)}" data-task-id="${escapeAttr(task.id)}">
         <div class="top">
           <div style="flex:1;min-width:0;">
-            <div class="title completed-title">${escapeHtml(task.title)}</div>
+            <div class="title completed-title">${formatTitleWithTags(task.title, 'app.filterByTag')}</div>
             <div class="time-range tr-meeting">
               <span class="tag">${t('tasks.tagCompleted')}</span>
               ${task.completedAt !== null && task.completedAt !== undefined ? fmt(task.completedAt) : ''}

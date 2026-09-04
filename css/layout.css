@@ -1128,6 +1128,84 @@ input:focus, button:focus, select:focus { outline: 2px solid var(--accent-pendin
   border-color: var(--primary);
 }
 
+/* --- Task Tag Syntax Highlighting & Autocomplete --- */
+.task-tag-syntax {
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 1px 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s ease, filter 0.12s ease;
+  display: inline-block;
+  line-height: 1.25;
+}
+.task-tag-syntax:hover {
+  background: rgba(0, 0, 0, 0.06);
+  filter: brightness(0.9);
+}
+
+.syntax-blue { color: #2563eb; }
+.syntax-emerald { color: #059669; }
+.syntax-amber { color: #d97706; }
+.syntax-purple { color: #7c3aed; }
+.syntax-rose { color: #e11d48; }
+.syntax-cyan { color: #0891b2; }
+.syntax-indigo { color: #4f46e5; }
+.syntax-teal { color: #0d9488; }
+.syntax-orange { color: #ea580c; }
+
+.tag-autocomplete-dropdown {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 220px;
+  overflow-y: auto;
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+.tag-autocomplete-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+  color: var(--ink);
+}
+.tag-autocomplete-item:hover,
+.tag-autocomplete-item.selected {
+  background: rgba(59, 130, 246, 0.1);
+}
+.tag-autocomplete-item .tag-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.tag-autocomplete-item .tag-dot.syntax-blue { background-color: #2563eb; }
+.tag-autocomplete-item .tag-dot.syntax-emerald { background-color: #059669; }
+.tag-autocomplete-item .tag-dot.syntax-amber { background-color: #d97706; }
+.tag-autocomplete-item .tag-dot.syntax-purple { background-color: #7c3aed; }
+.tag-autocomplete-item .tag-dot.syntax-rose { background-color: #e11d48; }
+.tag-autocomplete-item .tag-dot.syntax-cyan { background-color: #0891b2; }
+.tag-autocomplete-item .tag-dot.syntax-indigo { background-color: #4f46e5; }
+.tag-autocomplete-item .tag-dot.syntax-teal { background-color: #0d9488; }
+.tag-autocomplete-item .tag-dot.syntax-orange { background-color: #ea580c; }
+
+.tag-autocomplete-item .tag-name {
+  font-weight: 600;
+  flex: 1;
+}
+.tag-autocomplete-item .tag-count {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
 footer {
   text-align: center; color: var(--ink-soft); font-size: 12px; padding: 10px 0 30px;
 }

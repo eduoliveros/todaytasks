@@ -3,6 +3,7 @@ import { defaultState } from '../js/state.js';
 import { computeSchedule } from '../js/scheduler.js';
 import { TodayTasksBoardView } from '../js/views/board.js';
 import { setLocale } from '../js/i18n.js';
+import { getTodayStr } from '../js/utils.js';
 
 describe('TodayTasksBoardView - Internacionalización (i18n)', () => {
   let state;
@@ -19,7 +20,7 @@ describe('TodayTasksBoardView - Internacionalización (i18n)', () => {
     `;
     setLocale('es');
     state = defaultState();
-    state.selectedDate = '2026-09-04';
+    state.selectedDate = getTodayStr();
     state.workStart = 540; // 09:00
     state.workEnd = 1080;  // 18:00
     state.meetings = [

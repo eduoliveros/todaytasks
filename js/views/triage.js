@@ -2,7 +2,7 @@
 import {
   nowMinutes, fmt, fmtDur, getTaskElapsed, getTodayStr, formatDateFriendly,
   getDayOfWeek, getNextWorkingDays, URGENCY_LEVELS, DEFAULT_URGENCY, MAX_FEATURED_TASKS,
-  formatRecurrenceRule
+  formatRecurrenceRule, formatTitleWithTags
 } from '../utils.js';
 import { escapeHtml, escapeAttr, showToast } from '../ui.js';
 import { computeSchedule } from '../scheduler.js';
@@ -606,7 +606,7 @@ export function TodayTasksTriageView(ctx) {
               <div class="triage-edit-modal-body">
                 <div style="margin-bottom:12px;">
                   <label class="triage-edit-label">${t('triage.editLabelTitle')}</label>
-                  <input type="text" id="triageEditTitleInput" class="triage-edit-input" value="${escapeAttr(taskEdit.title)}" oninput="app.updateTaskEditField('title', this.value)" placeholder="${escapeAttr(t('tasks.inputTitlePlaceholder'))}">
+                  <input type="text" id="triageEditTitleInput" class="triage-edit-input" value="${escapeAttr(taskEdit.title)}" onfocus="if(app.attachTagAutocompleteToEl) app.attachTagAutocompleteToEl(this)" oninput="app.updateTaskEditField('title', this.value)" placeholder="${escapeAttr(t('tasks.inputTitlePlaceholder'))}">
                 </div>
 
                 <div class="triage-edit-time-grid">
@@ -814,7 +814,7 @@ export function TodayTasksTriageView(ctx) {
                             ${task.featured ? '⭐' : '☆'}
                           </button>
                           <span class="triage-task-title ${task.overflow ? 'is-overflow' : ''}" title="${escapeAttr(task.title)}">
-                            ${escapeHtml(task.title)}
+                            ${formatTitleWithTags(task.title, 'app.filterByTag')}
                           </span>
                           <span class="triage-task-duration" title="${escapeAttr(t('triage.durationTooltip'))}">${formatShortDuration(task.planned || 0)}</span>
                           ${recurringTag}

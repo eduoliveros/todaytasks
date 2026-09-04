@@ -5,6 +5,7 @@ import {
 } from '../utils.js';
 import { escapeHtml, escapeAttr, showToast } from '../ui.js';
 import { t } from '../i18n.js';
+import { attachTagAutocomplete } from './tag-autocomplete.js';
 
 export function TodayTasksCommandPalette(ctx) {
   const { getState, getActionsModule, getRouterModule, getViewsModule } = ctx;
@@ -14,6 +15,7 @@ export function TodayTasksCommandPalette(ctx) {
   let currentEnvFilter = 'active'; // 'active' | 'both'
   let currentResults = [];
   let selectedIndex = -1;
+  let tagAutocompleteInstance = null;
 
   function isCommandPaletteOpen() {
     return isOpen;
@@ -23,6 +25,19 @@ export function TodayTasksCommandPalette(ctx) {
     const modal = document.getElementById('globalSearchModal');
     const input = document.getElementById('globalSearchInput');
     if (!modal || !input) return;
+
+    if (!tagAutocompleteInstance) {
+      tagAutocompleteInstance = attachTagAutocomplete(input, {
+        getState,
+        getEnv: () => (currentEnvFilter === 'both' ? 'both' : null),
+        onSelect: () => {
+          selectedIndex = 0;
+          renderResults();
+        }
+      });
+    } else {
+      tagAutocompleteInstance.close();
+    }
 
     isOpen = true;
     modal.style.display = 'flex';
@@ -41,6 +56,9 @@ export function TodayTasksCommandPalette(ctx) {
   function closeCommandPalette() {
     const modal = document.getElementById('globalSearchModal');
     if (!modal) return;
+    if (tagAutocompleteInstance) {
+      tagAutocompleteInstance.close();
+    }
     isOpen = false;
     modal.style.display = 'none';
     selectedIndex = -1;
@@ -373,14 +391,26 @@ export function TodayTasksCommandPalette(ctx) {
       }
     });
 
-    // Control de teclado en el input
+    // Control de teclado y autocompletado en el input
     if (input) {
+      if (!tagAutocompleteInstance) {
+        tagAutocompleteInstance = attachTagAutocomplete(input, {
+          getState,
+          getEnv: () => (currentEnvFilter === 'both' ? 'both' : null),
+          onSelect: () => {
+            selectedIndex = 0;
+            renderResults();
+          }
+        });
+      }
+
       input.addEventListener('input', () => {
         selectedIndex = 0;
         renderResults();
       });
 
       input.addEventListener('keydown', (e) => {
+        if (e.defaultPrevented) return;
         if (e.key === 'Escape') {
           e.preventDefault();
           closeCommandPalette();

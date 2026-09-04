@@ -1,6 +1,7 @@
 /* app/forms.js — Formularios de reuniones y tareas, menú de posición y notas markdown */
 import { t } from '../i18n.js';
 import { renderNotesMarkdown } from '../ui.js';
+import { attachTagAutocomplete } from './tag-autocomplete.js';
 
 export function TodayTasksForms(appCtx){
   const { getState, actionsModule, showToast, fmt, timeToMinutes } = appCtx;
@@ -71,6 +72,24 @@ export function TodayTasksForms(appCtx){
     const taskSearchClearBtnEl = document.getElementById("taskSearchClearBtn");
 
     if (taskSearchInputEl) {
+      attachTagAutocomplete(taskSearchInputEl, {
+        getState: typeof getState === 'function' ? getState : () => ({}),
+        onSelect: () => {
+          const val = taskSearchInputEl.value;
+          if (taskSearchClearBtnEl) {
+            taskSearchClearBtnEl.style.display = val ? "block" : "none";
+          }
+          if (appCtx.setTaskSearchQuery) {
+            appCtx.setTaskSearchQuery(val);
+          }
+          if (appCtx.renderTasks) {
+            appCtx.renderTasks();
+          } else if (appCtx.renderAll) {
+            appCtx.renderAll();
+          }
+        }
+      });
+
       taskSearchInputEl.addEventListener("input", (e) => {
         const val = e.target.value;
         if (taskSearchClearBtnEl) {
@@ -87,6 +106,7 @@ export function TodayTasksForms(appCtx){
       });
 
       taskSearchInputEl.addEventListener("keydown", (e) => {
+        if (e.defaultPrevented) return;
         if (e.key === "Escape") {
           e.preventDefault();
           taskSearchInputEl.value = "";
@@ -358,10 +378,18 @@ export function TodayTasksForms(appCtx){
       }
     });
 
+    const taskTitleInput = document.getElementById("taskTitle");
+    if (taskTitleInput) {
+      attachTagAutocomplete(taskTitleInput, {
+        getState: typeof getState === 'function' ? getState : () => ({})
+      });
+    }
+
     ["taskTitle", "taskDuration"].forEach(id => {
       const el = document.getElementById(id);
       if(el){
         el.addEventListener("keydown", (e) => {
+          if (e.defaultPrevented) return;
           if(e.key === "Enter"){
             e.preventDefault();
             handleTaskSubmit(e.shiftKey);

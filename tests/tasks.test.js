@@ -613,5 +613,44 @@ describe('TodayTasksActions - Tareas', () => {
       expect(getTaskElapsed(state.tasks[0])).toBe(25);
     });
   });
+
+  describe('Etiquetas / Tags en tareas', () => {
+    it('extrae automáticamente los tags del título al añadir una tarea', () => {
+      actions.addTask('Implementar pasarela #backend #cliente-acme', '45');
+      const task = state.tasks[0];
+      expect(task.tags).toEqual(['backend', 'cliente-acme']);
+      expect(utils.matchesTaskSearch(task, '#backend')).toBe(true);
+      expect(utils.matchesTaskSearch(task, 'cliente-acme')).toBe(true);
+      expect(utils.matchesTaskSearch(task, 'frontend')).toBe(false);
+    });
+
+    it('actualiza los tags al editar el título de la tarea', () => {
+      actions.addTask('Revisar PR #frontend', '30');
+      const taskId = state.tasks[0].id;
+      expect(state.tasks[0].tags).toEqual(['frontend']);
+
+      actions.startEditTask(taskId);
+      actions.updateTaskEditField('title', 'Revisar PR #frontend #urgente');
+      actions.saveEditTask(taskId);
+
+      expect(state.tasks[0].tags).toEqual(['frontend', 'urgente']);
+      expect(utils.matchesTaskSearch(state.tasks[0], 'urgente')).toBe(true);
+    });
+
+    it('propaga los tags al materializar tareas recurrentes', () => {
+      actions.addTask('Revisión semanal #rutina #equipo', '30', false, {
+        isRecurring: true,
+        freq: 'weekly',
+        daysOfWeek: [1, 2, 3, 4, 5, 6, 7]
+      });
+
+      expect(state.recurringTasks.length).toBe(1);
+      expect(state.recurringTasks[0].tags).toEqual(['rutina', 'equipo']);
+
+      const instance = state.tasks[0];
+      expect(instance.tags).toEqual(['rutina', 'equipo']);
+    });
+  });
 });
+
 

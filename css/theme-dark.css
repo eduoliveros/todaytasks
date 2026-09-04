@@ -545,4 +545,34 @@
   border-color: rgba(239, 68, 68, 0.45);
 }
 
+/* --- Dark Mode: Task Tag Syntax & Autocomplete --- */
+[data-theme="dark"] .task-tag-syntax:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .syntax-blue { color: #60a5fa; }
+[data-theme="dark"] .syntax-emerald { color: #34d399; }
+[data-theme="dark"] .syntax-amber { color: #fbbf24; }
+[data-theme="dark"] .syntax-purple { color: #a78bfa; }
+[data-theme="dark"] .syntax-rose { color: #fb7185; }
+[data-theme="dark"] .syntax-cyan { color: #22d3ee; }
+[data-theme="dark"] .syntax-indigo { color: #818cf8; }
+[data-theme="dark"] .syntax-teal { color: #2dd4bf; }
+[data-theme="dark"] .syntax-orange { color: #fb923c; }
+
+[data-theme="dark"] .tag-autocomplete-dropdown {
+  background: #1e2430;
+  border-color: #333d4e;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+[data-theme="dark"] .tag-autocomplete-item:hover,
+[data-theme="dark"] .tag-autocomplete-item.selected {
+  background: rgba(96, 165, 250, 0.18);
+}
+[data-theme="dark"] .tag-autocomplete-item .tag-count {
+  background: rgba(255, 255, 255, 0.08);
+  color: #9ea4af;
+}
+
+
 

@@ -65,6 +65,7 @@ todaytasks/
 │       ├── history-metrics.js   # Gestión de prompts y edición de métricas históricas
 │       ├── popovers.js          # Control de popovers de tiempo, startAfter y recurrencia
 │       ├── shortcuts.js         # Manejo de atajos de teclado
+│       ├── tag-autocomplete.js  # Menú flotante y lógica de autocompletado case-insensitive de hashtags
 │       ├── urgency-dropdown.js  # Menú desplegable y mapa de urgencia localizada
 │       └── weekly-schedule.js   # Gestión del horario semanal recurrente
 ├── css/
@@ -326,7 +327,25 @@ TodayTasks incorpora un buscador global multidía implementado como una **Comman
 
 ---
 
-## 15. Directrices para Nuevos Desarrollos
+## 15. Sistema de Etiquetas (Tags) y Autocompletado de Hashtags
+
+Implementado en la versión `v1.102` ([ADR 011](./adr/011-sistema-etiquetas-tags-y-autocompletado.md)):
+
+* **Extracción y Sintaxis en Títulos:**
+  - Los usuarios pueden categorizar tareas escribiendo hashtags directamente en el título (`#frontend`, `#cliente-acme`, `#reunión`).
+  - Al renderizarse la tarea, cada `#tag` se transforma mediante `formatTitleWithTags()` en un elemento interactivo `<span class="task-tag-syntax ...">` con fondo sutil redondeado y color determinista asignado por `getTagColorClass()`.
+  - Las etiquetas se extraen y normalizan automáticamente en minúsculas en la propiedad `task.tags: string[]`, indexándose también para búsquedas en `getTaskSearchableText()`.
+* **Autocompletado en Tiempo Real (`js/app/tag-autocomplete.js`):**
+  - Al escribir `#` en cualquier campo de título (creación o edición), se detecta la palabra activa bajo el cursor y se despliega un menú flotante con las etiquetas existentes en el entorno.
+  - La búsqueda es totalmente insensible a mayúsculas y minúsculas (`tag.toLowerCase().startsWith(query.toLowerCase())`).
+  - Si no hay texto tras `#`, se muestran las etiquetas más frecuentes ordenadas por número de usos.
+  - Navegación completa por teclado (<kbd>↓</kbd>, <kbd>↑</kbd>, <kbd>Enter</kbd>, <kbd>Tab</kbd>, <kbd>Esc</kbd>) y ratón. Al aceptar una sugerencia, inserta el tag y un espacio para continuar escribiendo sin interrupciones.
+* **Filtrado Reactivo:**
+  - Al hacer clic sobre cualquier hashtag en una tarea (o mediante `app.filterByTag(tag)`), el buscador principal se auto-rellena con `#tag` y filtra la lista de tareas y el tablero cronológico instantáneamente. Si se vuelve a hacer clic en el mismo tag, se limpia el filtro.
+
+---
+
+## 16. Directrices para Nuevos Desarrollos
 
 1. **Separación Estricta de Responsabilidades:**
    * Las vistas (`views/`) **no** deben mutar el estado directamente; deben delegar en las acciones (`actions/`).

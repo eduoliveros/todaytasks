@@ -20,6 +20,7 @@ import { TodayTasksPopovers } from './app/popovers.js';
 import { TodayTasksUrgencyDropdown, getUrgencyMap } from './app/urgency-dropdown.js';
 import { TodayTasksHistoryMetrics } from './app/history-metrics.js';
 import { TodayTasksCommandPalette } from './app/command-palette.js';
+import { attachTagAutocomplete } from './app/tag-autocomplete.js';
 import { t, setLocale, translateDOM } from './i18n.js';
 
 const STORAGE_KEY = (TodayTasksConfig && TodayTasksConfig.storageKey) ? TodayTasksConfig.storageKey : "todaytasks_state_v1";
@@ -653,6 +654,29 @@ function switchHeaderTab(target){
       if (input) {
         input.focus();
       }
+    },
+    filterByTag: function(tag, event) {
+      if (event) {
+        if (typeof event.stopPropagation === 'function') event.stopPropagation();
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+      }
+      if (routerModule && routerModule.getCurrentView && routerModule.getCurrentView() !== 'tasks') {
+        window.location.hash = '#/';
+      }
+      const cleanTag = String(tag).replace(/^#+/, '').trim();
+      const currentQuery = (taskSearchQuery || '').trim();
+      if (currentQuery === `#${cleanTag}`) {
+        this.clearTaskSearch();
+      } else {
+        this.setTaskSearch(`#${cleanTag}`);
+      }
+    },
+    attachTagAutocompleteToEl: function(el) {
+      if (!el || el._hasTagAutocomplete) return;
+      el._hasTagAutocomplete = true;
+      attachTagAutocomplete(el, {
+        getState: () => state
+      });
     },
     versionSync: versionSyncModule,
     togglePiP: () => pipModule && pipModule.togglePiP(),

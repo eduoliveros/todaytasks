@@ -80,6 +80,7 @@ Representa una tarea programada o ejecutada en un día concreto:
 interface Task {
   id: string;                          // Identificador único (UUID o 'id_N_timestamp')
   title: string;                       // Título o descripción de la tarea
+  tags?: string[];                     // Etiquetas normalizadas en minúsculas extraídas de hashtags (ej. ["frontend", "cliente-x"])
   notes?: string;                      // Notas y enlaces de la tarea en Markdown ligero (**bold**, *italic*, URLs)
   planned: number;                     // Duración estimada en minutos (entero > 0, def: 30)
   order: number;                       // Posición ordinal en la lista del día (1, 2, 3...)
@@ -131,6 +132,7 @@ interface Meeting {
 interface RecurringTaskRule {
   id: string;                          // 'rec_task_' + ID
   title: string;
+  tags?: string[];                     // Etiquetas heredadas al materializar tareas
   notes?: string;                      // Notas y enlaces de la plantilla periódica
   planned: number;
   freq: "daily" | "weekly" | "monthly";

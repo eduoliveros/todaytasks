@@ -2,7 +2,7 @@
 import {
   getTodayStr, matchesRecurrenceRule, getTaskElapsed, parseDuration,
   DEFAULT_URGENCY, MAX_FEATURED_TASKS, sortTasksByPriority, sortTasksWithManualOrder, URGENCY_LEVELS,
-  fmt, timeToMinutes
+  fmt, timeToMinutes, extractHashtags
 } from '../utils.js';
 import { t as i18n } from '../i18n.js';
 
@@ -95,6 +95,7 @@ export function TodayTasksTasks(ctx, helpers){
       dayObj.tasks.push({
         id: newId(),
         title: rule.title,
+        tags: Array.isArray(rule.tags) ? [...rule.tags] : extractHashtags(rule.title),
         notes: rule.notes || "",
         planned: rule.planned,
         order: maxOrder + 1,
@@ -143,6 +144,7 @@ export function TodayTasksTasks(ctx, helpers){
     }
 
     const cleanNotes = (typeof notes === "string") ? notes : (notes ? String(notes) : "");
+    const cleanTags = extractHashtags(title);
 
     // Verificar límite de 5 destacadas activas en el día
     if (cleanFeatured) {
@@ -162,6 +164,7 @@ export function TodayTasksTasks(ctx, helpers){
       state.recurringTasks.push({
         id: ruleId,
         title,
+        tags: cleanTags,
         notes: cleanNotes || (recurringData && recurringData.notes ? recurringData.notes : ""),
         planned,
         freq: recurringData.freq || "weekly",
@@ -194,6 +197,7 @@ export function TodayTasksTasks(ctx, helpers){
       state.tasks.push({
         id: newId(),
         title,
+        tags: cleanTags,
         notes: cleanNotes,
         planned,
         order: newOrder,
@@ -678,8 +682,10 @@ export function TodayTasksTasks(ctx, helpers){
           seriesStartAfter = null;
         }
       }
+      const updatedTags = extractHashtags(title);
       if (rule) {
         rule.title = title;
+        rule.tags = updatedTags;
         rule.planned = planned;
         if (taskEdit.notes !== undefined) rule.notes = t.notes;
         if (taskEdit.urgency) rule.urgency = taskEdit.urgency;
@@ -691,6 +697,7 @@ export function TodayTasksTasks(ctx, helpers){
           dayObj.tasks.forEach(dt => {
             if (String(dt.ruleId) === String(taskEdit.ruleId)) {
               dt.title = title;
+              dt.tags = updatedTags;
               dt.planned = planned;
               if (taskEdit.notes !== undefined) dt.notes = t.notes;
               if (taskEdit.urgency) dt.urgency = taskEdit.urgency;
@@ -702,7 +709,9 @@ export function TodayTasksTasks(ctx, helpers){
       });
     }
 
-    t.title = title; t.planned = planned;
+    t.title = title;
+    t.tags = extractHashtags(title);
+    t.planned = planned;
     setTaskEdit(null);
     state.tasks = sortTasksWithManualOrder(state.tasks);
     saveState();

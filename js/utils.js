@@ -518,7 +518,97 @@ export function getTaskSearchableText(task) {
     parts.push(task.notes);
   }
 
+  // Etiquetas / Tags
+  if (Array.isArray(task.tags) && task.tags.length > 0) {
+    parts.push(task.tags.join(" "));
+    parts.push(task.tags.map(tg => `#${tg}`).join(" "));
+  }
+
   return parts.join(" ");
+}
+
+/**
+ * Extrae etiquetas hashtag únicas en minúsculas de un texto.
+ * Soporta caracteres latinos (acentos, eñes) y guiones.
+ * Ej: "Tarea #Backend y #frontend-web" -> ["backend", "frontend-web"]
+ */
+export function extractHashtags(text) {
+  if (!text || typeof text !== 'string') return [];
+  const regex = /#([a-zA-Z0-9_\u00C0-\u017F-]+)/g;
+  const matches = text.match(regex);
+  if (!matches) return [];
+
+  const tagsSet = new Set();
+  matches.forEach(m => {
+    let tag = m.slice(1);
+    tag = tag.replace(/[-_.]+$/, '');
+    if (tag.length > 0) {
+      tagsSet.add(tag.toLowerCase());
+    }
+  });
+  return Array.from(tagsSet);
+}
+
+/**
+ * Paleta de colores armoniosa y accesible para resaltado sutil de sintaxis de tags.
+ */
+export const TAG_SYNTAX_PALETTE = [
+  'syntax-blue',
+  'syntax-emerald',
+  'syntax-amber',
+  'syntax-purple',
+  'syntax-rose',
+  'syntax-cyan',
+  'syntax-indigo',
+  'syntax-teal',
+  'syntax-orange'
+];
+
+/**
+ * Devuelve una clase determinista de color según el nombre de la etiqueta.
+ * Case-insensitive.
+ */
+export function getTagColorClass(tag) {
+  if (!tag || typeof tag !== 'string') return TAG_SYNTAX_PALETTE[0];
+  const clean = tag.toLowerCase().trim().replace(/^#+/, '').replace(/[-_.]+$/, '');
+  let hash = 0;
+  for (let i = 0; i < clean.length; i++) {
+    hash = (hash << 5) - hash + clean.charCodeAt(i);
+    hash |= 0;
+  }
+  const index = Math.abs(hash) % TAG_SYNTAX_PALETTE.length;
+  return TAG_SYNTAX_PALETTE[index];
+}
+
+function escapeHtmlSafe(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Formatea el título de una tarea sustituyendo los #tags por elementos <span>
+ * con resaltado sutil de sintaxis y manejador de clic para filtrado rápido.
+ * Escapa el HTML del título para máxima seguridad contra XSS.
+ */
+export function formatTitleWithTags(title, onClickHandlerName = 'app.filterByTag') {
+  if (!title || typeof title !== 'string') return '';
+  const escaped = escapeHtmlSafe(title);
+  const regex = /#([a-zA-Z0-9_\u00C0-\u017F-]+)/g;
+
+  return escaped.replace(regex, (match, tag) => {
+    const cleanTag = tag.replace(/[-_.]+$/, '');
+    if (!cleanTag) return match;
+    const colorClass = getTagColorClass(cleanTag);
+    const clickAttr = onClickHandlerName
+      ? `onclick="${onClickHandlerName}('${cleanTag.toLowerCase()}', event)"`
+      : '';
+    return `<span class="task-tag-syntax ${colorClass}" ${clickAttr} title="Filtrar por #${cleanTag.toLowerCase()}">#${cleanTag}</span>`;
+  });
 }
 
 export function matchesTaskSearch(task, query) {
@@ -855,8 +945,11 @@ export const TodayTasksUtils = {
   getUrgencyWeight,
   compareTasksByPriority,
   sortTasksByPriority,
-  sortTasksWithManualOrder,
-  searchAllTasks
+  searchAllTasks,
+  extractHashtags,
+  TAG_SYNTAX_PALETTE,
+  getTagColorClass,
+  formatTitleWithTags
 };
 
 export default TodayTasksUtils;

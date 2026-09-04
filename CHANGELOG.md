@@ -4,6 +4,20 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.102] - 2026-09-05
+
+### Añadido
+- **Sistema de Etiquetas (Tags) en Tareas y Autocompletado de Hashtags (Opción 4):**
+  - Soporte nativo para hashtags en títulos de tareas (`#tag`, `#cliente-acme`, `#frontend`).
+  - Resaltado sutil de sintaxis en los títulos de tareas en el tablero principal, búsqueda y triaje rápido mediante `formatTitleWithTags()` y clases deterministas de color (`getTagColorClass()`).
+  - Menú flotante de autocompletado en tiempo real (`js/app/tag-autocomplete.js`) al escribir `#` (ej. `#cas...`), que busca de forma insensible a mayúsculas y minúsculas (*case-insensitive*) entre todas las etiquetas existentes en el entorno.
+  - Integración del autocompletado de etiquetas en la búsqueda local (`#taskSearchInput`) y en el buscador global Command Palette modal (`#globalSearchInput`), con soporte para escanear ambos entornos (`work` y `personal`), navegación sin interferencias de teclado y filtrado instantáneo de resultados al autocompletar.
+  - Navegación completa por teclado (<kbd>↓</kbd>, <kbd>↑</kbd>, <kbd>Enter</kbd>, <kbd>Tab</kbd>, <kbd>Esc</kbd>) y selección por ratón. Inserta la etiqueta con un espacio añadido para continuar escribiendo sin pausas.
+  - Filtrado reactivo en un solo clic: pulsar cualquier hashtag en una tarea filtra la lista y el tablero cronológico por esa etiqueta, y un segundo clic restaura la vista.
+  - Indexación de `task.tags` en el motor de búsqueda `getTaskSearchableText()` y compatibilidad con Command Palette (`Ctrl+K`).
+  - Adaptación visual completa para temas claro y oscuro (`css/layout.css` y `css/theme-dark.css`).
+  - Cobertura de pruebas unitarias en `tests/tag_autocomplete.test.js`, `tests/command_palette.test.js` y `tests/tasks.test.js`.
+
 ## [1.101] - 2026-09-04
 
 ### Añadido

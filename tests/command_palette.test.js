@@ -196,4 +196,73 @@ describe('Command Palette - Buscador Global de Tareas', () => {
 
     expect(palette.isCommandPaletteOpen()).toBe(false);
   });
+
+  it('ofrece autocompletado de tags en globalSearchInput al escribir # y actualiza la búsqueda al seleccionar', () => {
+    state.environments.work.days[today].tasks.push({
+      id: 't_tag_1',
+      title: 'Tarea especial #urgente y #revisar',
+      tags: ['urgente', 'revisar'],
+      status: 'pending',
+      order: 10
+    });
+
+    palette.openCommandPalette('');
+    const input = document.getElementById('globalSearchInput');
+
+    input.value = '#urg';
+    input.selectionStart = 4;
+    input.selectionEnd = 4;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const menu = document.querySelector('.tag-autocomplete-dropdown');
+    expect(menu).not.toBeNull();
+    expect(menu.style.display).toBe('block');
+    expect(menu.innerHTML).toContain('#urgente');
+
+    // Pulsar Enter para seleccionar el tag
+    const enterEvt = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    input.dispatchEvent(enterEvt);
+
+    expect(input.value).toBe('#urgente ');
+    expect(menu.style.display).toBe('none');
+
+    // La paleta debe permanecer abierta y mostrar los resultados filtrados
+    expect(palette.isCommandPaletteOpen()).toBe(true);
+    const resultsList = document.getElementById('globalSearchResultsList');
+    expect(resultsList.innerHTML).toContain('Tarea especial #urgente y #revisar');
+  });
+
+  it('en globalSearchInput, Escape cierra el autocompletado de tags sin cerrar la paleta', () => {
+    state.environments.work.days[today].tasks.push({
+      id: 't_tag_1',
+      title: 'Tarea con #etiqueta',
+      tags: ['etiqueta'],
+      status: 'pending',
+      order: 10
+    });
+
+    palette.openCommandPalette('');
+    const input = document.getElementById('globalSearchInput');
+
+    input.value = '#eti';
+    input.selectionStart = 4;
+    input.selectionEnd = 4;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const menu = document.querySelector('.tag-autocomplete-dropdown');
+    expect(menu.style.display).toBe('block');
+
+    // Pulsar Escape en el input: debe cerrar el dropdown pero NO la paleta modal
+    const escEvt = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    input.dispatchEvent(escEvt);
+
+    expect(menu.style.display).toBe('none');
+    expect(palette.isCommandPaletteOpen()).toBe(true);
+
+    // Segundo Escape en el input: ahora que el dropdown está cerrado, sí debe cerrar la paleta
+    const escEvt2 = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    input.dispatchEvent(escEvt2);
+    expect(palette.isCommandPaletteOpen()).toBe(false);
+  });
 });
+

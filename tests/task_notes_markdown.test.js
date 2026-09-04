@@ -160,7 +160,7 @@ describe("TodayTasksActions - Gestión de Tareas con Notas", () => {
       isRecurring: true,
       freq: "weekly",
       interval: 1,
-      daysOfWeek: [1, 2, 3, 4, 5],
+      daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
       endDate: null
     };
     actions.addTask("Reunión semanal", "30", false, recurringData, false, "week", false, null, "Nota v1");
