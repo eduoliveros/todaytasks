@@ -19,6 +19,7 @@ import { TodayTasksPiP } from './pip.js';
 import { TodayTasksPopovers } from './app/popovers.js';
 import { TodayTasksUrgencyDropdown, getUrgencyMap } from './app/urgency-dropdown.js';
 import { TodayTasksHistoryMetrics } from './app/history-metrics.js';
+import { TodayTasksCommandPalette } from './app/command-palette.js';
 import { t, setLocale, translateDOM } from './i18n.js';
 
 const STORAGE_KEY = (TodayTasksConfig && TodayTasksConfig.storageKey) ? TodayTasksConfig.storageKey : "todaytasks_state_v1";
@@ -465,6 +466,15 @@ function switchHeaderTab(target){
   });
   ctx.historyMetricsModule = historyMetricsModule;
 
+  /* ---------------- Command Palette sub-module ---------------- */
+  const commandPaletteModule = TodayTasksCommandPalette({
+    getState: () => state,
+    getActionsModule: () => actionsModule,
+    getRouterModule: () => routerModule,
+    getViewsModule: () => viewsModule
+  });
+  ctx.commandPaletteModule = commandPaletteModule;
+
   function promptAddHistoryMetric(){
     return historyMetricsModule.promptAddHistoryMetric();
   }
@@ -649,7 +659,15 @@ function switchHeaderTab(target){
     openPiP: () => pipModule && pipModule.openPiP(),
     closePiP: () => pipModule && pipModule.closePiP(),
     isPiPOpen: () => pipModule && pipModule.isOpen(),
-    pip: pipModule
+    pip: pipModule,
+    openCommandPalette: (query) => commandPaletteModule && commandPaletteModule.openCommandPalette(query),
+    closeCommandPalette: () => commandPaletteModule && commandPaletteModule.closeCommandPalette(),
+    isCommandPaletteOpen: () => commandPaletteModule && commandPaletteModule.isCommandPaletteOpen(),
+    commandPaletteGoTo: (taskId, dateStr, event) => commandPaletteModule && commandPaletteModule.goToTask(taskId, dateStr),
+    commandPaletteMoveToToday: (taskId, isCompleted, event) => commandPaletteModule && commandPaletteModule.moveTaskToToday(taskId, isCompleted, event),
+    openRecurringRuleEdit: (ruleId, event) => commandPaletteModule && commandPaletteModule.openRecurringRuleEdit(ruleId, event),
+    commandPaletteOnItemClick: (idx, event) => commandPaletteModule && commandPaletteModule.onItemClick(idx, event),
+    commandPalette: commandPaletteModule
   };
 
   if (typeof window !== "undefined") {

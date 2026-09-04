@@ -4,6 +4,18 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.101] - 2026-09-04
+
+### Añadido
+- **Buscador Global de Tareas (Command Palette `Ctrl+K` / `Cmd+K`):**
+  - Implementación del buscador global multidía mediante Command Palette modal (`#globalSearchModal`), accesible instantáneamente mediante el atajo de teclado global <kbd>Ctrl+K</kbd> / <kbd>Cmd+K</kbd> o desde el botón directo en la cabecera superior.
+  - Motor de búsqueda multidía (`searchAllTasks` en `js/utils.js`) con soporte para consultar en todos los días del estado (`env.days`: últimos 10 días pasados, día actual y días futuros planificados) y plantillas maestras de tareas recurrentes (`env.recurringTasks`).
+  - Agrupación temporal inteligente de resultados: 📌 Hoy (día activo), 🔮 Próximos días, 🕒 Días anteriores y 🔁 Plantillas recurrentes.
+  - Navegación ágil por teclado (<kbd>↑</kbd> / <kbd>↓</kbd> para seleccionar elemento, <kbd>Enter</kbd> para activar/navegar, <kbd>Esc</kbd> para cerrar).
+  - Filtros rápidos por chip: `Todo`, `Pendientes`, `Completadas`, `🔁 Recurrentes`, y switch de ámbito de entorno (`💼 Trabajo` / `🏠 Personal` / `🌐 Ambos entornos`).
+  - Acciones rápidas en un clic: "Ir a tarea ↗" (cambia la fecha y resalta suavemente la tarjeta con pulso visual), "Mover a Hoy ⏩" (traslada la tarea a la jornada actual con persistencia), "Reabrir en Hoy ↺" y "Editar serie ✎".
+  - Cobertura integral de pruebas unitarias (`tests/global_search.test.js` y `tests/command_palette.test.js`) y localización completa bilingüe (`es` / `en`).
+
 ## [1.100] - 2026-09-04
 
 ### Completado

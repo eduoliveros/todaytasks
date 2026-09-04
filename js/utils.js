@@ -528,6 +528,140 @@ export function matchesTaskSearch(task, query) {
   return matchesSearchQuery(searchableText, query);
 }
 
+export function searchAllTasks(state, query, options = {}) {
+  if (!state || !state.environments) return [];
+  const trimmed = (query || "").trim();
+  const envKey = options.envKey || state.activeEnv || "work";
+  const filter = options.filter || "all"; // 'all' | 'pending' | 'completed' | 'recurring'
+  const searchBothEnvs = options.bothEnvs || envKey === "all";
+
+  const envKeysToSearch = searchBothEnvs ? ["work", "personal"] : [envKey];
+  const today = getTodayStr();
+  const results = [];
+
+  envKeysToSearch.forEach(ek => {
+    const env = state.environments[ek];
+    if (!env) return;
+
+    // 1. Tareas de los días detallados en env.days
+    if (env.days && typeof env.days === "object") {
+      Object.entries(env.days).forEach(([dateStr, dayObj]) => {
+        if (!dayObj || !Array.isArray(dayObj.tasks)) return;
+
+        dayObj.tasks.forEach(task => {
+          if (!task) return;
+
+          // Filtrado por estado
+          if (filter === "pending" && task.status === "completed") return;
+          if (filter === "completed" && task.status !== "completed") return;
+          if (filter === "recurring" && !task.isRecurring && !task.ruleId) return;
+
+          const diff = diffDays(today, dateStr);
+          let group = "today";
+          if (diff === 0) {
+            group = "today";
+          } else if (diff < 0) {
+            group = "upcoming";
+          } else {
+            group = "past";
+          }
+
+          // Coincidencia de búsqueda
+          if (trimmed) {
+            let dateTerms = dateStr;
+            if (diff === 0) dateTerms += " hoy today";
+            else if (diff === 1) dateTerms += " ayer yesterday";
+            else if (diff === -1) dateTerms += " manana mañana tomorrow";
+            const dayAbbr = getDayAbbr(dateStr);
+            if (dayAbbr) dateTerms += ` ${dayAbbr}`;
+
+            const baseMatches = matchesTaskSearch(task, trimmed);
+            const dateMatches = matchesSearchQuery(dateTerms, trimmed);
+            if (!baseMatches && !dateMatches) return;
+          }
+
+          results.push({
+            id: task.id,
+            title: task.title,
+            notes: task.notes || "",
+            dateStr,
+            diff,
+            group,
+            status: task.status || "pending",
+            planned: task.planned || 30,
+            actualDuration: task.actualDuration ?? null,
+            elapsedBefore: task.elapsedBefore || 0,
+            urgency: task.urgency || DEFAULT_URGENCY,
+            featured: !!task.featured,
+            isRecurring: !!task.isRecurring,
+            ruleId: task.ruleId || null,
+            envKey: ek,
+            isTemplateRule: false,
+            task
+          });
+        });
+      });
+    }
+
+    // 2. Plantillas de tareas recurrentes en env.recurringTasks
+    if (filter === "all" || filter === "recurring" || filter === "pending") {
+      if (Array.isArray(env.recurringTasks)) {
+        env.recurringTasks.forEach(rule => {
+          if (!rule) return;
+          if (trimmed) {
+            const ruleText = `${rule.title || ""} ${rule.notes || ""} recurrente recurring plantillas`;
+            if (!matchesSearchQuery(ruleText, trimmed)) return;
+          }
+
+          results.push({
+            id: rule.id,
+            title: rule.title,
+            notes: rule.notes || "",
+            dateStr: null,
+            diff: 0,
+            group: "recurring",
+            status: "pending",
+            planned: rule.planned || 30,
+            actualDuration: null,
+            elapsedBefore: 0,
+            urgency: rule.urgency || DEFAULT_URGENCY,
+            featured: !!rule.featured,
+            isRecurring: true,
+            ruleId: rule.id,
+            envKey: ek,
+            isTemplateRule: true,
+            task: rule
+          });
+        });
+      }
+    }
+  });
+
+  // Ordenación de resultados
+  const groupOrder = { today: 1, upcoming: 2, past: 3, recurring: 4 };
+  results.sort((a, b) => {
+    if (groupOrder[a.group] !== groupOrder[b.group]) {
+      return groupOrder[a.group] - groupOrder[b.group];
+    }
+    if (a.group === "today") {
+      if (a.status === "running") return -1;
+      if (b.status === "running") return 1;
+      return (a.task.order || 0) - (b.task.order || 0);
+    }
+    if (a.group === "upcoming") {
+      if (a.dateStr !== b.dateStr) return a.dateStr.localeCompare(b.dateStr);
+      return (a.task.order || 0) - (b.task.order || 0);
+    }
+    if (a.group === "past") {
+      if (a.dateStr !== b.dateStr) return b.dateStr.localeCompare(a.dateStr);
+      return (a.task.order || 0) - (b.task.order || 0);
+    }
+    return (a.title || "").localeCompare(b.title || "");
+  });
+
+  return results;
+}
+
 export function getUrgencyLabel(urgency) {
   const map = {
     today: 'urgency.today',
@@ -721,7 +855,8 @@ export const TodayTasksUtils = {
   getUrgencyWeight,
   compareTasksByPriority,
   sortTasksByPriority,
-  sortTasksWithManualOrder
+  sortTasksWithManualOrder,
+  searchAllTasks
 };
 
 export default TodayTasksUtils;

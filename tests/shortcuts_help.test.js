@@ -98,4 +98,12 @@ describe('Modal de ayuda de atajos de teclado', () => {
     expect(meetingRow).toBeDefined();
     expect(meetingRow.textContent.toLowerCase()).toMatch(/reunión|meeting/);
   });
+
+  it('el modal contiene la ayuda del atajo "Ctrl+K" para el buscador global', () => {
+    const modal = document.getElementById('shortcutsModal');
+    const descRows = Array.from(modal.querySelectorAll('.shortcut-row'));
+    const kRow = descRows.find(r => Array.from(r.querySelectorAll('.shortcut-key')).some(k => k.textContent.trim() === 'K'));
+    expect(kRow).toBeDefined();
+    expect(kRow.textContent.toLowerCase()).toMatch(/buscador|global|search/);
+  });
 });

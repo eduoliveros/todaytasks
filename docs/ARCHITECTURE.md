@@ -60,6 +60,7 @@ todaytasks/
 │   │   ├── focus.js             # Vistas de concentración de tarea e interrupciones
 │   │   └── triage.js            # Vista de triaje rápido, agrupación y operaciones masivas
 │   └── app/                     # Submódulos auxiliares de app.js
+│       ├── command-palette.js   # Command Palette modal y buscador global de tareas (Ctrl+K)
 │       ├── forms.js             # Gestión de formularios, formato markdown de notas y opciones avanzadas
 │       ├── history-metrics.js   # Gestión de prompts y edición de métricas históricas
 │       ├── popovers.js          # Control de popovers de tiempo, startAfter y recurrencia
@@ -297,7 +298,35 @@ TodayTasks implementa un motor nativo y modular de internacionalización (i18n) 
 
 ---
 
-## 14. Directrices para Nuevos Desarrollos
+## 14. Buscador Global de Tareas y Command Palette (`command-palette.js`, `Ctrl+K`)
+
+TodayTasks incorpora un buscador global multidía implementado como una **Command Palette modal** accesible globalmente mediante el atajo de teclado <kbd>Ctrl+K</kbd> / <kbd>Cmd+K</kbd> o el botón dedicado en la barra superior:
+* **Motor de Búsqueda Multidía (`searchAllTasks` en `js/utils.js`):**
+  - Consulta en tiempo real todas las colecciones de tareas contenidas en la memoria del cliente:
+    * Los últimos 10 días pasados detallados en `env.days` (según la retención de `snapshotAndPrune`).
+    * Las tareas del día activo (`today`).
+    * Todos los días futuros que dispongan de tareas planificadas.
+    * Las plantillas maestras de tareas recurrentes (`env.recurringTasks`).
+  - Aplica tokenización no posicional insensible a mayúsculas y acentos (`matchesTaskSearch`), indexando título, notas markdown, etiquetas de urgencia y atributos destacados o recurrentes.
+* **Agrupación Temporal y Ordenación Prioritaria:**
+  - Los resultados se clasifican automáticamente en cuatro secciones jerárquicas:
+    1. 📌 **Hoy:** Tareas del día seleccionado (con prioridad absoluta para la tarea en ejecución `running`).
+    2. 🔮 **Próximos días:** Tareas de fechas futuras ordenadas cronológicamente.
+    3. 🕒 **Días anteriores:** Tareas pasadas ordenadas de más reciente a más antigua.
+    4. 🔁 **Plantillas recurrentes:** Reglas maestras de series periódicas.
+* **Filtrado Rápido y Ámbito de Entornos:**
+  - Filtros instantáneos por chips: `Todo`, `Pendientes`, `Completadas` y `🔁 Recurrentes`.
+  - Conmutador de entorno que permite acotar la búsqueda al entorno activo (`💼 Trabajo` o `🏠 Personal`) o extenderla a `🌐 Ambos entornos`.
+* **Acciones Contextuales Inmediatas:**
+  - **Ir a la tarea / fecha (`goToTask`):** Si la tarea pertenece a otra fecha, cambia la fecha activa mediante `actionsModule.selectDate(dateStr)`, regresa al tablero principal y aplica un pulso de resaltado visual (`.task-focus-pulse`) haciendo scroll suave hasta la tarjeta.
+  - **Mover a Hoy (`moveTaskToToday`):** Traslada la tarea a la jornada actual con persistencia inmediata y soporte para reabrir tareas pasadas.
+  - **Editar serie:** Acceso directo a la edición de reglas periódicas.
+* **Accesibilidad y Navegación por Teclado:**
+  - Soporte completo para navegación mediante flechas <kbd>↑</kbd> / <kbd>↓</kbd>, selección y ejecución con <kbd>Enter</kbd>, alternancia de filtros con <kbd>Tab</kbd> y cierre con <kbd>Esc</kbd> o clic en el backdrop difuminado (*light dismiss*).
+
+---
+
+## 15. Directrices para Nuevos Desarrollos
 
 1. **Separación Estricta de Responsabilidades:**
    * Las vistas (`views/`) **no** deben mutar el estado directamente; deben delegar en las acciones (`actions/`).

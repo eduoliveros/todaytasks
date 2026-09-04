@@ -37,6 +37,17 @@ export function TodayTasksShortcuts(appCtx){
       const state = getState ? getState() : {};
 
       if(e.key === "Escape" || e.key === "Esc"){
+        const gsModal = document.getElementById("globalSearchModal");
+        if(gsModal && gsModal.style.display === "flex"){
+          e.preventDefault();
+          if(window.app && typeof window.app.closeCommandPalette === "function") {
+            window.app.closeCommandPalette();
+          } else {
+            gsModal.style.display = "none";
+          }
+          return;
+        }
+
         const fModal = document.getElementById("featuredLimitModal");
         if(fModal && fModal.style.display === "flex"){
           e.preventDefault();
@@ -172,6 +183,14 @@ export function TodayTasksShortcuts(appCtx){
           return;
         }
 
+        return;
+      }
+
+      if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k"){
+        e.preventDefault();
+        if(window.app && typeof window.app.openCommandPalette === "function") {
+          window.app.openCommandPalette();
+        }
         return;
       }
 
