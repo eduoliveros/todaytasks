@@ -125,7 +125,81 @@ export function scrollToElement(elementId) {
   return true;
 }
 
-export const TodayTasksUi = { escapeHtml, escapeAttr, renderNotesMarkdown, showToast, scrollToElement };
+/**
+ * Posiciona un popover flotante (position: fixed) relativo a un elemento objetivo o centrado en viewport.
+ * - Calcula coordenadas left/top y aplica bounds checking contra los bordes de la ventana.
+ * - Si no cabe por debajo y hay espacio suficiente por arriba, invierte la posición (vertical flip).
+ * - Aplica directamente los estilos al popover si se pasa, y devuelve { left, top, flipped }.
+ *
+ * @param {Element|Event|null} target Elemento de anclaje, Event o null (fallback centro).
+ * @param {HTMLElement|null} popover Elemento del popover (opcional, para aplicar styles y medir offsetWidth/Height).
+ * @param {Object} [options] Opciones de configuración
+ * @param {number} [options.width] Ancho estimado del popover en px (por defecto mide popover.offsetWidth o 220).
+ * @param {number} [options.height] Alto estimado del popover en px (por defecto mide popover.offsetHeight o 140).
+ * @param {number} [options.gap=6] Separación en px entre el ancla y el popover.
+ * @param {number} [options.margin=10] Margen mínimo respecto a los bordes de la ventana.
+ * @returns {{ left: number, top: number, flipped: boolean }}
+ */
+export function positionPopover(target, popover, options = {}) {
+  const win = typeof window !== 'undefined' ? window : { innerWidth: 1024, innerHeight: 768 };
+  const popWidth = options.width || (popover && popover.offsetWidth) || 220;
+  const popHeight = options.height || (popover && popover.offsetHeight) || 140;
+  const gap = options.gap != null ? options.gap : 6;
+  const margin = options.margin != null ? options.margin : 10;
+
+  // Extraer el elemento DOM real si se pasó un evento
+  let anchorEl = null;
+  if (target) {
+    if (target.currentTarget && typeof target.currentTarget.getBoundingClientRect === 'function') {
+      anchorEl = target.currentTarget;
+    } else if (target.target && typeof target.target.getBoundingClientRect === 'function') {
+      anchorEl = target.target;
+    } else if (typeof target.getBoundingClientRect === 'function') {
+      anchorEl = target;
+    }
+  }
+
+  // Fallback inicial: centrado en la ventana
+  let left = Math.max(margin, (win.innerWidth - popWidth) / 2);
+  let top = Math.max(margin, (win.innerHeight - popHeight) / 2);
+  let flipped = false;
+
+  if (anchorEl) {
+    const rect = anchorEl.getBoundingClientRect();
+    const hasValidRect = rect && (rect.width > 0 || rect.height > 0 || rect.top !== 0 || rect.left !== 0);
+    if (hasValidRect) {
+      left = rect.left;
+      top = rect.bottom + gap;
+
+      // Inversión vertical hacia arriba si desborda por abajo y cabe arriba
+      if (top + popHeight > win.innerHeight - margin && rect.top > popHeight + gap) {
+        top = Math.max(margin, rect.top - popHeight - gap);
+        flipped = true;
+      }
+
+      // Clamping horizontal dentro del viewport
+      if (left + popWidth > win.innerWidth - margin) {
+        left = win.innerWidth - popWidth - margin;
+      }
+      if (left < margin) {
+        left = margin;
+      }
+    }
+  }
+
+  left = Math.round(left);
+  top = Math.round(top);
+
+  if (popover && popover.style) {
+    popover.style.position = 'fixed';
+    popover.style.left = `${left}px`;
+    popover.style.top = `${top}px`;
+  }
+
+  return { left, top, flipped };
+}
+
+export const TodayTasksUi = { escapeHtml, escapeAttr, renderNotesMarkdown, showToast, scrollToElement, positionPopover };
 
 export default TodayTasksUi;
 

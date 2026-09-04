@@ -78,4 +78,28 @@ describe('Triage View - Internacionalización (i18n)', () => {
     expect(container.textContent).toContain('Back to board');
     setLocale('es');
   });
+
+  it('renderiza el indicador de tarea recurrente con un solo icono y texto localizado', () => {
+    state.tasks = [
+      { id: 't-rec', title: 'Recurring Task', planned: 20, urgency: 'today', status: 'pending', ruleId: 10 }
+    ];
+
+    setLocale('es');
+    triageView.renderTriageView();
+    let recBtn = document.querySelector('.triage-recurring-btn');
+    expect(recBtn).not.toBeNull();
+    let icons = (recBtn.textContent.match(/🔁/g) || []).length;
+    expect(icons).toBe(1);
+    expect(recBtn.querySelector('.triage-recurring-label').textContent.trim()).toBe('Recurrente');
+
+    setLocale('en');
+    triageView.renderTriageView();
+    recBtn = document.querySelector('.triage-recurring-btn');
+    expect(recBtn).not.toBeNull();
+    icons = (recBtn.textContent.match(/🔁/g) || []).length;
+    expect(icons).toBe(1);
+    expect(recBtn.querySelector('.triage-recurring-label').textContent.trim()).toBe('Recurring');
+
+    setLocale('es');
+  });
 });

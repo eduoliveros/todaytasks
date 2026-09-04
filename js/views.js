@@ -37,6 +37,8 @@ export function TodayTasksViews(ctx){
       focusV.renderInterruptionView();
     } else if(currentView === 'triage'){
       triageV.renderTriageView();
+    } else if(currentView === 'history'){
+      if(ctx.renderHistoryView) ctx.renderHistoryView();
     }
     if(ctx.pipModule && ctx.pipModule.render){
       ctx.pipModule.render();
@@ -57,6 +59,8 @@ export function TodayTasksViews(ctx){
       focusV.renderTaskFocusView();
     } else if(currentView === 'triage'){
       triageV.renderTriageView();
+    } else if(currentView === 'history'){
+      if(ctx.renderHistoryView) ctx.renderHistoryView();
     } else {
       renderAll();
     }

@@ -599,6 +599,7 @@ export default {
   'triage.editLabelTitle': 'Task title:',
   'triage.recurringTooltipDefault': 'Recurring task · Click for rule info',
   'triage.recurringTooltipDetails': 'Recurring task: {summary} ({range}) · Click for details',
+  'triage.recurringLabel': 'Recurring',
 
   // Weekly Schedule Modal
   'weeklySchedule.invalidRangeToast': '⚠️ Invalid schedule for {day}: start time must be before end time.',
@@ -632,5 +633,11 @@ export default {
   'history.seriesCompleted': 'Completed Tasks',
   'history.seriesWorkedPending': 'Worked on Pending',
   'history.seriesNotWorkedPending': 'Unworked on Pending',
-  'history.seriesInterruptions': 'Interruptions'
+  'history.seriesInterruptions': 'Interruptions',
+  'history.metricPromptDate': 'Enter date in YYYY-MM-DD format:',
+  'history.metricPromptMeetings': 'Meetings Time (e.g. 1h 30m or 45m):',
+  'history.metricPromptCompleted': 'Completed Tasks Time (e.g. 1h 30m or 45m):',
+  'history.metricPromptWorked': 'Worked Time on Pending Tasks (e.g. 1h 30m or 45m):',
+  'history.metricPromptNotWorked': 'Unworked Time on Pending Tasks (e.g. 1h 30m or 45m):',
+  'history.metricPromptInterruptions': 'Interruptions Time (e.g. 1h 30m or 45m):'
 };

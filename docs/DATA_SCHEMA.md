@@ -47,6 +47,7 @@ interface EnvState {
   recurringTasks: RecurringTaskRule[];        // Reglas maestras de tareas periódicas
   activeInterruption: Interruption | null;    // Interrupción en curso (si la hubiera)
   _deletedRecurringIds?: string[];            // IDs de reglas periódicas eliminadas (tombstones para sync)
+  _deletedHistoryDates?: string[];            // Fechas eliminadas del historial (tombstones para sync)
 }
 ```
 
@@ -209,6 +210,8 @@ interface HistoryEntry {
   uncompletedTasksNotWorkedTime: number;// Minutos estimados restantes en pendientes
   interruptionsTime: number;           // Minutos perdidos en interrupciones
   effectiveTime: number;               // meetingsTime + completedTasksTime + uncompletedTasksWorkedTime
+  manual?: boolean;                    // true si fue ingresada o editada manualmente por el usuario
+  updatedAt?: number;                  // Timestamp ms de la última edición
 }
 ```
 

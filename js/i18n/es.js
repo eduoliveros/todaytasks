@@ -599,6 +599,7 @@ export default {
   'triage.editLabelTitle': 'Título de la tarea:',
   'triage.recurringTooltipDefault': 'Tarea recurrente · Clic para ver información de la regla',
   'triage.recurringTooltipDetails': 'Tarea recurrente: {summary} ({range}) · Clic para detalles',
+  'triage.recurringLabel': 'Recurrente',
 
   // Horario semanal (Weekly Schedule Modal)
   'weeklySchedule.invalidRangeToast': '⚠️ Horario inválido para el {day}: la hora de inicio debe ser anterior a la de fin.',
@@ -632,5 +633,11 @@ export default {
   'history.seriesCompleted': 'Tareas Completadas',
   'history.seriesWorkedPending': 'Trabajado en Pendientes',
   'history.seriesNotWorkedPending': 'No Trabajado en Pendientes',
-  'history.seriesInterruptions': 'Interrupciones'
+  'history.seriesInterruptions': 'Interrupciones',
+  'history.metricPromptDate': 'Introduce la fecha en formato YYYY-MM-DD:',
+  'history.metricPromptMeetings': 'Tiempo de Reuniones (ej. 1h 30m o 45m):',
+  'history.metricPromptCompleted': 'Tiempo de Tareas Completadas (ej. 1h 30m o 45m):',
+  'history.metricPromptWorked': 'Tiempo Trabajado en Pendientes (ej. 1h 30m o 45m):',
+  'history.metricPromptNotWorked': 'Tiempo No Trabajado en Pendientes (ej. 1h 30m o 45m):',
+  'history.metricPromptInterruptions': 'Tiempo de Interrupciones (ej. 1h 30m o 45m):'
 };

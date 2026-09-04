@@ -29,7 +29,8 @@ export function defaultEnvState(envKey) {
     recurringMeetings: [],
     recurringTasks: [],
     activeInterruption: null,
-    _deletedRecurringIds: []
+    _deletedRecurringIds: [],
+    _deletedHistoryDates: []
   };
 }
 
@@ -125,6 +126,7 @@ export function wrapState(rawState) {
         if (!Array.isArray(env.recurringMeetings)) env.recurringMeetings = [];
         if (!Array.isArray(env.recurringTasks)) env.recurringTasks = [];
         if (!Array.isArray(env._deletedRecurringIds)) env._deletedRecurringIds = [];
+        if (!Array.isArray(env._deletedHistoryDates)) env._deletedHistoryDates = [];
         if (env.activeInterruption === undefined) env.activeInterruption = null;
         if (!("weeklySchedule" in env)) env.weeklySchedule = null;
 

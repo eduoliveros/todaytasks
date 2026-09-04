@@ -547,7 +547,8 @@ describe('TodayTasksTriageView (UI & Sorting & Selection)', () => {
 
     const recBtn = recRow.querySelector('.triage-recurring-btn');
     expect(recBtn).not.toBeNull();
-    expect(recBtn.textContent).toContain('🔁');
+    const iconMatches = (recBtn.textContent.match(/🔁/g) || []).length;
+    expect(iconMatches).toBe(1);
     expect(recBtn.textContent).toContain('Recurrente');
     expect(recBtn.getAttribute('onclick')).toContain("app.openRecurringInfoPopover('99', event, 'task')");
   });

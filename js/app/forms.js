@@ -1,5 +1,6 @@
-/* app/forms.js — Formularios de reuniones y tareas, menú de posición */
+/* app/forms.js — Formularios de reuniones y tareas, menú de posición y notas markdown */
 import { t } from '../i18n.js';
+import { renderNotesMarkdown } from '../ui.js';
 
 export function TodayTasksForms(appCtx){
   const { getState, actionsModule, showToast, fmt, timeToMinutes } = appCtx;
@@ -33,18 +34,14 @@ export function TodayTasksForms(appCtx){
         if (opts) opts.style.display = e.target.checked ? "block" : "none";
         const autoMoveWrap = document.getElementById("autoMoveTaskOptionWrap");
         if (autoMoveWrap) autoMoveWrap.style.display = e.target.checked ? "none" : "block";
-        if (window.app && typeof window.app.updateTaskAdvancedIndicators === "function") {
-          window.app.updateTaskAdvancedIndicators();
-        }
+        updateTaskAdvancedIndicators();
       });
     }
 
     const isAutoMoveTaskCb = document.getElementById("isAutoMoveTaskCheckbox");
     if (isAutoMoveTaskCb) {
       isAutoMoveTaskCb.addEventListener("change", () => {
-        if (window.app && typeof window.app.updateTaskAdvancedIndicators === "function") {
-          window.app.updateTaskAdvancedIndicators();
-        }
+        updateTaskAdvancedIndicators();
       });
     }
 
@@ -228,9 +225,7 @@ export function TodayTasksForms(appCtx){
       if (autoMoveWrap) autoMoveWrap.style.display = "block";
     }
 
-    if (window.app && typeof window.app.updateTaskAdvancedIndicators === "function") {
-      window.app.updateTaskAdvancedIndicators();
-    }
+    updateTaskAdvancedIndicators();
     titleEl.focus();
   }
 
@@ -376,7 +371,159 @@ export function TodayTasksForms(appCtx){
     });
   }
 
-  return { handleMeetingSubmit, handleTaskSubmit };
+  function updateTaskAdvancedIndicators() {
+    if (typeof document === "undefined") return;
+    const autoMoveCb = document.getElementById('isAutoMoveTaskCheckbox');
+    const recCb = document.getElementById('isRecurringTaskCheckbox');
+    const startAfterInput = document.getElementById('taskStartAfterInput');
+    const notesInput = document.getElementById('taskNotesInput');
+
+    const autoMoveBadge = document.getElementById('formAutoMoveBadge');
+    const recBadge = document.getElementById('formRecurringBadge');
+    const startAfterBadge = document.getElementById('formStartAfterBadge');
+    const notesBadge = document.getElementById('formNotesBadge');
+
+    if (autoMoveBadge) {
+      autoMoveBadge.style.display = (autoMoveCb && autoMoveCb.checked && (!recCb || !recCb.checked)) ? 'inline-flex' : 'none';
+    }
+    if (recBadge) {
+      recBadge.style.display = (recCb && recCb.checked) ? 'inline-flex' : 'none';
+    }
+    if (startAfterBadge) {
+      const val = startAfterInput ? startAfterInput.value.trim() : '';
+      if (val) {
+        startAfterBadge.textContent = val + '+';
+        startAfterBadge.style.display = 'inline-flex';
+      } else {
+        startAfterBadge.style.display = 'none';
+      }
+    }
+    if (notesBadge) {
+      const val = notesInput ? notesInput.value.trim() : '';
+      notesBadge.style.display = val ? 'inline-flex' : 'none';
+    }
+  }
+
+  function insertFormNotesFormat(prefix, suffix) {
+    if (typeof document === "undefined") return;
+    const textarea = document.getElementById('taskNotesInput');
+    if (!textarea) return;
+    const start = textarea.selectionStart || 0;
+    const end = textarea.selectionEnd || 0;
+    const val = textarea.value || '';
+    const selected = val.substring(start, end) || 'texto';
+    textarea.value = val.substring(0, start) + prefix + selected + suffix + val.substring(end);
+    textarea.focus();
+    textarea.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
+    updateTaskAdvancedIndicators();
+  }
+
+  function insertFormNotesLink() {
+    if (typeof document === "undefined") return;
+    const textarea = document.getElementById('taskNotesInput');
+    if (!textarea) return;
+    const url = (typeof window !== "undefined" && window.prompt) ? window.prompt('Introduce la URL (ej: https://...):', 'https://') : 'https://';
+    if (!url) return;
+    const title = (typeof window !== "undefined" && window.prompt) ? (window.prompt('Texto del enlace (opcional):', 'Enlace') || 'Enlace') : 'Enlace';
+    const start = textarea.selectionStart || 0;
+    const val = textarea.value || '';
+    const linkMd = `[${title}](${url})`;
+    textarea.value = val.substring(0, start) + linkMd + val.substring(start);
+    textarea.focus();
+    updateTaskAdvancedIndicators();
+  }
+
+  function insertEditNotesFormat(taskId, prefix, suffix) {
+    if (typeof document === "undefined") return;
+    const textarea = document.getElementById(`task-edit-notes-${taskId}`);
+    if (!textarea) return;
+    const start = textarea.selectionStart || 0;
+    const end = textarea.selectionEnd || 0;
+    const val = textarea.value || '';
+    const selected = val.substring(start, end) || 'texto';
+    textarea.value = val.substring(0, start) + prefix + selected + suffix + val.substring(end);
+    if (actionsModule && actionsModule.updateTaskEditField) {
+      actionsModule.updateTaskEditField('notes', textarea.value);
+    }
+    textarea.focus();
+    textarea.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
+  }
+
+  function insertEditNotesLink(taskId) {
+    if (typeof document === "undefined") return;
+    const textarea = document.getElementById(`task-edit-notes-${taskId}`);
+    if (!textarea) return;
+    const url = (typeof window !== "undefined" && window.prompt) ? window.prompt('Introduce la URL (ej: https://...):', 'https://') : 'https://';
+    if (!url) return;
+    const title = (typeof window !== "undefined" && window.prompt) ? (window.prompt('Texto del enlace (opcional):', 'Enlace') || 'Enlace') : 'Enlace';
+    const start = textarea.selectionStart || 0;
+    const val = textarea.value || '';
+    const linkMd = `[${title}](${url})`;
+    textarea.value = val.substring(0, start) + linkMd + val.substring(start);
+    if (actionsModule && actionsModule.updateTaskEditField) {
+      actionsModule.updateTaskEditField('notes', textarea.value);
+    }
+    textarea.focus();
+  }
+
+  function toggleEditNotesPreview(taskId) {
+    if (typeof document === "undefined") return;
+    const textarea = document.getElementById(`task-edit-notes-${taskId}`);
+    const preview = document.getElementById(`task-edit-notes-preview-${taskId}`);
+    const btn = document.getElementById(`btn-preview-edit-${taskId}`);
+    if (!textarea || !preview) return;
+    const isHidden = preview.style.display === 'none';
+    if (isHidden) {
+      preview.innerHTML = renderNotesMarkdown(textarea.value || '');
+      preview.style.display = 'block';
+      textarea.style.display = 'none';
+      if (btn) btn.textContent = '✏️';
+    } else {
+      preview.style.display = 'none';
+      textarea.style.display = 'block';
+      if (btn) btn.textContent = '👁️';
+    }
+  }
+
+  function onFormStartAfterChange(val) {
+    updateTaskAdvancedIndicators();
+  }
+
+  function clearFormStartAfterDirect() {
+    if (typeof document === "undefined") return;
+    const input = document.getElementById('taskStartAfterInput');
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
+    updateTaskAdvancedIndicators();
+  }
+
+  function toggleTaskAdvancedOptions() {
+    if (typeof document === "undefined") return;
+    const wrap = document.getElementById('taskAdvancedOptionsWrap');
+    const btn = document.getElementById('taskAdvancedToggleBtn');
+    const chevron = document.getElementById('taskAdvancedChevron');
+    if (!wrap) return;
+    const isOpen = wrap.style.display === 'block';
+    wrap.style.display = isOpen ? 'none' : 'block';
+    if (btn) btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+    if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+  }
+
+  return {
+    handleMeetingSubmit,
+    handleTaskSubmit,
+    updateTaskAdvancedIndicators,
+    insertFormNotesFormat,
+    insertFormNotesLink,
+    insertEditNotesFormat,
+    insertEditNotesLink,
+    toggleEditNotesPreview,
+    onFormStartAfterChange,
+    clearFormStartAfterDirect,
+    toggleTaskAdvancedOptions
+  };
 }
 
 export default TodayTasksForms;

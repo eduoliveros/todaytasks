@@ -297,4 +297,167 @@ describe('TodayTasksForms - Formularios y Menú de Posición', () => {
       expect(recMeetingPanel.style.display).toBe('none');
     });
   });
+
+  describe('Formato Markdown de Notas y Opciones Avanzadas', () => {
+    let appCtx;
+    let editFieldUpdates;
+
+    beforeEach(() => {
+      editFieldUpdates = [];
+      appCtx = {
+        getState: () => state,
+        actionsModule: {
+          updateTaskEditField: (field, value) => {
+            editFieldUpdates.push({ field, value });
+          }
+        },
+        showToast: vi.fn(),
+        fmt: (m) => `${m}`,
+        timeToMinutes: () => 0
+      };
+      forms = TodayTasksForms(appCtx);
+    });
+
+    it('insertFormNotesFormat añade prefijo y sufijo al textarea del formulario', () => {
+      document.body.innerHTML = `
+        <textarea id="taskNotesInput"></textarea>
+        <span id="formNotesBadge" style="display:none;"></span>
+      `;
+      const textarea = document.getElementById('taskNotesInput');
+      textarea.value = 'hola mundo';
+      textarea.selectionStart = 5;
+      textarea.selectionEnd = 10;
+
+      forms.insertFormNotesFormat('**', '**');
+
+      expect(textarea.value).toBe('hola **mundo**');
+      expect(document.getElementById('formNotesBadge').style.display).toBe('inline-flex');
+    });
+
+    it('insertFormNotesFormat usa "texto" si no hay nada seleccionado', () => {
+      document.body.innerHTML = `
+        <textarea id="taskNotesInput"></textarea>
+        <span id="formNotesBadge" style="display:none;"></span>
+      `;
+      const textarea = document.getElementById('taskNotesInput');
+      textarea.value = '';
+      textarea.selectionStart = 0;
+      textarea.selectionEnd = 0;
+
+      forms.insertFormNotesFormat('*', '*');
+
+      expect(textarea.value).toBe('*texto*');
+    });
+
+    it('insertFormNotesLink inserta enlace markdown con prompt', () => {
+      document.body.innerHTML = `
+        <textarea id="taskNotesInput"></textarea>
+        <span id="formNotesBadge" style="display:none;"></span>
+      `;
+      const textarea = document.getElementById('taskNotesInput');
+      textarea.value = 'Mira esto: ';
+      textarea.selectionStart = 11;
+      textarea.selectionEnd = 11;
+
+      vi.spyOn(window, 'prompt')
+        .mockReturnValueOnce('https://example.com')
+        .mockReturnValueOnce('Sitio Web');
+
+      forms.insertFormNotesLink();
+
+      expect(textarea.value).toBe('Mira esto: [Sitio Web](https://example.com)');
+    });
+
+    it('insertEditNotesFormat aplica formato a notas de edición y actualiza el campo', () => {
+      const taskId = 'task-1';
+      document.body.innerHTML = `
+        <textarea id="task-edit-notes-${taskId}"></textarea>
+      `;
+      const textarea = document.getElementById(`task-edit-notes-${taskId}`);
+      textarea.value = 'clave';
+      textarea.selectionStart = 0;
+      textarea.selectionEnd = 5;
+
+      forms.insertEditNotesFormat(taskId, '`', '`');
+
+      expect(textarea.value).toBe('`clave`');
+      expect(editFieldUpdates).toEqual([{ field: 'notes', value: '`clave`' }]);
+    });
+
+    it('insertEditNotesLink inserta enlace en notas de edición', () => {
+      const taskId = 'task-2';
+      document.body.innerHTML = `
+        <textarea id="task-edit-notes-${taskId}"></textarea>
+      `;
+      const textarea = document.getElementById(`task-edit-notes-${taskId}`);
+      textarea.value = '';
+      textarea.selectionStart = 0;
+
+      vi.spyOn(window, 'prompt')
+        .mockReturnValueOnce('https://docs.org')
+        .mockReturnValueOnce('Docs');
+
+      forms.insertEditNotesLink(taskId);
+
+      expect(textarea.value).toBe('[Docs](https://docs.org)');
+      expect(editFieldUpdates).toEqual([{ field: 'notes', value: '[Docs](https://docs.org)' }]);
+    });
+
+    it('toggleEditNotesPreview alterna entre vista de edición y previsualización markdown', () => {
+      const taskId = 'task-3';
+      document.body.innerHTML = `
+        <textarea id="task-edit-notes-${taskId}" style="display:block;">**negrita**</textarea>
+        <div id="task-edit-notes-preview-${taskId}" style="display:none;"></div>
+        <button id="btn-preview-edit-${taskId}">👁️</button>
+      `;
+
+      // Activar preview
+      forms.toggleEditNotesPreview(taskId);
+      const preview = document.getElementById(`task-edit-notes-preview-${taskId}`);
+      const textarea = document.getElementById(`task-edit-notes-${taskId}`);
+      const btn = document.getElementById(`btn-preview-edit-${taskId}`);
+
+      expect(preview.style.display).toBe('block');
+      expect(textarea.style.display).toBe('none');
+      expect(preview.innerHTML).toContain('<strong>negrita</strong>');
+      expect(btn.textContent).toBe('✏️');
+
+      // Volver a modo edición
+      forms.toggleEditNotesPreview(taskId);
+      expect(preview.style.display).toBe('none');
+      expect(textarea.style.display).toBe('block');
+      expect(btn.textContent).toBe('👁️');
+    });
+
+    it('toggleTaskAdvancedOptions abre y cierra el panel colapsable', () => {
+      document.body.innerHTML = `
+        <div id="taskAdvancedOptionsWrap" style="display:none;"></div>
+        <button id="taskAdvancedToggleBtn" aria-expanded="false"></button>
+        <span id="taskAdvancedChevron" style="transform: rotate(0deg);"></span>
+      `;
+      const wrap = document.getElementById('taskAdvancedOptionsWrap');
+      const btn = document.getElementById('taskAdvancedToggleBtn');
+      const chevron = document.getElementById('taskAdvancedChevron');
+
+      forms.toggleTaskAdvancedOptions();
+      expect(wrap.style.display).toBe('block');
+      expect(btn.getAttribute('aria-expanded')).toBe('true');
+      expect(chevron.style.transform).toBe('rotate(180deg)');
+
+      forms.toggleTaskAdvancedOptions();
+      expect(wrap.style.display).toBe('none');
+      expect(btn.getAttribute('aria-expanded')).toBe('false');
+      expect(chevron.style.transform).toBe('rotate(0deg)');
+    });
+
+    it('clearFormStartAfterDirect borra el input y actualiza indicadores', () => {
+      document.body.innerHTML = `
+        <input type="time" id="taskStartAfterInput" value="14:30" />
+        <span id="formStartAfterBadge" style="display:inline-flex;">14:30+</span>
+      `;
+      forms.clearFormStartAfterDirect();
+      expect(document.getElementById('taskStartAfterInput').value).toBe('');
+      expect(document.getElementById('formStartAfterBadge').style.display).toBe('none');
+    });
+  });
 });

@@ -784,9 +784,9 @@ export function TodayTasksTriageView(ctx) {
                         }
                       }
                       recurringTag = `
-                        <button type="button" class="tag recurring-tag-btn triage-recurring-btn" onclick="app.openRecurringInfoPopover('${escapeAttr(task.id)}', event, 'task')" title="${escapeAttr(ruleTooltip)}" aria-label="${escapeAttr(t('meetings.recurringTagLabel'))}">
-                          <span class="triage-recurring-icon">🔁</span>
-                          <span class="triage-recurring-label">${t('meetings.recurringTagLabel')}</span>
+                        <button type="button" class="tag recurring-tag-btn triage-recurring-btn" onclick="app.openRecurringInfoPopover('${escapeAttr(task.id)}', event, 'task')" title="${escapeAttr(ruleTooltip)}" aria-label="${escapeAttr(t('tasks.recurringTagLabel'))}">
+                          <span class="triage-recurring-icon" aria-hidden="true">🔁</span>
+                          <span class="triage-recurring-label">${t('triage.recurringLabel')}</span>
                         </button>
                       `;
                     }

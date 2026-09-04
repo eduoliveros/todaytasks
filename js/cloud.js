@@ -163,6 +163,14 @@ export function TodayTasksCloud(ctx){
         ]);
         mergedEnv._deletedRecurringIds = Array.from(mergedDeletedRecurringIds);
 
+        const allRemoteDeletedHistoryDates = new Set((remoteEnv._deletedHistoryDates || []).map(String));
+        const allLocalDeletedHistoryDates = new Set((localEnv._deletedHistoryDates || []).map(String));
+        const mergedDeletedHistoryDates = new Set([
+          ...(remoteEnv._deletedHistoryDates || []).map(String),
+          ...(localEnv._deletedHistoryDates || []).map(String)
+        ]);
+        mergedEnv._deletedHistoryDates = Array.from(mergedDeletedHistoryDates);
+
         allDates.forEach(dateStr => {
           const lDay = (localEnv.days && localEnv.days[dateStr]) || {};
           const rDay = (remoteEnv.days && remoteEnv.days[dateStr]) || {};
@@ -240,10 +248,23 @@ export function TodayTasksCloud(ctx){
 
         // Merge history array
         const historyMap = new Map();
-        (remoteEnv.history || []).forEach(h => { if (h && h.date) historyMap.set(h.date, { ...h }); });
+        (remoteEnv.history || []).forEach(h => {
+          if (h && h.date && !allLocalDeletedHistoryDates.has(String(h.date))) {
+            historyMap.set(String(h.date), { ...h });
+          }
+        });
         (localEnv.history || []).forEach(h => {
-          if (h && h.date && !historyMap.has(h.date)) {
-            historyMap.set(h.date, { ...h });
+          if (!h || !h.date || allRemoteDeletedHistoryDates.has(String(h.date))) return;
+          const key = String(h.date);
+          const existing = historyMap.get(key);
+          if (!existing) {
+            historyMap.set(key, { ...h });
+          } else {
+            const lTime = h.updatedAt || (h.manual ? 1 : 0);
+            const rTime = existing.updatedAt || (existing.manual ? 1 : 0);
+            if (lTime >= rTime) {
+              historyMap.set(key, { ...existing, ...h });
+            }
           }
         });
         mergedEnv.history = Array.from(historyMap.values()).sort((a, b) => a.date.localeCompare(b.date));

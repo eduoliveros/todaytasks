@@ -123,6 +123,38 @@ describe('TodayTasksHistory - Histórico y Métricas (ES Module)', () => {
       expect(entry.effectiveTime).toBe(60 + 120 + 30); // 210 min
     });
 
+    it('acepta formato de duración legible (ej. 1h 30m) y preserva la medida manual frente a snapshotAndPrune', () => {
+      const state = defaultState();
+      const testDate = getTodayStr();
+      state.environments.work.days[testDate] = {
+        meetings: [{ start: 600, end: 660 }], // 60 min de reunión por cálculo automático
+        tasks: [],
+        interruptions: []
+      };
+
+      // snapshotAndPrune inicial genera 60 min
+      snapshotAndPrune(state);
+      expect(state.environments.work.history.find(h => h.date === testDate).meetingsTime).toBe(60);
+
+      // El usuario edita la métrica manualmente con formato '1h 30m'
+      saveHistoryMetric(state, testDate, {
+        meetingsTime: '1h 30m',
+        completedTasksTime: '2h',
+        uncompletedTasksWorkedTime: '45m',
+        uncompletedTasksNotWorkedTime: '0m',
+        interruptionsTime: '15m'
+      });
+
+      // Se ejecuta snapshotAndPrune (como ocurre en cada guardado de estado o sincronización)
+      snapshotAndPrune(state);
+
+      const entry = state.environments.work.history.find(h => h.date === testDate);
+      expect(entry.meetingsTime).toBe(90);
+      expect(entry.completedTasksTime).toBe(120);
+      expect(entry.uncompletedTasksWorkedTime).toBe(45);
+      expect(entry.effectiveTime).toBe(90 + 120 + 45); // 255 min
+    });
+
     it('elimina un registro del historial', () => {
       const state = defaultState();
       const testDate = '2026-08-01';
@@ -137,6 +169,30 @@ describe('TodayTasksHistory - Histórico y Métricas (ES Module)', () => {
       const env = state.environments.work;
       const entry = env.history.find(h => h.date === testDate);
       expect(entry).toBeUndefined();
+    });
+
+    it('al actualizar una métrica del historial y re-renderizar la vista, el DOM refleja los nuevos datos', () => {
+      document.body.innerHTML = '<div id="view-history"></div>';
+      const state = defaultState();
+      const testDate = '2026-08-01';
+
+      saveHistoryMetric(state, testDate, {
+        meetingsTime: '1h',
+        completedTasksTime: '1h'
+      });
+
+      history.renderHistoryView({ getState: () => state });
+      const container = document.getElementById('view-history');
+      expect(container.textContent).toContain('2h'); // 120 min de tiempo efectivo
+
+      // El usuario edita la línea
+      saveHistoryMetric(state, testDate, {
+        meetingsTime: '2h',
+        completedTasksTime: '1h 30m'
+      });
+
+      history.renderHistoryView({ getState: () => state });
+      expect(container.textContent).toContain('3h 30min'); // 210 min de tiempo efectivo
     });
   });
 });

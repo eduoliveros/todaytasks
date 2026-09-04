@@ -14,10 +14,12 @@ describe('CSS Modularization Architecture', () => {
     'interruption.css',
     'history.css',
     'modals.css',
+    'triage.css',
+    'pip.css',
     'theme-dark.css'
   ];
 
-  it('ensures styles.css exists and contains @import for all 9 modular files', () => {
+  it('ensures styles.css exists and contains @import for all modular files', () => {
     expect(fs.existsSync(stylesPath)).toBe(true);
     const stylesContent = fs.readFileSync(stylesPath, 'utf8');
 

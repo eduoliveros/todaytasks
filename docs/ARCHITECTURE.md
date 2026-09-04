@@ -60,8 +60,11 @@ todaytasks/
 │   │   ├── focus.js             # Vistas de concentración de tarea e interrupciones
 │   │   └── triage.js            # Vista de triaje rápido, agrupación y operaciones masivas
 │   └── app/                     # Submódulos auxiliares de app.js
-│       ├── forms.js             # Gestión y enlace de formularios del DOM
+│       ├── forms.js             # Gestión de formularios, formato markdown de notas y opciones avanzadas
+│       ├── history-metrics.js   # Gestión de prompts y edición de métricas históricas
+│       ├── popovers.js          # Control de popovers de tiempo, startAfter y recurrencia
 │       ├── shortcuts.js         # Manejo de atajos de teclado
+│       ├── urgency-dropdown.js  # Menú desplegable y mapa de urgencia localizada
 │       └── weekly-schedule.js   # Gestión del horario semanal recurrente
 ├── css/
 │   ├── base.css                 # Reset básico, tipografía y variables CSS globales
@@ -186,11 +189,11 @@ Para simplificar el acceso y no obligar al código a navegar por `state.environm
 
 ## 7. Popovers Contextuales e Inspección Rápida
 
-La interfaz utiliza menús flotantes contextuales ligeros (*popovers*) para configurar propiedades o consultar metadatos sin abrir modales pesados:
-* **Popover de Ajuste de Tiempo (`#timePopover`):** Ajuste rápido de minutos consumidos en tareas.
-* **Popover de Inicio Mínimo (`#startAfterPopover`):** Selector de hora `startAfter` con atajo directo desde la tarjeta.
-* **Popover de Reglas Recurrentes (`#recurringInfoPopover`):** Desglose dinámico de la regla periódica asociada (`formatRecurrenceRule`), mostrando frecuencia, intervalo, días activos, vigencia y acceso a edición de serie tanto para tareas como para reuniones.
-* **Dropdown de Urgencia (`#urgencyDropdownMenu`):** Selector estilo Linear para cambiar entre *Hoy*, *Días*, *Semana* y *Más adelante*.
+La interfaz utiliza menús flotantes contextuales ligeros (*popovers*) para configurar propiedades o consultar metadatos sin abrir modales pesados, posicionados de forma centralizada mediante la función utilitaria `positionPopover(target, popover, options)` en [`js/ui.js`](../js/ui.js) (con soporte para márgenes de pantalla, alineación y volteo vertical dinámico si rebasa el viewport):
+* **Popover de Ajuste de Tiempo (`#timePopover`):** Ajuste rápido de minutos consumidos en tareas (gestionado por [`js/app/popovers.js`](../js/app/popovers.js)).
+* **Popover de Inicio Mínimo (`#startAfterPopover`):** Selector de hora `startAfter` con atajo directo desde la tarjeta (gestionado por [`js/app/popovers.js`](../js/app/popovers.js)).
+* **Popover de Reglas Recurrentes (`#recurringInfoPopover`):** Desglose dinámico de la regla periódica asociada (`formatRecurrenceRule`), mostrando frecuencia, intervalo, días activos, vigencia y acceso a edición de serie tanto para tareas como para reuniones (gestionado por [`js/app/popovers.js`](../js/app/popovers.js)).
+* **Dropdown de Urgencia (`#urgencyDropdownMenu`):** Selector estilo Linear para cambiar entre *Hoy*, *Días*, *Semana* y *Más adelante* (gestionado por [`js/app/urgency-dropdown.js`](../js/app/urgency-dropdown.js)).
 
 ---
 

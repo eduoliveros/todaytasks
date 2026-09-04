@@ -41,6 +41,16 @@ export function fmtDur(mins) {
   return mins + " min";
 }
 
+export function formatDurationInput(mins) {
+  if (mins === null || mins === undefined || isNaN(mins) || mins <= 0) return "0m";
+  const total = Math.round(mins);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m}m`;
+}
+
 export function fmtRemaining(plannedEndMin, nowMin) {
   const diff = plannedEndMin - nowMin;
   if (diff >= 0) return { text: t("utils.remaining", { time: fmtDur(diff) }), overrun: false };
@@ -682,6 +692,7 @@ export const TodayTasksUtils = {
   getTaskElapsed,
   fmt,
   fmtDur,
+  formatDurationInput,
   fmtRemaining,
   timeToMinutes,
   parseDuration,

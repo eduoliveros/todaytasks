@@ -1,4 +1,4 @@
-import { getTodayStr, formatDateFriendly, diffDays, fmtDur, computeOccupiedMeetingTime } from './utils.js';
+import { getTodayStr, formatDateFriendly, diffDays, fmtDur, computeOccupiedMeetingTime, parseDuration } from './utils.js';
 import { escapeHtml, escapeAttr } from './ui.js';
 import { t } from './i18n.js';
 
@@ -100,6 +100,13 @@ export function snapshotAndPrune(state) {
 
     // Update history entries for all available days in days object
     Object.keys(env.days).forEach(dateStr => {
+      if (Array.isArray(env._deletedHistoryDates) && env._deletedHistoryDates.includes(dateStr)) {
+        return;
+      }
+      const existing = historyMap.get(dateStr);
+      if (existing && existing.manual) {
+        return;
+      }
       const metrics = computeMetricsFromDay(env.days[dateStr]);
       historyMap.set(dateStr, {
         date: dateStr,
@@ -112,10 +119,13 @@ export function snapshotAndPrune(state) {
       });
     });
 
-    // Always snapshot current day dynamically into history
+    // Always snapshot current day dynamically into history unless manually modified
     if (env.days[today]) {
-      const todayMetrics = computeMetricsFromDay(env.days[today]);
-      historyMap.set(today, { date: today, ...todayMetrics });
+      const existingToday = historyMap.get(today);
+      if (!existingToday || !existingToday.manual) {
+        const todayMetrics = computeMetricsFromDay(env.days[today]);
+        historyMap.set(today, { date: today, ...todayMetrics });
+      }
     }
 
     // Convert historyMap back to array, sorted by date ascending
@@ -145,11 +155,20 @@ export function saveHistoryMetric(state, dateStr, metrics) {
   if (!Array.isArray(env.history)) env.history = [];
   let entry = env.history.find(h => h.date === dateStr);
 
-  const meetingsTime = Math.max(0, parseInt(metrics.meetingsTime, 10) || 0);
-  const completedTasksTime = Math.max(0, parseInt(metrics.completedTasksTime, 10) || 0);
-  const uncompletedTasksWorkedTime = Math.max(0, parseInt(metrics.uncompletedTasksWorkedTime, 10) || 0);
-  const uncompletedTasksNotWorkedTime = Math.max(0, parseInt(metrics.uncompletedTasksNotWorkedTime, 10) || 0);
-  const interruptionsTime = Math.max(0, parseInt(metrics.interruptionsTime, 10) || 0);
+  const parseVal = (val) => {
+    if (val === null || val === undefined) return 0;
+    if (typeof val === 'number') return Math.max(0, Math.round(val));
+    const parsed = parseDuration(val);
+    if (parsed !== null && !isNaN(parsed)) return Math.max(0, Math.round(parsed));
+    const intVal = parseInt(val, 10);
+    return isNaN(intVal) ? 0 : Math.max(0, intVal);
+  };
+
+  const meetingsTime = parseVal(metrics.meetingsTime);
+  const completedTasksTime = parseVal(metrics.completedTasksTime);
+  const uncompletedTasksWorkedTime = parseVal(metrics.uncompletedTasksWorkedTime);
+  const uncompletedTasksNotWorkedTime = parseVal(metrics.uncompletedTasksNotWorkedTime);
+  const interruptionsTime = parseVal(metrics.interruptionsTime);
   const effectiveTime = meetingsTime + completedTasksTime + uncompletedTasksWorkedTime;
 
   const updatedEntry = {
@@ -159,8 +178,15 @@ export function saveHistoryMetric(state, dateStr, metrics) {
     uncompletedTasksWorkedTime,
     uncompletedTasksNotWorkedTime,
     interruptionsTime,
-    effectiveTime
+    effectiveTime,
+    manual: true,
+    updatedAt: Date.now()
   };
+
+  // If was in _deletedHistoryDates, unmark it
+  if (Array.isArray(env._deletedHistoryDates)) {
+    env._deletedHistoryDates = env._deletedHistoryDates.filter(d => d !== dateStr);
+  }
 
   if (entry) {
     Object.assign(entry, updatedEntry);
@@ -179,6 +205,10 @@ export function deleteHistoryMetric(state, dateStr) {
   const env = state.environments[envKey];
   if (!env || !Array.isArray(env.history)) return;
   env.history = env.history.filter(h => h.date !== dateStr);
+  if (!Array.isArray(env._deletedHistoryDates)) env._deletedHistoryDates = [];
+  if (!env._deletedHistoryDates.includes(dateStr)) {
+    env._deletedHistoryDates.push(dateStr);
+  }
 }
 
 export function renderChart(historyArray) {
