@@ -86,4 +86,16 @@ describe('Modal de ayuda de atajos de teclado', () => {
     expect(pRow).toBeDefined();
     expect(pRow.textContent.toLowerCase()).toMatch(/planificación|planning/);
   });
+
+  it('el modal contiene la ayuda del atajo "R" y "M" para nueva reunión', () => {
+    const modal = document.getElementById('shortcutsModal');
+    const keys = Array.from(modal.querySelectorAll('.shortcut-key')).map(el => el.textContent.trim());
+    expect(keys).toContain('R');
+    expect(keys).toContain('M');
+
+    const descRows = Array.from(modal.querySelectorAll('.shortcut-row'));
+    const meetingRow = descRows.find(r => Array.from(r.querySelectorAll('.shortcut-key')).some(k => k.textContent.trim() === 'M'));
+    expect(meetingRow).toBeDefined();
+    expect(meetingRow.textContent.toLowerCase()).toMatch(/reunión|meeting/);
+  });
 });

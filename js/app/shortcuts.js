@@ -275,7 +275,7 @@ export function TodayTasksShortcuts(appCtx){
             el.select();
           }
         }, 50);
-      } else if(e.key === "r" || e.key === "R"){
+      } else if(!e.ctrlKey && !e.metaKey && !e.altKey && (e.key === "r" || e.key === "R" || e.key === "m" || e.key === "M")){
         e.preventDefault();
         if(routerModule && routerModule.getCurrentView() !== 'main'){
           window.location.hash = '#/';

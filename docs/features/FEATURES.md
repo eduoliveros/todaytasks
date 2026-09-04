@@ -120,7 +120,7 @@ El corazón de TodayTasks es su algoritmo de proyección temporal continua:
   * `D`: Se mueve a la fecha de hoy.
   * `P`: Alternar Modo Planificación.
   * `T`: Abrir formulario de nueva tarea.
-  * `R`: Abrir formulario de nueva reunión.
+  * `R` / `M`: Abrir formulario de nueva reunión.
   * `I`: Iniciar registro de interrupción imprevista.
   * `/`: Buscador de tareas.
   * `H`: Histórico y métricas.

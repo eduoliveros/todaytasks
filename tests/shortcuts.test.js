@@ -160,4 +160,56 @@ describe('Atajo de teclado "D" (Tiempo y fecha de Hoy)', () => {
 
     expect(mockUndoModule.redo).toHaveBeenCalled();
   });
+
+  it('al pulsar "r", "R", "m" o "M", enfoca el campo de título de reunión (#meetingTitle)', async () => {
+    vi.useFakeTimers();
+    await import('../js/app.js');
+    const meetingTitleInput = document.getElementById('meetingTitle');
+    const focusSpy = vi.spyOn(meetingTitleInput, 'focus');
+
+    // Probar 'r'
+    meetingTitleInput.blur();
+    focusSpy.mockClear();
+    const eventR = new KeyboardEvent('keydown', { key: 'r', bubbles: true });
+    window.dispatchEvent(eventR);
+    vi.advanceTimersByTime(100);
+    expect(focusSpy).toHaveBeenCalled();
+
+    // Probar 'm'
+    meetingTitleInput.blur();
+    focusSpy.mockClear();
+    const eventM = new KeyboardEvent('keydown', { key: 'm', bubbles: true });
+    window.dispatchEvent(eventM);
+    vi.advanceTimersByTime(100);
+    expect(focusSpy).toHaveBeenCalled();
+
+    // Probar 'M'
+    meetingTitleInput.blur();
+    focusSpy.mockClear();
+    const eventUpperM = new KeyboardEvent('keydown', { key: 'M', bubbles: true });
+    window.dispatchEvent(eventUpperM);
+    vi.advanceTimersByTime(100);
+    expect(focusSpy).toHaveBeenCalled();
+
+    focusSpy.mockRestore();
+    vi.useRealTimers();
+  });
+
+  it('no activa el atajo "m" o "r" si el foco está en un campo de texto', async () => {
+    vi.useFakeTimers();
+    await import('../js/app.js');
+    const taskInput = document.getElementById('taskTitle');
+    taskInput.focus();
+
+    const meetingTitleInput = document.getElementById('meetingTitle');
+    const focusSpy = vi.spyOn(meetingTitleInput, 'focus');
+
+    const eventM = new KeyboardEvent('keydown', { key: 'm', bubbles: true });
+    window.dispatchEvent(eventM);
+    vi.advanceTimersByTime(100);
+
+    expect(focusSpy).not.toHaveBeenCalled();
+    focusSpy.mockRestore();
+    vi.useRealTimers();
+  });
 });
