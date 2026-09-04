@@ -5,6 +5,7 @@ import {
   URGENCY_LEVELS, DEFAULT_URGENCY
 } from '../utils.js';
 import { escapeHtml, escapeAttr, renderNotesMarkdown } from '../ui.js';
+import { t } from '../i18n.js';
 
 export function TodayTasksTasksView(ctx){
   const { getState, getTaskEdit } = ctx;
@@ -39,167 +40,167 @@ export function TodayTasksTasksView(ctx){
     }
   }
 
-  function renderTaskItem(t, schedule, taskEdit){
-    const urgencyKey = t.urgency || DEFAULT_URGENCY;
+  function renderTaskItem(task, schedule, taskEdit){
+    const urgencyKey = task.urgency || DEFAULT_URGENCY;
     const urgencyInfo = URGENCY_LEVELS[urgencyKey] || URGENCY_LEVELS[DEFAULT_URGENCY];
 
-    const isOverflow = (schedule && schedule.overflowIds) ? schedule.overflowIds.has(t.id) : false;
+    const isOverflow = (schedule && schedule.overflowIds) ? schedule.overflowIds.has(task.id) : false;
 
-    if(taskEdit && String(taskEdit.id) === String(t.id)){
-      const isRecurring = t.isRecurring || !!taskEdit.ruleId;
+    if(taskEdit && String(taskEdit.id) === String(task.id)){
+      const isRecurring = task.isRecurring || !!taskEdit.ruleId;
       const editUrgency = taskEdit.urgency || urgencyKey;
       const editUrgencyInfo = URGENCY_LEVELS[editUrgency] || URGENCY_LEVELS[DEFAULT_URGENCY];
       return `
-      <div class="item task-item editing ${taskEdit.featured ? 'featured-task' : ''} ${isOverflow ? 'task-overflow' : ''}" id="task-item-${escapeAttr(t.id)}">
+      <div class="item task-item editing ${taskEdit.featured ? 'featured-task' : ''} ${isOverflow ? 'task-overflow' : ''}" id="task-item-${escapeAttr(task.id)}">
         <div class="row">
-          <input type="text" value="${escapeAttr(taskEdit.title)}" oninput="app.updateTaskEditField('title', this.value)" placeholder="Título de la tarea">
+          <input type="text" value="${escapeAttr(taskEdit.title)}" oninput="app.updateTaskEditField('title', this.value)" placeholder="${escapeAttr(t('tasks.inputTitlePlaceholder'))}">
         </div>
         <div class="row" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
-          <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Planificado:<br><input type="text" value="${escapeAttr(taskEdit.duration)}" placeholder="ej. 30, 1h 30m" style="width:95px;margin-top:4px;" oninput="app.updateTaskEditField('duration', this.value)"></label>
-          <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">Consumido:<br><input type="text" value="${escapeAttr(taskEdit.actual||0)}" placeholder="ej. 15, 1h" style="width:95px;margin-top:4px;" oninput="app.updateTaskEditField('actual', this.value)"></label>
-          <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">A partir de:<br><input type="time" value="${escapeAttr(taskEdit.startAfter || '')}" style="width:110px;margin-top:4px;" oninput="app.updateTaskEditField('startAfter', this.value)"></label>
+          <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">${t('tasks.editPlanned')}<br><input type="text" value="${escapeAttr(taskEdit.duration)}" placeholder="${escapeAttr(t('tasks.editDurationPlaceholder'))}" style="width:95px;margin-top:4px;" oninput="app.updateTaskEditField('duration', this.value)"></label>
+          <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">${t('tasks.editSpent')}<br><input type="text" value="${escapeAttr(taskEdit.actual||0)}" placeholder="${escapeAttr(t('tasks.editActualPlaceholder'))}" style="width:95px;margin-top:4px;" oninput="app.updateTaskEditField('actual', this.value)"></label>
+          <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">${t('tasks.editStartAfter')}<br><input type="time" value="${escapeAttr(taskEdit.startAfter || '')}" style="width:110px;margin-top:4px;" oninput="app.updateTaskEditField('startAfter', this.value)"></label>
         </div>
         <div class="row" style="align-items:center;gap:8px;margin-bottom:10px;">
           <button type="button" class="urgency-pill-btn urgency-btn-${escapeAttr(editUrgency)}"
-                  onclick="app.openEditUrgencyDropdown('${escapeAttr(t.id)}', event)"
-                  title="Urgencia: ${escapeAttr(editUrgencyInfo.label)} (clic para cambiar)"
-                  id="edit-urgency-pill-${escapeAttr(t.id)}">
+                  onclick="app.openEditUrgencyDropdown('${escapeAttr(task.id)}', event)"
+                  title="${escapeAttr(t('tasks.editUrgencyTooltip', { label: editUrgencyInfo.label }))}"
+                  id="edit-urgency-pill-${escapeAttr(task.id)}">
             <span>${editUrgencyInfo.icon}</span>
             <span>${escapeHtml(editUrgencyInfo.label)}</span>
             <span class="urgency-pill-chevron">▾</span>
           </button>
           <button type="button" class="icon-btn star-btn ${taskEdit.featured ? 'is-featured' : ''}"
-                  title="${taskEdit.featured ? 'Quitar destacado' : 'Marcar como destacada (máx. 5 al día)'}"
-                  onclick="app.toggleEditFeatured('${escapeAttr(t.id)}', event)">
+                  title="${escapeAttr(taskEdit.featured ? t('tasks.unstarTooltip') : t('tasks.starTooltip'))}"
+                  onclick="app.toggleEditFeatured('${escapeAttr(task.id)}', event)">
             ${taskEdit.featured ? '⭐' : '☆'}
           </button>
         </div>
         <div class="row task-edit-notes-wrap" style="margin-bottom:10px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;width:100%;">
             <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">
-              <span>📝</span> Notas / Enlaces:
+              <span>📝</span> ${t('tasks.editNotesLabel')}
             </label>
             <div class="task-notes-mini-toolbar">
-              <button type="button" class="btn-notes-tool" onclick="app.insertEditNotesFormat('${escapeAttr(t.id)}', '**', '**')" title="Negrita (**texto**)">B</button>
-              <button type="button" class="btn-notes-tool italic" onclick="app.insertEditNotesFormat('${escapeAttr(t.id)}', '*', '*')" title="Cursiva (*texto*)">I</button>
-              <button type="button" class="btn-notes-tool" onclick="app.insertEditNotesLink('${escapeAttr(t.id)}')" title="Insertar enlace">🔗 Link</button>
-              <button type="button" class="btn-notes-tool" id="btn-preview-edit-${escapeAttr(t.id)}" onclick="app.toggleEditNotesPreview('${escapeAttr(t.id)}')" title="Alternar vista previa">👁️</button>
+              <button type="button" class="btn-notes-tool" onclick="app.insertEditNotesFormat('${escapeAttr(task.id)}', '**', '**')" title="${escapeAttr(t('markdown.boldTooltip'))}">B</button>
+              <button type="button" class="btn-notes-tool italic" onclick="app.insertEditNotesFormat('${escapeAttr(task.id)}', '*', '*')" title="${escapeAttr(t('markdown.italicTooltip'))}">I</button>
+              <button type="button" class="btn-notes-tool" onclick="app.insertEditNotesLink('${escapeAttr(task.id)}')" title="${escapeAttr(t('markdown.linkTooltip'))}">🔗 Link</button>
+              <button type="button" class="btn-notes-tool" id="btn-preview-edit-${escapeAttr(task.id)}" onclick="app.toggleEditNotesPreview('${escapeAttr(task.id)}')" title="${escapeAttr(t('markdown.previewTooltip'))}">👁️</button>
             </div>
           </div>
-          <textarea id="task-edit-notes-${escapeAttr(t.id)}" class="task-edit-notes-textarea" rows="2" style="width:100%;box-sizing:border-box;" placeholder="Notas, enlaces o contexto (ej. **importante**, https://... o [PR](url))" oninput="app.updateTaskEditField('notes', this.value)">${escapeHtml(taskEdit.notes || '')}</textarea>
-          <div id="task-edit-notes-preview-${escapeAttr(t.id)}" class="task-edit-notes-preview task-note-content" style="display:none;"></div>
+          <textarea id="task-edit-notes-${escapeAttr(task.id)}" class="task-edit-notes-textarea" rows="2" style="width:100%;box-sizing:border-box;" placeholder="${escapeAttr(t('tasks.notesPlaceholder'))}" oninput="app.updateTaskEditField('notes', this.value)">${escapeHtml(taskEdit.notes || '')}</textarea>
+          <div id="task-edit-notes-preview-${escapeAttr(task.id)}" class="task-edit-notes-preview task-note-content" style="display:none;"></div>
         </div>
         ${!isRecurring ? `
         <div style="margin-bottom:8px;">
           <label style="font-size:0.82rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;color:var(--ink);">
-            <input type="checkbox" ${taskEdit.autoMoveToToday ? 'checked' : ''} onchange="app.updateTaskEditField('autoMoveToToday', this.checked)"> Auto-mover si no se completa a hoy
+            <input type="checkbox" ${taskEdit.autoMoveToToday ? 'checked' : ''} onchange="app.updateTaskEditField('autoMoveToToday', this.checked)"> ${t('tasks.autoMoveCheckbox')}
           </label>
         </div>` : ''}
         <div class="task-actions">
-          <button class="btn small done" onclick="app.saveEditTask('${escapeAttr(t.id)}')">Guardar</button>
-          <button class="btn small secondary" onclick="app.cancelEditTask()">Cancelar</button>
+          <button class="btn small done" onclick="app.saveEditTask('${escapeAttr(task.id)}')">${t('action.save')}</button>
+          <button class="btn small secondary" onclick="app.cancelEditTask()">${t('action.cancel')}</button>
         </div>
       </div>`;
     }
-    const elapsedReal = getTaskElapsed(t);
-    const segs = (schedule && schedule.segmentsByTask && schedule.segmentsByTask[t.id]) ? schedule.segmentsByTask[t.id] : [];
-    const label = t.status === "running" ? "en ejecución"
-                : t.status === "paused" ? "en pausa"
-                : "pendiente";
-    const badgeClass = t.status;
+    const elapsedReal = getTaskElapsed(task);
+    const segs = (schedule && schedule.segmentsByTask && schedule.segmentsByTask[task.id]) ? schedule.segmentsByTask[task.id] : [];
+    const label = task.status === "running" ? t('task.statusRunning')
+                : task.status === "paused" ? t('task.statusPaused')
+                : t('task.statusPending');
+    const badgeClass = task.status;
 
     let startTag, startVal, endTag, endVal, trClass, splitNote = "", remainingChip = "";
-    if(t.status === "running"){
-      const plannedEnd = t.runningStart + (t.planned - (t.elapsedBefore||0));
-      startTag = "Inicio real"; startVal = fmt(t.runningStart);
-      endTag = "Fin prev."; endVal = fmt(plannedEnd);
+    if(task.status === "running"){
+      const plannedEnd = task.runningStart + (task.planned - (task.elapsedBefore||0));
+      startTag = t('summary.tagRealStart'); startVal = fmt(task.runningStart);
+      endTag = t('tasks.tagEstEnd'); endVal = fmt(plannedEnd);
       trClass = "tr-running";
       const rem = fmtRemaining(plannedEnd, nowMinutes());
       remainingChip = `<span class="remaining-chip ${rem.overrun ? 'overrun' : ''}">${escapeHtml(rem.text)}</span>`;
     } else if(segs.length > 0){
-      startTag = "Inicio prev."; startVal = fmt(segs[0].start);
-      endTag = "Fin prev."; endVal = fmt(segs[segs.length-1].end);
+      startTag = t('tasks.tagEstStart'); startVal = fmt(segs[0].start);
+      endTag = t('tasks.tagEstEnd'); endVal = fmt(segs[segs.length-1].end);
       trClass = "tr-pending";
       if(segs.length > 1){
         const parts = segs.map(s => `${fmt(s.start)}-${fmt(s.end)}`).join(", ");
-        splitNote = `<div class="meta" style="color:#B45309">Dividida por reuniones: ${parts}</div>`;
+        splitNote = `<div class="meta" style="color:#B45309">${t('tasks.splitByMeetings', { parts })}</div>`;
       }
     } else {
-      startTag = "Inicio prev."; startVal = "—";
-      endTag = "Fin prev."; endVal = "—";
+      startTag = t('tasks.tagEstStart'); startVal = "—";
+      endTag = t('tasks.tagEstEnd'); endVal = "—";
       trClass = "tr-pending";
     }
 
-    const isDraggable = (t.status === "pending" || t.status === "paused");
+    const isDraggable = (task.status === "pending" || task.status === "paused");
     const dragAttrs = isDraggable
       ? `draggable="true"
-         ondragstart="app.taskDragStart(event, '${escapeAttr(t.id)}')"
+         ondragstart="app.taskDragStart(event, '${escapeAttr(task.id)}')"
          ondragover="app.taskDragOver(event)"
          ondragleave="app.taskDragLeave(event)"
-         ondrop="app.taskDrop(event, '${escapeAttr(t.id)}')"
+         ondrop="app.taskDrop(event, '${escapeAttr(task.id)}')"
          ondragend="app.taskDragEnd(event)"`
       : '';
     const dragHandle = isDraggable
-      ? `<span class="drag-handle" title="Arrastra para reordenar" onmousedown="app.armTaskDrag()">⠿</span>`
+      ? `<span class="drag-handle" title="${escapeAttr(t('tasks.dragHandleTooltip'))}" onmousedown="app.armTaskDrag()">⠿</span>`
       : '';
     let recurringTag = '';
-    if (t.isRecurring) {
-      let ruleTooltip = 'Tarea recurrente · Clic para ver información de la regla';
-      if (t.ruleId) {
+    if (task.isRecurring) {
+      let ruleTooltip = t('tasks.recurringTagTooltip');
+      if (task.ruleId) {
         const state = getState();
         const envKey = state.activeEnv || 'work';
         const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
-        const rule = env && Array.isArray(env.recurringTasks) ? env.recurringTasks.find(r => String(r.id) === String(t.ruleId)) : null;
+        const rule = env && Array.isArray(env.recurringTasks) ? env.recurringTasks.find(r => String(r.id) === String(task.ruleId)) : null;
         if (rule) {
           const formatted = formatRecurrenceRule(rule);
-          ruleTooltip = `Tarea recurrente: ${formatted.summaryText} (${formatted.dateRangeText}) · Clic para detalles`;
+          ruleTooltip = t('tasks.recurringRuleTooltip', { summary: formatted.summaryText, range: formatted.dateRangeText });
         }
       }
-      recurringTag = `<button type="button" class="tag recurring-tag-btn" onclick="app.openRecurringInfoPopover('${escapeAttr(t.id)}', event, 'task')" title="${escapeAttr(ruleTooltip)}" aria-label="Información de recurrencia">🔁 Recurrente</button>`;
+      recurringTag = `<button type="button" class="tag recurring-tag-btn" onclick="app.openRecurringInfoPopover('${escapeAttr(task.id)}', event, 'task')" title="${escapeAttr(ruleTooltip)}" aria-label="${escapeAttr(t('meetings.recurringTagAria'))}">${t('tasks.recurringTagLabel')}</button>`;
     }
-    const autoMoveTag = (!t.isRecurring && t.autoMoveToToday) ? `<span class="tag tag-automove" title="Se trasladará automáticamente a hoy si no se completa">⏩ Pasar a hoy</span>` : '';
-    const featuredClass = t.featured ? 'featured-task' : '';
+    const autoMoveTag = (!task.isRecurring && task.autoMoveToToday) ? `<span class="tag tag-automove" title="${escapeAttr(t('tasks.autoMoveTagTooltip'))}">${t('summary.autoMoveTag')}</span>` : '';
+    const featuredClass = task.featured ? 'featured-task' : '';
 
     const urgencyPill = `
       <button type="button" class="urgency-pill-btn urgency-btn-${escapeAttr(urgencyKey)}"
-              onclick="app.openUrgencyDropdown('${escapeAttr(t.id)}', event)"
-              title="Urgencia: ${escapeAttr(urgencyInfo.label)} (Clic para cambiar)"
-              aria-label="Urgencia ${escapeAttr(urgencyInfo.label)}">
+              onclick="app.openUrgencyDropdown('${escapeAttr(task.id)}', event)"
+              title="${escapeAttr(t('tasks.urgencyPillTooltip', { label: urgencyInfo.label }))}"
+              aria-label="${escapeAttr(t('tasks.urgencyPillAria', { label: urgencyInfo.label }))}">
         <span class="urgency-pill-dot">${urgencyInfo.icon}</span>
         <span class="urgency-pill-label">${escapeHtml(urgencyInfo.label)}</span>
         <span class="urgency-pill-chevron">▾</span>
       </button>
     `;
 
-    const hasStartAfter = (t.startAfter !== null && t.startAfter !== undefined && !isNaN(t.startAfter));
+    const hasStartAfter = (task.startAfter !== null && task.startAfter !== undefined && !isNaN(task.startAfter));
     const startAfterPill = hasStartAfter ? `
       <button type="button" class="start-after-pill-btn"
-              onclick="app.openStartAfterPopover('${escapeAttr(t.id)}', event)"
-              title="Programada a partir de las ${fmt(t.startAfter)} (Clic para cambiar o quitar)"
-              aria-label="A partir de las ${fmt(t.startAfter)}">
+              onclick="app.openStartAfterPopover('${escapeAttr(task.id)}', event)"
+              title="${escapeAttr(t('tasks.startAfterPillTooltip', { time: fmt(task.startAfter) }))}"
+              aria-label="${escapeAttr(t('tasks.startAfterPillAria', { time: fmt(task.startAfter) }))}">
         <span class="start-after-icon">⏰</span>
-        <span class="start-after-label">${fmt(t.startAfter)}+</span>
+        <span class="start-after-label">${fmt(task.startAfter)}+</span>
         <span class="start-after-chevron">▾</span>
       </button>
     ` : '';
 
-    const hasNotes = !!(t.notes && t.notes.trim());
-    const isNotesExpanded = isTaskNotesExpanded(t.id);
+    const hasNotes = !!(task.notes && task.notes.trim());
+    const isNotesExpanded = isTaskNotesExpanded(task.id);
     const notesPill = hasNotes ? `
       <button type="button" class="task-notes-pill-btn ${isNotesExpanded ? 'expanded' : ''}"
-              onclick="app.toggleTaskNotes('${escapeAttr(t.id)}', event)"
-              title="Ver notas y enlaces de la tarea"
-              aria-label="Notas de la tarea">
+              onclick="app.toggleTaskNotes('${escapeAttr(task.id)}', event)"
+              title="${escapeAttr(t('tasks.notesPillTooltip'))}"
+              aria-label="${escapeAttr(t('tasks.notesPillAria'))}">
         <span class="task-notes-icon">📝</span>
-        <span class="task-notes-label">Notas</span>
+        <span class="task-notes-label">${t('tasks.notesPillLabel')}</span>
         <span class="task-notes-chevron">${isNotesExpanded ? '▲' : '▾'}</span>
       </button>
     ` : '';
 
     const notesPanel = hasNotes ? `
-      <div class="task-card-notes-panel ${isNotesExpanded ? 'visible' : ''}" id="task-notes-panel-${escapeAttr(t.id)}" style="${isNotesExpanded ? 'display:block;' : 'display:none;'}">
+      <div class="task-card-notes-panel ${isNotesExpanded ? 'visible' : ''}" id="task-notes-panel-${escapeAttr(task.id)}" style="${isNotesExpanded ? 'display:block;' : 'display:none;'}">
         <div class="task-note-content">
-          ${renderNotesMarkdown(t.notes)}
+          ${renderNotesMarkdown(task.notes)}
         </div>
       </div>
     ` : '';
@@ -207,12 +208,12 @@ export function TodayTasksTasksView(ctx){
     const overflowClass = isOverflow ? 'task-overflow' : '';
 
     return `
-      <div class="item task-item ${t.status} ${featuredClass} ${overflowClass}" id="task-item-${escapeAttr(t.id)}" data-task-id="${escapeAttr(t.id)}" ondblclick="app.startEditTask('${escapeAttr(t.id)}')" ${dragAttrs}>
+      <div class="item task-item ${task.status} ${featuredClass} ${overflowClass}" id="task-item-${escapeAttr(task.id)}" data-task-id="${escapeAttr(task.id)}" ondblclick="app.startEditTask('${escapeAttr(task.id)}')" ${dragAttrs}>
         <div class="top">
           <div style="display:flex;align-items:flex-start;gap:6px;flex:1;min-width:0;">
             ${dragHandle}
             <div style="flex:1;min-width:0;">
-              <div class="title">${escapeHtml(t.title)}</div>
+              <div class="title">${escapeHtml(task.title)}</div>
               <div class="time-range ${trClass}">
                 ${urgencyPill}
                 ${startAfterPill}
@@ -223,46 +224,46 @@ export function TodayTasksTasksView(ctx){
                 ${autoMoveTag}
               </div>
               <div class="meta">
-                Planificado: ${fmtDur(t.planned)} · Consumido: <span class="task-duration-clickable" title="Clic para ajustar tiempo consumido" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">${fmtDur(elapsedReal)}</span>
+                ${t('tasks.metaPlanned', { planned: fmtDur(task.planned) })} · ${t('tasks.metaSpent')}: <span class="task-duration-clickable" title="${escapeAttr(t('summary.adjustTimeTooltip'))}" onclick="app.openTimePopover('${escapeAttr(task.id)}', event)">${fmtDur(elapsedReal)}</span>
                 <span class="status-badge ${badgeClass}">${label}</span>
-                ${isOverflow ? '<span class="overflow-badge" title="Esta tarea finaliza fuera de la jornada laboral estimada">⚠ Fuera de jornada</span>' : ''}
+                ${isOverflow ? `<span class="overflow-badge" title="${escapeAttr(t('tasks.overflowBadgeTooltip'))}">${t('tasks.overflowBadge')}</span>` : ''}
               </div>
               ${splitNote}
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:2px;">
-            <button class="icon-btn star-btn ${t.featured ? 'is-featured' : ''}" title="${t.featured ? 'Quitar destacado' : 'Marcar como destacada (máx. 5 al día)'}" onclick="app.toggleTaskFeatured('${escapeAttr(t.id)}')">${t.featured ? '⭐' : '☆'}</button>
-            <button class="icon-btn" title="Fijar hora de inicio (a partir de...)" onclick="app.openStartAfterPopover('${escapeAttr(t.id)}', event)">⏰</button>
-            ${!t.isRecurring && t.autoMoveToToday ? `
-              <button class="icon-btn" title="Mover a otro día" onclick="app.openCopyTaskModal('${escapeAttr(t.id)}')">➡️</button>
+            <button class="icon-btn star-btn ${task.featured ? 'is-featured' : ''}" title="${escapeAttr(task.featured ? t('tasks.unstarTooltip') : t('tasks.starTooltip'))}" onclick="app.toggleTaskFeatured('${escapeAttr(task.id)}')">${task.featured ? '⭐' : '☆'}</button>
+            <button class="icon-btn" title="${escapeAttr(t('tasks.btnSetStartAfterTooltip'))}" onclick="app.openStartAfterPopover('${escapeAttr(task.id)}', event)">⏰</button>
+            ${!task.isRecurring && task.autoMoveToToday ? `
+              <button class="icon-btn" title="${escapeAttr(t('tasks.btnMoveDayTooltip'))}" onclick="app.openCopyTaskModal('${escapeAttr(task.id)}')">➡️</button>
             ` : `
-              <button class="icon-btn" title="Copiar a otro día" onclick="app.openCopyTaskModal('${escapeAttr(t.id)}')">📋</button>
+              <button class="icon-btn" title="${escapeAttr(t('tasks.btnCopyDayTooltip'))}" onclick="app.openCopyTaskModal('${escapeAttr(task.id)}')">📋</button>
             `}
-            <button class="icon-btn" title="Editar" onclick="app.startEditTask('${escapeAttr(t.id)}')">✎</button>
-            <button class="icon-btn" title="Eliminar" onclick="app.deleteTask('${escapeAttr(t.id)}')">✕</button>
+            <button class="icon-btn" title="${escapeAttr(t('action.edit'))}" onclick="app.startEditTask('${escapeAttr(task.id)}')">✎</button>
+            <button class="icon-btn" title="${escapeAttr(t('action.delete'))}" onclick="app.deleteTask('${escapeAttr(task.id)}')">✕</button>
           </div>
         </div>
         ${notesPanel}
         <div class="task-actions">
-          ${t.status==="pending" ? `
-            <button class="btn small run" onclick="app.startTask('${escapeAttr(t.id)}')">▶ Iniciar</button>
-            <button class="btn small done" onclick="app.completeTask('${escapeAttr(t.id)}')">✓ Completar</button>
+          ${task.status==="pending" ? `
+            <button class="btn small run" onclick="app.startTask('${escapeAttr(task.id)}')">${t('tasks.btnStart')}</button>
+            <button class="btn small done" onclick="app.completeTask('${escapeAttr(task.id)}')">${t('tasks.btnComplete')}</button>
             <div class="order-controls">
-              <button class="icon-btn" title="Subir" data-action="move-up" data-task-id="${escapeAttr(t.id)}" onclick="app.moveTask('${escapeAttr(t.id)}',-1,event)">▲</button>
-              <button class="icon-btn" title="Bajar" data-action="move-down" data-task-id="${escapeAttr(t.id)}" onclick="app.moveTask('${escapeAttr(t.id)}',1,event)">▼</button>
+              <button class="icon-btn" title="${escapeAttr(t('tasks.btnMoveUp'))}" data-action="move-up" data-task-id="${escapeAttr(task.id)}" onclick="app.moveTask('${escapeAttr(task.id)}',-1,event)">▲</button>
+              <button class="icon-btn" title="${escapeAttr(t('tasks.btnMoveDown'))}" data-action="move-down" data-task-id="${escapeAttr(task.id)}" onclick="app.moveTask('${escapeAttr(task.id)}',1,event)">▼</button>
             </div>
           ` : ""}
-          ${t.status==="running" ? `
-            <a href="#/task/${escapeAttr(t.id)}" class="btn small secondary focus-link" title="Abrir vista de foco (Tecla 'F')">◎ Foco [F]</a>
-            <button class="btn small pause" onclick="app.pauseTask('${escapeAttr(t.id)}')">⏸ Pausar</button>
-            <button class="btn small done" onclick="app.completeTask('${escapeAttr(t.id)}')">✓ Completar</button>
+          ${task.status==="running" ? `
+            <a href="#/task/${escapeAttr(task.id)}" class="btn small secondary focus-link" title="${escapeAttr(t('tasks.btnFocusTooltip'))}">${t('tasks.btnFocus')}</a>
+            <button class="btn small pause" onclick="app.pauseTask('${escapeAttr(task.id)}')">${t('tasks.btnPause')}</button>
+            <button class="btn small done" onclick="app.completeTask('${escapeAttr(task.id)}')">${t('tasks.btnComplete')}</button>
           ` : ""}
-          ${t.status==="paused" ? `
-            <button class="btn small run" onclick="app.resumeTask('${escapeAttr(t.id)}')">▶ Reanudar</button>
-            <button class="btn small done" onclick="app.completeTask('${escapeAttr(t.id)}')">✓ Completar</button>
+          ${task.status==="paused" ? `
+            <button class="btn small run" onclick="app.resumeTask('${escapeAttr(task.id)}')">${t('tasks.btnResume')}</button>
+            <button class="btn small done" onclick="app.completeTask('${escapeAttr(task.id)}')">${t('tasks.btnComplete')}</button>
             <div class="order-controls">
-              <button class="icon-btn" title="Subir" data-action="move-up" data-task-id="${escapeAttr(t.id)}" onclick="app.moveTask('${escapeAttr(t.id)}',-1,event)">▲</button>
-              <button class="icon-btn" title="Bajar" data-action="move-down" data-task-id="${escapeAttr(t.id)}" onclick="app.moveTask('${escapeAttr(t.id)}',1,event)">▼</button>
+              <button class="icon-btn" title="${escapeAttr(t('tasks.btnMoveUp'))}" data-action="move-up" data-task-id="${escapeAttr(task.id)}" onclick="app.moveTask('${escapeAttr(task.id)}',-1,event)">▲</button>
+              <button class="icon-btn" title="${escapeAttr(t('tasks.btnMoveDown'))}" data-action="move-down" data-task-id="${escapeAttr(task.id)}" onclick="app.moveTask('${escapeAttr(task.id)}',1,event)">▼</button>
             </div>
           ` : ""}
         </div>
@@ -270,68 +271,68 @@ export function TodayTasksTasksView(ctx){
     `;
   }
 
-  function renderCompletedSearchItem(t){
-    const realStart = (t.completedAt !== null && t.completedAt !== undefined && t.actualDuration !== null) ? (t.completedAt - t.actualDuration) : null;
+  function renderCompletedSearchItem(task){
+    const realStart = (task.completedAt !== null && task.completedAt !== undefined && task.actualDuration !== null) ? (task.completedAt - task.actualDuration) : null;
     let recurringTag = '';
-    if (t.isRecurring) {
-      let ruleTooltip = 'Tarea recurrente · Clic para ver información de la regla';
-      if (t.ruleId) {
+    if (task.isRecurring) {
+      let ruleTooltip = t('tasks.recurringTagTooltip');
+      if (task.ruleId) {
         const state = getState();
         const envKey = state.activeEnv || 'work';
         const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
-        const rule = env && Array.isArray(env.recurringTasks) ? env.recurringTasks.find(r => String(r.id) === String(t.ruleId)) : null;
+        const rule = env && Array.isArray(env.recurringTasks) ? env.recurringTasks.find(r => String(r.id) === String(task.ruleId)) : null;
         if (rule) {
           const formatted = formatRecurrenceRule(rule);
-          ruleTooltip = `Tarea recurrente: ${formatted.summaryText} (${formatted.dateRangeText}) · Clic para detalles`;
+          ruleTooltip = t('tasks.recurringRuleTooltip', { summary: formatted.summaryText, range: formatted.dateRangeText });
         }
       }
-      recurringTag = `<button type="button" class="tag recurring-tag-btn" onclick="app.openRecurringInfoPopover('${escapeAttr(t.id)}', event, 'task')" title="${escapeAttr(ruleTooltip)}" aria-label="Información de recurrencia">🔁 Recurrente</button>`;
+      recurringTag = `<button type="button" class="tag recurring-tag-btn" onclick="app.openRecurringInfoPopover('${escapeAttr(task.id)}', event, 'task')" title="${escapeAttr(ruleTooltip)}" aria-label="${escapeAttr(t('meetings.recurringTagAria'))}">${t('tasks.recurringTagLabel')}</button>`;
     }
-    const hasNotes = !!(t.notes && t.notes.trim());
-    const isNotesExpanded = isTaskNotesExpanded(t.id);
+    const hasNotes = !!(task.notes && task.notes.trim());
+    const isNotesExpanded = isTaskNotesExpanded(task.id);
     const notesPill = hasNotes ? `
       <button type="button" class="task-notes-pill-btn ${isNotesExpanded ? 'expanded' : ''}"
-              onclick="app.toggleTaskNotes('${escapeAttr(t.id)}', event)"
-              title="Ver notas y enlaces de la tarea"
-              aria-label="Notas de la tarea">
+              onclick="app.toggleTaskNotes('${escapeAttr(task.id)}', event)"
+              title="${escapeAttr(t('tasks.notesPillTooltip'))}"
+              aria-label="${escapeAttr(t('tasks.notesPillAria'))}">
         <span class="task-notes-icon">📝</span>
-        <span class="task-notes-label">Notas</span>
+        <span class="task-notes-label">${t('tasks.notesPillLabel')}</span>
         <span class="task-notes-chevron">${isNotesExpanded ? '▲' : '▾'}</span>
       </button>
     ` : '';
     const notesPanel = hasNotes ? `
-      <div class="task-card-notes-panel ${isNotesExpanded ? 'visible' : ''}" id="task-notes-panel-${escapeAttr(t.id)}" style="${isNotesExpanded ? 'display:block;' : 'display:none;'}">
+      <div class="task-card-notes-panel ${isNotesExpanded ? 'visible' : ''}" id="task-notes-panel-${escapeAttr(task.id)}" style="${isNotesExpanded ? 'display:block;' : 'display:none;'}">
         <div class="task-note-content">
-          ${renderNotesMarkdown(t.notes)}
+          ${renderNotesMarkdown(task.notes)}
         </div>
       </div>
     ` : '';
     return `
-      <div class="item task-item completed-search-item" id="task-item-${escapeAttr(t.id)}" data-task-id="${escapeAttr(t.id)}">
+      <div class="item task-item completed-search-item" id="task-item-${escapeAttr(task.id)}" data-task-id="${escapeAttr(task.id)}">
         <div class="top">
           <div style="flex:1;min-width:0;">
-            <div class="title completed-title">${escapeHtml(t.title)}</div>
+            <div class="title completed-title">${escapeHtml(task.title)}</div>
             <div class="time-range tr-meeting">
-              <span class="tag">Completada</span>
-              ${t.completedAt !== null && t.completedAt !== undefined ? fmt(t.completedAt) : ''}
-              ${realStart !== null ? `<span class="arrow">·</span> <span class="tag">Duración real</span> ${fmtDur(t.actualDuration)}` : ''}
+              <span class="tag">${t('tasks.tagCompleted')}</span>
+              ${task.completedAt !== null && task.completedAt !== undefined ? fmt(task.completedAt) : ''}
+              ${realStart !== null ? `<span class="arrow">·</span> <span class="tag">${t('tasks.tagRealDuration')}</span> ${fmtDur(task.actualDuration)}` : ''}
               ${notesPill}
               ${recurringTag}
             </div>
             <div class="meta">
-              Planificado: ${fmtDur(t.planned)} · Real: <span class="task-duration-clickable" title="Clic para ajustar tiempo consumido" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">${fmtDur(t.actualDuration ?? t.planned)}</span>
-              <span class="status-badge completed">✓ completada</span>
+              ${t('tasks.metaPlanned', { planned: fmtDur(task.planned) })} · ${t('tasks.metaActual')}: <span class="task-duration-clickable" title="${escapeAttr(t('summary.adjustTimeTooltip'))}" onclick="app.openTimePopover('${escapeAttr(task.id)}', event)">${fmtDur(task.actualDuration ?? task.planned)}</span>
+              <span class="status-badge completed">${t('tasks.badgeCompleted')}</span>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:2px;">
-            <button class="icon-btn" title="Copiar a otro día" onclick="app.openCopyTaskModal('${escapeAttr(t.id)}')">📋</button>
-            <button class="icon-btn" title="Eliminar" onclick="app.deleteTask('${escapeAttr(t.id)}')">✕</button>
+            <button class="icon-btn" title="${escapeAttr(t('tasks.btnCopyDayTooltip'))}" onclick="app.openCopyTaskModal('${escapeAttr(task.id)}')">📋</button>
+            <button class="icon-btn" title="${escapeAttr(t('action.delete'))}" onclick="app.deleteTask('${escapeAttr(task.id)}')">✕</button>
           </div>
         </div>
         ${notesPanel}
         <div class="task-actions" style="margin-top:6px;display:flex;gap:6px;">
-          <button class="btn small secondary" onclick="app.uncompleteTask('${escapeAttr(t.id)}')" title="Deshacer completado y volver a pendiente">↩ Reabrir</button>
-          <button class="btn small secondary" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)" title="Ajustar tiempo consumido">⏱ Ajustar tiempo</button>
+          <button class="btn small secondary" onclick="app.uncompleteTask('${escapeAttr(task.id)}')" title="${escapeAttr(t('summary.btnReopenTitle'))}">${t('summary.btnReopen')}</button>
+          <button class="btn small secondary" onclick="app.openTimePopover('${escapeAttr(task.id)}', event)" title="${escapeAttr(t('summary.adjustTimeTooltip'))}">${t('summary.btnAdjustTime')}</button>
         </div>
       </div>
     `;
@@ -368,11 +369,11 @@ export function TodayTasksTasksView(ctx){
         }
 
         if (pendingCount > 0) {
-          const countText = pendingCount === 1 ? '1 tarea automática' : `${pendingCount} tareas automáticas`;
+          const countText = pendingCount === 1 ? t('tasks.bannerCountOne') : t('tasks.bannerCountOther', { count: pendingCount });
           bannerEl.innerHTML = `
             <div class="automove-banner">
-              <span class="automove-banner-text">Hay <strong>${countText}</strong> de días anteriores.</span>
-              <button class="btn-bring" onclick="app.rolloverPendingTasksToSelectedDate()" title="Mover las tareas automáticas pendientes a este día">⏩ Traer a este día</button>
+              <span class="automove-banner-text">${t('tasks.bannerText', { countHtml: `<strong>${countText}</strong>` })}</span>
+              <button class="btn-bring" onclick="app.rolloverPendingTasksToSelectedDate()" title="${escapeAttr(t('tasks.bannerBtnTooltip'))}">${t('tasks.bannerBtn')}</button>
             </div>`;
           bannerEl.style.display = "block";
         } else {
@@ -397,7 +398,7 @@ export function TodayTasksTasksView(ctx){
 
     if(!searchQuery){
       if(active.length === 0){
-        el.innerHTML = '<div class="empty">Aún no hay tareas.</div>';
+        el.innerHTML = `<div class="empty">${t('tasks.empty')}</div>`;
         return;
       }
       el.innerHTML = active.map(t => renderTaskItem(t, schedule, taskEdit)).join("");
@@ -413,43 +414,43 @@ export function TodayTasksTasksView(ctx){
     if(matchingActive.length === 0 && matchingCompleted.length === 0){
       el.innerHTML = `
         <div class="search-results-info">
-          <span>Búsqueda: <strong>"${escapeHtml(searchQuery)}"</strong></span>
-          <button class="search-clear-link" onclick="app.clearTaskSearch()">✕ Limpiar filtro</button>
+          <span>${t('tasks.searchTitle', { queryHtml: `<strong>"${escapeHtml(searchQuery)}"</strong>` })}</span>
+          <button class="search-clear-link" onclick="app.clearTaskSearch()">${t('tasks.searchClear')}</button>
         </div>
-        <div class="empty">No se encontraron tareas que coincidan con "${escapeHtml(searchQuery)}".</div>
+        <div class="empty">${t('tasks.searchNoResults', { query: escapeHtml(searchQuery) })}</div>
       `;
       return;
     }
 
     let html = `
       <div class="search-results-info">
-        <span>Resultados para <strong>"${escapeHtml(searchQuery)}"</strong> (${matchingActive.length} activas, ${matchingCompleted.length} completadas)</span>
-        <button class="search-clear-link" onclick="app.clearTaskSearch()">✕ Limpiar filtro</button>
+        <span>${t('tasks.searchResultsHeader', { queryHtml: `<strong>"${escapeHtml(searchQuery)}"</strong>`, active: matchingActive.length, completed: matchingCompleted.length })}</span>
+        <button class="search-clear-link" onclick="app.clearTaskSearch()">${t('tasks.searchClear')}</button>
       </div>
     `;
 
     // Sección de tareas activas
     html += `
       <div class="search-section-heading active-heading">
-        <span>⚡ Tareas activas (${matchingActive.length})</span>
+        <span>${t('tasks.searchSectionActive', { count: matchingActive.length })}</span>
       </div>
     `;
     if(matchingActive.length > 0){
       html += matchingActive.map(t => renderTaskItem(t, schedule, taskEdit)).join("");
     } else {
-      html += `<div class="empty empty-subtle">Sin tareas activas que coincidan.</div>`;
+      html += `<div class="empty empty-subtle">${t('tasks.searchNoActiveMatch')}</div>`;
     }
 
     // Sección de tareas completadas
     html += `
       <div class="search-section-heading completed-heading">
-        <span>✓ Tareas completadas (${matchingCompleted.length})</span>
+        <span>${t('tasks.searchSectionCompleted', { count: matchingCompleted.length })}</span>
       </div>
     `;
     if(matchingCompleted.length > 0){
       html += matchingCompleted.map(t => renderCompletedSearchItem(t)).join("");
     } else {
-      html += `<div class="empty empty-subtle">Sin tareas completadas que coincidan.</div>`;
+      html += `<div class="empty empty-subtle">${t('tasks.searchNoCompletedMatch')}</div>`;
     }
 
     el.innerHTML = html;

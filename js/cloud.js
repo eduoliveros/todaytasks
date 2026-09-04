@@ -3,6 +3,7 @@ import { escapeHtml, escapeAttr, showToast } from './ui.js';
 import { defaultState, wrapState } from './state.js';
 import { snapshotAndPrune } from './history.js';
 import TodayTasksConfig from './config.js';
+import { t } from './i18n.js';
 
 export function TodayTasksCloud(ctx){
   const {
@@ -38,7 +39,7 @@ export function TodayTasksCloud(ctx){
       pushDebounceTimer = null;
     }
     if(!currentUser || !fbDb || applyingRemoteUpdate) return;
-    setSyncStatus("saving", "⏳ Guardando en la nube…");
+    setSyncStatus("saving", t("cloud.statusSaving"));
     const cloudPayload = {
       ...getState(),
       _lastUpdatedBy: clientId,
@@ -46,16 +47,16 @@ export function TodayTasksCloud(ctx){
     };
     delete cloudPayload.selectedDate;
     cloudDocRef(currentUser.uid).set(cloudPayload)
-      .then(()=> setSyncStatus("", "☁ Sincronizado"))
+      .then(()=> setSyncStatus("", t("cloud.statusSynced")))
       .catch(err => {
         console.error("Error guardando en Firestore", err);
-        setSyncStatus("error", "⚠ Error al sincronizar");
+        setSyncStatus("error", t("cloud.statusError"));
       });
   }
 
   function pushToCloudDebounced(delayMs = DEFAULT_DEBOUNCE_MS){
     if(!currentUser || !fbDb || applyingRemoteUpdate) return;
-    setSyncStatus("pending", "⏳ Cambios pendientes…");
+    setSyncStatus("pending", t("cloud.statusPending"));
     if (pushDebounceTimer) {
       clearTimeout(pushDebounceTimer);
     }
@@ -85,7 +86,7 @@ export function TodayTasksCloud(ctx){
       try {
         const raw = localStorage.getItem(STORAGE_KEY + "_backup");
         if(!raw){
-          showToast("No se encontró ninguna copia de seguridad local reciente.");
+          showToast(t("cloud.backupNotFound"));
           return false;
         }
         const backupState = JSON.parse(raw);
@@ -93,10 +94,10 @@ export function TodayTasksCloud(ctx){
         saveState();
         syncFormInputsFromState();
         renderAll();
-        showToast("Copia de seguridad local restaurada con éxito.");
+        showToast(t("cloud.backupRestored"));
         return true;
       } catch(e){
-        showToast("Error al restaurar la copia de seguridad.");
+        showToast(t("cloud.backupError"));
         return false;
       }
     }
@@ -110,6 +111,7 @@ export function TodayTasksCloud(ctx){
       merged.themeMode = local.themeMode || remote.themeMode || 'auto';
       merged.notifyIntervalMin = local.notifyIntervalMin || remote.notifyIntervalMin || 10;
       merged.notifyEnabled = (local.notifyEnabled !== undefined) ? local.notifyEnabled : ((remote.notifyEnabled !== undefined) ? remote.notifyEnabled : true);
+      merged.language = local.language || remote.language || defaultState().language;
 
       ['work', 'personal'].forEach(envKey => {
         const localEnv = (local.environments && local.environments[envKey]) || {};
@@ -331,11 +333,11 @@ export function TodayTasksCloud(ctx){
     }
 
     function attachCloudSync(uid){
-      setSyncStatus("saving", "⏳ Conectando con la nube…");
+      setSyncStatus("saving", t("cloud.statusConnecting"));
       let firstUsableSnapshotSeen = false;
       let slowConnectionTimer = setTimeout(()=>{
         if(!firstUsableSnapshotSeen){
-          setSyncStatus("error", "⚠ Tardando en conectar con la nube… tus cambios se guardan en local mientras tanto.");
+          setSyncStatus("error", t("cloud.statusConnectingSlow"));
         }
       }, 8000);
 
@@ -361,7 +363,7 @@ export function TodayTasksCloud(ctx){
             if(!cloudHasData && localHasData){
               console.log("La nube está vacía pero el dispositivo tiene datos. Protegiendo datos locales y subiendo a la nube...");
               pushToCloud();
-              showToast("Se han protegido y subido tus datos de este dispositivo a la nube.");
+              showToast(t("cloud.toastProtectedUploaded"));
             }
             else if(localCounts.total === 0 && cloudCounts.total > 0 && !localCounts.hasSchedule){
               // Local sin tareas ni horario → cargar nube directamente
@@ -375,7 +377,7 @@ export function TodayTasksCloud(ctx){
               localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
               syncFormInputsFromState();
               renderAll();
-              showToast("Datos cargados desde la nube.");
+              showToast(t("cloud.toastLoadedFromCloud"));
             }
             else if(localCounts.total === 0 && cloudCounts.total > 0 && localCounts.hasSchedule){
               // Local tiene horario pero sin tareas, nube tiene tareas → merge para no perder el horario local
@@ -388,7 +390,7 @@ export function TodayTasksCloud(ctx){
               syncFormInputsFromState();
               renderAll();
               pushToCloud();
-              showToast("Datos cargados desde la nube.");
+              showToast(t("cloud.toastLoadedFromCloud"));
             }
             else if(localCounts.total > 0 && cloudCounts.total > 0){
               backupLocalState();
@@ -400,7 +402,7 @@ export function TodayTasksCloud(ctx){
               syncFormInputsFromState();
               renderAll();
               pushToCloud();
-              showToast("Datos combinados y sincronizados con la nube.");
+              showToast(t("cloud.toastMergedSynced"));
             } else if(cloudHasData && !localHasData){
               // Nube tiene solo horario (sin tareas), local vacío → cargar nube
               backupLocalState();
@@ -413,7 +415,7 @@ export function TodayTasksCloud(ctx){
               localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
               syncFormInputsFromState();
               renderAll();
-              showToast("Datos cargados desde la nube.");
+              showToast(t("cloud.toastLoadedFromCloud"));
             } else {
               // Ambos vacíos (sin tareas y sin horario): subir estado local
               pushToCloud();
@@ -421,7 +423,7 @@ export function TodayTasksCloud(ctx){
           } else {
             pushToCloud();
           }
-          setSyncStatus("", "☁ Sincronizado");
+          setSyncStatus("", t("cloud.statusSynced"));
           return;
         }
 
@@ -432,7 +434,7 @@ export function TodayTasksCloud(ctx){
         // Si la actualización proviene del propio dispositivo (confirmación de Firestore),
         // no mostramos el mensaje de "otro dispositivo" ni re-aplicamos el estado local.
         if(remoteData._lastUpdatedBy === clientId){
-          setSyncStatus("", "☁ Sincronizado");
+          setSyncStatus("", t("cloud.statusSynced"));
           return;
         }
 
@@ -445,12 +447,12 @@ export function TodayTasksCloud(ctx){
         localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
         syncFormInputsFromState();
         renderAll();
-        setSyncStatus("", "☁ Actualizado desde otro dispositivo");
-        showToast("Se han actualizado los datos desde otro dispositivo.");
+        setSyncStatus("", t("cloud.statusUpdatedRemote"));
+        showToast(t("cloud.toastUpdatedRemote"));
       }, err => {
         clearTimeout(slowConnectionTimer);
         console.error("Error en la escucha de Firestore", err);
-        setSyncStatus("error", "⚠ Se perdió la conexión con la nube");
+        setSyncStatus("error", t("cloud.statusLostConnection"));
       });
     }
 
@@ -461,28 +463,38 @@ export function TodayTasksCloud(ctx){
     function renderAuthArea(){
       const el = document.getElementById("authArea");
       const modeLabel = document.getElementById("appModeLabel");
-      if(!el) return;
+      if(!el && !modeLabel) return;
       if(currentUser){
-        if(modeLabel) modeLabel.textContent = "☁️ nube · sincronizado";
-        const photo = currentUser.photoURL ? `<img src="${escapeAttr(currentUser.photoURL)}" alt="">` : "";
-        el.innerHTML = `
-          <span class="auth-user">${photo}${escapeHtml(currentUser.displayName || currentUser.email || "")}</span>
-          <span class="sync-status" id="syncStatus">☁ Conectado</span>
-          <button class="btn secondary" id="signOutBtn">Cerrar sesión</button>
-        `;
-        document.getElementById("signOutBtn").addEventListener("click", ()=>{
-          detachCloudSync();
-          fbAuth.signOut();
-        });
+        if(modeLabel) {
+          modeLabel.textContent = t("app.cloudDbBadge");
+          modeLabel.setAttribute("data-i18n", "app.cloudDbBadge");
+        }
+        if(el) {
+          const photo = currentUser.photoURL ? `<img src="${escapeAttr(currentUser.photoURL)}" alt="">` : "";
+          el.innerHTML = `
+            <span class="auth-user">${photo}${escapeHtml(currentUser.displayName || currentUser.email || "")}</span>
+            <span class="sync-status" id="syncStatus" data-i18n="cloud.statusConnected">${t("cloud.statusConnected")}</span>
+            <button class="btn secondary" id="signOutBtn" data-i18n="cloud.signOutBtn">${t("cloud.signOutBtn")}</button>
+          `;
+          document.getElementById("signOutBtn").addEventListener("click", ()=>{
+            detachCloudSync();
+            fbAuth.signOut();
+          });
+        }
       } else {
-        if(modeLabel) modeLabel.textContent = "💾 local · persistente";
-        el.innerHTML = `<button class="btn secondary" id="signInBtn">☁ Iniciar sesión con Google</button>`;
-        document.getElementById("signInBtn").addEventListener("click", signInWithGoogle);
+        if(modeLabel) {
+          modeLabel.textContent = t("app.localDbBadge");
+          modeLabel.setAttribute("data-i18n", "app.localDbBadge");
+        }
+        if(el) {
+          el.innerHTML = `<button class="btn secondary" id="signInBtn" data-i18n="cloud.signInBtn">${t("cloud.signInBtn")}</button>`;
+          document.getElementById("signInBtn").addEventListener("click", signInWithGoogle);
+        }
       }
     }
 
     function signInWithGoogle(){
-      if(!fbAuth){ showToast("La conexión con Firebase no está disponible."); return; }
+      if(!fbAuth){ showToast(t("cloud.toastFirebaseUnavailable")); return; }
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
 
@@ -491,11 +503,11 @@ export function TodayTasksCloud(ctx){
         if(err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-allowed'){
           fbAuth.signInWithRedirect(provider).catch(rErr => {
             console.error("Error en signInWithRedirect", rErr);
-            showToast("No se pudo iniciar sesión: " + (rErr.message || rErr.code || "error desconocido"));
+            showToast(t("cloud.toastSignInError", { error: rErr.message || rErr.code || "error" }));
           });
         } else if(err.code !== 'auth/popup-closed-by-user'){
           console.error("Error al iniciar sesión", err);
-          showToast("No se pudo iniciar sesión: " + (err.message || err.code || "error desconocido"));
+          showToast(t("cloud.toastSignInError", { error: err.message || err.code || "error" }));
         }
       });
     }
@@ -528,12 +540,12 @@ export function TodayTasksCloud(ctx){
 
         fbAuth.getRedirectResult().then(result => {
           if(result && result.user){
-            showToast("Sesión iniciada con Google.");
+            showToast(t("cloud.toastSignInSuccess"));
           }
         }).catch(err => {
           if(err && err.code && err.code !== 'auth/popup-closed-by-user'){
             console.error("Error al completar el inicio de sesión por redirect", err);
-            showToast("No se pudo completar el inicio de sesión: " + (err.message || err.code));
+            showToast(t("cloud.toastSignInRedirectError", { error: err.message || err.code }));
           }
         });
       }catch(err){
@@ -544,7 +556,8 @@ export function TodayTasksCloud(ctx){
     return {
       getClientId, pushToCloud, pushToCloudDebounced, flushPendingCloudPush,
       backupLocalState, restoreLocalBackup, mergeStates,
-      attachCloudSync, detachCloudSync, renderAuthArea, signInWithGoogle, initFirebase
+      attachCloudSync, detachCloudSync, renderAuthArea, signInWithGoogle, initFirebase,
+      getCurrentUser: () => currentUser
     };
 }
 

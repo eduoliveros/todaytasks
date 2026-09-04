@@ -1,5 +1,6 @@
 /* actions/execution.js — Ejecución de tareas e interrupciones */
 import { MAX_FEATURED_TASKS, sortTasksByPriority, sortTasksWithManualOrder } from '../utils.js';
+import { t as i18n } from '../i18n.js';
 
 export function TodayTasksExecution(ctx, helpers){
   const {
@@ -141,8 +142,8 @@ export function TodayTasksExecution(ctx, helpers){
     }
     saveState();
     if (showToast) {
-      showToast(`Tarea "${t.title}" completada.`, {
-        label: "Deshacer",
+      showToast(i18n('task.completed', { title: t.title }), {
+        label: i18n('action.undo'),
         onClick: () => { if (ctx.undoModule && ctx.undoModule.undo) ctx.undoModule.undo(); }
       });
     }
@@ -196,9 +197,9 @@ export function TodayTasksExecution(ctx, helpers){
 
     saveState();
     if (showToast) {
-      const msg = completedCount === 1 ? '1 tarea completada.' : `${completedCount} tareas completadas.`;
+      const msg = i18n('task.countCompleted', { count: completedCount });
       showToast(`✓ ${msg}`, {
-        label: "Deshacer",
+        label: i18n('action.undo'),
         onClick: () => { if (ctx.undoModule && ctx.undoModule.undo) ctx.undoModule.undo(); }
       });
     }

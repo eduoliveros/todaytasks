@@ -4,6 +4,104 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.100] - 2026-09-04
+
+### Completado
+- **Hito de Internacionalización (i18n) Completo:**
+  - Soporte integral bilingüe Español (`es`) / Inglés (`en`) en toda la aplicación (HTML estático, vistas principales, triaje, foco, PiP, histórico, horario semanal, acciones, sincronización en la nube y notificaciones).
+  - Selector de idioma en cabecera con persistencia local y remota.
+  - Sincronización robusta de insignias y estados de autenticación (`#appModeLabel`, `#authArea`, `signOutBtn`, `signInBtn`).
+
+## [1.100.5.3] - 2026-09-04
+
+### Añadido
+- **Internacionalización (i18n) — Subfase 5.3: Panel Histórico y Gráfica Evolutiva (`js/history.js`):**
+  - Vista histórica (`#/history`): botón de regreso, título y selector de métricas localizados.
+  - Series temporales y tooltips interactivos del gráfico evolutivo SVG adaptados al idioma.
+  - Tarjetas de resumen de métricas (promedios, desviaciones, totales) y tabla de mediciones de los últimos 40 días bilingüe.
+
+## [1.100.5.2] - 2026-09-04
+
+### Añadido
+- **Internacionalización (i18n) — Subfase 5.2: Horario Semanal Recurrente (`js/app/weekly-schedule.js`):**
+  - Modal de configuración de horario semanal (`#weeklyScheduleModal`) completamente localizado.
+  - Nombres de días, etiquetas de día libre, configurado y validaciones horarias.
+  - Notificaciones toast de guardado y reseteo adaptadas al idioma activo.
+
+## [1.100.5.1] - 2026-09-04
+
+### Añadido
+- **Internacionalización (i18n) — Subfase 5.1: Vista de Triaje Rápido (`js/views/triage.js`):**
+  - Encabezados de grupos (Urgencia, Viabilidad, Duración, Destacadas).
+  - Botones y opciones de ordenación, agrupación y colapso/expansión.
+  - Barra flotante de selección y operaciones masivas.
+  - Modales y popovers de edición rápida de tareas en la vista de triaje.
+
+## [1.100.4.4] - 2026-09-04
+
+### Añadido
+- **Internacionalización (i18n) — Subfase 4.4: Modo Enfoque y Mini-Widget PiP (`js/views/focus.js` y `js/pip.js`):**
+  - Vista completa de foco (`focus.js`) localizada: controles de reproducción, temporizadores, avisos de corte por reunión próxima, banner de interrupción activa y modal de selección.
+  - Mini-widget PiP (`pip.js`) localizado: estados de tarea en curso o sin tarea, botón de pausa/reanudación/completar y avisos de reunión.
+
+## [1.100.4.3] - 2026-09-04
+
+### Añadido
+- **Internacionalización (i18n) — Subfase 4.3: Listas de Tareas y Reuniones (`js/views/tasks.js` y `js/views/meetings.js`):**
+  - Items de tareas y reuniones con tooltips, badges y menús de acción completamente localizados.
+  - Formularios inline de edición de tareas y reuniones bilingües.
+  - Estados de listas vacías o filtros sin resultados adaptados al idioma.
+
+## [1.100.4.2] - 2026-09-04
+
+### Añadido
+- **Internacionalización (i18n) — Subfase 4.2: Tablero Diario (Timeline y Planificación) (`js/views/board.js`):**
+  - Timeline de la jornada traducido dinámicamente: descansos automáticos, colchón de descanso, fin de jornada y horas extras / desbordamiento.
+  - Mensajes de día libre y sin tareas en el panel de planificación.
+
+## [1.100.4.1] - 2026-09-04
+
+### Añadido
+- **Internacionalización (i18n) — Subfase 4.1: Estadísticas y Dashboard de Cabecera (`js/views/dashboard.js`):**
+  - Chips de estadísticas traducidos dinámicamente: Reuniones, Tareas por hacer, Completado hoy, Interrupciones, Día libre y Tiempo no asignado.
+  - Tooltips estadísticos y de desviación del día adaptados al idioma activo.
+  - Barra de progreso del día localizada.
+
+## [1.100.3.3] - 2026-09-03
+
+### Añadido
+- **Internacionalización (i18n) — Subfase 3.3: Notificaciones y Sincronización Cloud (`js/notifications.js` y `js/cloud.js`):**
+  - Internacionalizado el subsistema de notificaciones de escritorio y avisos en el navegador (`js/notifications.js`): estado del botón de avisos, notificaciones periódicas y de fin de tiempo de tareas, avisos de reuniones inminentes y auto-pausa de tareas.
+  - Internacionalizado el módulo de sincronización en la nube Firebase (`js/cloud.js`): estados de sincronización, autenticación, copias de seguridad y avisos de conexión.
+
+## [1.100.3.2] - 2026-09-03
+
+### Añadido
+- **Internacionalización (i18n) — Subfase 3.2: Feedback Visual, Modales y Deshacer (`js/ui.js` y `js/undo.js`):**
+  - Internacionalizado el botón de acción por defecto del componente Toast (`showToast`: "Deshacer" / "Undo").
+  - Internacionalizado el sistema de historial Deshacer / Rehacer (`js/undo.js`): mensajes de confirmación de deshecho ("Deshecho: {action}" / "Undone: {action}"), rehecho ("Rehecho: {action}" / "Redone: {action}") y avisos de pila vacía ("No hay acciones para deshacer." / "No actions to undo.").
+  - Localizados los selectores de unidades de intervalo en formularios de tareas y reuniones.
+
+## [1.100.3.1] - 2026-09-03
+
+### Añadido
+- **Internacionalización (i18n) — Subfase 3.1: Fechas, Duraciones y Recurrencia (`js/utils.js`):**
+  - Desglose y publicación de la hoja de ruta de la Fase 3 en [`docs/I18N_PHASE_3.md`](./docs/I18N_PHASE_3.md).
+  - Soporte bilingüe en `parseDuration()` para unidades de tiempo tanto en español (`horas`, `hrs`, `h`, `minutos`, `mins`, `m`) como en inglés (`hours`, `hour`, `hr`, `minutes`, `minute`).
+  - Formateo de fechas, días abreviados (`getDayAbbr`) y descripciones de recurrencia (`formatRecurrenceRule`) adaptadas dinámicamente al idioma activo.
+  - Indicador de tiempo restante y excedido en `fmtRemaining` adaptado a español e inglés.
+
+## [1.100.2] - 2026-09-03
+
+### Añadido
+- **Sistema de Internacionalización Multilingüe (i18n) — Fases 1 y 2:**
+  - **Motor central (`js/i18n.js`):** Soporte para traducción declarativa e imperativa (`t()`, `tPlural()`), interpolación de parámetros dinámicos, fallback automático al español y detección del idioma del navegador (`navigator.language`).
+  - **Selector de Idioma en Configuración:** Nuevo control desplegable `#languageSelect` en la pestaña de configuración de la barra superior, con persistencia sincronizada en `localStorage` y Firebase Firestore a través de la nueva propiedad `language` en el modelo de estado (`docs/DATA_SCHEMA.md`).
+  - **Diccionarios bilingües (`js/i18n/es.js` y `js/i18n/en.js`):** Soporte inicial completo en Español e Inglés, extensible a nuevos idiomas.
+  - **Traducción del DOM Estático (`index.html`):** Etiquetado con atributos declarativos `data-i18n-*` de más de 85 elementos de interfaz (cabecera, pestañas, paneles de tiempo y configuración, formularios de tareas y reuniones, modales de atajos, horario semanal, copiar tareas y recurrencia).
+  - **Documentación de Arquitectura:** Especificación técnica completa en [`docs/I18N_SPECIFICATION.md`](./docs/I18N_SPECIFICATION.md) y registro de decisiones en [`docs/adr/009-sistema-internacionalizacion-i18n.md`](./docs/adr/009-sistema-internacionalizacion-i18n.md).
+  - **Pruebas Unitarias:** Nueva suite de pruebas [`tests/i18n.test.js`](./tests/i18n.test.js) garantizando 100% de cobertura sobre el motor de traducción.
+
 ## [1.99] - 2026-09-03
 
 ### Añadido

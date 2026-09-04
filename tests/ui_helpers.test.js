@@ -66,4 +66,19 @@ describe('UI Helpers (js/ui.js)', () => {
     const result = scrollToElement('nonExistentId');
     expect(result).toBe(false);
   });
+
+  it('localiza el botón de acción por defecto en showToast (Deshacer / Undo)', async () => {
+    const { setLocale } = await import('../js/i18n.js');
+    const toastEl = document.getElementById('toast');
+
+    setLocale('es');
+    showToast('Prueba', { onClick: vi.fn() });
+    expect(toastEl.querySelector('.toast-action-btn').textContent).toBe('Deshacer');
+
+    setLocale('en');
+    showToast('Test', { onClick: vi.fn() });
+    expect(toastEl.querySelector('.toast-action-btn').textContent).toBe('Undo');
+
+    setLocale('es');
+  });
 });

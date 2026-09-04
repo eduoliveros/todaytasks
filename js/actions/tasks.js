@@ -4,6 +4,7 @@ import {
   DEFAULT_URGENCY, MAX_FEATURED_TASKS, sortTasksByPriority, sortTasksWithManualOrder, URGENCY_LEVELS,
   fmt, timeToMinutes
 } from '../utils.js';
+import { t as i18n } from '../i18n.js';
 
 export function TodayTasksTasks(ctx, helpers){
   const {
@@ -407,14 +408,14 @@ export function TodayTasksTasks(ctx, helpers){
       const ruleId = t.ruleId;
       const dateStr = state.selectedDate || getTodayStr();
       showRecurringModal(
-        `Eliminar "${t.title}" 🔁`,
-        `¿Deseas eliminar solo la tarea del día ${dateStr} o eliminar toda la serie recurrente?`,
+        i18n('modal.deleteRecurringTaskTitle', { title: t.title }),
+        i18n('modal.deleteRecurringTaskDesc', { date: dateStr }),
         () => {
-          if (ctx.undoModule && ctx.undoModule.pushSnapshot) ctx.undoModule.pushSnapshot(`Eliminar ocurrencia "${t.title}"`);
+          if (ctx.undoModule && ctx.undoModule.pushSnapshot) ctx.undoModule.pushSnapshot({ key: 'actions.taskOccurrenceDeleted', params: { title: t.title } });
           deleteRecurringTaskInstance(ruleId, dateStr);
         },
         () => {
-          if (ctx.undoModule && ctx.undoModule.pushSnapshot) ctx.undoModule.pushSnapshot(`Eliminar serie "${t.title}"`);
+          if (ctx.undoModule && ctx.undoModule.pushSnapshot) ctx.undoModule.pushSnapshot({ key: 'actions.taskSeriesDeleted', params: { title: t.title } });
           deleteRecurringTaskSeries(ruleId);
         }
       );
@@ -446,8 +447,8 @@ export function TodayTasksTasks(ctx, helpers){
     saveState();
     renderAll();
     if (showToast) {
-      showToast(`Tarea "${t ? t.title : ''}" eliminada.`, {
-        label: "Deshacer",
+      showToast(i18n('tasks.taskDeletedToast', { title: t ? t.title : '' }), {
+        label: i18n('action.undo'),
         onClick: () => { if (ctx.undoModule && ctx.undoModule.undo) ctx.undoModule.undo(); }
       });
     }
@@ -487,10 +488,10 @@ export function TodayTasksTasks(ctx, helpers){
     smartRender ? smartRender() : renderAll();
     if (showToast) {
       const toastMsg = tasksToDelete.length === 1
-        ? `Tarea "${tasksToDelete[0].title}" eliminada.`
-        : `${tasksToDelete.length} tareas eliminadas.`;
+        ? i18n('tasks.taskDeletedToast', { title: tasksToDelete[0].title })
+        : i18n('tasks.tasksDeletedCountToast', { count: tasksToDelete.length });
       showToast(toastMsg, {
-        label: "Deshacer",
+        label: i18n('action.undo'),
         onClick: () => { if (ctx.undoModule && ctx.undoModule.undo) ctx.undoModule.undo(); }
       });
     }

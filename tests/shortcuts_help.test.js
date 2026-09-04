@@ -84,6 +84,6 @@ describe('Modal de ayuda de atajos de teclado', () => {
     const descRows = Array.from(modal.querySelectorAll('.shortcut-row'));
     const pRow = descRows.find(r => r.querySelector('.shortcut-key')?.textContent === 'P');
     expect(pRow).toBeDefined();
-    expect(pRow.textContent).toContain('planificación');
+    expect(pRow.textContent.toLowerCase()).toMatch(/planificación|planning/);
   });
 });

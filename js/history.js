@@ -1,5 +1,6 @@
 import { getTodayStr, formatDateFriendly, diffDays, fmtDur, computeOccupiedMeetingTime } from './utils.js';
 import { escapeHtml, escapeAttr } from './ui.js';
+import { t } from './i18n.js';
 
 // Active series toggles for the chart
 let seriesToggles = {
@@ -19,6 +20,19 @@ export const SERIES_CONFIG = {
   uncompletedTasksNotWorkedTime: { label: "No Trabajado en Pendientes", color: "#9ca3af", strokeWidth: 1.5, dashed: true },
   interruptionsTime: { label: "Interrupciones", color: "#ef4444", strokeWidth: 2 }
 };
+
+export function getSeriesLabel(key) {
+  const keys = {
+    effectiveTime: 'history.seriesEffective',
+    meetingsTime: 'history.seriesMeetings',
+    completedTasksTime: 'history.seriesCompleted',
+    uncompletedTasksWorkedTime: 'history.seriesWorkedPending',
+    uncompletedTasksNotWorkedTime: 'history.seriesNotWorkedPending',
+    interruptionsTime: 'history.seriesInterruptions'
+  };
+  if (keys[key]) return t(keys[key]);
+  return SERIES_CONFIG[key] ? SERIES_CONFIG[key].label : key;
+}
 
 export function computeMetricsFromDay(dayData) {
   if (!dayData) {
@@ -171,7 +185,7 @@ export function renderChart(historyArray) {
   if (!historyArray || historyArray.length === 0) {
     return `
       <div class="history-chart-empty">
-        <p>No hay datos registrados en el histórico aún. Los datos se registrarán automáticamente a medida que uses la aplicación o añadas medidas manualmente abajo.</p>
+        <p>${t('history.chartEmpty')}</p>
       </div>
     `;
   }
@@ -252,7 +266,7 @@ export function renderChart(historyArray) {
       points.forEach(pt => {
         dataPointsSvg += `
           <circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="4" fill="${conf.color}" stroke="#fff" stroke-width="1.5">
-            <title>${conf.label} (${pt.date}): ${fmtDur(pt.val)}</title>
+            <title>${escapeAttr(getSeriesLabel(seriesKey))} (${pt.date}): ${fmtDur(pt.val)}</title>
           </circle>
         `;
       });
@@ -284,12 +298,13 @@ export function renderHistoryView(ctx) {
   const togglesHtml = Object.keys(SERIES_CONFIG).map(key => {
     const conf = SERIES_CONFIG[key];
     const active = seriesToggles[key];
+    const label = getSeriesLabel(key);
     return `
       <button class="series-pill ${active ? "active" : ""}"
               style="--series-color:${conf.color};"
               onclick="app.toggleHistorySeries('${key}')">
         <span class="series-dot" style="background:${conf.color}"></span>
-        ${conf.label}
+        ${escapeHtml(label)}
       </button>
     `;
   }).join("");
@@ -315,48 +330,50 @@ export function renderHistoryView(ctx) {
       <td class="num-cell" style="color:var(--text-muted)">${fmtDur(h.uncompletedTasksNotWorkedTime || 0)}</td>
       <td class="num-cell" style="color:var(--danger)">${fmtDur(h.interruptionsTime || 0)}</td>
       <td class="actions-cell">
-        <button class="icon-btn" title="Editar medidas de este día" onclick="app.editHistoryMetricPrompt('${h.date}')">✎</button>
-        <button class="icon-btn" title="Eliminar registro" onclick="app.deleteHistoryMetric('${h.date}')">✕</button>
+        <button class="icon-btn" title="${escapeAttr(t('history.btnEditTooltip'))}" onclick="app.editHistoryMetricPrompt('${h.date}')">✎</button>
+        <button class="icon-btn" title="${escapeAttr(t('history.btnDeleteTooltip'))}" onclick="app.deleteHistoryMetric('${h.date}')">✕</button>
       </td>
     </tr>
-  `).join("") : `<tr><td colspan="8" class="empty">No hay registros almacenados.</td></tr>`;
+  `).join("") : `<tr><td colspan="8" class="empty">${escapeHtml(t('history.tableEmpty'))}</td></tr>`;
+
+  const envDisplay = envKey === "work" ? `${t('env.work')} 💼` : `${t('env.personal')} 🏠`;
 
   container.innerHTML = `
     <div class="history-view-layout">
       <div class="history-view-header">
         <div style="display:flex;align-items:center;gap:12px;">
-          <a href="#/" class="btn secondary">← Volver al Tablero</a>
-          <h2>Histórico y Evolución (${envKey === "work" ? "Trabajo 💼" : "Personal 🏠"})</h2>
+          <a href="#/" class="btn secondary">${t('history.btnBack')}</a>
+          <h2>${t('history.title', { env: envDisplay })}</h2>
         </div>
-        <button class="btn secondary" onclick="app.promptAddHistoryMetric()">+ Añadir/Editar Medida Manual</button>
+        <button class="btn secondary" onclick="app.promptAddHistoryMetric()">${t('history.btnAddManual')}</button>
       </div>
 
       <div class="history-summary-cards">
         <div class="history-card">
-          <span class="card-label">Días registrados</span>
-          <span class="card-value">${totalDays} / 40 días</span>
+          <span class="card-label">${t('history.cardRecordedDays')}</span>
+          <span class="card-value">${t('history.cardDaysValue', { count: totalDays })}</span>
         </div>
         <div class="history-card">
-          <span class="card-label">Media Tiempo Efectivo/día</span>
+          <span class="card-label">${t('history.cardAvgEffective')}</span>
           <span class="card-value" style="color:#3b82f6">${fmtDur(avgEffective)}</span>
         </div>
         <div class="history-card">
-          <span class="card-label">Total Reuniones</span>
+          <span class="card-label">${t('history.cardTotalMeetings')}</span>
           <span class="card-value" style="color:#8b5cf6">${fmtDur(totalMeetings)}</span>
         </div>
         <div class="history-card">
-          <span class="card-label">Total Tareas Completadas</span>
+          <span class="card-label">${t('history.cardTotalCompleted')}</span>
           <span class="card-value" style="color:#10b981">${fmtDur(totalCompleted)}</span>
         </div>
         <div class="history-card">
-          <span class="card-label">Total Interrupciones</span>
+          <span class="card-label">${t('history.cardTotalInterruptions')}</span>
           <span class="card-value" style="color:#ef4444">${fmtDur(totalInterruptions)}</span>
         </div>
       </div>
 
       <div class="panel history-chart-panel">
         <div class="chart-header">
-          <h3>Evolución de los últimos 40 días</h3>
+          <h3>${t('history.chartTitle')}</h3>
           <div class="series-toggles">${togglesHtml}</div>
         </div>
         ${renderChart(historyList)}
@@ -364,22 +381,22 @@ export function renderHistoryView(ctx) {
 
       <div class="panel history-table-panel">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <h3>Detalle de Mediciones por Día</h3>
-          <span class="meta">Las métricas se guardan hasta 40 días; el desglose detallado de tareas por 10 días.</span>
+          <h3>${t('history.tableTitle')}</h3>
+          <span class="meta">${t('history.tableSubtitle')}</span>
         </div>
 
         <div class="table-responsive">
           <table class="history-table">
             <thead>
               <tr>
-                <th>Fecha</th>
-                <th class="num-cell">Tiempo Efectivo</th>
-                <th class="num-cell">Reuniones</th>
-                <th class="num-cell">Completadas</th>
-                <th class="num-cell">Trabajado No Compl.</th>
-                <th class="num-cell">No Trabajado No Compl.</th>
-                <th class="num-cell">Interrupciones</th>
-                <th class="actions-cell">Acciones</th>
+                <th>${t('history.thDate')}</th>
+                <th class="num-cell">${t('history.seriesEffective')}</th>
+                <th class="num-cell">${t('history.seriesMeetings')}</th>
+                <th class="num-cell">${t('history.thCompleted')}</th>
+                <th class="num-cell">${t('history.thWorkedPending')}</th>
+                <th class="num-cell">${t('history.thNotWorkedPending')}</th>
+                <th class="num-cell">${t('history.seriesInterruptions')}</th>
+                <th class="actions-cell">${t('history.thActions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -404,8 +421,8 @@ export const TodayTasksHistory = {
   saveHistoryMetric,
   deleteHistoryMetric,
   renderHistoryView,
-  toggleSeries
+  toggleSeries,
+  getSeriesLabel
 };
 
 export default TodayTasksHistory;
-

@@ -1,6 +1,7 @@
 /* js/pip.js — Módulo Document Picture-in-Picture (PiP) para TodayTasks */
 import { nowMinutes, fmt, fmtDur, getTaskElapsed } from './utils.js';
 import { escapeHtml, escapeAttr } from './ui.js';
+import { t } from './i18n.js';
 
 export function TodayTasksPiP(ctx) {
   const { getState, saveState, actionsModule, showToast, fmtMMSS } = ctx;
@@ -88,7 +89,7 @@ export function TodayTasksPiP(ctx) {
   async function openPiP() {
     if (!isSupported()) {
       if (showToast) {
-        showToast('Document Picture-in-Picture no está soportado en este navegador (requiere Chrome o Edge 111+).');
+        showToast(t('pip.unsupportedToast'));
       }
       return false;
     }
@@ -108,7 +109,7 @@ export function TodayTasksPiP(ctx) {
       });
 
       const pipDoc = pipWindow.document;
-      pipDoc.title = 'TodayTasks · Mini-Widget';
+      pipDoc.title = t('pip.windowTitle');
       pipDoc.body.className = 'pip-window-body';
 
       copyStylesToPiP(pipDoc);
@@ -162,7 +163,7 @@ export function TodayTasksPiP(ctx) {
       btn.classList.toggle('active', isPiPActive);
       const label = btn.querySelector('.pip-btn-label');
       if (label) {
-        label.textContent = isPiPActive ? 'Cerrar PiP' : 'Mini-Widget';
+        label.textContent = isPiPActive ? t('pip.btnToggleClose') : t('pip.btnToggleOpen');
       }
     });
   }
@@ -211,28 +212,28 @@ export function TodayTasksPiP(ctx) {
         <div class="pip-header">
           <div class="pip-header-status">
             <span class="pip-status-dot interruption"></span>
-            <span class="pip-status-text" style="color:var(--pip-danger);">Interrupción</span>
+            <span class="pip-status-text" style="color:var(--pip-danger);">${t('pip.statusInterruption')}</span>
           </div>
           <div class="pip-header-actions">
-            <button class="pip-icon-btn" id="pipFocusAppBtn" title="Abrir app principal">↗ App</button>
-            <button class="pip-icon-btn close" id="pipCloseBtn" title="Cerrar ventana flotante">✕</button>
+            <button class="pip-icon-btn" id="pipFocusAppBtn" title="${escapeAttr(t('pip.focusAppTooltip'))}">↗ App</button>
+            <button class="pip-icon-btn close" id="pipCloseBtn" title="${escapeAttr(t('pip.closeTooltip'))}">✕</button>
           </div>
         </div>
 
         <div class="pip-body">
           <div class="pip-interruption-box">
             <div>
-              <div style="font-size:11px;color:var(--pip-text-soft);">Tiempo transcurrido</div>
+              <div style="font-size:11px;color:var(--pip-text-soft);">${t('pip.elapsedTime')}</div>
               <div class="pip-interruption-clock" id="pipLiveInterruptionClock">${timeDisplay}</div>
             </div>
             <div style="text-align:right;">
-              <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(180,72,58,0.2);color:var(--pip-danger);font-weight:600;">⚡ En pausa</span>
+              <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(180,72,58,0.2);color:var(--pip-danger);font-weight:600;">${t('pip.pausedBadge')}</span>
             </div>
           </div>
 
           <div style="display:grid;grid-template-columns:2fr 1fr;gap:6px;">
-            <button class="pip-btn done" id="pipFinishIntBtn">✓ Finalizar</button>
-            <button class="pip-btn secondary" id="pipCancelIntBtn">✕ Descartar</button>
+            <button class="pip-btn done" id="pipFinishIntBtn">${t('pip.btnFinish')}</button>
+            <button class="pip-btn secondary" id="pipCancelIntBtn">${t('pip.btnDiscard')}</button>
           </div>
         </div>
       </div>
@@ -249,11 +250,11 @@ export function TodayTasksPiP(ctx) {
     };
   }
 
-  function renderTaskActiveMode(t, state, now) {
+  function renderTaskActiveMode(task, state, now) {
     const pipDoc = pipWindow.document;
-    const isRunning = t.status === 'running';
-    const elapsed = getTaskElapsed(t, now);
-    const planned = t.planned || 1;
+    const isRunning = task.status === 'running';
+    const elapsed = getTaskElapsed(task, now);
+    const planned = task.planned || 1;
     const isOverrun = elapsed > planned;
     const remainingMin = Math.max(0, planned - elapsed);
     const overrunMin = isOverrun ? (elapsed - planned) : 0;
@@ -261,8 +262,8 @@ export function TodayTasksPiP(ctx) {
     // Cálculo de segundos precisos
     let remainingSec = 0;
     let overrunSec = 0;
-    if (isRunning && t.runningStartEpoch) {
-      const totalElapsedSec = (t.elapsedBefore || 0) * 60 + Math.max(0, (Date.now() - t.runningStartEpoch) / 1000);
+    if (isRunning && task.runningStartEpoch) {
+      const totalElapsedSec = (task.elapsedBefore || 0) * 60 + Math.max(0, (Date.now() - task.runningStartEpoch) / 1000);
       const plannedSec = planned * 60;
       if (totalElapsedSec > plannedSec) {
         overrunSec = totalElapsedSec - plannedSec;
@@ -298,22 +299,22 @@ export function TodayTasksPiP(ctx) {
     let meetingBannerHtml = '';
     if (ongoingMeeting) {
       meetingBannerHtml = `
-        <div class="pip-meeting-banner urgent" title="Reunión en curso hasta las ${fmt(ongoingMeeting.end)}">
+        <div class="pip-meeting-banner urgent" title="${escapeAttr(t('pip.ongoingMeetingTooltip', { time: fmt(ongoingMeeting.end) }))}">
           <div class="pip-meeting-title-wrap">
             <span>🔴</span>
-            <span><strong>${escapeHtml(ongoingMeeting.title)}</strong> (hasta ${fmt(ongoingMeeting.end)})</span>
+            <span><strong>${escapeHtml(ongoingMeeting.title)}</strong> ${t('pip.until', { time: fmt(ongoingMeeting.end) })}</span>
           </div>
         </div>
       `;
     } else if (nextMeeting && (isCutoff || timeToMeetingMin <= 30)) {
       meetingBannerHtml = `
-        <div class="pip-meeting-banner ${isUrgentMeeting ? 'urgent' : ''}" title="Reunión programada a las ${fmt(nextMeeting.start)}">
+        <div class="pip-meeting-banner ${isUrgentMeeting ? 'urgent' : ''}" title="${escapeAttr(t('pip.nextMeetingTooltip', { time: fmt(nextMeeting.start) }))}">
           <div class="pip-meeting-title-wrap">
             <span>${isUrgentMeeting ? '⚠️' : '📅'}</span>
             <span>${fmt(nextMeeting.start)} · <strong>${escapeHtml(nextMeeting.title)}</strong></span>
           </div>
           <div class="pip-meeting-countdown-pill" id="pipMeetingCountdownPill">
-            <span style="font-size:9.5px;opacity:0.8;">en</span>
+            <span style="font-size:9.5px;opacity:0.8;">${t('pip.inCountdown')}</span>
             <span id="pipLiveMeetingTimer">${formatSecToMMSS(timeToMeetingSec !== null ? timeToMeetingSec : timeToMeetingMin * 60)}</span>
           </div>
         </div>
@@ -325,7 +326,7 @@ export function TodayTasksPiP(ctx) {
     if (isCutoff && planned > 0) {
       const cutoffPct = Math.min(96, Math.max(4, Math.round(((elapsed + timeToMeetingMin) / planned) * 100)));
       notchHtml = `
-        <div class="pip-progress-notch" style="left:${cutoffPct}%;" title="Corte por reunión: ${escapeAttr(nextMeeting.title)} a las ${fmt(nextMeeting.start)}">
+        <div class="pip-progress-notch" style="left:${cutoffPct}%;" title="${escapeAttr(t('pip.cutoffTooltip', { title: nextMeeting.title, time: fmt(nextMeeting.start) }))}">
           <div class="pip-notch-caret">▼</div>
           <div class="pip-notch-bar"></div>
         </div>
@@ -333,29 +334,32 @@ export function TodayTasksPiP(ctx) {
     }
 
     const urgencyLabels = {
-      today: { icon: '🟠', label: 'Hoy', bg: 'rgba(249,115,22,0.15)', text: '#FB923C' },
-      days: { icon: '🔵', label: 'Días', bg: 'rgba(59,130,246,0.12)', text: '#60A5FA' },
-      week: { icon: '🟣', label: 'Semana', bg: 'rgba(168,85,247,0.12)', text: '#C084FC' },
-      later: { icon: '⚪', label: 'Más adelante', bg: 'rgba(156,163,175,0.12)', text: '#9CA3AF' }
+      today: { icon: '🟠', label: t('urgency.today'), bg: 'rgba(249,115,22,0.15)', text: '#FB923C' },
+      days: { icon: '🔵', label: t('urgency.days'), bg: 'rgba(59,130,246,0.12)', text: '#60A5FA' },
+      week: { icon: '🟣', label: t('urgency.week'), bg: 'rgba(168,85,247,0.12)', text: '#C084FC' },
+      later: { icon: '⚪', label: t('urgency.later'), bg: 'rgba(156,163,175,0.12)', text: '#9CA3AF' }
     };
-    const urgency = urgencyLabels[t.urgency || 'days'] || urgencyLabels.days;
+    const urgency = urgencyLabels[task.urgency || 'days'] || urgencyLabels.days;
+
+    const timerLabel = isOverrun ? t('pip.labelExtraTime') : (isRunning ? t('pip.labelRemaining') : t('pip.labelPaused'));
+    const timerMeta = isOverrun ? t('pip.metaOverrun') : t('pip.metaPlan', { time: fmtDur(planned) });
 
     pipDoc.body.innerHTML = `
       <div class="pip-container">
         <div class="pip-header">
           <div class="pip-header-status">
             <span class="pip-status-dot ${isRunning ? (isOverrun ? 'overrun' : 'running') : 'paused'}"></span>
-            <span class="pip-status-text">${isRunning ? (isOverrun ? 'Sobretiempo' : 'En marcha') : 'En pausa'}</span>
+            <span class="pip-status-text">${isRunning ? (isOverrun ? t('pip.statusOverrun') : t('pip.statusRunning')) : t('pip.statusPaused')}</span>
           </div>
           <div class="pip-header-actions">
-            <button class="pip-icon-btn" id="pipFocusAppBtn" title="Abrir y enfocar TodayTasks">↗ App</button>
-            <button class="pip-icon-btn close" id="pipCloseBtn" title="Cerrar mini-widget">✕</button>
+            <button class="pip-icon-btn" id="pipFocusAppBtn" title="${escapeAttr(t('pip.focusAppMainTooltip'))}">↗ App</button>
+            <button class="pip-icon-btn close" id="pipCloseBtn" title="${escapeAttr(t('pip.closeWidgetTooltip'))}">✕</button>
           </div>
         </div>
 
         <div class="pip-body">
           <div class="pip-task-title-row">
-            <h3 class="pip-task-title" title="${escapeAttr(t.title)}">${escapeHtml(t.title)}</h3>
+            <h3 class="pip-task-title" title="${escapeAttr(task.title)}">${escapeHtml(task.title)}</h3>
             <span class="pip-task-badge" style="background:${urgency.bg};color:${urgency.text};">${urgency.icon} ${urgency.label}</span>
           </div>
 
@@ -365,9 +369,9 @@ export function TodayTasksPiP(ctx) {
             <div class="pip-timer-header">
               <div class="pip-timer-left">
                 <span class="pip-timer-clock ${isOverrun ? 'overrun' : (isRunning ? '' : 'paused')}" id="pipLiveTaskClock">${clockDisplay}</span>
-                <span class="pip-timer-label ${isOverrun ? 'overrun' : ''}" id="pipLiveTaskLabel">${isOverrun ? 'tiempo extra' : (isRunning ? 'restante' : '(en pausa)')}</span>
+                <span class="pip-timer-label ${isOverrun ? 'overrun' : ''}" id="pipLiveTaskLabel">${timerLabel}</span>
               </div>
-              <span class="pip-timer-meta ${isOverrun ? 'overrun' : ''}">${isOverrun ? 'Excedida' : `Plan: ${fmtDur(planned)}`}</span>
+              <span class="pip-timer-meta ${isOverrun ? 'overrun' : ''}">${timerMeta}</span>
             </div>
 
             <div class="pip-progress-track">
@@ -378,12 +382,12 @@ export function TodayTasksPiP(ctx) {
 
           <div class="pip-actions-row">
             ${isRunning ? `
-              <button class="pip-btn pause" id="pipPauseBtn">⏸ Pausar</button>
+              <button class="pip-btn pause" id="pipPauseBtn">${t('pip.btnPause')}</button>
             ` : `
-              <button class="pip-btn play" id="pipResumeBtn">▶ Reanudar</button>
+              <button class="pip-btn play" id="pipResumeBtn">${t('pip.btnResume')}</button>
             `}
-            <button class="pip-btn done" id="pipCompleteBtn">✓ Listo</button>
-            <button class="pip-btn danger" id="pipInterruptBtn">⚡ Interrumpir</button>
+            <button class="pip-btn done" id="pipCompleteBtn">${t('pip.btnDone')}</button>
+            <button class="pip-btn danger" id="pipInterruptBtn">${t('pip.btnInterrupt')}</button>
           </div>
         </div>
       </div>
@@ -393,17 +397,17 @@ export function TodayTasksPiP(ctx) {
 
     const pauseBtn = pipDoc.getElementById('pipPauseBtn');
     if (pauseBtn) pauseBtn.onclick = () => {
-      if (actionsModule && actionsModule.pauseTask) actionsModule.pauseTask(t.id);
+      if (actionsModule && actionsModule.pauseTask) actionsModule.pauseTask(task.id);
     };
 
     const resumeBtn = pipDoc.getElementById('pipResumeBtn');
     if (resumeBtn) resumeBtn.onclick = () => {
-      if (actionsModule && actionsModule.resumeTask) actionsModule.resumeTask(t.id);
+      if (actionsModule && actionsModule.resumeTask) actionsModule.resumeTask(task.id);
     };
 
     const completeBtn = pipDoc.getElementById('pipCompleteBtn');
     if (completeBtn) completeBtn.onclick = () => {
-      if (actionsModule && actionsModule.completeTask) actionsModule.completeTask(t.id);
+      if (actionsModule && actionsModule.completeTask) actionsModule.completeTask(task.id);
     };
 
     const interruptBtn = pipDoc.getElementById('pipInterruptBtn');
@@ -414,7 +418,7 @@ export function TodayTasksPiP(ctx) {
 
   function renderIdleMode(state) {
     const pipDoc = pipWindow.document;
-    const pendingTasks = (state.tasks || []).filter(t => t.status !== 'completed');
+    const pendingTasks = (state.tasks || []).filter(task => task.status !== 'completed');
     const nextTask = pendingTasks.length > 0 ? pendingTasks[0] : null;
 
     pipDoc.body.innerHTML = `
@@ -422,27 +426,27 @@ export function TodayTasksPiP(ctx) {
         <div class="pip-header">
           <div class="pip-header-status">
             <span class="pip-status-dot idle"></span>
-            <span class="pip-status-text">Sin tarea activa</span>
+            <span class="pip-status-text">${t('pip.statusIdle')}</span>
           </div>
           <div class="pip-header-actions">
-            <button class="pip-icon-btn" id="pipFocusAppBtn" title="Abrir TodayTasks">↗ App</button>
-            <button class="pip-icon-btn close" id="pipCloseBtn" title="Cerrar mini-widget">✕</button>
+            <button class="pip-icon-btn" id="pipFocusAppBtn" title="${escapeAttr(t('pip.focusAppMainTooltip'))}">↗ App</button>
+            <button class="pip-icon-btn close" id="pipCloseBtn" title="${escapeAttr(t('pip.closeWidgetTooltip'))}">✕</button>
           </div>
         </div>
 
         <div class="pip-body" style="text-align:center;">
           ${nextTask ? `
-            <div style="font-size:11px;color:var(--pip-text-soft);">Siguiente tarea en cola:</div>
+            <div style="font-size:11px;color:var(--pip-text-soft);">${t('pip.nextTaskInQueue')}</div>
             <div style="font-weight:600;font-size:13px;color:var(--pip-text);margin:3px 0 8px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeAttr(nextTask.title)}">
               "${escapeHtml(nextTask.title)}"
             </div>
             <button class="pip-btn play" id="pipStartNextBtn" style="width:100%;padding:7px;font-size:12px;">
-              ▶ Iniciar (${fmtDur(nextTask.planned || 25)})
+              ${t('pip.btnStartTask', { time: fmtDur(nextTask.planned || 25) })}
             </button>
           ` : `
-            <div style="color:var(--pip-text-soft);font-size:12px;margin-bottom:8px;">✓ No hay tareas pendientes para hoy</div>
+            <div style="color:var(--pip-text-soft);font-size:12px;margin-bottom:8px;">${t('pip.noPendingTasks')}</div>
             <button class="pip-btn secondary" id="pipFocusAppBtn2" style="width:100%;">
-              Abrir tablero principal
+              ${t('pip.btnOpenMainBoard')}
             </button>
           `}
         </div>
@@ -508,7 +512,7 @@ export function TodayTasksPiP(ctx) {
           clockEl.textContent = '+' + formatSecToMMSS(extraSec);
           clockEl.className = 'pip-timer-clock overrun';
           if (labelEl) {
-            labelEl.textContent = 'tiempo extra';
+            labelEl.textContent = t('pip.labelExtraTime');
             labelEl.className = 'pip-timer-label overrun';
           }
           if (fillEl) {
@@ -520,7 +524,7 @@ export function TodayTasksPiP(ctx) {
           clockEl.textContent = formatSecToMMSS(remSec);
           clockEl.className = 'pip-timer-clock';
           if (labelEl) {
-            labelEl.textContent = 'restante';
+            labelEl.textContent = t('pip.labelRemaining');
             labelEl.className = 'pip-timer-label';
           }
           if (fillEl) {

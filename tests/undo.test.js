@@ -211,4 +211,66 @@ describe('Undo / Redo History System (js/undo.js)', () => {
     expect(state.meetings.length).toBe(1);
     expect(state.meetings[0].title).toBe('Daily');
   });
+
+  it('emite mensajes traducidos de undo/redo según el idioma activo (es / en)', async () => {
+    const { setLocale } = await import('../js/i18n.js');
+
+    setLocale('en');
+    undoModule.clearHistory();
+    expect(undoModule.undo()).toBe(false);
+    expect(ctx.showToast).toHaveBeenCalledWith('No actions to undo.');
+
+    expect(undoModule.redo()).toBe(false);
+    expect(ctx.showToast).toHaveBeenCalledWith('No actions to redo.');
+
+    undoModule.pushSnapshot('Add task');
+    state.tasks.push({ id: 't2', title: 'Task 2' });
+    undoModule.undo();
+    expect(ctx.showToast).toHaveBeenCalledWith('Undone: Add task');
+
+    undoModule.redo();
+    expect(ctx.showToast).toHaveBeenCalledWith('Redone: Add task');
+
+    // Restaurar a español
+    setLocale('es');
+  });
+
+  it('traduce la descripción de la acción al deshacer cuando se añade una tarea en inglés', async () => {
+    const { setLocale } = await import('../js/i18n.js');
+    setLocale('en');
+
+    const helpers = {
+      nowMinutes: () => 600,
+      showToast: vi.fn(),
+      showRecurringModal: vi.fn()
+    };
+    const tasksActions = TodayTasksTasks(ctx, helpers);
+    tasksActions.addTask('Test task', 30);
+
+    // Deshacer la creación de la tarea
+    undoModule.undo();
+    expect(ctx.showToast).toHaveBeenCalledWith('Undone: Add task "Test task"');
+
+    // Restaurar a español
+    setLocale('es');
+  });
+
+  it('traduce el toast de tarea eliminada al inglés cuando el idioma activo es en', async () => {
+    const { setLocale } = await import('../js/i18n.js');
+    setLocale('en');
+
+    let toastMessage = '';
+    const helpers = {
+      nowMinutes: () => 600,
+      showToast: (msg) => { toastMessage = msg; },
+      showRecurringModal: vi.fn()
+    };
+    const tasksActions = TodayTasksTasks(ctx, helpers);
+    tasksActions.deleteTask('task-1');
+
+    expect(toastMessage).toBe('Task "Comprar café" deleted.');
+
+    // Restaurar a español
+    setLocale('es');
+  });
 });

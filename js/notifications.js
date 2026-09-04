@@ -1,4 +1,5 @@
 import { getTodayStr, matchesRecurrenceRule } from './utils.js';
+import { t } from './i18n.js';
 
 export function TodayTasksNotifications({ getState, getNotifyState, setNotifyState, pauseTask, saveState, nowMinutes, fmt, fmtRemaining, showToast }) {
   const notifSupported = (typeof window !== "undefined" && "Notification" in window);
@@ -11,24 +12,24 @@ export function TodayTasksNotifications({ getState, getNotifyState, setNotifySta
   }
 
   function notificationPermissionLabel(){
-    if(!notifSupported) return "no disponibles en este navegador";
+    if(!notifSupported) return t("notifications.labelUnsupported");
     const state = getState();
     if(state.notifyEnabled === false){
-      return "desactivados";
+      return t("notifications.labelDisabled");
     }
     if(typeof window !== "undefined" && window.location && window.location.protocol === "file:"){
-      return Notification.permission === "granted" ? "activados" : "no disponibles en archivo local (file://)";
+      return Notification.permission === "granted" ? t("notifications.labelEnabled") : t("notifications.labelFileProtocol");
     }
-    if(Notification.permission === "granted") return "activados";
-    if(Notification.permission === "denied") return "bloqueados en navegador (icono 🔒)";
-    return "desactivados";
+    if(Notification.permission === "granted") return t("notifications.labelEnabled");
+    if(Notification.permission === "denied") return t("notifications.labelBlocked");
+    return t("notifications.labelDisabled");
   }
 
   function refreshNotifyBtn(){
     if(typeof document === "undefined") return;
     const btn = document.getElementById("notifyBtn");
     if(!btn) return;
-    btn.textContent = "🔔 Avisos: " + notificationPermissionLabel();
+    btn.textContent = "🔔 " + t("notifications.btnLabel", { status: notificationPermissionLabel() });
     btn.disabled = !notifSupported;
   }
 
@@ -40,7 +41,7 @@ export function TodayTasksNotifications({ getState, getNotifyState, setNotifySta
       state.notifyEnabled = false;
       if(saveState) saveState();
       refreshNotifyBtn();
-      if(showToast) showToast("Avisos desactivados.");
+      if(showToast) showToast(t("notifications.toastDisabled"));
       return;
     }
 
@@ -49,26 +50,26 @@ export function TodayTasksNotifications({ getState, getNotifyState, setNotifySta
     if(saveState) saveState();
 
     if(!notifSupported){
-      if(showToast) showToast("Este navegador no admite notificaciones de escritorio.");
+      if(showToast) showToast(t("notifications.toastNotSupported"));
       refreshNotifyBtn();
       return;
     }
 
     if(typeof window !== "undefined" && window.location && window.location.protocol === "file:"){
-      if(showToast) showToast("Las notificaciones de escritorio son bloqueadas por el navegador en archivos locales (file://). Sirve la app en http://localhost o activa servidor web local. Los avisos internos visuales seguirán funcionando.");
+      if(showToast) showToast(t("notifications.toastFileProtocol"));
       refreshNotifyBtn();
       return;
     }
 
     if(Notification.permission === "granted"){
       refreshNotifyBtn();
-      if(showToast) showToast("Avisos de escritorio activados.");
+      if(showToast) showToast(t("notifications.toastEnabled"));
       return;
     }
 
     if(Notification.permission === "denied"){
       refreshNotifyBtn();
-      if(showToast) showToast("Las notificaciones están bloqueadas en tu navegador. Haz clic en el icono del candado 🔒 junto a la URL para permitirlas.");
+      if(showToast) showToast(t("notifications.toastBlocked"));
       return;
     }
 
@@ -82,21 +83,21 @@ export function TodayTasksNotifications({ getState, getNotifyState, setNotifySta
           }
           refreshNotifyBtn();
           if(perm === "granted"){
-            if(showToast) showToast("Avisos de escritorio activados.");
+            if(showToast) showToast(t("notifications.toastEnabled"));
           } else if(perm === "denied"){
-            if(showToast) showToast("Notificaciones denegadas en el navegador. Puedes activarlas desde los ajustes del sitio (icono 🔒).");
+            if(showToast) showToast(t("notifications.toastDenied"));
           } else {
-            if(showToast) showToast("No se activaron los avisos de escritorio; se usarán los avisos visuales de la app.");
+            if(showToast) showToast(t("notifications.toastVisualFallback"));
           }
         }).catch(err => {
           console.warn("Error al solicitar permiso de notificación:", err);
-          if(showToast) showToast("No se pudo solicitar permisos de notificación en este contexto.");
+          if(showToast) showToast(t("notifications.toastRequestError"));
           refreshNotifyBtn();
         });
       }
     }catch(err){
       console.warn("Excepción al solicitar permisos de notificación:", err);
-      if(showToast) showToast("No se pudieron solicitar permisos de notificación.");
+      if(showToast) showToast(t("notifications.toastRequestException"));
       refreshNotifyBtn();
     }
   }
@@ -134,8 +135,8 @@ export function TodayTasksNotifications({ getState, getNotifyState, setNotifySta
 
     // 1. Notificación inmediata cuando se acaba el tiempo planificado
     if(now >= plannedEnd && !ns.timeEndNotified){
-      const title = `⏰ ¡Tiempo planificado completado!`;
-      const body = `La tarea "${running.title}" ha alcanzado su tiempo planificado (${running.planned} min).`;
+      const title = t("notifications.taskTimeEndTitle");
+      const body = t("notifications.taskTimeEndBody", { title: running.title, planned: running.planned });
       sendDesktopNotification(title, body, `task-time-end-${running.id}`);
       if(setNotifyState) setNotifyState({taskId: running.id, lastNotifiedAt: now, timeEndNotified: true});
       return;
@@ -146,9 +147,10 @@ export function TodayTasksNotifications({ getState, getNotifyState, setNotifySta
     if(now - ns.lastNotifiedAt >= intervalMin){
       const rem = fmtRemaining ? fmtRemaining(plannedEnd, now) : { text: "", overrun: false };
       const fmtVal = fmt ? fmt(plannedEnd) : String(plannedEnd);
+      const cleanTime = (rem.text || '').replace(/^quedan\s+/i, '').replace(/^excedida\s+/i, '').replace(/\s+left$/i, '').replace(/\s+overrun$/i, '');
       const body = rem.overrun
-        ? "Se ha excedido " + rem.text.replace("excedida ","") + " · fin previsto era a las " + fmtVal
-        : "Quedan " + rem.text.replace("quedan ","") + " · fin previsto a las " + fmtVal;
+        ? t("notifications.taskOverrunBody", { time: cleanTime, plannedEnd: fmtVal })
+        : t("notifications.taskRemainingBody", { time: cleanTime, plannedEnd: fmtVal });
       sendDesktopNotification(running.title, body);
       if(setNotifyState) setNotifyState({taskId: running.id, lastNotifiedAt: now, timeEndNotified: ns.timeEndNotified || false});
     }
@@ -187,8 +189,10 @@ export function TodayTasksNotifications({ getState, getNotifyState, setNotifySta
       if(now >= (m.start - 2) && now < m.start){
         if(!notifiedMeetingKeys.has(key2min)){
           notifiedMeetingKeys.add(key2min);
-          const title = `⏰ Reunión en 2 min: ${m.title}`;
-          const body = `Empieza a las ${fmt ? fmt(m.start) : m.start} (duración hasta las ${fmt ? fmt(m.end) : m.end}).`;
+          const fmtValStart = fmt ? fmt(m.start) : m.start;
+          const fmtValEnd = fmt ? fmt(m.end) : m.end;
+          const title = t("notifications.meeting2minTitle", { title: m.title });
+          const body = t("notifications.meeting2minBody", { start: fmtValStart, end: fmtValEnd });
           sendDesktopNotification(title, body, `meeting-2min-${m.id}`);
         }
       }
@@ -201,10 +205,12 @@ export function TodayTasksNotifications({ getState, getNotifyState, setNotifySta
       if(!notifiedMeetingKeys.has(keyStart)){
         if(isStartWindow || isDuringMeeting){
           notifiedMeetingKeys.add(keyStart);
+          const fmtValStart = fmt ? fmt(m.start) : m.start;
+          const fmtValEnd = fmt ? fmt(m.end) : m.end;
 
           if(isStartWindow){
-            const title = `🔔 Reunión ahora: ${m.title}`;
-            const body = `La reunión "${m.title}" comienza ahora (${fmt ? fmt(m.start) : m.start} - ${fmt ? fmt(m.end) : m.end}).`;
+            const title = t("notifications.meetingStartTitle", { title: m.title });
+            const body = t("notifications.meetingStartBody", { title: m.title, start: fmtValStart, end: fmtValEnd });
             sendDesktopNotification(title, body, `meeting-start-${m.id}`);
           }
 
@@ -216,7 +222,7 @@ export function TodayTasksNotifications({ getState, getNotifyState, setNotifySta
               pauseTask(runningTask.id);
             }
             if(showToast){
-              showToast(`Reunión iniciada: "${runningTask.title}" se ha pausado automáticamente.`);
+              showToast(t("notifications.meetingAutoPausedTask", { title: runningTask.title }));
             }
           }
         }

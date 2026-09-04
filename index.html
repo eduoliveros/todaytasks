@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tablero del día · Planificador</title>
+<title>TodayTasks · Planificador</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css?v=1.78">
@@ -19,29 +19,29 @@
   <!-- Barra superior: logo + switcher + pestañas -->
   <div class="topbar-title-row">
     <div class="brand">
-      <h1>Tablero del día <span class="app-version">v1.99</span></h1>
-      <span class="db-status-badge" id="appModeLabel" title="Tipo de base de datos en uso">💾 local · persistente</span>
+      <h1><span data-i18n="app.title">TodayTasks</span> <span class="app-version">v1.100</span></h1>
+      <span class="db-status-badge" id="appModeLabel" data-i18n="app.localDbBadge" title="Tipo de base de datos en uso">💾 local · persistente</span>
       <div class="version-update-badge" id="versionUpdateBadge" style="display:none"></div>
       <div class="env-switcher" id="envSwitcher">
-        <button class="env-btn active" data-env="work" id="envBtnWork" title="Cambiar a ambiente de Trabajo (Tecla 'E')">
+        <button class="env-btn active" data-env="work" id="envBtnWork" data-i18n-title="env.workTooltip" title="Cambiar a ambiente de Trabajo (Tecla 'E')">
           <span class="env-icon">💼</span>
-          <span class="env-label">Trabajo</span>
+          <span class="env-label" data-i18n="env.work">Trabajo</span>
         </button>
-        <button class="env-btn" data-env="personal" id="envBtnPersonal" title="Cambiar a ambiente Personal (Tecla 'E')">
+        <button class="env-btn" data-env="personal" id="envBtnPersonal" data-i18n-title="env.personalTooltip" title="Cambiar a ambiente Personal (Tecla 'E')">
           <span class="env-icon">🏠</span>
-          <span class="env-label">Personal</span>
+          <span class="env-label" data-i18n="env.personal">Personal</span>
         </button>
       </div>
-      <button class="help-btn" id="helpBtn" title="Atajos de teclado (Tecla '?')" aria-label="Ayuda de atajos de teclado">?</button>
+      <button class="help-btn" id="helpBtn" data-i18n-title="help.btnTooltip" data-i18n-aria="help.btnAria" title="Atajos de teclado (Tecla '?')" aria-label="Ayuda de atajos de teclado">?</button>
     </div>
     <nav class="header-tabs" role="tablist">
-      <button class="header-tab active" data-tab="entorno" role="tab" aria-selected="true" aria-controls="htab-entorno" title="Cambiar a panel Resumen (Atajo: 1)">
+      <button class="header-tab active" data-tab="entorno" role="tab" aria-selected="true" aria-controls="htab-entorno" data-i18n-title="tabs.summaryTooltip" data-i18n-html="tabs.summary" title="Cambiar a panel Resumen (Atajo: 1)">
         📊 Resumen <span class="tab-kbd">[1]</span>
       </button>
-      <button class="header-tab" data-tab="tiempo" role="tab" aria-selected="false" aria-controls="htab-tiempo" title="Cambiar a panel Tiempo y fecha de hoy (Atajo: 2 o D)">
+      <button class="header-tab" data-tab="tiempo" role="tab" aria-selected="false" aria-controls="htab-tiempo" data-i18n-title="tabs.timeTooltip" data-i18n-html="tabs.time" title="Cambiar a panel Tiempo y fecha de hoy (Atajo: 2 o D)">
         🕐 Tiempo <span class="tab-kbd">[2]</span>
       </button>
-      <button class="header-tab" data-tab="config" role="tab" aria-selected="false" aria-controls="htab-config" title="Cambiar a panel Configuración (Atajo: 3)">
+      <button class="header-tab" data-tab="config" role="tab" aria-selected="false" aria-controls="htab-config" data-i18n-title="tabs.configTooltip" data-i18n-html="tabs.config" title="Cambiar a panel Configuración (Atajo: 3)">
         ⚙️ Configuración <span class="tab-kbd">[3]</span>
       </button>
     </nav>
@@ -59,50 +59,57 @@
     <div class="header-tab-panel" id="htab-tiempo" role="tabpanel">
       <div class="clock mono" id="clockDisplay">--:--</div>
       <div class="end-config">
-        Fecha
-        <button class="btn secondary date-nav-btn" id="prevDayBtn" title="Día anterior (Atajo para retrasar 1 día)">◀</button>
+        <span data-i18n="time.date">Fecha</span>
+        <button class="btn secondary date-nav-btn" id="prevDayBtn" data-i18n-title="time.prevDayTooltip" title="Día anterior (Atajo para retrasar 1 día)">◀</button>
         <span id="selectedDayLabel" class="day-abbr-badge"></span>
-        <input type="date" id="datePickerInput" title="Seleccionar día concreto para planificar o consultar">
-        <button class="btn secondary date-nav-btn" id="nextDayBtn" title="Día siguiente (Atajo para avanzar 1 día)">▶</button>
+        <input type="date" id="datePickerInput" data-i18n-title="time.datePickerTooltip" title="Seleccionar día concreto para planificar o consultar">
+        <button class="btn secondary date-nav-btn" id="nextDayBtn" data-i18n-title="time.nextDayTooltip" title="Día siguiente (Atajo para avanzar 1 día)">▶</button>
       </div>
-      <button class="btn secondary" id="todayBtn" style="display:none" title="Volver al día actual (quitar planificación personalizada)">📅 Hoy</button>
-      <a href="#/history" class="btn secondary" id="historyLinkBtn" title="Ver gráfica evolutiva y métricas de 40 días (Tecla 'H')">📊 Histórico [H]</a>
-      <button class="btn secondary" id="interruptionBtn" style="background:#F6D9D4;color:var(--danger);border:1px solid #F1C4BC;" title="Pausar tarea en marcha e iniciar una interrupción (Tecla 'I')">⚡ Interrupción [I]</button>
-      <button class="btn secondary pip-toggle-btn" id="pipBtn" title="Abrir mini-widget flotante Always on Top (Tecla 'W')">🗖 <span class="pip-btn-label">Mini-Widget [W]</span></button>
-      <button class="btn secondary" id="planningModeBtn" title="Simula el reparto de tareas como si el día empezara ahora a la hora de inicio de jornada">🗺 Modo planificación</button>
+      <button class="btn secondary" id="todayBtn" style="display:none" data-i18n-title="time.todayTooltip" data-i18n="time.today" title="Volver al día actual (quitar planificación personalizada)">📅 Hoy</button>
+      <a href="#/history" class="btn secondary" id="historyLinkBtn" data-i18n-title="time.historyTooltip" data-i18n="time.history" title="Ver gráfica evolutiva y métricas de 40 días (Tecla 'H')">📊 Histórico [H]</a>
+      <button class="btn secondary" id="interruptionBtn" style="background:#F6D9D4;color:var(--danger);border:1px solid #F1C4BC;" data-i18n-title="time.interruptionTooltip" data-i18n="time.interruption" title="Pausar tarea en marcha e iniciar una interrupción (Tecla 'I')">⚡ Interrupción [I]</button>
+      <button class="btn secondary pip-toggle-btn" id="pipBtn" data-i18n-title="time.pipTooltip" title="Abrir mini-widget flotante Always on Top (Tecla 'W')">🗖 <span class="pip-btn-label" data-i18n="time.pipLabel">Mini-Widget [W]</span></button>
+      <button class="btn secondary" id="planningModeBtn" data-i18n-title="time.planningModeTooltip" data-i18n="time.planningMode" title="Simula el reparto de tareas como si el día empezara ahora a la hora de inicio de jornada">🗺 Modo planificación</button>
     </div>
 
     <!-- Panel: Configuración -->
     <div class="header-tab-panel" id="htab-config" role="tabpanel">
       <div class="auth-area" id="authArea">
-        <button class="btn secondary" id="signInBtn">☁ Iniciar sesión con Google</button>
+        <button class="btn secondary" id="signInBtn" data-i18n="cloud.signInBtn">☁ Iniciar sesión con Google</button>
       </div>
       <div class="end-config">
-        Inicio jornada
+        <span data-i18n="config.workStart">Inicio jornada</span>
         <input type="time" id="workStartInput">
       </div>
       <div class="end-config">
-        Fin de jornada
+        <span data-i18n="config.workEnd">Fin de jornada</span>
         <input type="time" id="workEndInput">
       </div>
-      <button class="btn secondary" id="notifyBtn" title="Activa avisos de escritorio para la tarea en marcha">🔔 Avisos</button>
+      <button class="btn secondary" id="notifyBtn" data-i18n-title="config.notifyTooltip" data-i18n="config.notifications" title="Activa avisos de escritorio para la tarea en marcha">🔔 Avisos</button>
       <div class="end-config">
-        cada
+        <span data-i18n="config.every">cada</span>
         <input type="number" id="notifyIntervalInput" min="1" style="width:56px">
-        min
+        <span data-i18n="config.minutes">min</span>
       </div>
-      <button class="btn secondary" id="autoBreakBtn" title="Activa o desactiva la inserción automática de descansos tras 1h de trabajo continuo">☕ Auto descansos</button>
+      <button class="btn secondary" id="autoBreakBtn" data-i18n-title="config.autoBreaksTooltip" data-i18n="config.autoBreaks" title="Activa o desactiva la inserción automática de descansos tras 1h de trabajo continuo">☕ Auto descansos</button>
       <div class="end-config">
-        Tema
-        <select id="themeSelect" title="Seleccionar tema visual (Sistema, Claro u Oscuro)">
-          <option value="auto">🌓 Sistema</option>
-          <option value="light">☀️ Claro</option>
-          <option value="dark">🌙 Oscuro</option>
+        <span data-i18n="config.theme">Tema</span>
+        <select id="themeSelect" data-i18n-title="config.themeTooltip" title="Seleccionar tema visual (Sistema, Claro u Oscuro)">
+          <option value="auto" data-i18n="config.themeAuto">🌓 Sistema</option>
+          <option value="light" data-i18n="config.themeLight">☀️ Claro</option>
+          <option value="dark" data-i18n="config.themeDark">🌙 Oscuro</option>
         </select>
       </div>
-      <button class="btn secondary" id="weeklyScheduleBtn" title="Configurar horario de inicio y fin de jornada por día de la semana">📅 Horario semanal</button>
-      <button class="btn secondary" id="autoOrderBtn" title="Reordena automáticamente las tareas del día según su urgencia y si están destacadas">⚡ Orden automático</button>
-      <button class="btn secondary" id="newDayBtn" title="Borra reuniones y tareas del día seleccionado para empezar de cero">↻ Nuevo día</button>
+      <div class="end-config">
+        <span data-i18n="config.language">Idioma</span>
+        <select id="languageSelect" data-i18n-title="config.languageTooltip" title="Seleccionar idioma (Español o English)">
+          <option value="es">🇪🇸 Español</option>
+          <option value="en">🇬🇧 English</option>
+        </select>
+      </div>
+      <button class="btn secondary" id="weeklyScheduleBtn" data-i18n-title="config.weeklyScheduleTooltip" data-i18n="config.weeklySchedule" title="Configurar horario de inicio y fin de jornada por día de la semana">📅 Horario semanal</button>
+      <button class="btn secondary" id="autoOrderBtn" data-i18n-title="config.autoOrderTooltip" data-i18n="config.autoOrder" title="Reordena automáticamente las tareas del día según su urgencia y si están destacadas">⚡ Orden automático</button>
+      <button class="btn secondary" id="newDayBtn" data-i18n-title="config.newDayTooltip" data-i18n="config.newDay" title="Borra reuniones y tareas del día seleccionado para empezar de cero">↻ Nuevo día</button>
     </div>
 
   </div>
@@ -118,20 +125,22 @@
   <div>
     <div class="panel">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-        <h2 style="margin:0;">Tareas</h2>
-        <a href="#/triage" class="btn secondary small" id="triageViewBtn" title="Abrir vista de triaje rápido (Tecla 'X')" style="text-decoration:none;">⚡ Triaje [X]</a>
+        <h2 style="margin:0;" data-i18n="tasks.heading">Tareas</h2>
+        <a href="#/triage" class="btn secondary small" id="triageViewBtn" data-i18n-title="tasks.triageTooltip" data-i18n="tasks.triageBtn" title="Abrir vista de triaje rápido (Tecla 'X')" style="text-decoration:none;">⚡ Triaje [X]</a>
       </div>
       <div class="row">
-        <input type="text" id="taskTitle" placeholder="Título de la tarea">
+        <input type="text" id="taskTitle" data-i18n-placeholder="tasks.inputTitlePlaceholder" placeholder="Título de la tarea">
       </div>
       <div class="row">
-        <input type="text" id="taskDuration" placeholder="Duración (ej. 30, 1h 30m)" style="width:180px">
-        <button class="btn" id="addTaskBtn">Añadir</button>
+        <input type="text" id="taskDuration" data-i18n-placeholder="tasks.inputDurationPlaceholder" placeholder="Duración (ej. 30, 1h 30m)" style="width:180px">
+        <button class="btn" id="addTaskBtn" data-i18n="action.add">Añadir</button>
       </div>
       <div class="row" style="align-items:center;margin-top:4px;margin-bottom:8px;gap:6px;">
         <!-- Urgency pill button (like task items) -->
         <button type="button" class="urgency-pill-btn urgency-btn-days" id="formUrgencyPill"
                 onclick="app.openFormUrgencyDropdown(event)"
+                data-i18n-title="urgency.formPillTooltip"
+                data-i18n-aria="urgency.formPillAria"
                 title="Urgencia (por defecto Días)"
                 aria-label="Urgencia Días">
           <span class="urgency-pill-dot" id="formUrgencyIcon">🔵</span>
@@ -140,6 +149,8 @@
         </button>
         <!-- Star button (like task items) -->
         <button type="button" class="icon-btn star-btn" id="formFeaturedStarBtn"
+                data-i18n-title="tasks.starFormTooltip"
+                data-i18n-aria="tasks.starFormAria"
                 title="Marcar como destacada (máx. 5 al día)"
                 onclick="app.toggleFormFeatured(event)"
                 aria-label="Destacar tarea">☆</button>
@@ -152,11 +163,11 @@
         <button type="button" class="task-advanced-toggle" id="taskAdvancedToggleBtn" onclick="app.toggleTaskAdvancedOptions()" aria-expanded="false" aria-controls="taskAdvancedOptionsWrap">
           <div class="task-advanced-toggle-label">
             <span class="task-advanced-icon">⚙️</span>
-            <span>Opciones avanzadas</span>
+            <span data-i18n="tasks.advancedOptions">Opciones avanzadas</span>
             <div class="task-advanced-indicators" id="taskAdvancedIndicators">
-              <span id="formAutoMoveBadge" class="badge-adv-icon" title="Auto-mover a hoy si no se completa">⏩</span>
-              <span id="formRecurringBadge" class="badge-adv-icon" title="Tarea recurrente" style="display:none;">🔁</span>
-              <span id="formNotesBadge" class="badge-adv-icon" title="Tiene notas / enlaces" style="display:none;">📝</span>
+              <span id="formAutoMoveBadge" class="badge-adv-icon" data-i18n-title="tasks.autoMoveBadgeTooltip" title="Auto-mover a hoy si no se completa">⏩</span>
+              <span id="formRecurringBadge" class="badge-adv-icon" data-i18n-title="tasks.recurringBadgeTooltip" title="Tarea recurrente" style="display:none;">🔁</span>
+              <span id="formNotesBadge" class="badge-adv-icon" data-i18n-title="tasks.notesBadgeTooltip" title="Tiene notas / enlaces" style="display:none;">📝</span>
               <span id="formStartAfterBadge" class="badge-startafter-summary" style="display:none;"></span>
             </div>
           </div>
@@ -167,36 +178,36 @@
           <!-- 1. Auto-mover (marcado por defecto) -->
           <div id="autoMoveTaskOptionWrap">
             <label style="font-size:0.85rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
-              <input type="checkbox" id="isAutoMoveTaskCheckbox" checked> Auto-mover si no se completa a hoy
+              <input type="checkbox" id="isAutoMoveTaskCheckbox" checked> <span data-i18n="tasks.autoMoveLabel">Auto-mover si no se completa a hoy</span>
             </label>
           </div>
 
           <!-- 2. Repetir tarea -->
           <div>
             <label style="font-size:0.85rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
-              <input type="checkbox" id="isRecurringTaskCheckbox"> Repetir tarea 🔁
+              <input type="checkbox" id="isRecurringTaskCheckbox"> <span data-i18n="tasks.recurringLabel">Repetir tarea 🔁</span>
             </label>
 
             <div id="recurringTaskFormOptions" class="recurring-form-options-panel" style="display:none;">
               <div class="rec-form-grid">
                 <div class="rec-form-field">
-                  <label class="rec-form-label" for="recTaskFreq">Frecuencia:</label>
+                  <label class="rec-form-label" for="recTaskFreq" data-i18n="recurrence.freqLabel">Frecuencia:</label>
                   <select id="recTaskFreq" class="rec-form-select">
-                    <option value="weekly" selected>Semanal (días específicos)</option>
-                    <option value="daily">Diaria (todos los días)</option>
+                    <option value="weekly" selected data-i18n="recurrence.freqWeekly">Semanal (días específicos)</option>
+                    <option value="daily" data-i18n="recurrence.freqDaily">Diaria (todos los días)</option>
                   </select>
                 </div>
                 <div class="rec-form-field">
-                  <label class="rec-form-label" for="recTaskInterval">Repetir cada:</label>
+                  <label class="rec-form-label" for="recTaskInterval" data-i18n="recurrence.repeatEvery">Repetir cada:</label>
                   <div style="display:flex;align-items:center;gap:6px;">
-                    <input type="number" id="recTaskInterval" value="1" min="1" max="99" class="rec-form-input-number" style="width:65px;" title="Número de días o semanas entre repeticiones">
-                    <span id="recTaskIntervalUnit" class="rec-form-unit-label">semana(s)</span>
+                    <input type="number" id="recTaskInterval" value="1" min="1" max="99" class="rec-form-input-number" style="width:65px;" data-i18n-title="recurrence.intervalTooltip" title="Número de días o semanas entre repeticiones">
+                    <span id="recTaskIntervalUnit" class="rec-form-unit-label" data-i18n="recurrence.unitWeeks">semana(s)</span>
                   </div>
                 </div>
               </div>
 
               <div id="recTaskDaysWrap" class="rec-form-field" style="margin-top:8px;">
-                <label class="rec-form-label">Días de repetición:</label>
+                <label class="rec-form-label" data-i18n="recurrence.daysLabel">Días de repetición:</label>
                 <div class="rec-pop-days-row" id="recTaskDaysRow">
                   <button type="button" class="rec-pop-day-btn active" data-day="1" onclick="app.toggleTaskFormRecurrenceDay(1)" title="Lunes">L</button>
                   <button type="button" class="rec-pop-day-btn" data-day="2" onclick="app.toggleTaskFormRecurrenceDay(2)" title="Martes">M</button>
@@ -219,8 +230,8 @@
 
               <div class="rec-form-field" style="margin-top:8px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;">
-                  <label class="rec-form-label" for="recTaskEndDate">Fecha límite (opcional):</label>
-                  <button type="button" class="rec-pop-link-btn" onclick="document.getElementById('recTaskEndDate').value=''">Sin límite</button>
+                  <label class="rec-form-label" for="recTaskEndDate" data-i18n="recurrence.endDateLabel">Fecha límite (opcional):</label>
+                  <button type="button" class="rec-pop-link-btn" onclick="document.getElementById('recTaskEndDate').value=''" data-i18n="recurrence.noLimitBtn">Sin límite</button>
                 </div>
                 <input type="date" id="recTaskEndDate" class="rec-form-input-date" style="width:100%;">
               </div>
@@ -229,75 +240,75 @@
 
           <!-- 3. A partir de una hora (Control directo HH:mm con opción de borrar) -->
           <div class="task-form-startafter-row">
-            <label for="taskStartAfterInput" class="task-form-startafter-label">
+            <label for="taskStartAfterInput" class="task-form-startafter-label" data-i18n-html="tasks.startAfterLabel">
               <span>⏰</span> Iniciar a partir de:
             </label>
             <div class="task-form-startafter-input-wrap">
-              <input type="time" id="taskStartAfterInput" class="task-form-startafter-time-input" oninput="app.onFormStartAfterChange(this.value)" title="Hora mínima de inicio (opcional)">
-              <button type="button" class="btn-clear-startafter" id="clearTaskStartAfterBtn" onclick="app.clearFormStartAfterDirect()" title="Borrar hora" aria-label="Borrar hora">✕</button>
+              <input type="time" id="taskStartAfterInput" class="task-form-startafter-time-input" oninput="app.onFormStartAfterChange(this.value)" data-i18n-title="tasks.startAfterTooltip" title="Hora mínima de inicio (opcional)">
+              <button type="button" class="btn-clear-startafter" id="clearTaskStartAfterBtn" onclick="app.clearFormStartAfterDirect()" data-i18n-title="tasks.clearStartAfterTooltip" data-i18n-aria="tasks.clearStartAfterAria" title="Borrar hora" aria-label="Borrar hora">✕</button>
             </div>
           </div>
 
           <!-- 4. Notas y enlaces (Markdown ligero) -->
           <div class="task-form-notes-row">
             <div class="task-form-notes-header">
-              <label for="taskNotesInput" class="task-form-notes-label">
+              <label for="taskNotesInput" class="task-form-notes-label" data-i18n-html="tasks.notesLabel">
                 <span>📝</span> Notas / Enlaces:
               </label>
               <div class="task-notes-mini-toolbar">
-                <button type="button" class="btn-notes-tool" onclick="app.insertFormNotesFormat('**', '**')" title="Negrita (**texto**)">B</button>
-                <button type="button" class="btn-notes-tool italic" onclick="app.insertFormNotesFormat('*', '*')" title="Cursiva (*texto*)">I</button>
-                <button type="button" class="btn-notes-tool" onclick="app.insertFormNotesLink()" title="Insertar enlace">🔗 Link</button>
+                <button type="button" class="btn-notes-tool" onclick="app.insertFormNotesFormat('**', '**')" data-i18n-title="markdown.boldTooltip" title="Negrita (**texto**)">B</button>
+                <button type="button" class="btn-notes-tool italic" onclick="app.insertFormNotesFormat('*', '*')" data-i18n-title="markdown.italicTooltip" title="Cursiva (*texto*)">I</button>
+                <button type="button" class="btn-notes-tool" onclick="app.insertFormNotesLink()" data-i18n-title="markdown.linkTooltip" title="Insertar enlace">🔗 Link</button>
               </div>
             </div>
-            <textarea id="taskNotesInput" class="task-form-notes-textarea" rows="2" placeholder="Notas, enlaces o contexto (ej. **importante**, https://... o [PR](url))" oninput="if(app.updateTaskAdvancedIndicators) app.updateTaskAdvancedIndicators()"></textarea>
+            <textarea id="taskNotesInput" class="task-form-notes-textarea" rows="2" data-i18n-placeholder="tasks.notesPlaceholder" placeholder="Notas, enlaces o contexto (ej. **importante**, https://... o [PR](url))" oninput="if(app.updateTaskAdvancedIndicators) app.updateTaskAdvancedIndicators()"></textarea>
           </div>
         </div>
       </div>
       <div class="task-search-bar" id="taskSearchBar">
         <span class="task-search-icon" aria-hidden="true">🔍</span>
-        <input type="text" id="taskSearchInput" class="task-search-input" placeholder="Buscar tareas..." autocomplete="off" spellcheck="false" title="Buscar en tareas activas y completadas del día (Atajo: /)">
-        <button type="button" id="taskSearchClearBtn" class="task-search-clear-btn" title="Limpiar búsqueda" style="display:none;" aria-label="Limpiar búsqueda">✕</button>
+        <input type="text" id="taskSearchInput" class="task-search-input" data-i18n-placeholder="tasks.searchPlaceholder" data-i18n-title="tasks.searchTooltip" placeholder="Buscar tareas..." autocomplete="off" spellcheck="false" title="Buscar en tareas activas y completadas del día (Atajo: /)">
+        <button type="button" id="taskSearchClearBtn" class="task-search-clear-btn" data-i18n-title="tasks.searchClearTooltip" data-i18n-aria="tasks.searchClearAria" title="Limpiar búsqueda" style="display:none;" aria-label="Limpiar búsqueda">✕</button>
       </div>
       <div id="tasksAutoMoveBanner" style="display:none;margin-bottom:12px;"></div>
       <div id="tasksList"></div>
     </div>
 
     <div class="panel">
-      <h2>Reuniones</h2>
+      <h2 data-i18n="meetings.heading">Reuniones</h2>
       <div class="row">
-        <input type="text" id="meetingTitle" placeholder="Título de la reunión">
+        <input type="text" id="meetingTitle" data-i18n-placeholder="meetings.inputTitlePlaceholder" placeholder="Título de la reunión">
       </div>
       <div class="row">
         <input type="time" id="meetingStart" style="flex:1">
         <input type="time" id="meetingEnd" style="flex:1">
-        <button class="btn" id="addMeetingBtn">Añadir</button>
+        <button class="btn" id="addMeetingBtn" data-i18n="action.add">Añadir</button>
       </div>
       <div style="margin-top:6px;">
         <label style="font-size:0.85rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
-          <input type="checkbox" id="isRecurringCheckbox"> Repetir reunión 🔁
+          <input type="checkbox" id="isRecurringCheckbox"> <span data-i18n="meetings.recurringLabel">Repetir reunión 🔁</span>
         </label>
       </div>
       <div id="recurringFormOptions" class="recurring-form-options-panel" style="display:none;">
         <div class="rec-form-grid">
           <div class="rec-form-field">
-            <label class="rec-form-label" for="recFreq">Frecuencia:</label>
+            <label class="rec-form-label" for="recFreq" data-i18n="recurrence.freqLabel">Frecuencia:</label>
             <select id="recFreq" class="rec-form-select">
-              <option value="weekly" selected>Semanal (días específicos)</option>
-              <option value="daily">Diaria (todos los días)</option>
+              <option value="weekly" selected data-i18n="recurrence.freqWeekly">Semanal (días específicos)</option>
+              <option value="daily" data-i18n="recurrence.freqDaily">Diaria (todos los días)</option>
             </select>
           </div>
           <div class="rec-form-field">
-            <label class="rec-form-label" for="recInterval">Repetir cada:</label>
+            <label class="rec-form-label" for="recInterval" data-i18n="recurrence.repeatEvery">Repetir cada:</label>
             <div style="display:flex;align-items:center;gap:6px;">
-              <input type="number" id="recInterval" value="1" min="1" max="99" class="rec-form-input-number" style="width:65px;" title="Número de días o semanas entre repeticiones">
-              <span id="recMeetingIntervalUnit" class="rec-form-unit-label">semana(s)</span>
+              <input type="number" id="recInterval" value="1" min="1" max="99" class="rec-form-input-number" style="width:65px;" data-i18n-title="recurrence.intervalTooltip" title="Número de días o semanas entre repeticiones">
+              <span id="recMeetingIntervalUnit" class="rec-form-unit-label" data-i18n="recurrence.unitWeeks">semana(s)</span>
             </div>
           </div>
         </div>
 
         <div id="recDaysWrap" class="rec-form-field" style="margin-top:8px;">
-          <label class="rec-form-label">Días de repetición:</label>
+          <label class="rec-form-label" data-i18n="recurrence.daysLabel">Días de repetición:</label>
           <div class="rec-pop-days-row" id="recMeetingDaysRow">
             <button type="button" class="rec-pop-day-btn active" data-day="1" onclick="app.toggleMeetingFormRecurrenceDay(1)" title="Lunes">L</button>
             <button type="button" class="rec-pop-day-btn" data-day="2" onclick="app.toggleMeetingFormRecurrenceDay(2)" title="Martes">M</button>
@@ -320,8 +331,8 @@
 
         <div class="rec-form-field" style="margin-top:8px;">
           <div style="display:flex;align-items:center;justify-content:space-between;">
-            <label class="rec-form-label" for="recEndDate">Fecha límite (opcional):</label>
-            <button type="button" class="rec-pop-link-btn" onclick="document.getElementById('recEndDate').value=''">Sin límite</button>
+            <label class="rec-form-label" for="recEndDate" data-i18n="recurrence.endDateLabel">Fecha límite (opcional):</label>
+            <button type="button" class="rec-pop-link-btn" onclick="document.getElementById('recEndDate').value=''" data-i18n="recurrence.noLimitBtn">Sin límite</button>
           </div>
           <input type="date" id="recEndDate" class="rec-form-input-date" style="width:100%;">
         </div>
@@ -332,35 +343,35 @@
 
   <!-- RIGHT COLUMN: board -->
   <div class="board">
-    <h2><span id="boardTitle">Desde ahora hasta el fin de jornada</span> <span class="now-badge mono" id="boardNow"></span></h2>
+    <h2><span id="boardTitle" data-i18n="board.defaultTitle">Desde ahora hasta el fin de jornada</span> <span class="now-badge mono" id="boardNow"></span></h2>
     <div id="boardContent"></div>
   </div>
 </div>
 
 <div class="panel agenda-panel">
   <div class="summary-toggle" id="summaryToggle">
-    <h2 style="margin-bottom:0">Agenda completa del día · horario de cada actividad</h2>
+    <h2 style="margin-bottom:0" data-i18n="board.agendaTitle">Agenda completa del día · horario de cada actividad</h2>
     <span class="icon-btn" id="summaryChevron">▴</span>
   </div>
   <div class="summary-body" id="summaryBody">
     <div class="summary-grid summary-grid-3">
       <div class="summary-col">
-        <h3>Reuniones</h3>
+        <h3 data-i18n="board.summaryMeetings">Reuniones</h3>
         <div id="meetingsSummaryList"></div>
       </div>
       <div class="summary-col">
-        <h3>Tareas completadas</h3>
+        <h3 data-i18n="board.summaryCompleted">Tareas completadas</h3>
         <div id="completedList"></div>
       </div>
       <div class="summary-col">
-        <h3>Tareas pendientes / no terminadas</h3>
+        <h3 data-i18n="board.summaryPending">Tareas pendientes / no terminadas</h3>
         <div id="pendingList"></div>
       </div>
     </div>
   </div>
 </div>
 
-<footer>Los datos se guardan en este navegador (localStorage). Si inicias sesión, también se sincronizan en la nube.</footer>
+<footer><span data-i18n="app.footerNotice">Los datos se guardan en este navegador (localStorage). Si inicias sesión, también se sincronizan en la nube.</span></footer>
 </div><!-- /#view-main -->
 
 <div id="view-task" style="display:none"></div>
@@ -374,33 +385,33 @@
 
 <div id="recurringModal" class="modal-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:100001;align-items:center;justify-content:center;">
   <div class="modal-box" style="background:#fff;padding:22px;border-radius:10px;max-width:420px;width:90%;box-shadow:0 12px 28px rgba(0,0,0,0.25);font-family:inherit;">
-    <h3 id="recurringModalTitle" style="margin-top:0;margin-bottom:8px;font-size:1.1rem;color:#1f2937;">Gestionar reunión recurrente 🔁</h3>
-    <p id="recurringModalDesc" style="font-size:0.9rem;color:#4b5563;margin-bottom:16px;line-height:1.4;">¿Deseas aplicar esta acción solo a esta ocurrencia puntual o a toda la serie recurrente?</p>
+    <h3 id="recurringModalTitle" data-i18n="modal.recurringTitle" style="margin-top:0;margin-bottom:8px;font-size:1.1rem;color:#1f2937;">Gestionar reunión recurrente 🔁</h3>
+    <p id="recurringModalDesc" data-i18n="modal.recurringDesc" style="font-size:0.9rem;color:#4b5563;margin-bottom:16px;line-height:1.4;">¿Deseas aplicar esta acción solo a esta ocurrencia puntual o a toda la serie recurrente?</p>
     <div style="display:flex;flex-direction:column;gap:8px;">
-      <button class="btn secondary" id="recModalBtnInstance" style="text-align:left;padding:10px 14px;"><strong>Solo esta ocurrencia</strong><br><small style="color:#6b7280;">Aplica solo al día seleccionado</small></button>
-      <button class="btn" id="recModalBtnSeries" style="text-align:left;padding:10px 14px;"><strong>Toda la serie recurrente</strong><br><small style="color:rgba(255,255,255,0.85);">Afecta a todas las repeticiones pasadas y futuras</small></button>
-      <button class="btn secondary" id="recModalBtnCancel" style="background:#f3f4f6;color:#374151;border:none;margin-top:4px;">Cancelar</button>
+      <button class="btn secondary" id="recModalBtnInstance" data-i18n-html="modal.recurringBtnInstance" style="text-align:left;padding:10px 14px;"><strong>Solo esta ocurrencia</strong><br><small style="color:#6b7280;">Aplica solo al día seleccionado</small></button>
+      <button class="btn" id="recModalBtnSeries" data-i18n-html="modal.recurringBtnSeries" style="text-align:left;padding:10px 14px;"><strong>Toda la serie recurrente</strong><br><small style="color:rgba(255,255,255,0.85);">Afecta a todas las repeticiones pasadas y futuras</small></button>
+      <button class="btn secondary" id="recModalBtnCancel" data-i18n="action.cancel" style="background:#f3f4f6;color:#374151;border:none;margin-top:4px;">Cancelar</button>
     </div>
   </div>
 </div>
 
 <div id="copyTaskModal" class="modal-overlay" style="display:none;">
   <div class="modal-box">
-    <h3 id="copyTaskModalTitle">Copiar tarea 📋</h3>
-    <p id="copyTaskModalDesc">¿A qué fecha deseas copiar esta tarea? Se creará una copia en estado pendiente con la duración completa original.</p>
+    <h3 id="copyTaskModalTitle" data-i18n="modal.copyTitle">Copiar tarea 📋</h3>
+    <p id="copyTaskModalDesc" data-i18n="modal.copyDesc">¿A qué fecha deseas copiar esta tarea? Se creará una copia en estado pendiente con la duración completa original.</p>
     <div style="display:flex;flex-direction:column;gap:12px;">
       <button class="btn" id="copyTaskBtnToday" style="text-align:left;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
-        <span id="copyTaskBtnTodayText">📅 <strong>Copiar a Hoy</strong></span>
+        <span id="copyTaskBtnTodayText" data-i18n-html="modal.copyToToday">📅 <strong>Copiar a Hoy</strong></span>
         <small id="copyTaskTodayLabel" style="opacity:0.85;"></small>
       </button>
       <div class="modal-field-group">
-        <label id="copyTaskDateLabel" for="copyTaskDateInput" style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:6px;">Seleccionar otra fecha:</label>
+        <label id="copyTaskDateLabel" for="copyTaskDateInput" data-i18n="modal.copySelectDate" style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:6px;">Seleccionar otra fecha:</label>
         <div style="display:flex;gap:8px;">
           <input type="date" id="copyTaskDateInput" style="flex:1;padding:6px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;background:var(--bg-card);color:var(--ink);">
-          <button class="btn secondary" id="copyTaskBtnCustomDate">Copiar</button>
+          <button class="btn secondary" id="copyTaskBtnCustomDate" data-i18n="action.copy">Copiar</button>
         </div>
       </div>
-      <button class="btn secondary" id="copyTaskBtnCancel" style="border:none;margin-top:4px;">Cancelar</button>
+      <button class="btn secondary" id="copyTaskBtnCancel" data-i18n="action.cancel" style="border:none;margin-top:4px;">Cancelar</button>
     </div>
   </div>
 </div>
@@ -408,25 +419,25 @@
 <div class="time-popover-overlay" id="timePopoverOverlay" onclick="app.closeTimePopover()"></div>
 <div class="time-popover" id="timePopover">
   <div class="time-popover-header">
-    <span>Ajustar tiempo consumido</span>
+    <span data-i18n="popover.adjustTime">Ajustar tiempo consumido</span>
   </div>
   <div class="time-popover-controls">
-    <input type="text" id="timePopoverInput" placeholder="ej. 25, 1h 30m" onkeydown="if(event.key==='Enter') app.saveTimePopover()" />
-    <button class="btn small done" onclick="app.saveTimePopover()" style="padding: 6px 12px; font-weight: 600;">Guardar</button>
+    <input type="text" id="timePopoverInput" data-i18n-placeholder="popover.adjustTimePlaceholder" placeholder="ej. 25, 1h 30m" onkeydown="if(event.key==='Enter') app.saveTimePopover()" />
+    <button class="btn small done" onclick="app.saveTimePopover()" data-i18n="action.save" style="padding: 6px 12px; font-weight: 600;">Guardar</button>
   </div>
 </div>
 
 <div class="time-popover-overlay" id="startAfterPopoverOverlay" onclick="app.closeStartAfterPopover()"></div>
 <div class="time-popover start-after-popover" id="startAfterPopover" style="display:none;">
   <div class="time-popover-header">
-    <span>⏰ Iniciar a partir de</span>
-    <button type="button" class="close-popover-x" onclick="app.closeStartAfterPopover()" aria-label="Cerrar">&times;</button>
+    <span data-i18n="popover.startAfter">⏰ Iniciar a partir de</span>
+    <button type="button" class="close-popover-x" onclick="app.closeStartAfterPopover()" data-i18n-aria="action.close" aria-label="Cerrar">&times;</button>
   </div>
   <div class="start-after-popover-body">
     <input type="time" id="startAfterPopoverInput" onkeydown="if(event.key==='Enter') app.saveStartAfterPopover()" />
     <div class="start-after-popover-actions">
-      <button type="button" class="btn small secondary" onclick="app.clearStartAfterPopover()">Quitar</button>
-      <button type="button" class="btn small done" onclick="app.saveStartAfterPopover()">Guardar</button>
+      <button type="button" class="btn small secondary" onclick="app.clearStartAfterPopover()" data-i18n="action.clear">Quitar</button>
+      <button type="button" class="btn small done" onclick="app.saveStartAfterPopover()" data-i18n="action.save">Guardar</button>
     </div>
   </div>
 </div>
@@ -437,9 +448,9 @@
   <div class="time-popover-header">
     <div style="display:flex;align-items:center;gap:6px;">
       <span style="font-size:0.95rem;">🔁</span>
-      <span id="recurringPopoverHeading" style="font-weight:600;font-size:0.85rem;color:var(--ink,#0F172A);">Regla recurrente</span>
+      <span id="recurringPopoverHeading" data-i18n="popover.recurringHeading" style="font-weight:600;font-size:0.85rem;color:var(--ink,#0F172A);">Regla recurrente</span>
     </div>
-    <button type="button" class="close-popover-x" onclick="app.closeRecurringInfoPopover()" aria-label="Cerrar">&times;</button>
+    <button type="button" class="close-popover-x" onclick="app.closeRecurringInfoPopover()" data-i18n-aria="action.close" aria-label="Cerrar">&times;</button>
   </div>
   
   <!-- Modo Consulta -->
@@ -447,15 +458,15 @@
     <div class="rec-pop-title" id="recurringPopoverTitle">—</div>
     <div class="rec-pop-grid">
       <div class="rec-pop-field">
-        <span class="rec-pop-label">Frecuencia:</span>
+        <span class="rec-pop-label" data-i18n="recurrence.freqLabel">Frecuencia:</span>
         <span class="rec-pop-value" id="recurringPopoverFreq">—</span>
       </div>
       <div class="rec-pop-field">
-        <span class="rec-pop-label">Días:</span>
+        <span class="rec-pop-label" data-i18n="recurrence.daysLabel">Días:</span>
         <span class="rec-pop-value" id="recurringPopoverDays">—</span>
       </div>
       <div class="rec-pop-field" style="grid-column: span 2;">
-        <span class="rec-pop-label">Vigencia:</span>
+        <span class="rec-pop-label" data-i18n="recurrence.validityLabel">Vigencia:</span>
         <span class="rec-pop-value" id="recurringPopoverDates">—</span>
       </div>
     </div>
@@ -463,33 +474,33 @@
       <span class="rec-pop-status-badge" id="recurringPopoverStatusBadge">✓ Ocurrencia normal</span>
     </div>
     <div class="recurring-popover-actions">
-      <button type="button" class="btn small secondary" onclick="app.closeRecurringInfoPopover()">Cerrar</button>
-      <button type="button" class="btn small run" id="recurringPopoverEditBtn" onclick="app.toggleEditRecurrenceInPopover(true)">✎ Editar recurrencia</button>
+      <button type="button" class="btn small secondary" onclick="app.closeRecurringInfoPopover()" data-i18n="action.close">Cerrar</button>
+      <button type="button" class="btn small run" id="recurringPopoverEditBtn" onclick="app.toggleEditRecurrenceInPopover(true)" data-i18n="popover.editRecurrenceBtn">✎ Editar recurrencia</button>
     </div>
   </div>
 
   <!-- Modo Edición Directa de Recurrencia -->
   <div class="recurring-popover-body rec-pop-edit-mode" id="recurringPopoverEditMode" style="display:none;">
-    <div class="rec-pop-edit-title">Modificar patrón recurrente</div>
+    <div class="rec-pop-edit-title" data-i18n="popover.editRecurrenceTitle">Modificar patrón recurrente</div>
     
     <div class="rec-pop-field">
-      <label class="rec-pop-label" for="recPopEditFreq">Frecuencia:</label>
+      <label class="rec-pop-label" for="recPopEditFreq" data-i18n="recurrence.freqLabel">Frecuencia:</label>
       <select id="recPopEditFreq" class="rec-pop-select" onchange="app.onRecurrencePopoverFreqChange(this.value)">
-        <option value="weekly">Semanal (días específicos)</option>
-        <option value="daily">Diaria (todos los días)</option>
+        <option value="weekly" data-i18n="recurrence.freqWeekly">Semanal (días específicos)</option>
+        <option value="daily" data-i18n="recurrence.freqDaily">Diaria (todos los días)</option>
       </select>
     </div>
 
     <div class="rec-pop-field">
-      <label class="rec-pop-label" for="recPopEditInterval">Repetir cada:</label>
+      <label class="rec-pop-label" for="recPopEditInterval" data-i18n="recurrence.repeatEvery">Repetir cada:</label>
       <div style="display:flex;align-items:center;gap:6px;">
         <input type="number" id="recPopEditInterval" min="1" max="99" value="1" class="rec-pop-input-number" style="width:65px;" />
-        <span class="rec-pop-unit-label" id="recPopEditIntervalUnit" style="font-size:0.8rem;color:var(--text-muted);">semana(s)</span>
+        <span class="rec-pop-unit-label" id="recPopEditIntervalUnit" style="font-size:0.8rem;color:var(--text-muted);" data-i18n="recurrence.unitWeeks">semana(s)</span>
       </div>
     </div>
 
     <div class="rec-pop-field" id="recPopEditDaysWrap">
-      <label class="rec-pop-label">Días de la semana:</label>
+      <label class="rec-pop-label" data-i18n="recurrence.daysOfWeekLabel">Días de la semana:</label>
       <div class="rec-pop-days-row">
         <button type="button" class="rec-pop-day-btn" data-day="1" onclick="app.toggleRecurrencePopoverDay(1)" title="Lunes">L</button>
         <button type="button" class="rec-pop-day-btn" data-day="2" onclick="app.toggleRecurrencePopoverDay(2)" title="Martes">M</button>
@@ -503,15 +514,15 @@
 
     <div class="rec-pop-field">
       <div style="display:flex;align-items:center;justify-content:space-between;">
-        <label class="rec-pop-label" for="recPopEditEndDate">Fecha fin (opcional):</label>
-        <button type="button" class="rec-pop-link-btn" onclick="document.getElementById('recPopEditEndDate').value = ''">Sin límite</button>
+        <label class="rec-pop-label" for="recPopEditEndDate" data-i18n="recurrence.endDateLabel">Fecha fin (opcional):</label>
+        <button type="button" class="rec-pop-link-btn" onclick="document.getElementById('recPopEditEndDate').value = ''" data-i18n="recurrence.noLimitBtn">Sin límite</button>
       </div>
       <input type="date" id="recPopEditEndDate" class="rec-pop-input-date" />
     </div>
 
     <div class="recurring-popover-actions">
-      <button type="button" class="btn small secondary" onclick="app.toggleEditRecurrenceInPopover(false)">Cancelar</button>
-      <button type="button" class="btn small done" onclick="app.saveRecurrenceFromPopover()">Guardar</button>
+      <button type="button" class="btn small secondary" onclick="app.toggleEditRecurrenceInPopover(false)" data-i18n="action.cancel">Cancelar</button>
+      <button type="button" class="btn small done" onclick="app.saveRecurrenceFromPopover()" data-i18n="action.save">Guardar</button>
     </div>
   </div>
 </div>
@@ -521,32 +532,32 @@
 <div class="urgency-dropdown-menu" id="urgencyDropdownMenu" style="display:none;">
   <div class="urgency-option-item" data-urgency="today" onclick="app.selectTaskUrgency('today')">
     <span class="urgency-opt-icon">🟠</span>
-    <span class="urgency-opt-label">Hoy</span>
+    <span class="urgency-opt-label" data-i18n="urgency.today">Hoy</span>
   </div>
   <div class="urgency-option-item" data-urgency="days" onclick="app.selectTaskUrgency('days')">
     <span class="urgency-opt-icon">🔵</span>
-    <span class="urgency-opt-label">Días</span>
+    <span class="urgency-opt-label" data-i18n="urgency.days">Días</span>
   </div>
   <div class="urgency-option-item" data-urgency="week" onclick="app.selectTaskUrgency('week')">
     <span class="urgency-opt-icon">🟣</span>
-    <span class="urgency-opt-label">Semana</span>
+    <span class="urgency-opt-label" data-i18n="urgency.week">Semana</span>
   </div>
   <div class="urgency-option-item" data-urgency="later" onclick="app.selectTaskUrgency('later')">
     <span class="urgency-opt-icon">⚪</span>
-    <span class="urgency-opt-label">Más adelante</span>
+    <span class="urgency-opt-label" data-i18n="urgency.later">Más adelante</span>
   </div>
 </div>
 
 <!-- Modal: Límite de tareas destacadas alcanzado (máx 5) -->
 <div id="featuredLimitModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="featuredLimitModalTitle">
   <div class="modal-box featured-limit-modal-box">
-    <button class="close-modal-btn" id="featuredLimitModalBtnCancel" title="Cerrar (Esc)" aria-label="Cerrar">&times;</button>
+    <button class="close-modal-btn" id="featuredLimitModalBtnCancel" data-i18n-title="action.closeTooltip" data-i18n-aria="action.close" title="Cerrar (Esc)" aria-label="Cerrar">&times;</button>
     <div class="featured-limit-modal-header">
       <div class="featured-limit-modal-icon">⭐</div>
-      <h3 id="featuredLimitModalTitle">Límite de destacadas alcanzado</h3>
+      <h3 id="featuredLimitModalTitle" data-i18n="modal.featuredLimitTitle">Límite de destacadas alcanzado</h3>
       <p id="featuredLimitModalDesc"></p>
     </div>
-    <p class="featured-limit-modal-hint">Toca una tarea para quitarle el destacado</p>
+    <p class="featured-limit-modal-hint" data-i18n="modal.featuredLimitHint">Toca una tarea para quitarle el destacado</p>
     <div id="featuredLimitModalList" class="featured-limit-list"></div>
   </div>
 </div>
@@ -555,16 +566,16 @@
 <div class="modal-overlay" id="weeklyScheduleModal" role="dialog" aria-modal="true" aria-labelledby="weeklyScheduleTitle">
   <div class="modal-box weekly-schedule-modal-box">
     <div class="shortcuts-header">
-      <h3 id="weeklyScheduleTitle">&#128197; Horario semanal</h3>
-      <button class="close-modal-btn" id="closeWeeklyScheduleBtn" title="Cerrar (Esc)" aria-label="Cerrar">&times;</button>
+      <h3 id="weeklyScheduleTitle" data-i18n="modal.weeklyScheduleTitle">&#128197; Horario semanal</h3>
+      <button class="close-modal-btn" id="closeWeeklyScheduleBtn" data-i18n-title="action.closeTooltip" data-i18n-aria="action.close" title="Cerrar (Esc)" aria-label="Cerrar">&times;</button>
     </div>
     <div class="weekly-schedule-body">
       <div id="weeklyScheduleRows"></div>
-      <p class="weekly-schedule-hint">&#128161; Este horario se usa como plantilla al abrir un día nuevo. Puedes sobreescribir el horario de cualquier día concreto desde &#x2699;&#xFE0F; Configuración.</p>
+      <p class="weekly-schedule-hint" data-i18n-html="modal.weeklyScheduleHint">&#128161; Este horario se usa como plantilla al abrir un día nuevo. Puedes sobreescribir el horario de cualquier día concreto desde &#x2699;&#xFE0F; Configuración.</p>
     </div>
     <div class="weekly-schedule-actions">
-      <button class="btn" id="saveWeeklyScheduleBtn">Guardar</button>
-      <button class="btn secondary" id="cancelWeeklyScheduleBtn">Cancelar</button>
+      <button class="btn" id="saveWeeklyScheduleBtn" data-i18n="action.save">Guardar</button>
+      <button class="btn secondary" id="cancelWeeklyScheduleBtn" data-i18n="action.cancel">Cancelar</button>
     </div>
   </div>
 </div>
@@ -573,38 +584,38 @@
 <div class="modal-overlay" id="shortcutsModal" role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle">
   <div class="modal-box shortcuts-modal-box">
     <div class="shortcuts-header">
-      <h3 id="shortcutsTitle">⌨️ Atajos de Teclado</h3>
-      <button class="close-modal-btn" id="closeShortcutsBtn" title="Cerrar (Esc)" aria-label="Cerrar">&times;</button>
+      <h3 id="shortcutsTitle" data-i18n="shortcuts.title">⌨️ Atajos de Teclado</h3>
+      <button class="close-modal-btn" id="closeShortcutsBtn" data-i18n-title="action.closeTooltip" data-i18n-aria="action.close" title="Cerrar (Esc)" aria-label="Cerrar">&times;</button>
     </div>
     <div class="shortcuts-body">
       <div class="shortcuts-group">
-        <div class="shortcut-row"><kbd class="shortcut-key">1</kbd><span class="shortcut-desc">Panel Resumen</span></div>
-        <div class="shortcut-row"><kbd class="shortcut-key">2</kbd><span class="shortcut-desc">Panel Tiempo</span></div>
-        <div class="shortcut-row"><kbd class="shortcut-key">3</kbd><span class="shortcut-desc">Panel Configuración</span></div>
-        <div class="shortcut-row"><kbd class="shortcut-key">H</kbd><span class="shortcut-desc">Ver gráfico de Histórico</span></div>
-        <div class="shortcut-row"><kbd class="shortcut-key">F</kbd><span class="shortcut-desc">Modo enfoque en tarea actual</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">1</kbd><span class="shortcut-desc" data-i18n="shortcuts.summaryPanel">Panel Resumen</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">2</kbd><span class="shortcut-desc" data-i18n="shortcuts.timePanel">Panel Tiempo</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">3</kbd><span class="shortcut-desc" data-i18n="shortcuts.configPanel">Panel Configuración</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">H</kbd><span class="shortcut-desc" data-i18n="shortcuts.historyChart">Ver gráfico de Histórico</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">F</kbd><span class="shortcut-desc" data-i18n="shortcuts.focusMode">Modo enfoque en tarea actual</span></div>
       </div>
 
       <div class="shortcuts-group">
-        <div class="shortcut-row"><kbd class="shortcut-key">E</kbd><span class="shortcut-desc">Alternar entorno (Trabajo / Personal)</span></div>
-        <div class="shortcut-row"><kbd class="shortcut-key">D</kbd><span class="shortcut-desc">Ir a panel Tiempo y seleccionar Hoy</span></div>
-        <div class="shortcut-row"><kbd class="shortcut-key">W</kbd><span class="shortcut-desc">Abrir / cerrar Mini-Widget flotante (PiP)</span></div>
-        <div class="shortcut-row"><kbd class="shortcut-key">X</kbd><span class="shortcut-desc">Abrir / cerrar Triaje Rápido</span></div>
-        <div class="shortcut-row"><kbd class="shortcut-key">P</kbd><span class="shortcut-desc">Alternar modo planificación</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">E</kbd><span class="shortcut-desc" data-i18n="shortcuts.toggleEnv">Alternar entorno (Trabajo / Personal)</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">D</kbd><span class="shortcut-desc" data-i18n="shortcuts.goToday">Ir a panel Tiempo y seleccionar Hoy</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">W</kbd><span class="shortcut-desc" data-i18n="shortcuts.togglePiP">Abrir / cerrar Mini-Widget flotante (PiP)</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">X</kbd><span class="shortcut-desc" data-i18n="shortcuts.toggleTriage">Abrir / cerrar Triaje Rápido</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">P</kbd><span class="shortcut-desc" data-i18n="shortcuts.togglePlanning">Alternar modo planificación</span></div>
       </div>
 
       <div class="shortcuts-group">
-        <div class="shortcut-row"><kbd class="shortcut-key">/</kbd><span class="shortcut-desc">Buscar tareas</span></div>
-        <div class="shortcut-row"><kbd class="shortcut-key">T</kbd><span class="shortcut-desc">Crear nueva Tarea</span></div>
-        <div class="shortcut-row"><kbd class="shortcut-key">R</kbd><span class="shortcut-desc">Crear nueva Reunión</span></div>
-        <div class="shortcut-row"><kbd class="shortcut-key">I</kbd><span class="shortcut-desc">Iniciar una Interrupción</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">/</kbd><span class="shortcut-desc" data-i18n="shortcuts.searchTasks">Buscar tareas</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">T</kbd><span class="shortcut-desc" data-i18n="shortcuts.newTask">Crear nueva Tarea</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">R</kbd><span class="shortcut-desc" data-i18n="shortcuts.newMeeting">Crear nueva Reunión</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">I</kbd><span class="shortcut-desc" data-i18n="shortcuts.newInterruption">Iniciar una Interrupción</span></div>
       </div>
 
       <div class="shortcuts-group">
-        <div class="shortcut-row"><kbd class="shortcut-key">Ctrl</kbd>+<kbd class="shortcut-key">Z</kbd><span class="shortcut-desc">Deshacer última acción</span></div>
-        <div class="shortcut-row"><kbd class="shortcut-key">Ctrl</kbd>+<kbd class="shortcut-key">Y</kbd><span class="shortcut-desc">Rehacer acción</span></div>
-        <div class="shortcut-row"><kbd class="shortcut-key">?</kbd><span class="shortcut-desc">Abrir / cerrar esta ayuda</span></div>
-        <div class="shortcut-row"><kbd class="shortcut-key">Esc</kbd><span class="shortcut-desc">Cancelar edición, salir o desenfocar</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">Ctrl</kbd>+<kbd class="shortcut-key">Z</kbd><span class="shortcut-desc" data-i18n="shortcuts.undo">Deshacer última acción</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">Ctrl</kbd>+<kbd class="shortcut-key">Y</kbd><span class="shortcut-desc" data-i18n="shortcuts.redo">Rehacer acción</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">?</kbd><span class="shortcut-desc" data-i18n="shortcuts.help">Abrir / cerrar esta ayuda</span></div>
+        <div class="shortcut-row"><kbd class="shortcut-key">Esc</kbd><span class="shortcut-desc" data-i18n="shortcuts.escape">Cancelar edición, salir o desenfocar</span></div>
       </div>
     </div>
   </div>

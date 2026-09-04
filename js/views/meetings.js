@@ -1,6 +1,7 @@
 /* views/meetings.js — Renderizado de la lista de reuniones */
 import { fmt, nowMinutes, getTodayStr, formatRecurrenceRule } from '../utils.js';
 import { escapeHtml, escapeAttr } from '../ui.js';
+import { t } from '../i18n.js';
 
 export function TodayTasksMeetingsView(ctx){
   const { getState, getMeetingEdit } = ctx;
@@ -12,7 +13,7 @@ export function TodayTasksMeetingsView(ctx){
     const state = getState();
     const meetingEdit = getMeetingEdit();
     if((state.meetings || []).length === 0){
-      el.innerHTML = '<div class="empty">Aún no hay reuniones.</div>';
+      el.innerHTML = `<div class="empty">${t('meetings.empty')}</div>`;
       return;
     }
     const currentNow = typeof ctx.nowMinutes === "function" ? ctx.nowMinutes() : nowMinutes();
@@ -26,38 +27,42 @@ export function TodayTasksMeetingsView(ctx){
       const pastClass = isPast ? " past" : "";
 
       if(meetingEdit && String(meetingEdit.id) === String(m.id)){
-        const modeLabel = meetingEdit.mode === "instance" ? " (Solo esta ocurrencia)" : (meetingEdit.mode === "series" ? " (Toda la serie)" : "");
+        const modeLabel = meetingEdit.mode === "instance" ? t('meetings.editModeInstance') : (meetingEdit.mode === "series" ? t('meetings.editModeSeries') : "");
         return `
       <div class="item editing${pastClass}" id="meeting-item-${escapeAttr(m.id)}">
         <div class="row" style="font-size:0.8rem;color:#4F46E5;font-weight:600;margin-bottom:4px;">
-          Editando reunión${modeLabel}
+          ${t('meetings.editingMeeting')}${modeLabel}
         </div>
         <div class="row">
-          <input type="text" value="${escapeAttr(meetingEdit.title)}" oninput="app.updateMeetingEditField('title', this.value)" placeholder="Título de la reunión">
+          <input type="text" value="${escapeAttr(meetingEdit.title)}" oninput="app.updateMeetingEditField('title', this.value)" placeholder="${escapeAttr(t('meetings.inputTitlePlaceholder'))}">
         </div>
         <div class="row">
           <input type="time" value="${escapeAttr(meetingEdit.start)}" style="flex:1" oninput="app.updateMeetingEditField('start', this.value)">
           <input type="time" value="${escapeAttr(meetingEdit.end)}" style="flex:1" oninput="app.updateMeetingEditField('end', this.value)">
         </div>
         <div class="task-actions">
-          <button class="btn small done" onclick="app.saveEditMeeting('${escapeAttr(m.id)}')">Guardar</button>
-          <button class="btn small secondary" onclick="app.cancelEditMeeting()">Cancelar</button>
+          <button class="btn small done" onclick="app.saveEditMeeting('${escapeAttr(m.id)}')">${t('action.save')}</button>
+          <button class="btn small secondary" onclick="app.cancelEditMeeting()">${t('action.cancel')}</button>
         </div>
       </div>`;
       }
       let recurringTag = '';
       if (m.isRecurring) {
-        let ruleTooltip = `Reunión recurrente${m.isModifiedInstance ? ' (Ocurrencia modificada)' : ' (Serie)'} · Clic para detalles`;
+        let ruleTooltip = m.isModifiedInstance ? t('meetings.recurringTagModifiedTooltip') : t('meetings.recurringTagSeriesTooltip');
         if (m.ruleId) {
           const envKey = state.activeEnv || 'work';
           const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
           const rule = env && Array.isArray(env.recurringMeetings) ? env.recurringMeetings.find(r => String(r.id) === String(m.ruleId)) : null;
           if (rule) {
             const formatted = formatRecurrenceRule(rule);
-            ruleTooltip = `Reunión recurrente: ${formatted.summaryText} (${formatted.dateRangeText})${m.isModifiedInstance ? ' · Modificada hoy' : ''} · Clic para detalles`;
+            ruleTooltip = t('meetings.recurringRuleTooltip', {
+              summary: formatted.summaryText,
+              range: formatted.dateRangeText,
+              mod: m.isModifiedInstance ? t('meetings.modifiedToday') : ''
+            });
           }
         }
-        recurringTag = `<button type="button" class="tag recurring-tag-btn" onclick="app.openRecurringInfoPopover('${escapeAttr(m.id)}', event, 'meeting')" title="${escapeAttr(ruleTooltip)}" aria-label="Información de recurrencia">🔁 Recurrente${m.isModifiedInstance ? ' ✎' : ''}</button>`;
+        recurringTag = `<button type="button" class="tag recurring-tag-btn" onclick="app.openRecurringInfoPopover('${escapeAttr(m.id)}', event, 'meeting')" title="${escapeAttr(ruleTooltip)}" aria-label="${escapeAttr(t('meetings.recurringTagAria'))}">${t('meetings.recurringTagLabel')}${m.isModifiedInstance ? ' ✎' : ''}</button>`;
       }
       return `
       <div class="item${pastClass}" id="meeting-item-${escapeAttr(m.id)}">
@@ -65,15 +70,15 @@ export function TodayTasksMeetingsView(ctx){
           <div>
             <div class="title">${escapeHtml(m.title)}</div>
             <div class="time-range tr-meeting">
-              <span class="tag">Inicio</span>${fmt(m.start)}<span class="arrow">→</span><span class="tag">Fin</span>${fmt(m.end)}
+              <span class="tag">${t('summary.tagStart')}</span>${fmt(m.start)}<span class="arrow">→</span><span class="tag">${t('summary.tagEnd')}</span>${fmt(m.end)}
               ${recurringTag}
-              <span class="tag" style="margin-left:4px;background:rgba(79,70,229,0.08);color:#4F46E5;border-color:rgba(79,70,229,0.2);" title="Avisos: 2 min antes (${fmt(m.start-2)}) y a la hora (${fmt(m.start)})">🔔 2m y a la hora</span>
+              <span class="tag" style="margin-left:4px;background:rgba(79,70,229,0.08);color:#4F46E5;border-color:rgba(79,70,229,0.2);" title="${escapeAttr(t('meetings.alertsTooltip', { before: fmt(m.start-2), onTime: fmt(m.start) }))}">${t('meetings.alertsTag')}</span>
             </div>
-            <div class="meta">colchón hasta ${fmt(m.end+10)}</div>
+            <div class="meta">${t('meetings.bufferUntil', { time: fmt(m.end+10) })}</div>
           </div>
           <div style="display:flex;align-items:center;gap:2px;">
-            <button class="icon-btn" title="Editar" onclick="app.startEditMeeting('${escapeAttr(m.id)}')">✎</button>
-            <button class="icon-btn" title="Eliminar" onclick="app.deleteMeeting('${escapeAttr(m.id)}')">✕</button>
+            <button class="icon-btn" title="${escapeAttr(t('action.edit'))}" onclick="app.startEditMeeting('${escapeAttr(m.id)}')">✎</button>
+            <button class="icon-btn" title="${escapeAttr(t('action.delete'))}" onclick="app.deleteMeeting('${escapeAttr(m.id)}')">✕</button>
           </div>
         </div>
       </div>`;
@@ -84,4 +89,3 @@ export function TodayTasksMeetingsView(ctx){
 }
 
 export default TodayTasksMeetingsView;
-

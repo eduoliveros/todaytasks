@@ -6,6 +6,7 @@ import {
 } from '../utils.js';
 import { escapeHtml, escapeAttr, showToast } from '../ui.js';
 import { computeSchedule } from '../scheduler.js';
+import { t } from '../i18n.js';
 
 export function TodayTasksTriageView(ctx) {
   const { getState, saveState, renderAll, smartRender, actionsModule, getTaskEdit } = ctx;
@@ -44,7 +45,7 @@ export function TodayTasksTriageView(ctx) {
       tasksList = state.tasks;
     }
 
-    return tasksList.filter(t => t && t.status !== 'completed').sort(compareTasksMainOrder);
+    return tasksList.filter(task => task && task.status !== 'completed').sort(compareTasksMainOrder);
   }
 
   function formatShortDuration(mins) {
@@ -113,9 +114,9 @@ export function TodayTasksTriageView(ctx) {
     const schedule = getEffectiveSchedule(targetDateStr, activeTasks);
     const overflowIds = schedule && schedule.overflowIds ? schedule.overflowIds : new Set();
 
-    function isTaskOverflow(t) {
-      if (!overflowIds || !t) return false;
-      const tid = t.id;
+    function isTaskOverflow(task) {
+      if (!overflowIds || !task) return false;
+      const tid = task.id;
       if (overflowIds.has(tid)) return true;
       if (overflowIds.has(String(tid))) return true;
       if (typeof tid === 'string' && !isNaN(Number(tid)) && overflowIds.has(Number(tid))) return true;
@@ -125,15 +126,15 @@ export function TodayTasksTriageView(ctx) {
 
     if (currentSort === 'urgency') {
       const groups = [
-        { id: 'today', title: 'Hoy', icon: '🟠', tasks: [] },
-        { id: 'days', title: 'Próximos días', icon: '🔵', tasks: [] },
-        { id: 'week', title: 'Esta semana', icon: '🟣', tasks: [] },
-        { id: 'later', title: 'Más adelante', icon: '⚪', tasks: [] }
+        { id: 'today', title: t('triage.groupToday'), icon: '🟠', tasks: [] },
+        { id: 'days', title: t('triage.groupDays'), icon: '🔵', tasks: [] },
+        { id: 'week', title: t('triage.groupWeek'), icon: '🟣', tasks: [] },
+        { id: 'later', title: t('triage.groupLater'), icon: '⚪', tasks: [] }
       ];
-      activeTasks.forEach(t => {
-        const u = t.urgency || DEFAULT_URGENCY;
+      activeTasks.forEach(task => {
+        const u = task.urgency || DEFAULT_URGENCY;
         const g = groups.find(x => x.id === u) || groups[1];
-        g.tasks.push({ ...t, overflow: isTaskOverflow(t) });
+        g.tasks.push({ ...task, overflow: isTaskOverflow(task) });
       });
       // Prioridad máxima al orden manual de la pantalla principal
       groups.forEach(g => g.tasks.sort(compareTasksMainOrder));
@@ -143,15 +144,15 @@ export function TodayTasksTriageView(ctx) {
     if (currentSort === 'viability') {
       const isToday = targetDateStr === getTodayStr();
       const groups = [
-        { id: 'fits', title: isToday ? 'Caben dentro del horario de hoy' : 'Caben dentro de la jornada', icon: '✅', tasks: [] },
-        { id: 'overflow', title: 'Desbordan la jornada (Overflow)', icon: '⚠️', tasks: [] }
+        { id: 'fits', title: isToday ? t('triage.groupFitsToday') : t('triage.groupFitsWorkday'), icon: '✅', tasks: [] },
+        { id: 'overflow', title: t('triage.groupOverflow'), icon: '⚠️', tasks: [] }
       ];
-      activeTasks.forEach(t => {
-        const isOverflow = isTaskOverflow(t);
+      activeTasks.forEach(task => {
+        const isOverflow = isTaskOverflow(task);
         if (!isOverflow) {
-          groups[0].tasks.push({ ...t, overflow: false });
+          groups[0].tasks.push({ ...task, overflow: false });
         } else {
-          groups[1].tasks.push({ ...t, overflow: true });
+          groups[1].tasks.push({ ...task, overflow: true });
         }
       });
       groups.forEach(g => g.tasks.sort(compareTasksMainOrder));
@@ -160,13 +161,13 @@ export function TodayTasksTriageView(ctx) {
 
     if (currentSort === 'duration') {
       const groups = [
-        { id: 'quick', title: 'Quick Wins (≤ 15 min)', icon: '⚡', tasks: [] },
-        { id: 'medium', title: 'Medias (20 a 45 min)', icon: '⏳', tasks: [] },
-        { id: 'long', title: 'Largas (> 45 min)', icon: '🏋️', tasks: [] }
+        { id: 'quick', title: t('triage.groupQuick'), icon: '⚡', tasks: [] },
+        { id: 'medium', title: t('triage.groupMedium'), icon: '⏳', tasks: [] },
+        { id: 'long', title: t('triage.groupLong'), icon: '🏋️', tasks: [] }
       ];
-      activeTasks.forEach(t => {
-        const dur = t.planned || 0;
-        const item = { ...t, overflow: isTaskOverflow(t) };
+      activeTasks.forEach(task => {
+        const dur = task.planned || 0;
+        const item = { ...task, overflow: isTaskOverflow(task) };
         if (dur <= 15) groups[0].tasks.push(item);
         else if (dur <= 45) groups[1].tasks.push(item);
         else groups[2].tasks.push(item);
@@ -177,12 +178,12 @@ export function TodayTasksTriageView(ctx) {
 
     if (currentSort === 'featured') {
       const groups = [
-        { id: 'feat', title: 'Tareas Destacadas (⭐ Top 5)', icon: '⭐', tasks: [] },
-        { id: 'unfeat', title: 'Otras tareas en cola', icon: '📋', tasks: [] }
+        { id: 'feat', title: t('triage.groupFeatured'), icon: '⭐', tasks: [] },
+        { id: 'unfeat', title: t('triage.groupUnfeatured'), icon: '📋', tasks: [] }
       ];
-      activeTasks.forEach(t => {
-        const item = { ...t, overflow: isTaskOverflow(t) };
-        if (t.featured) groups[0].tasks.push(item);
+      activeTasks.forEach(task => {
+        const item = { ...task, overflow: isTaskOverflow(task) };
+        if (task.featured) groups[0].tasks.push(item);
         else groups[1].tasks.push(item);
       });
       groups.forEach(g => g.tasks.sort(compareTasksMainOrder));
@@ -320,9 +321,9 @@ export function TodayTasksTriageView(ctx) {
     const group = groups.find(g => g.id === groupId);
     if (!group) return;
 
-    const allSelected = group.tasks.length > 0 && group.tasks.every(t => selectedTaskIds.has(String(t.id)));
-    group.tasks.forEach(t => {
-      const strId = String(t.id);
+    const allSelected = group.tasks.length > 0 && group.tasks.every(task => selectedTaskIds.has(String(task.id)));
+    group.tasks.forEach(task => {
+      const strId = String(task.id);
       if (allSelected) selectedTaskIds.delete(strId);
       else selectedTaskIds.add(strId);
     });
@@ -340,9 +341,9 @@ export function TodayTasksTriageView(ctx) {
     const state = getState();
     const targetDateStr = getTargetDateStr();
     const activeTasks = getActiveTasks(targetDateStr);
-    const t = activeTasks.find(x => String(x.id) === String(taskId)) ||
-              (state.tasks || []).find(x => String(x.id) === String(taskId));
-    if (!t) return;
+    const task = activeTasks.find(x => String(x.id) === String(taskId)) ||
+                 (state.tasks || []).find(x => String(x.id) === String(taskId));
+    if (!task) return;
     const actions = getActions();
     if (actions && actions.toggleTaskFeatured) {
       actions.toggleTaskFeatured(taskId);
@@ -482,7 +483,7 @@ export function TodayTasksTriageView(ctx) {
   function executeTriageBatchDelete() {
     if (selectedTaskIds.size === 0) return;
     const count = selectedTaskIds.size;
-    if (typeof window !== 'undefined' && !window.confirm(`¿Eliminar las ${count} tareas seleccionadas?`)) {
+    if (typeof window !== 'undefined' && !window.confirm(t('triage.confirmDeleteBatch', { count }))) {
       return;
     }
     const state = getState();
@@ -495,10 +496,10 @@ export function TodayTasksTriageView(ctx) {
     const normalIds = [];
 
     ids.forEach(id => {
-      const t = activeTasks.find(x => String(x.id) === String(id)) ||
-                (state.tasks || []).find(x => String(x.id) === String(id));
-      if (t && t.ruleId) {
-        recurringTasks.push(t);
+      const task = activeTasks.find(x => String(x.id) === String(id)) ||
+                   (state.tasks || []).find(x => String(x.id) === String(id));
+      if (task && task.ruleId) {
+        recurringTasks.push(task);
       } else {
         normalIds.push(id);
       }
@@ -506,10 +507,10 @@ export function TodayTasksTriageView(ctx) {
 
     if (recurringTasks.length > 0 && actions.deleteRecurringTaskInstance) {
       if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
-        ctx.undoModule.pushSnapshot(`Eliminar ${ids.length} tareas`);
+        ctx.undoModule.pushSnapshot(t('triage.undoDeleteBatch', { count: ids.length }));
       }
-      recurringTasks.forEach(t => {
-        actions.deleteRecurringTaskInstance(t.ruleId, targetDateStr);
+      recurringTasks.forEach(task => {
+        actions.deleteRecurringTaskInstance(task.ruleId, targetDateStr);
       });
     }
 
@@ -565,15 +566,15 @@ export function TodayTasksTriageView(ctx) {
     const next7Days = getNextWorkingDays(targetDateStr, 7, state, state.activeEnv || 'work');
     const quick5Days = next7Days.slice(0, 5);
 
-    const totalMinutes = activeTasks.reduce((sum, t) => sum + (t.planned || 0), 0);
+    const totalMinutes = activeTasks.reduce((sum, task) => sum + (task.planned || 0), 0);
     const friendlyDate = formatDateFriendly ? formatDateFriendly(targetDateStr) : targetDateStr;
     const selectedCount = selectedTaskIds.size;
 
     const sortButtons = [
-      { id: 'urgency', label: '🎯 Urgencia' },
-      { id: 'viability', label: '⏱️ Viabilidad hoy' },
-      { id: 'duration', label: '⏳ Duración' },
-      { id: 'featured', label: '⭐ Destacadas' }
+      { id: 'urgency', label: t('triage.sortUrgency') },
+      { id: 'viability', label: t('triage.sortViability') },
+      { id: 'duration', label: t('triage.sortDuration') },
+      { id: 'featured', label: t('triage.sortFeatured') }
     ];
 
     const taskEdit = (getTaskEdit ? getTaskEdit() : (ctx.getTaskEdit ? ctx.getTaskEdit() : null));
@@ -589,31 +590,36 @@ export function TodayTasksTriageView(ctx) {
       if (taskEdit && taskEdit.id) {
         const editUrgency = taskEdit.urgency || DEFAULT_URGENCY;
         const editUrgencyInfo = URGENCY_LEVELS[editUrgency] || URGENCY_LEVELS[DEFAULT_URGENCY];
+        const modalTitle = taskEdit.mode === 'series'
+          ? t('triage.editModalTitleSeries')
+          : (taskEdit.ruleId ? t('triage.editModalTitleInstance') : t('triage.editModalTitleTask'));
+        const urgencyLabel = t('urgency.' + editUrgency) || editUrgencyInfo.label;
+
         modalHost.innerHTML = `
           <div class="modal-overlay" id="triageTaskEditModal" style="display:flex;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:100000;align-items:center;justify-content:center;" onclick="if(event.target===this) app.cancelEditTask()">
             <div class="modal-box triage-edit-modal-box" onclick="event.stopPropagation()">
               <div class="triage-edit-modal-header">
-                <h3><span>✎</span> ${taskEdit.mode === 'series' ? 'Editar Serie Recurrente 🔁' : (taskEdit.ruleId ? 'Editar Ocurrencia Recurrente 🔁' : 'Editar Tarea')}</h3>
-                <button type="button" class="close-modal-btn" onclick="app.cancelEditTask()" title="Cerrar (Esc)" aria-label="Cerrar">&times;</button>
+                <h3><span>✎</span> ${escapeHtml(modalTitle)}</h3>
+                <button type="button" class="close-modal-btn" onclick="app.cancelEditTask()" title="${escapeAttr(t('action.close'))} (Esc)" aria-label="${escapeAttr(t('action.close'))}">&times;</button>
               </div>
 
               <div class="triage-edit-modal-body">
                 <div style="margin-bottom:12px;">
-                  <label class="triage-edit-label">Título de la tarea:</label>
-                  <input type="text" id="triageEditTitleInput" class="triage-edit-input" value="${escapeAttr(taskEdit.title)}" oninput="app.updateTaskEditField('title', this.value)" placeholder="Título de la tarea">
+                  <label class="triage-edit-label">${t('triage.editLabelTitle')}</label>
+                  <input type="text" id="triageEditTitleInput" class="triage-edit-input" value="${escapeAttr(taskEdit.title)}" oninput="app.updateTaskEditField('title', this.value)" placeholder="${escapeAttr(t('tasks.inputTitlePlaceholder'))}">
                 </div>
 
                 <div class="triage-edit-time-grid">
                   <label class="triage-edit-label">
-                    Planificado:
-                    <input type="text" class="triage-edit-input" value="${escapeAttr(taskEdit.duration)}" placeholder="ej. 30, 1h 30m" oninput="app.updateTaskEditField('duration', this.value)">
+                    ${t('tasks.editPlanned')}
+                    <input type="text" class="triage-edit-input" value="${escapeAttr(taskEdit.duration)}" placeholder="${escapeAttr(t('tasks.editDurationPlaceholder'))}" oninput="app.updateTaskEditField('duration', this.value)">
                   </label>
                   <label class="triage-edit-label">
-                    Consumido:
-                    <input type="text" class="triage-edit-input" value="${escapeAttr(taskEdit.actual||0)}" placeholder="ej. 15, 1h" oninput="app.updateTaskEditField('actual', this.value)">
+                    ${t('tasks.editSpent')}
+                    <input type="text" class="triage-edit-input" value="${escapeAttr(taskEdit.actual||0)}" placeholder="${escapeAttr(t('tasks.editActualPlaceholder'))}" oninput="app.updateTaskEditField('actual', this.value)">
                   </label>
                   <label class="triage-edit-label">
-                    A partir de:
+                    ${t('tasks.editStartAfter')}
                     <input type="time" class="triage-edit-input" value="${escapeAttr(taskEdit.startAfter || '')}" oninput="app.updateTaskEditField('startAfter', this.value)">
                   </label>
                 </div>
@@ -621,15 +627,15 @@ export function TodayTasksTriageView(ctx) {
                 <div class="triage-edit-badges-row">
                   <button type="button" class="urgency-pill-btn urgency-btn-${escapeAttr(editUrgency)}"
                           onclick="app.openEditUrgencyDropdown('${escapeAttr(taskEdit.id)}', event)"
-                          title="Urgencia: ${escapeAttr(editUrgencyInfo.label)} (clic para cambiar)"
+                          title="${escapeAttr(t('tasks.editUrgencyTooltip', { label: urgencyLabel }))}"
                           id="edit-urgency-pill-${escapeAttr(taskEdit.id)}">
                     <span>${editUrgencyInfo.icon}</span>
-                    <span>${escapeHtml(editUrgencyInfo.label)}</span>
+                    <span>${escapeHtml(urgencyLabel)}</span>
                     <span class="urgency-pill-chevron">▾</span>
                   </button>
 
                   <button type="button" class="icon-btn star-btn ${taskEdit.featured ? 'is-featured' : ''}"
-                          title="${taskEdit.featured ? 'Quitar destacado' : 'Marcar como destacada (máx. 5 al día)'}"
+                          title="${taskEdit.featured ? escapeAttr(t('tasks.unstarTooltip')) : escapeAttr(t('tasks.starTooltip'))}"
                           onclick="app.toggleEditFeatured('${escapeAttr(taskEdit.id)}', event)">
                     ${taskEdit.featured ? '⭐' : '☆'}
                   </button>
@@ -638,30 +644,30 @@ export function TodayTasksTriageView(ctx) {
                 <div class="row task-edit-notes-wrap" style="margin-bottom:12px;">
                   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;width:100%;">
                     <label class="triage-edit-label" style="margin:0;">
-                      <span>📝</span> Notas / Enlaces (Markdown):
+                      <span>📝</span> ${t('tasks.editNotesLabel')}
                     </label>
                     <div class="task-notes-mini-toolbar">
-                      <button type="button" class="btn-notes-tool" onclick="app.insertEditNotesFormat('${escapeAttr(taskEdit.id)}', '**', '**')" title="Negrita (**texto**)">B</button>
-                      <button type="button" class="btn-notes-tool italic" onclick="app.insertEditNotesFormat('${escapeAttr(taskEdit.id)}', '*', '*')" title="Cursiva (*texto*)">I</button>
-                      <button type="button" class="btn-notes-tool" onclick="app.insertEditNotesLink('${escapeAttr(taskEdit.id)}')" title="Insertar enlace">🔗 Link</button>
-                      <button type="button" class="btn-notes-tool" id="btn-preview-edit-${escapeAttr(taskEdit.id)}" onclick="app.toggleEditNotesPreview('${escapeAttr(taskEdit.id)}')" title="Alternar vista previa">👁️</button>
+                      <button type="button" class="btn-notes-tool" onclick="app.insertEditNotesFormat('${escapeAttr(taskEdit.id)}', '**', '**')" title="${escapeAttr(t('tasks.boldTooltip'))}">B</button>
+                      <button type="button" class="btn-notes-tool italic" onclick="app.insertEditNotesFormat('${escapeAttr(taskEdit.id)}', '*', '*')" title="${escapeAttr(t('tasks.italicTooltip'))}">I</button>
+                      <button type="button" class="btn-notes-tool" onclick="app.insertEditNotesLink('${escapeAttr(taskEdit.id)}')" title="${escapeAttr(t('tasks.linkTooltip'))}">🔗 Link</button>
+                      <button type="button" class="btn-notes-tool" id="btn-preview-edit-${escapeAttr(taskEdit.id)}" onclick="app.toggleEditNotesPreview('${escapeAttr(taskEdit.id)}')" title="${escapeAttr(t('tasks.previewTooltip'))}">👁️</button>
                     </div>
                   </div>
-                  <textarea id="task-edit-notes-${escapeAttr(taskEdit.id)}" class="task-edit-notes-textarea" rows="3" placeholder="Notas, enlaces o contexto (ej. **importante**, https://... o [PR](url))" oninput="app.updateTaskEditField('notes', this.value)">${escapeHtml(taskEdit.notes || '')}</textarea>
+                  <textarea id="task-edit-notes-${escapeAttr(taskEdit.id)}" class="task-edit-notes-textarea" rows="3" placeholder="${escapeAttr(t('tasks.notesPlaceholder'))}" oninput="app.updateTaskEditField('notes', this.value)">${escapeHtml(taskEdit.notes || '')}</textarea>
                   <div id="task-edit-notes-preview-${escapeAttr(taskEdit.id)}" class="task-edit-notes-preview task-note-content" style="display:none;margin-top:6px;"></div>
                 </div>
 
                 ${!taskEdit.ruleId ? `
                 <div style="margin-top:6px;margin-bottom:6px;">
                   <label style="font-size:0.82rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;color:var(--ink);">
-                    <input type="checkbox" ${taskEdit.autoMoveToToday ? 'checked' : ''} onchange="app.updateTaskEditField('autoMoveToToday', this.checked)"> Auto-mover a hoy si no se completa
+                    <input type="checkbox" ${taskEdit.autoMoveToToday ? 'checked' : ''} onchange="app.updateTaskEditField('autoMoveToToday', this.checked)"> ${t('tasks.autoMoveCheckbox')}
                   </label>
                 </div>` : ''}
               </div>
 
               <div class="triage-edit-modal-footer">
-                <button type="button" class="btn secondary small" onclick="app.cancelEditTask()">Cancelar</button>
-                <button type="button" class="btn primary small done" onclick="app.saveEditTask('${escapeAttr(taskEdit.id)}')">Guardar</button>
+                <button type="button" class="btn secondary small" onclick="app.cancelEditTask()">${t('action.cancel')}</button>
+                <button type="button" class="btn primary small done" onclick="app.saveEditTask('${escapeAttr(taskEdit.id)}')">${t('action.save')}</button>
               </div>
             </div>
           </div>
@@ -682,23 +688,23 @@ export function TodayTasksTriageView(ctx) {
         <!-- TOP BAR -->
         <header class="triage-header">
           <div class="triage-header-left">
-            <button class="btn secondary small triage-btn-back" onclick="if(window.location.hash==='#/triage') window.location.hash='#/'; else if(app.showView) app.showView('main');" title="Volver al tablero (Esc o X)">
-              ← Tablero [X]
+            <button class="btn secondary small triage-btn-back" onclick="if(window.location.hash==='#/triage') window.location.hash='#/'; else if(app.showView) app.showView('main');" title="${escapeAttr(t('triage.btnBackTooltip'))}">
+              ${t('triage.btnBack')}
             </button>
             <div>
               <div class="triage-title-row">
-                <h1 class="triage-title">⚡ Triaje Rápido</h1>
-                <span class="triage-badge-count">${activeTasks.length} ${activeTasks.length === 1 ? 'tarea' : 'tareas acumuladas'}</span>
+                <h1 class="triage-title">${t('triage.title')}</h1>
+                <span class="triage-badge-count">${t('triage.taskCount', { count: activeTasks.length })}</span>
               </div>
               <p class="triage-subtitle">
-                Tareas de <strong>${escapeHtml(friendlyDate)}</strong> (${escapeHtml(targetDateStr)}) · Estimación total: <strong>${formatShortDuration(totalMinutes)}</strong>
+                ${t('triage.subtitle', { date: escapeHtml(friendlyDate), dateStr: escapeHtml(targetDateStr), totalTime: formatShortDuration(totalMinutes) })}
               </p>
             </div>
           </div>
 
           <div class="triage-header-right">
             <div class="triage-sort-selector">
-              <span class="triage-sort-label">Ordenar:</span>
+              <span class="triage-sort-label">${t('triage.sortLabel')}</span>
               ${sortButtons.map(b => `
                 <button class="triage-sort-btn ${currentSort === b.id ? 'active' : ''}" onclick="app.setTriageSortMode('${b.id}')">
                   ${b.label}
@@ -707,9 +713,9 @@ export function TodayTasksTriageView(ctx) {
             </div>
 
             <div class="triage-collapse-tools">
-              <button class="btn secondary small" onclick="app.toggleAllTriageGroups(false)" title="Plegar todos los grupos">▸ Plegar todo</button>
-              <button class="btn secondary small" onclick="app.toggleAllTriageGroups(true)" title="Desplegar todos los grupos">▾ Desplegar todo</button>
-              <button class="btn secondary small" id="triageAutoOrderBtn" onclick="app.applyAutoOrder()" title="Reordenar las tareas automáticamente por prioridad (urgencia y destacadas)">⚡ Orden automático</button>
+              <button class="btn secondary small" onclick="app.toggleAllTriageGroups(false)" title="${escapeAttr(t('triage.collapseAllTooltip'))}">${t('triage.collapseAll')}</button>
+              <button class="btn secondary small" onclick="app.toggleAllTriageGroups(true)" title="${escapeAttr(t('triage.expandAllTooltip'))}">${t('triage.expandAll')}</button>
+              <button class="btn secondary small" id="triageAutoOrderBtn" onclick="app.applyAutoOrder()" title="${escapeAttr(t('triage.autoOrderTooltip'))}">${t('triage.autoOrder')}</button>
             </div>
           </div>
         </header>
@@ -722,30 +728,30 @@ export function TodayTasksTriageView(ctx) {
       html += `
         <div class="triage-empty-state">
           <span class="triage-empty-icon">🎉</span>
-          <h3>¡No hay tareas pendientes en este día!</h3>
-          <p>La cola de tareas para ${escapeHtml(friendlyDate)} está completamente despejada.</p>
-          <button class="btn primary small" onclick="window.location.hash='#/'">Volver al tablero</button>
+          <h3>${t('triage.emptyHeading')}</h3>
+          <p>${t('triage.emptyText', { date: escapeHtml(friendlyDate) })}</p>
+          <button class="btn primary small" onclick="window.location.hash='#/'">${t('triage.emptyBackBtn')}</button>
         </div>
       `;
     } else {
       groups.forEach(g => {
-        const groupDuration = g.tasks.reduce((sum, t) => sum + (t.planned || 0), 0);
+        const groupDuration = g.tasks.reduce((sum, task) => sum + (task.planned || 0), 0);
         const isCollapsed = collapsedGroups.has(g.id);
-        const allSelected = g.tasks.length > 0 && g.tasks.every(t => selectedTaskIds.has(String(t.id)));
-        const someSelected = g.tasks.some(t => selectedTaskIds.has(String(t.id))) && !allSelected;
+        const allSelected = g.tasks.length > 0 && g.tasks.every(task => selectedTaskIds.has(String(task.id)));
+        const someSelected = g.tasks.some(task => selectedTaskIds.has(String(task.id))) && !allSelected;
 
         html += `
           <div class="triage-group-card ${isCollapsed ? 'collapsed' : ''}" id="triage-group-${escapeAttr(g.id)}">
             <!-- CABECERA DE GRUPO: [▾ Plegar] [ ] Checkbox Icono Título ... -->
             <div class="triage-group-header" onclick="app.toggleTriageGroup('${escapeAttr(g.id)}')">
               <div class="triage-group-header-left">
-                <button type="button" class="triage-chevron-btn" title="${isCollapsed ? 'Desplegar grupo' : 'Plegar grupo'}">
+                <button type="button" class="triage-chevron-btn" title="${isCollapsed ? escapeAttr(t('triage.groupExpandTooltip')) : escapeAttr(t('triage.groupCollapseTooltip'))}">
                   ▾
                 </button>
-                <input type="checkbox" class="triage-group-cb" ${allSelected ? 'checked' : ''} ${someSelected ? 'data-indeterminate="true"' : ''} onclick="app.toggleTriageGroupSelect('${escapeAttr(g.id)}', event)" title="Seleccionar todas las tareas del grupo">
+                <input type="checkbox" class="triage-group-cb" ${allSelected ? 'checked' : ''} ${someSelected ? 'data-indeterminate="true"' : ''} onclick="app.toggleTriageGroupSelect('${escapeAttr(g.id)}', event)" title="${escapeAttr(t('triage.groupSelectAllTooltip'))}">
                 <span class="triage-group-icon">${g.icon}</span>
                 <span class="triage-group-title">${escapeHtml(g.title)}</span>
-                <span class="triage-group-badge">${g.tasks.length} ${g.tasks.length === 1 ? 'tarea' : 'tareas'}</span>
+                <span class="triage-group-badge">${t('triage.groupTaskCount', { count: g.tasks.length })}</span>
               </div>
               <div class="triage-group-header-right">
                 <span class="triage-group-duration">⏱️ ${formatShortDuration(groupDuration)}</span>
@@ -755,90 +761,91 @@ export function TodayTasksTriageView(ctx) {
             <!-- CONTENIDO PLEGABLE DEL GRUPO -->
             <div class="triage-group-body" style="${isCollapsed ? 'display:none;' : ''}">
               ${g.tasks.length === 0 ? `
-                <div class="triage-group-empty">Sin tareas en este grupo.</div>
+                <div class="triage-group-empty">${t('triage.groupEmpty')}</div>
               ` : `
                 <div class="triage-tasks-list">
-                  ${g.tasks.map(t => {
-                    const isSelected = selectedTaskIds.has(String(t.id));
-                    const urgencyKey = t.urgency || DEFAULT_URGENCY;
+                  ${g.tasks.map(task => {
+                    const isSelected = selectedTaskIds.has(String(task.id));
+                    const urgencyKey = task.urgency || DEFAULT_URGENCY;
                     const uInfo = URGENCY_LEVELS[urgencyKey] || URGENCY_LEVELS[DEFAULT_URGENCY];
-                    const isRecurring = !!(t.isRecurring || t.ruleId);
+                    const urgencyLabel = t('urgency.' + urgencyKey) || uInfo.label;
+                    const isRecurring = !!(task.isRecurring || task.ruleId);
 
                     let recurringTag = '';
                     if (isRecurring) {
-                      let ruleTooltip = 'Tarea recurrente · Clic para ver información de la regla';
-                      if (t.ruleId) {
+                      let ruleTooltip = t('triage.recurringTooltipDefault');
+                      if (task.ruleId) {
                         const envKey = state.activeEnv || 'work';
                         const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
-                        const rule = env && Array.isArray(env.recurringTasks) ? env.recurringTasks.find(r => String(r.id) === String(t.ruleId)) : null;
+                        const rule = env && Array.isArray(env.recurringTasks) ? env.recurringTasks.find(r => String(r.id) === String(task.ruleId)) : null;
                         if (rule) {
                           const formatted = formatRecurrenceRule(rule);
-                          ruleTooltip = `Tarea recurrente: ${formatted.summaryText} (${formatted.dateRangeText}) · Clic para detalles`;
+                          ruleTooltip = t('triage.recurringTooltipDetails', { summary: formatted.summaryText, range: formatted.dateRangeText });
                         }
                       }
                       recurringTag = `
-                        <button type="button" class="tag recurring-tag-btn triage-recurring-btn" onclick="app.openRecurringInfoPopover('${escapeAttr(t.id)}', event, 'task')" title="${escapeAttr(ruleTooltip)}" aria-label="Información de recurrencia">
+                        <button type="button" class="tag recurring-tag-btn triage-recurring-btn" onclick="app.openRecurringInfoPopover('${escapeAttr(task.id)}', event, 'task')" title="${escapeAttr(ruleTooltip)}" aria-label="${escapeAttr(t('meetings.recurringTagLabel'))}">
                           <span class="triage-recurring-icon">🔁</span>
-                          <span class="triage-recurring-label">Recurrente</span>
+                          <span class="triage-recurring-label">${t('meetings.recurringTagLabel')}</span>
                         </button>
                       `;
                     }
 
-                    const isDraggable = t.status === "pending" || t.status === "paused";
+                    const isDraggable = task.status === "pending" || task.status === "paused";
                     const dragAttrs = isDraggable
                       ? `draggable="true"
-                         ondragstart="app.taskDragStart(event, '${escapeAttr(t.id)}')"
+                         ondragstart="app.taskDragStart(event, '${escapeAttr(task.id)}')"
                          ondragover="app.taskDragOver(event)"
                          ondragleave="app.taskDragLeave(event)"
-                         ondrop="app.taskDrop(event, '${escapeAttr(t.id)}')"
+                         ondrop="app.taskDrop(event, '${escapeAttr(task.id)}')"
                          ondragend="app.taskDragEnd(event)"`
                       : '';
                     const dragHandle = isDraggable
-                      ? `<span class="drag-handle triage-drag-handle" title="Arrastra para reordenar" onmousedown="app.armTaskDrag()">⠿</span>`
+                      ? `<span class="drag-handle triage-drag-handle" title="${escapeAttr(t('triage.dragHandleTooltip'))}" onmousedown="app.armTaskDrag()">⠿</span>`
                       : '';
 
                     return `
-                      <div class="triage-task-row ${isSelected ? 'selected' : ''} ${isRecurring ? 'is-recurring' : ''}" data-task-id="${escapeAttr(t.id)}" onclick="app.handleTriageRowClick('${escapeAttr(t.id)}', event)" ondblclick="app.handleTriageRowDblClick('${escapeAttr(t.id)}', event)" ${dragAttrs}>
+                      <div class="triage-task-row ${isSelected ? 'selected' : ''} ${isRecurring ? 'is-recurring' : ''}" data-task-id="${escapeAttr(task.id)}" onclick="app.handleTriageRowClick('${escapeAttr(task.id)}', event)" ondblclick="app.handleTriageRowDblClick('${escapeAttr(task.id)}', event)" ${dragAttrs}>
                         <!-- LADO IZQUIERDO: PUNTITOS, CHECKBOX, ESTRELLA, NOMBRE + DURACIÓN (EN 1 LÍNEA) -->
                         <div class="triage-task-left">
                           ${dragHandle}
-                          <input type="checkbox" class="triage-task-cb" ${isSelected ? 'checked' : ''} onclick="app.toggleTriageTaskSelect('${escapeAttr(t.id)}', event)">
-                          <button type="button" class="triage-star-btn ${t.featured ? 'is-featured' : ''}" onclick="app.toggleTriageTaskStar('${escapeAttr(t.id)}', event)" title="${t.featured ? 'Quitar destacada' : 'Marcar destacada (máx 5)'}">
-                            ${t.featured ? '⭐' : '☆'}
+                          <input type="checkbox" class="triage-task-cb" ${isSelected ? 'checked' : ''} onclick="app.toggleTriageTaskSelect('${escapeAttr(task.id)}', event)">
+                          <button type="button" class="triage-star-btn ${task.featured ? 'is-featured' : ''}" onclick="app.toggleTriageTaskStar('${escapeAttr(task.id)}', event)" title="${task.featured ? escapeAttr(t('triage.unstarTooltip')) : escapeAttr(t('triage.starTooltip'))}">
+                            ${task.featured ? '⭐' : '☆'}
                           </button>
-                          <span class="triage-task-title ${t.overflow ? 'is-overflow' : ''}" title="${escapeAttr(t.title)}">
-                            ${escapeHtml(t.title)}
+                          <span class="triage-task-title ${task.overflow ? 'is-overflow' : ''}" title="${escapeAttr(task.title)}">
+                            ${escapeHtml(task.title)}
                           </span>
-                          <span class="triage-task-duration" title="Duración estimada">${formatShortDuration(t.planned || 0)}</span>
+                          <span class="triage-task-duration" title="${escapeAttr(t('triage.durationTooltip'))}">${formatShortDuration(task.planned || 0)}</span>
                           ${recurringTag}
-                          ${t.overflow ? '<span class="triage-overflow-tag" title="Esta tarea desborda el fin de jornada laboral">⚠️ Desborda</span>' : ''}
+                          ${task.overflow ? `<span class="triage-overflow-tag" title="${escapeAttr(t('triage.overflowTooltip'))}">${t('triage.overflowTag')}</span>` : ''}
                         </div>
 
                         <!-- LADO DERECHO: ACCIONES DIRECTAS EN LA MISMA LÍNEA -->
                         <div class="triage-task-right">
                           <!-- BOTÓN URGENCIA CON MENU -->
-                          <button type="button" class="triage-urgency-btn urgency-btn-${escapeAttr(urgencyKey)}" onclick="app.openTriageSingleUrgency('${escapeAttr(t.id)}', event)" title="Urgencia: ${escapeAttr(uInfo.label)} (clic para cambiar)">
+                          <button type="button" class="triage-urgency-btn urgency-btn-${escapeAttr(urgencyKey)}" onclick="app.openTriageSingleUrgency('${escapeAttr(task.id)}', event)" title="${escapeAttr(t('triage.urgencyButtonTooltip', { label: urgencyLabel }))}">
                             <span>${uInfo.icon}</span>
-                            <span class="triage-urgency-text">${escapeHtml(uInfo.label)}</span>
+                            <span class="triage-urgency-text">${escapeHtml(urgencyLabel)}</span>
                             <span class="triage-chevron-mini">▾</span>
                           </button>
 
                           <!-- 5 BOTONES RÁPIDOS DE FECHA LABORABLE -->
                           <div class="triage-quick-days-wrap">
                             ${quick5Days.map(d => `
-                              <button type="button" class="triage-quick-day-btn" onclick="app.moveTriageTaskToDate('${escapeAttr(t.id)}', '${escapeAttr(d.date)}', '${escapeAttr(d.label)}', event)" title="Mover a ${escapeAttr(d.label)} (${escapeAttr(d.date)})">
+                              <button type="button" class="triage-quick-day-btn" onclick="app.moveTriageTaskToDate('${escapeAttr(task.id)}', '${escapeAttr(d.date)}', '${escapeAttr(d.label)}', event)" title="${escapeAttr(t('triage.quickMoveTooltip', { label: d.label, date: d.date }))}">
                                 ${escapeHtml(d.shortChip)}
                               </button>
                             `).join('')}
                           </div>
 
                           <!-- BOTÓN COMPLETAR -->
-                          <button type="button" class="triage-complete-btn" onclick="app.completeTriageSingleTask('${escapeAttr(t.id)}', event)" title="Completar tarea">
+                          <button type="button" class="triage-complete-btn" onclick="app.completeTriageSingleTask('${escapeAttr(task.id)}', event)" title="${escapeAttr(t('triage.completeTaskTooltip'))}">
                             ✓
                           </button>
 
                           <!-- BOTÓN BORRAR -->
-                          <button type="button" class="triage-delete-btn" onclick="app.deleteTriageSingleTask('${escapeAttr(t.id)}', event)" title="Eliminar tarea">
+                          <button type="button" class="triage-delete-btn" onclick="app.deleteTriageSingleTask('${escapeAttr(task.id)}', event)" title="${escapeAttr(t('triage.deleteTaskTooltip'))}">
                             🗑️
                           </button>
                         </div>
@@ -860,19 +867,19 @@ export function TodayTasksTriageView(ctx) {
         <div class="triage-floating-bar ${selectedCount > 0 ? 'visible' : ''}" id="triageFloatingBar">
           <div class="triage-floating-left">
             <span class="triage-selected-badge">${selectedCount}</span>
-            <span class="triage-selected-text"><strong>${selectedCount}</strong> ${selectedCount === 1 ? 'tarea seleccionada' : 'tareas seleccionadas'}</span>
-            <button type="button" class="triage-link-btn" onclick="app.clearTriageSelection()">Deseleccionar</button>
+            <span class="triage-selected-text">${t('triage.batchSelectedCount', { count: selectedCount })}</span>
+            <button type="button" class="triage-link-btn" onclick="app.clearTriageSelection()">${t('triage.batchDeselect')}</button>
           </div>
 
           <div class="triage-floating-actions">
             <!-- BOTÓN MOVER A FECHA (7 DÍAS LABORABLES) -->
             <div class="triage-dropdown-anchor">
               <button type="button" class="btn primary small" onclick="app.toggleTriageDropdown('triageMoveDropdown', event)">
-                <span>📅 Mover a fecha</span>
+                <span>${t('triage.batchMoveBtn')}</span>
                 <span class="triage-chevron-mini">▾</span>
               </button>
               <div class="triage-floating-dropdown" id="triageMoveDropdown" style="display:none;">
-                <div class="triage-dropdown-title">Próximos 7 días laborables</div>
+                <div class="triage-dropdown-title">${t('triage.batchMoveTitle')}</div>
                 <div class="triage-dropdown-list">
                   ${next7Days.map(d => `
                     <button type="button" class="triage-dropdown-item" onclick="app.executeTriageMoveSelectedDate('${escapeAttr(d.date)}')">
@@ -882,7 +889,7 @@ export function TodayTasksTriageView(ctx) {
                   `).join('')}
                 </div>
                 <div class="triage-dropdown-custom-row">
-                  <label class="triage-custom-date-label">Otra fecha:</label>
+                  <label class="triage-custom-date-label">${t('triage.batchCustomDate')}</label>
                   <input type="date" class="triage-custom-date-input" onchange="if(this.value) app.executeTriageMoveSelectedDate(this.value)">
                 </div>
               </div>
@@ -891,56 +898,56 @@ export function TodayTasksTriageView(ctx) {
             <!-- BOTÓN URGENCIA POR LOTE -->
             <div class="triage-dropdown-anchor">
               <button type="button" class="btn secondary small" onclick="app.toggleTriageDropdown('triageBatchUrgencyDropdown', event)">
-                <span>🎯 Urgencia</span>
+                <span>${t('triage.batchUrgencyBtn')}</span>
                 <span class="triage-chevron-mini">▾</span>
               </button>
               <div class="triage-floating-dropdown" id="triageBatchUrgencyDropdown" style="display:none;min-width:160px;">
-                <div class="triage-dropdown-title">Cambiar urgencia</div>
+                <div class="triage-dropdown-title">${t('triage.batchUrgencyTitle')}</div>
                 <button type="button" class="triage-dropdown-item" onclick="app.executeTriageBatchUrgency('today')">
-                  <span>🟠</span> <strong>Hoy</strong>
+                  <span>🟠</span> <strong>${t('triage.groupToday')}</strong>
                 </button>
                 <button type="button" class="triage-dropdown-item" onclick="app.executeTriageBatchUrgency('days')">
-                  <span>🔵</span> <strong>Próximos días</strong>
+                  <span>🔵</span> <strong>${t('triage.groupDays')}</strong>
                 </button>
                 <button type="button" class="triage-dropdown-item" onclick="app.executeTriageBatchUrgency('week')">
-                  <span>🟣</span> <strong>Esta semana</strong>
+                  <span>🟣</span> <strong>${t('triage.groupWeek')}</strong>
                 </button>
                 <button type="button" class="triage-dropdown-item" onclick="app.executeTriageBatchUrgency('later')">
-                  <span>⚪</span> <strong>Más adelante</strong>
+                  <span>⚪</span> <strong>${t('triage.groupLater')}</strong>
                 </button>
               </div>
             </div>
 
             <!-- BOTONES DESTACAR, COMPLETAR Y ELIMINAR POR LOTE -->
-            <button type="button" class="btn secondary small" onclick="app.executeTriageBatchStar(true)" title="Marcar seleccionadas con estrella">
-              ⭐ Destacar
+            <button type="button" class="btn secondary small" onclick="app.executeTriageBatchStar(true)" title="${escapeAttr(t('triage.batchStarTooltip'))}">
+              ${t('triage.batchStar')}
             </button>
-            <button type="button" class="btn secondary small" onclick="app.executeTriageBatchStar(false)" title="Quitar destacado a seleccionadas">
-              ☆ Quitar
+            <button type="button" class="btn secondary small" onclick="app.executeTriageBatchStar(false)" title="${escapeAttr(t('triage.batchUnstarTooltip'))}">
+              ${t('triage.batchUnstar')}
             </button>
-            <button type="button" class="btn done small" onclick="app.executeTriageBatchComplete()" title="Completar tareas seleccionadas">
-              ✓ Completar
+            <button type="button" class="btn done small" onclick="app.executeTriageBatchComplete()" title="${escapeAttr(t('triage.batchCompleteTooltip'))}">
+              ${t('triage.batchComplete')}
             </button>
-            <button type="button" class="btn danger small" onclick="app.executeTriageBatchDelete()" title="Eliminar tareas seleccionadas">
-              🗑️ Borrar
+            <button type="button" class="btn danger small" onclick="app.executeTriageBatchDelete()" title="${escapeAttr(t('triage.batchDeleteTooltip'))}">
+              ${t('triage.batchDelete')}
             </button>
           </div>
         </div>
 
         <!-- POPOVER FLOTANTE PARA CAMBIO INDIVIDUAL DE URGENCIA -->
         <div id="triageSingleUrgencyPopover" class="triage-single-urgency-popover" style="display:none;">
-          <div class="triage-dropdown-title">Cambiar urgencia</div>
+          <div class="triage-dropdown-title">${t('triage.batchUrgencyTitle')}</div>
           <button type="button" class="triage-dropdown-item" onclick="app.applyTriageSingleUrgency('today')">
-            <span>🟠</span> <strong>Hoy</strong>
+            <span>🟠</span> <strong>${t('triage.groupToday')}</strong>
           </button>
           <button type="button" class="triage-dropdown-item" onclick="app.applyTriageSingleUrgency('days')">
-            <span>🔵</span> <strong>Próximos días</strong>
+            <span>🔵</span> <strong>${t('triage.groupDays')}</strong>
           </button>
           <button type="button" class="triage-dropdown-item" onclick="app.applyTriageSingleUrgency('week')">
-            <span>🟣</span> <strong>Esta semana</strong>
+            <span>🟣</span> <strong>${t('triage.groupWeek')}</strong>
           </button>
           <button type="button" class="triage-dropdown-item" onclick="app.applyTriageSingleUrgency('later')">
-            <span>⚪</span> <strong>Más adelante</strong>
+            <span>⚪</span> <strong>${t('triage.groupLater')}</strong>
           </button>
         </div>
       </div>

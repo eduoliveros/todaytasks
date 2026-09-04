@@ -1,5 +1,6 @@
 import { getTodayStr, getScheduleForDate, matchesRecurrenceRule } from './utils.js';
 import { snapshotAndPrune } from './history.js';
+import { detectInitialLanguage } from './i18n.js';
 
 function getToday() {
   return getTodayStr();
@@ -47,6 +48,7 @@ export function defaultState() {
     autoBreakIntervalMin: 60,
     autoBreakDurationMin: 10,
     themeMode: "auto",
+    language: detectInitialLanguage(),
     nextId: 1
   };
   return wrapState(raw);
@@ -176,6 +178,9 @@ export function wrapState(rawState) {
   }
   if (!["auto", "light", "dark"].includes(rawState.themeMode)) {
     rawState.themeMode = "auto";
+  }
+  if (typeof rawState.language !== "string" || !rawState.language) {
+    rawState.language = detectInitialLanguage();
   }
   if (typeof rawState.nextId !== "number" || rawState.nextId < 1) {
     rawState.nextId = 1;

@@ -1,6 +1,7 @@
 /* views/focus.js — Vistas de pantalla completa: interrupción y foco de tarea */
 import { nowMinutes, fmt, fmtDur, getTaskElapsed } from '../utils.js';
 import { escapeHtml, escapeAttr, renderNotesMarkdown } from '../ui.js';
+import { t } from '../i18n.js';
 
 export function TodayTasksFocusView(ctx){
   const { getState, getCurrentView, getFocusTaskId, fmtMMSS, RING_R, RING_C } = ctx;
@@ -31,27 +32,27 @@ export function TodayTasksFocusView(ctx){
     container.innerHTML = `
       <div class="interruption-view">
         <div class="interruption-card">
-          <div class="interruption-badge">⚡ Interrupción en curso</div>
+          <div class="interruption-badge">${t('focus.interruptionBadge')}</div>
 
           <div class="interruption-input-group">
             <input type="text"
                    id="interruptionTitleInput"
                    class="interruption-input"
                    value="${escapeAttr(state.activeInterruption.title || '')}"
-                   placeholder="Motivo (ej: llamada, duda, reunión improvisada...)"
+                   placeholder="${escapeAttr(t('focus.interruptionPlaceholder'))}"
                    oninput="app.updateInterruptionTitle(this.value)"
                    autocomplete="off">
           </div>
 
           <div class="interruption-timer-box">
-            <div class="interruption-time-label">Tiempo transcurrido</div>
+            <div class="interruption-time-label">${t('focus.elapsedTime')}</div>
             <div class="interruption-time-value">${timerDisplay}</div>
-            <div class="interruption-start-meta">Iniciada a las ${fmt(state.activeInterruption.start)}</div>
+            <div class="interruption-start-meta">${t('focus.interruptionStartedAt', { time: fmt(state.activeInterruption.start) })}</div>
           </div>
 
           <div style="display:flex;gap:12px;width:100%;">
-            <button class="btn done interruption-finish-btn" style="flex:2;" onclick="app.completeInterruption()">✓ Finalizar interrupción</button>
-            <button class="btn secondary" style="flex:1;border-radius:12px;font-weight:600;" onclick="app.cancelInterruption()" title="Cancelar interrupción sin guardar (Esc)">✕ Cancelar (Esc)</button>
+            <button class="btn done interruption-finish-btn" style="flex:2;" onclick="app.completeInterruption()">${t('focus.btnFinishInterruption')}</button>
+            <button class="btn secondary" style="flex:1;border-radius:12px;font-weight:600;" onclick="app.cancelInterruption()" title="${escapeAttr(t('focus.btnCancelInterruptionTooltip'))}">${t('focus.btnCancelInterruption')}</button>
           </div>
         </div>
       </div>
@@ -75,16 +76,16 @@ export function TodayTasksFocusView(ctx){
     }
 
     const state = getState ? getState() : {};
-    const t = (state.tasks || []).find(x => String(x.id) === String(taskId));
-    if(!t){
+    const task = (state.tasks || []).find(x => String(x.id) === String(taskId));
+    if(!task){
       if (typeof window !== "undefined") window.location.hash = '#/';
       return;
     }
 
     const now = (ctx && ctx.nowMinutes) ? (typeof ctx.nowMinutes === 'function' ? ctx.nowMinutes() : ctx.nowMinutes) : nowMinutes();
-    const elapsed = getTaskElapsed(t, now);
-    const planned = t.planned || 1;
-    const isCompleted = t.status === 'completed';
+    const elapsed = getTaskElapsed(task, now);
+    const planned = task.planned || 1;
+    const isCompleted = task.status === 'completed';
     const isOverrun = !isCompleted && elapsed > planned;
     const remaining = Math.max(0, planned - elapsed);
     const overrunMinutes = isOverrun ? (elapsed - planned) : 0;
@@ -95,13 +96,13 @@ export function TodayTasksFocusView(ctx){
     const dashOffset = +(circumference * (1 - fraction)).toFixed(2);
 
     let ringClass = '';
-    if(t.status === 'paused') ringClass += ' state-paused';
+    if(task.status === 'paused') ringClass += ' state-paused';
     if(isCompleted) ringClass += ' state-completed';
     if(isOverrun) ringClass += ' state-overrun';
 
     let plannedEnd = null;
-    if(t.status === 'running' && t.runningStart !== null && t.runningStart !== undefined){
-      plannedEnd = t.runningStart + Math.max(0, t.planned - (t.elapsedBefore || 0));
+    if(task.status === 'running' && task.runningStart !== null && task.runningStart !== undefined){
+      plannedEnd = task.runningStart + Math.max(0, task.planned - (task.elapsedBefore || 0));
     }
 
     /* Reuniones: cálculo de próxima reunión, reunión en curso y marca de corte en el arco */
@@ -127,10 +128,10 @@ export function TodayTasksFocusView(ctx){
         <line class="ring-meeting-notch"
               x1="${notchX1}" y1="${notchY1}"
               x2="${notchX2}" y2="${notchY2}"
-              title="Corte por reunión: ${escapeAttr(nextMeeting.title)} (${fmt(nextMeeting.start)})" />
+              title="${escapeAttr(t('focus.meetingCutoffSvgTitle', { title: nextMeeting.title, time: fmt(nextMeeting.start) }))}" />
         <circle class="ring-meeting-dot"
                 cx="${dotX}" cy="${dotY}" r="4.5">
-          <title>Reunión: ${escapeAttr(nextMeeting.title)} (${fmt(nextMeeting.start)})</title>
+          <title>${escapeAttr(t('focus.meetingDotSvgTitle', { title: nextMeeting.title, time: fmt(nextMeeting.start) }))}</title>
         </circle>
       `;
     }
@@ -138,24 +139,24 @@ export function TodayTasksFocusView(ctx){
     let meetingBadgeHtml = '';
     if(ongoingMeeting){
       meetingBadgeHtml = `
-        <div class="focus-meeting-badge ongoing" title="Reunión en curso hasta las ${fmt(ongoingMeeting.end)}">
+        <div class="focus-meeting-badge ongoing" title="${escapeAttr(t('focus.meetingOngoingTooltip', { time: fmt(ongoingMeeting.end) }))}">
           <span class="badge-icon">🔴</span>
-          <span class="badge-text">Reunión en curso: ${escapeHtml(ongoingMeeting.title)} (hasta ${fmt(ongoingMeeting.end)})</span>
+          <span class="badge-text">${t('focus.meetingOngoingBadge', { title: escapeHtml(ongoingMeeting.title), time: fmt(ongoingMeeting.end) })}</span>
         </div>
       `;
     } else if(nextMeeting && (isCutoff || timeToMeeting <= 60)){
       if(isCutoff || timeToMeeting <= 10){
         meetingBadgeHtml = `
-          <div class="focus-meeting-badge warning" title="Reunión ${fmt(nextMeeting.start)} · ${escapeAttr(nextMeeting.title)}">
+          <div class="focus-meeting-badge warning" title="${escapeAttr(t('focus.meetingNextTooltip', { time: fmt(nextMeeting.start), title: nextMeeting.title }))}">
             <span class="badge-icon">⚠️</span>
-            <span class="badge-text">en ${fmtDur(timeToMeeting)}: ${escapeHtml(nextMeeting.title)}</span>
+            <span class="badge-text">${t('focus.meetingNextWarning', { time: fmtDur(timeToMeeting), title: escapeHtml(nextMeeting.title) })}</span>
           </div>
         `;
       } else {
         meetingBadgeHtml = `
-          <div class="focus-meeting-badge normal" title="Reunión ${fmt(nextMeeting.start)} · ${escapeAttr(nextMeeting.title)}">
+          <div class="focus-meeting-badge normal" title="${escapeAttr(t('focus.meetingNextTooltip', { time: fmt(nextMeeting.start), title: nextMeeting.title }))}">
             <span class="badge-icon">📅</span>
-            <span class="badge-text">${fmt(nextMeeting.start)} (en ${fmtDur(timeToMeeting)}) · ${escapeHtml(nextMeeting.title)}</span>
+            <span class="badge-text">${t('focus.meetingNextNormal', { time: fmt(nextMeeting.start), inTime: fmtDur(timeToMeeting), title: escapeHtml(nextMeeting.title) })}</span>
           </div>
         `;
       }
@@ -164,26 +165,26 @@ export function TodayTasksFocusView(ctx){
     let ringMainText = '';
     let ringLabelText = '';
     if(isCompleted){
-      ringMainText = 'Completada';
-      ringLabelText = `${fmtDur(elapsed)} dedicados`;
+      ringMainText = t('focus.ringCompletedMain');
+      ringLabelText = t('focus.ringCompletedLabel', { time: fmtDur(elapsed) });
     } else if(isOverrun){
       ringMainText = `+${fmtDur(overrunMinutes)}`;
-      ringLabelText = 'tiempo extra';
+      ringLabelText = t('focus.ringExtraTime');
     } else {
       ringMainText = fmtDur(remaining);
-      ringLabelText = 'restante';
+      ringLabelText = t('focus.ringRemaining');
     }
 
     container.innerHTML = `
       <div class="focus-view">
         <div class="focus-header">
-          <a href="#/" class="btn secondary small focus-back" title="Volver al tablero (Esc)">← Volver al tablero</a>
-          <button class="btn secondary small pip-toggle-btn" onclick="app.togglePiP()" title="Abrir tarea en mini-widget flotante Always on Top (Tecla 'W')">
-            <span>🗖</span> <span class="pip-btn-label">Mini-Widget [W]</span>
+          <a href="#/" class="btn secondary small focus-back" title="${escapeAttr(t('focus.btnBackTooltip'))}">${t('focus.btnBack')}</a>
+          <button class="btn secondary small pip-toggle-btn" onclick="app.togglePiP()" title="${escapeAttr(t('focus.btnPipTooltip'))}">
+            <span>🗖</span> <span class="pip-btn-label">${t('focus.btnPipLabel')}</span>
           </button>
         </div>
 
-        <h2 class="focus-task-name">${escapeHtml(t.title)}</h2>
+        <h2 class="focus-task-name">${escapeHtml(task.title)}</h2>
 
         <div class="focus-ring-wrap">
           <svg class="focus-ring" viewBox="0 0 240 240">
@@ -208,60 +209,60 @@ export function TodayTasksFocusView(ctx){
 
         <div class="focus-meta">
           <div class="focus-meta-item">
-            <span class="meta-label">Planificado</span>
-            <span class="meta-value">${fmtDur(t.planned)}</span>
+            <span class="meta-label">${t('focus.metaPlanned')}</span>
+            <span class="meta-value">${fmtDur(task.planned)}</span>
           </div>
           <div class="focus-meta-item">
-            <span class="meta-label">Transcurrido</span>
-            <span class="meta-value task-duration-clickable" title="Clic para ajustar tiempo transcurrido" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">${fmtDur(elapsed)}</span>
+            <span class="meta-label">${t('focus.metaElapsed')}</span>
+            <span class="meta-value task-duration-clickable" title="${escapeAttr(t('focus.metaElapsedTooltip'))}" onclick="app.openTimePopover('${escapeAttr(task.id)}', event)">${fmtDur(elapsed)}</span>
           </div>
           ${plannedEnd !== null ? `
           <div class="focus-meta-item">
-            <span class="meta-label">Fin previsto</span>
+            <span class="meta-label">${t('focus.metaEstimatedEnd')}</span>
             <span class="meta-value">${fmt(plannedEnd)}</span>
           </div>` : ''}
           ${ongoingMeeting ? `
           <div class="focus-meta-item">
-            <span class="meta-label">Reunión en curso</span>
+            <span class="meta-label">${t('focus.metaOngoingMeeting')}</span>
             <span class="meta-value warning-text" title="${escapeAttr(ongoingMeeting.title)}">${escapeHtml(ongoingMeeting.title)} (hasta ${fmt(ongoingMeeting.end)})</span>
           </div>` : ''}
           ${nextMeeting && !ongoingMeeting ? `
           <div class="focus-meta-item">
-            <span class="meta-label">Siguiente reunión</span>
+            <span class="meta-label">${t('focus.metaNextMeeting')}</span>
             <span class="meta-value ${isCutoff ? 'warning-text' : ''}" title="${escapeAttr(nextMeeting.title)}">
               ${fmt(nextMeeting.start)} (${fmtDur(timeToMeeting)}) · ${escapeHtml(nextMeeting.title)}
             </span>
           </div>` : ''}
         </div>
 
-        ${(t.notes && t.notes.trim()) ? `
+        ${(task.notes && task.notes.trim()) ? `
         <div class="focus-notes-card">
           <div class="focus-notes-header">
-            <span class="focus-notes-title">📝 Notas y Enlaces</span>
+            <span class="focus-notes-title">${t('focus.notesTitle')}</span>
           </div>
           <div class="task-note-content">
-            ${renderNotesMarkdown(t.notes)}
+            ${renderNotesMarkdown(task.notes)}
           </div>
         </div>` : ''}
 
         <div class="focus-actions">
-          ${t.status === 'running' ? `
-            <button class="btn pause" onclick="app.pauseTask('${escapeAttr(t.id)}')">⏸ Pausar</button>
-            <button class="btn done" onclick="app.completeTask('${escapeAttr(t.id)}')">✓ Completar</button>
-          ` : t.status === 'paused' ? `
-            <button class="btn run" onclick="app.resumeTask('${escapeAttr(t.id)}')">▶ Reanudar</button>
-            <button class="btn done" onclick="app.completeTask('${escapeAttr(t.id)}')">✓ Completar</button>
+          ${task.status === 'running' ? `
+            <button class="btn pause" onclick="app.pauseTask('${escapeAttr(task.id)}')">${t('focus.btnPause')}</button>
+            <button class="btn done" onclick="app.completeTask('${escapeAttr(task.id)}')">${t('focus.btnComplete')}</button>
+          ` : task.status === 'paused' ? `
+            <button class="btn run" onclick="app.resumeTask('${escapeAttr(task.id)}')">${t('focus.btnResume')}</button>
+            <button class="btn done" onclick="app.completeTask('${escapeAttr(task.id)}')">${t('focus.btnComplete')}</button>
           ` : isCompleted ? `
-            <button class="btn secondary" onclick="app.openTimePopover('${escapeAttr(t.id)}', event)">⏱ Ajustar tiempo</button>
-            <button class="btn secondary" onclick="app.uncompleteTask('${escapeAttr(t.id)}')">↩ Reabrir tarea</button>
-            <a href="#/" class="btn done" style="text-decoration:none;">✓ Volver al tablero</a>
+            <button class="btn secondary" onclick="app.openTimePopover('${escapeAttr(task.id)}', event)">${t('focus.btnAdjustTime')}</button>
+            <button class="btn secondary" onclick="app.uncompleteTask('${escapeAttr(task.id)}')">${t('focus.btnReopenTask')}</button>
+            <a href="#/" class="btn done" style="text-decoration:none;">${t('focus.btnBackToBoard')}</a>
           ` : `
-            <button class="btn run" onclick="app.startTask('${escapeAttr(t.id)}')">▶ Iniciar</button>
-            <button class="btn done" onclick="app.completeTask('${escapeAttr(t.id)}')">✓ Completar</button>
+            <button class="btn run" onclick="app.startTask('${escapeAttr(task.id)}')">${t('focus.btnStart')}</button>
+            <button class="btn done" onclick="app.completeTask('${escapeAttr(task.id)}')">${t('focus.btnComplete')}</button>
           `}
         </div>
 
-        <span class="focus-updated">Actualizado: ${fmt(now)}</span>
+        <span class="focus-updated">${t('focus.updatedAt', { time: fmt(now) })}</span>
       </div>
     `;
   }

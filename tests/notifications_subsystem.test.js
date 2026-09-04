@@ -124,4 +124,33 @@ describe('Notifications Subsystem (js/notifications.js)', () => {
     expect(ctx.pauseTask).toHaveBeenCalledWith('task-1');
     expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('se ha pausado automáticamente'));
   });
+
+  it('localiza las notificaciones de tareas y reuniones al inglés cuando el idioma activo es en', async () => {
+    const { setLocale } = await import('../js/i18n.js');
+    setLocale('en');
+
+    document.body.innerHTML = '<button id="notifyBtn"></button>';
+    notifInstance.refreshNotifyBtn();
+    const btn = document.getElementById('notifyBtn');
+    expect(btn.textContent).toContain('enabled');
+
+    // Notificación de fin de tarea
+    ctx.nowMinutes.mockReturnValue(630);
+    notifInstance.checkRunningTaskNotification();
+    expect(mockNotificationConstructor).toHaveBeenCalled();
+    const [taskTitle, taskOptions] = mockNotificationConstructor.mock.calls[0];
+    expect(taskTitle).toContain('Planned time completed');
+    expect(taskOptions.body).toContain('Task "Coding feature" has reached its planned time');
+
+    // Notificación de reunión inminente
+    mockNotificationConstructor.mockClear();
+    ctx.nowMinutes.mockReturnValue(628);
+    notifInstance.checkMeetingNotifications();
+    const [meetingTitle, meetingOptions] = mockNotificationConstructor.mock.calls[0];
+    expect(meetingTitle).toContain('Meeting in 2 min: Daily Standup');
+    expect(meetingOptions.body).toContain('Starts at 10:30');
+
+    // Restaurar a español
+    setLocale('es');
+  });
 });

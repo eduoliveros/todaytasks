@@ -22,6 +22,7 @@ export function TodayTasksViews(ctx){
     dashboard.renderEnvSwitcher();
     dashboard.renderHeaderStats();
     dashboard.renderTaskProgressBar();
+    dashboard.renderDayLabel();
     dashboard.refreshPlanningModeBtn();
     dashboard.refreshAutoBreakBtn();
     const schedule = ctx.computeSchedule ? ctx.computeSchedule() : null;
@@ -42,6 +43,9 @@ export function TodayTasksViews(ctx){
     }
     if(ctx.pipModule && ctx.pipModule.updateAppPipButtons){
       ctx.pipModule.updateAppPipButtons();
+    }
+    if(ctx.cloudModule && ctx.cloudModule.renderAuthArea){
+      ctx.cloudModule.renderAuthArea();
     }
   }
 
@@ -70,6 +74,7 @@ export function TodayTasksViews(ctx){
     renderEnvSwitcher:      dashboard.renderEnvSwitcher,
     renderHeaderStats:      dashboard.renderHeaderStats,
     renderTaskProgressBar:  dashboard.renderTaskProgressBar,
+    renderDayLabel:         dashboard.renderDayLabel,
     syncFormInputsFromState:dashboard.syncFormInputsFromState,
     refreshPlanningModeBtn: dashboard.refreshPlanningModeBtn,
     refreshAutoBreakBtn:    dashboard.refreshAutoBreakBtn,

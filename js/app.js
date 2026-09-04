@@ -16,6 +16,7 @@ import { TodayTasksHistory } from './history.js';
 import { TodayTasksUndo } from './undo.js';
 import { TodayTasksVersionSync } from './version.js';
 import { TodayTasksPiP } from './pip.js';
+import { t, setLocale, translateDOM } from './i18n.js';
 
 const STORAGE_KEY = (TodayTasksConfig && TodayTasksConfig.storageKey) ? TodayTasksConfig.storageKey : "todaytasks_state_v1";
 
@@ -74,7 +75,14 @@ let actionsModule, viewsModule, cloudModule, routerModule;
 const ctx = {
   STORAGE_KEY,
   getState: () => state,
-  setState: (newState) => { state = wrapState(newState); },
+  setState: (newState) => {
+    state = wrapState(newState);
+    if (state.language) {
+      setLocale(state.language);
+      translateDOM();
+      if (cloudModule && cloudModule.renderAuthArea) cloudModule.renderAuthArea();
+    }
+  },
   getMeetingEdit: () => meetingEdit,
   setMeetingEdit: (v) => { meetingEdit = v; },
   getTaskEdit: () => taskEdit,
@@ -115,6 +123,7 @@ actionsModule = TodayTasksActions(ctx);
 ctx.actionsModule = actionsModule;
 viewsModule = TodayTasksViews(ctx);
 cloudModule = TodayTasksCloud(ctx);
+ctx.cloudModule = cloudModule;
 routerModule = TodayTasksRouter(ctx);
 
 let versionSyncModule = TodayTasksVersionSync({
@@ -232,8 +241,8 @@ function switchHeaderTab(target){
     viewsModule.refreshPlanningModeBtn();
     viewsModule.renderAll();
     showToast(state.planningMode
-      ? "Modo planificación activado: las tareas se reparten desde el inicio de jornada (" + fmt(state.workStart) + ")."
-      : "Modo planificación desactivado: las tareas vuelven a repartirse desde la hora actual.");
+      ? t("time.planningModeToastOn", { start: fmt(state.workStart) })
+      : t("time.planningModeToastOff"));
   }
 
   const planningBtnEl = document.getElementById("planningModeBtn");
@@ -306,6 +315,8 @@ function switchHeaderTab(target){
   }
 
   applyTheme();
+  setLocale(state.language || "es");
+  translateDOM();
 
   const themeSelectEl = document.getElementById("themeSelect");
   if(themeSelectEl){
@@ -314,6 +325,20 @@ function switchHeaderTab(target){
       state.themeMode = e.target.value;
       saveState();
       applyTheme(state.themeMode);
+    });
+  }
+
+  const languageSelectEl = document.getElementById("languageSelect");
+  if(languageSelectEl){
+    languageSelectEl.value = state.language || "es";
+    languageSelectEl.addEventListener("change", (e)=>{
+      state.language = e.target.value;
+      saveState();
+      setLocale(state.language);
+      translateDOM();
+      if(cloudModule && cloudModule.renderAuthArea) cloudModule.renderAuthArea();
+      viewsModule.renderAll();
+      if(viewsModule.syncFormInputsFromState) viewsModule.syncFormInputsFromState();
     });
   }
 

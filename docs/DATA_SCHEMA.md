@@ -22,6 +22,7 @@ interface State {
   autoBreakIntervalMin: number;         // Minutos de trabajo continuo antes de pausa (def: 60)
   autoBreakDurationMin: number;         // Duración del descanso automático en minutos (def: 10)
   themeMode: "auto" | "light" | "dark"; // Tema visual (def: "auto")
+  language: string;                     // Idioma de la interfaz: "es" | "en" (def: según navegador)
   nextId: number;                       // Contador incremental para fallback de IDs (def: 1)
 
   // Metadatos de sincronización en Firestore:

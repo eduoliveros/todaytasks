@@ -48,6 +48,15 @@ describe('TodayTasksState (ES Module)', () => {
       expect(stateIncompleto.themeMode).toBe('dark');
       expect(stateIncompleto.notifyIntervalMin).toBe(10);
       expect(stateIncompleto.nextId).toBe(1);
+      expect(stateIncompleto.language).toBeDefined();
+    });
+
+    it('inicializa y preserva la propiedad language', () => {
+      const stateDefault = defaultState();
+      expect(['es', 'en']).toContain(stateDefault.language);
+
+      const stateCustom = wrapState({ language: 'en' });
+      expect(stateCustom.language).toBe('en');
     });
   });
 

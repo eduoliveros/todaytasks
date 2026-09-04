@@ -249,4 +249,52 @@ describe('TodayTasksForms - Formularios y Menú de Posición', () => {
       expect(document.getElementById('addTaskPositionMenu')).toBeNull();
     });
   });
+
+  describe('Persistencia de event listeners tras translateDOM()', () => {
+    it('muestra y oculta las opciones de recurrencia tras llamar a translateDOM()', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      const { translateDOM, setLocale } = await import('../js/i18n.js');
+
+      const html = fs.readFileSync(path.resolve(__dirname, '../index.html'), 'utf-8');
+      document.documentElement.innerHTML = html;
+
+      const appCtx = {
+        getState: () => state,
+        actionsModule: { addTask: vi.fn(), addMeeting: vi.fn() },
+        showToast: vi.fn()
+      };
+      forms = TodayTasksForms(appCtx);
+
+      // Simular cambio de idioma que ejecuta translateDOM()
+      setLocale('en');
+      translateDOM();
+
+      const recTaskCb = document.getElementById('isRecurringTaskCheckbox');
+      const recTaskPanel = document.getElementById('recurringTaskFormOptions');
+
+      expect(recTaskPanel.style.display).toBe('none');
+
+      recTaskCb.checked = true;
+      recTaskCb.dispatchEvent(new Event('change'));
+
+      expect(recTaskPanel.style.display).toBe('block');
+
+      // Comprobar también el checkbox de reuniones
+      const recMeetingCb = document.getElementById('isRecurringCheckbox');
+      const recMeetingPanel = document.getElementById('recurringFormOptions');
+
+      expect(recMeetingPanel.style.display).toBe('none');
+
+      recMeetingCb.checked = true;
+      recMeetingCb.dispatchEvent(new Event('change'));
+
+      expect(recMeetingPanel.style.display).toBe('block');
+
+      // Desmarcar y comprobar que se oculta
+      recMeetingCb.checked = false;
+      recMeetingCb.dispatchEvent(new Event('change'));
+      expect(recMeetingPanel.style.display).toBe('none');
+    });
+  });
 });

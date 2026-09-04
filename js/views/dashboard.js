@@ -1,5 +1,6 @@
 /* views/dashboard.js — Reloj, estadísticas de cabecera, barra de progreso, entorno, formularios */
 import { nowMinutes, fmt, fmtDur, computeOccupiedMeetingTime, computeDayDeviation, getTodayStr, getDayAbbr } from '../utils.js';
+import { t } from '../i18n.js';
 
 export function TodayTasksDashboard(ctx){
   const { getState, computeSchedule } = ctx;
@@ -28,7 +29,13 @@ export function TodayTasksDashboard(ctx){
     const isUnder = dev.deviationMin < 0;
     const sign = isOver ? '+' : (isUnder ? '−' : '');
     const devClass = isOver ? 'stat-dev-over' : (isUnder ? 'stat-dev-under' : 'stat-dev-neutral');
-    const devTitle = `Desviación del día: ${fmtDur(dev.realMin)} reales vs ${fmtDur(dev.plannedMin)} planificados (${dev.evaluatedCount} ${dev.evaluatedCount === 1 ? 'tarea evaluada' : 'tareas evaluadas'})`;
+    const taskCountLabel = t('dashboard.statsDevTaskCount', { count: dev.evaluatedCount });
+    const devTitle = t('dashboard.statsDevTitle', {
+      real: fmtDur(dev.realMin),
+      planned: fmtDur(dev.plannedMin),
+      count: dev.evaluatedCount,
+      taskLabel: taskCountLabel
+    });
 
     const workStart = state.workStart;
     const workEnd = state.workEnd;
@@ -37,10 +44,10 @@ export function TodayTasksDashboard(ctx){
     const unassignedTime = isFree ? 0 : Math.max(0, workdayTotal - meetingsTotal - tasksTotal);
 
     el.innerHTML = `
-      <span class="stat-chip stat-meeting"><span class="stat-icon">🗓</span>Reuniones <span class="stat-value">${fmtDur(meetingsTotal)}</span></span>
-      <span class="stat-chip stat-task"><span class="stat-icon">🗒</span>Tareas por hacer <span class="stat-value">${fmtDur(tasksTotal)}</span></span>
-      <span class="stat-chip"><span class="stat-icon">✓</span>Completado hoy <span class="stat-value">${fmtDur(completedTotal)}</span></span>
-      ${intTotal > 0 ? `<span class="stat-chip"><span class="stat-icon">⚡</span>Interrupciones <span class="stat-value" style="color:var(--danger)">${fmtDur(intTotal)}</span></span>` : ''}
+      <span class="stat-chip stat-meeting"><span class="stat-icon">🗓</span>${t('dashboard.statsMeetings')} <span class="stat-value">${fmtDur(meetingsTotal)}</span></span>
+      <span class="stat-chip stat-task"><span class="stat-icon">🗒</span>${t('dashboard.statsTasks')} <span class="stat-value">${fmtDur(tasksTotal)}</span></span>
+      <span class="stat-chip"><span class="stat-icon">✓</span>${t('dashboard.statsCompleted')} <span class="stat-value">${fmtDur(completedTotal)}</span></span>
+      ${intTotal > 0 ? `<span class="stat-chip"><span class="stat-icon">⚡</span>${t('dashboard.statsInterruptions')} <span class="stat-value" style="color:var(--danger)">${fmtDur(intTotal)}</span></span>` : ''}
       ${dev.evaluatedCount > 0 ? `
         <span class="stat-chip stat-dev stat-dev-dual ${devClass}" title="${devTitle}">
           <span class="stat-icon">⏱</span>
@@ -49,8 +56,8 @@ export function TodayTasksDashboard(ctx){
         </span>
       ` : ''}
       ${isFree
-        ? `<span class="stat-chip stat-free" title="Día libre sin horario de jornada fijo"><span class="stat-icon">🏖</span>Día libre</span>`
-        : `<span class="stat-chip stat-free" title="Tiempo disponible en la jornada descontando reuniones y tareas por hacer (${fmt(workStart)} - ${fmt(workEnd)})"><span class="stat-icon">⏳</span>Tiempo no asignado <span class="stat-value">${fmtDur(unassignedTime)}</span></span>`
+        ? `<span class="stat-chip stat-free" title="${t('dashboard.statsFreeDayTooltip')}"><span class="stat-icon">🏖</span>${t('dashboard.statsFreeDay')}</span>`
+        : `<span class="stat-chip stat-free" title="${t('dashboard.statsUnassignedTooltip', { start: fmt(workStart), end: fmt(workEnd) })}"><span class="stat-icon">⏳</span>${t('dashboard.statsUnassignedTime')} <span class="stat-value">${fmtDur(unassignedTime)}</span></span>`
       }
     `;
   }
@@ -73,18 +80,18 @@ export function TodayTasksDashboard(ctx){
         <div class="progress-banner">
           <div class="progress-header">
             <div class="progress-header-left">
-              <span class="progress-title">Progreso de tareas</span>
+              <span class="progress-title">${t('dashboard.progressTitle')}</span>
               <div class="progress-legend">
-                <span class="legend-item leg-completed"><span class="dot"></span> 0 completadas</span>
-                <span class="legend-item leg-running"><span class="dot"></span> 0 en ejecución</span>
-                <span class="legend-item leg-paused"><span class="dot"></span> 0 en pausa</span>
-                <span class="legend-item leg-pending"><span class="dot"></span> 0 sin iniciar</span>
+                <span class="legend-item leg-completed"><span class="dot"></span> ${t('dashboard.progressCompleted', { count: 0 })}</span>
+                <span class="legend-item leg-running"><span class="dot"></span> ${t('dashboard.progressRunning', { count: 0 })}</span>
+                <span class="legend-item leg-paused"><span class="dot"></span> ${t('dashboard.progressPaused', { count: 0 })}</span>
+                <span class="legend-item leg-pending"><span class="dot"></span> ${t('dashboard.progressPending', { count: 0 })}</span>
               </div>
             </div>
-            <span class="progress-total-badge">Total: <strong>0</strong> tareas</span>
+            <span class="progress-total-badge">${t('dashboard.progressTotal', { count: 0, taskLabel: t('task.countLabel', { count: 0 }) })}</span>
           </div>
           <div class="progress-track empty-track">
-            <span class="empty-track-text">No hay tareas creadas todavía</span>
+            <span class="empty-track-text">${t('dashboard.progressEmpty')}</span>
           </div>
         </div>
       `;
@@ -96,36 +103,36 @@ export function TodayTasksDashboard(ctx){
     const pctPaused = (paused / total) * 100;
     const pctUnstarted = (unstarted / total) * 100;
 
-    const compLabel = completed > 0 ? (pctCompleted >= 10 ? `${completed} completada${completed!==1?'s':''}` : `${completed}`) : '';
-    const runLabel = running > 0 ? (pctRunning >= 10 ? `${running} en curso` : `${running}`) : '';
-    const pauseLabel = paused > 0 ? (pctPaused >= 10 ? `${paused} en pausa` : `${paused}`) : '';
-    const unstartedLabel = unstarted > 0 ? (pctUnstarted >= 10 ? `${unstarted} sin iniciar` : `${unstarted}`) : '';
+    const compLabel = completed > 0 ? (pctCompleted >= 10 ? t('dashboard.progressCompleted', { count: completed }) : `${completed}`) : '';
+    const runLabel = running > 0 ? (pctRunning >= 10 ? t('dashboard.progressRunningShort', { count: running }) : `${running}`) : '';
+    const pauseLabel = paused > 0 ? (pctPaused >= 10 ? t('dashboard.progressPaused', { count: paused }) : `${paused}`) : '';
+    const unstartedLabel = unstarted > 0 ? (pctUnstarted >= 10 ? t('dashboard.progressPending', { count: unstarted }) : `${unstarted}`) : '';
 
     container.innerHTML = `
       <div class="progress-banner">
         <div class="progress-header">
           <div class="progress-header-left">
-            <span class="progress-title">Progreso de tareas</span>
+            <span class="progress-title">${t('dashboard.progressTitle')}</span>
             <div class="progress-legend">
-              <span class="legend-item leg-completed"><span class="dot"></span> ${completed} completada${completed!==1?'s':''}</span>
-              <span class="legend-item leg-running"><span class="dot"></span> ${running} en ejecución</span>
-              <span class="legend-item leg-paused"><span class="dot"></span> ${paused} en pausa</span>
-              <span class="legend-item leg-pending"><span class="dot"></span> ${unstarted} sin iniciar</span>
+              <span class="legend-item leg-completed"><span class="dot"></span> ${t('dashboard.progressCompleted', { count: completed })}</span>
+              <span class="legend-item leg-running"><span class="dot"></span> ${t('dashboard.progressRunning', { count: running })}</span>
+              <span class="legend-item leg-paused"><span class="dot"></span> ${t('dashboard.progressPaused', { count: paused })}</span>
+              <span class="legend-item leg-pending"><span class="dot"></span> ${t('dashboard.progressPending', { count: unstarted })}</span>
             </div>
           </div>
-          <span class="progress-total-badge">Total: <strong>${total}</strong> tarea${total!==1?'s':''}</span>
+          <span class="progress-total-badge">${t('dashboard.progressTotal', { count: total, taskLabel: t('task.countLabel', { count: total }) })}</span>
         </div>
         <div class="progress-track">
-          <div class="progress-seg seg-completed" style="width: ${pctCompleted}%" title="${completed} completada${completed!==1?'s':''} (${Math.round(pctCompleted)}%)">
+          <div class="progress-seg seg-completed" style="width: ${pctCompleted}%" title="${t('dashboard.progressCompleted', { count: completed })} (${Math.round(pctCompleted)}%)">
             ${compLabel ? `<span class="seg-label">${compLabel}</span>` : ''}
           </div>
-          <div class="progress-seg seg-running" style="width: ${pctRunning}%" title="${running} en ejecución (${Math.round(pctRunning)}%)">
+          <div class="progress-seg seg-running" style="width: ${pctRunning}%" title="${t('dashboard.progressRunning', { count: running })} (${Math.round(pctRunning)}%)">
             ${runLabel ? `<span class="seg-label">${runLabel}</span>` : ''}
           </div>
-          <div class="progress-seg seg-paused" style="width: ${pctPaused}%" title="${paused} en pausa (${Math.round(pctPaused)}%)">
+          <div class="progress-seg seg-paused" style="width: ${pctPaused}%" title="${t('dashboard.progressPaused', { count: paused })} (${Math.round(pctPaused)}%)">
             ${pauseLabel ? `<span class="seg-label">${pauseLabel}</span>` : ''}
           </div>
-          <div class="progress-seg seg-pending" style="width: ${pctUnstarted}%" title="${unstarted} sin iniciar (${Math.round(pctUnstarted)}%)">
+          <div class="progress-seg seg-pending" style="width: ${pctUnstarted}%" title="${t('dashboard.progressPending', { count: unstarted })} (${Math.round(pctUnstarted)}%)">
             ${unstartedLabel ? `<span class="seg-label">${unstartedLabel}</span>` : ''}
           </div>
         </div>
@@ -158,6 +165,7 @@ export function TodayTasksDashboard(ctx){
     const we = document.getElementById("workEndInput") || document.getElementById("workEnd");
     const ni = document.getElementById("notifyIntervalInput") || document.getElementById("notifyInterval");
     const ts = document.getElementById("themeSelect");
+    const ls = document.getElementById("languageSelect");
     const ab = document.getElementById("autoBreakToggle");
     const dpi = document.getElementById("datePickerInput");
     const dayLabel = document.getElementById("selectedDayLabel") || document.getElementById("datePickerDayLabel");
@@ -167,8 +175,9 @@ export function TodayTasksDashboard(ctx){
     if(we) we.value = state.workEnd !== null && state.workEnd !== undefined ? fmt(state.workEnd) : "";
     if(ni) ni.value = state.notifyIntervalMin || 10;
     if(ts) ts.value = state.themeMode || "auto";
+    if(ls) ls.value = state.language || "es";
     if(dpi) dpi.value = dateStr;
-    if(dayLabel) dayLabel.textContent = getDayAbbr(dateStr);
+    renderDayLabel();
     if(todayBtn) {
       todayBtn.style.display = isToday ? "none" : "inline-flex";
     }
@@ -177,6 +186,13 @@ export function TodayTasksDashboard(ctx){
     renderEnvSwitcher();
   }
 
+  function renderDayLabel(){
+    if (typeof document === "undefined") return;
+    const state = getState();
+    const dateStr = state.selectedDate || getTodayStr();
+    const dayLabel = document.getElementById("selectedDayLabel") || document.getElementById("datePickerDayLabel");
+    if(dayLabel) dayLabel.textContent = getDayAbbr(dateStr);
+  }
 
   function refreshPlanningModeBtn(){
     if (typeof document === "undefined") return;
@@ -184,7 +200,7 @@ export function TodayTasksDashboard(ctx){
     if(!btn) return;
     const state = getState();
     btn.classList.toggle("active", state.planningMode);
-    btn.textContent = state.planningMode ? "🗺 Planificación: ON" : "🗺 Modo planificación";
+    btn.textContent = state.planningMode ? t("time.planningModeOn") : t("time.planningMode");
   }
 
   function refreshAutoBreakBtn(){
@@ -194,11 +210,11 @@ export function TodayTasksDashboard(ctx){
     const state = getState();
     const isEnabled = state.autoBreakEnabled !== false;
     btn.classList.toggle("active", isEnabled);
-    btn.textContent = isEnabled ? "☕ Auto descansos: ON" : "☕ Auto descansos: OFF";
+    btn.textContent = isEnabled ? t("config.autoBreaksOn") : t("config.autoBreaksOff");
   }
 
   return {
-    renderClock, renderHeaderStats, renderTaskProgressBar,
+    renderClock, renderHeaderStats, renderTaskProgressBar, renderDayLabel,
     renderEnvSwitcher, syncFormInputsFromState, refreshPlanningModeBtn, refreshAutoBreakBtn
   };
 }

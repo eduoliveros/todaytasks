@@ -43,6 +43,8 @@ todaytasks/
 │   ├── notifications.js         # Sub-sistema de notificaciones Web para tareas y reuniones
 │   ├── ui.js                    # Utilidades de UI (toasts, modales, sanitización y micro-parser Markdown de notas)
 │   ├── utils.js                 # Utilidades puras de tiempo, formateo, fechas y recurrencias
+│   ├── i18n.js                  # Motor de internacionalización (i18n), carga de diccionarios e interpolación
+│   ├── i18n/                    # Diccionarios de idiomas (es.js, en.js)
 │   ├── config.js                # Configuración de Firebase y constantes globales
 │   ├── actions/                 # Submódulos especializados de acciones
 │   │   ├── tasks.js             # CRUD, estados, destacados y tiempos de tareas
@@ -270,7 +272,26 @@ TodayTasks implementa un modelo híbrido donde las decisiones explícitas de reo
 
 ---
 
-## 13. Directrices para Nuevos Desarrollos
+## 13. Sistema de Internacionalización (i18n)
+
+TodayTasks implementa un motor nativo y modular de internacionalización (i18n) en ES Modules Vanilla, sin dependencias externas:
+* **Módulos Principales:**
+  - `js/i18n.js`: Motor reactivo con funciones `t(key, params)`, `setLocale(lang)`, `getLocale()`, `translateDOM(root)` y helpers de fechas/días.
+  - Diccionarios desacoplados en `js/i18n/es.js` e `js/i18n/en.js`.
+* **Soporte Declarativo y Dinámico:**
+  - Elementos estáticos en HTML con atributos `data-i18n`, `data-i18n-title`, `data-i18n-placeholder`, `data-i18n-aria`, `data-i18n-html`.
+  - Componentes dinámicos en JavaScript (vistas, modales, gráficos, notificaciones) acceden a las traducciones mediante `t(...)`.
+  - Manejo de plurales y parámetros interpolados (`{count}`, `{name}`, etc.).
+* **Cobertura Completa:**
+  - Fase 1: Motor, persistencia y vistas estáticas del DOM.
+  - Fase 2: Formatos de fecha, hora, duración y días de la semana.
+  - Fase 3: Acciones, modales, toasts, confirmaciones, notificaciones y PiP.
+  - Fase 4: Vistas principales (Dashboard, Timeline/Board, Tareas, Reuniones, Modo Enfoque, PiP).
+  - Fase 5: Vistas avanzadas (Triaje Rápido `#/triage`, Horario Semanal Recurrente y Panel Histórico `#/history`).
+
+---
+
+## 14. Directrices para Nuevos Desarrollos
 
 1. **Separación Estricta de Responsabilidades:**
    * Las vistas (`views/`) **no** deben mutar el estado directamente; deben delegar en las acciones (`actions/`).

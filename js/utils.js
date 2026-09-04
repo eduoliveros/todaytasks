@@ -1,3 +1,5 @@
+import { t } from './i18n.js';
+
 export function nowMinutes() {
   const d = new Date();
   return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
@@ -41,8 +43,8 @@ export function fmtDur(mins) {
 
 export function fmtRemaining(plannedEndMin, nowMin) {
   const diff = plannedEndMin - nowMin;
-  if (diff >= 0) return { text: "quedan " + fmtDur(diff), overrun: false };
-  return { text: "excedida " + fmtDur(-diff), overrun: true };
+  if (diff >= 0) return { text: t("utils.remaining", { time: fmtDur(diff) }), overrun: false };
+  return { text: t("utils.overrun", { time: fmtDur(-diff) }), overrun: true };
 }
 
 export function timeToMinutes(str) {
@@ -81,15 +83,15 @@ export function parseDuration(val) {
   let totalMinutes = 0;
   let matched = false;
 
-  // Horas: "1h", "1.5h", "1 hr", "1 hrs", "1 hora", "1 horas" (soporta "1h30m", "1h 30m", etc.)
-  const hourMatch = s.match(/(\d+(?:\.\d+)?)\s*(?:horas?|hrs?|h)(?=[^a-z]|$)/);
+  // Horas: "1h", "1.5h", "1 hr", "1 hrs", "1 hora", "1 horas", "1 hour", "1 hours"
+  const hourMatch = s.match(/(\d+(?:\.\d+)?)\s*(?:horas?|hours?|hrs?|h)(?=[^a-z]|$)/);
   if (hourMatch) {
     totalMinutes += parseFloat(hourMatch[1]) * 60;
     matched = true;
   }
 
-  // Minutos: "30m", "30min", "30mins", "30 minuto", "30 minutos"
-  const minMatch = s.match(/(\d+(?:\.\d+)?)\s*(?:minutos?|mins?|m)(?=[^a-z]|$)/);
+  // Minutos: "30m", "30min", "30mins", "30 minuto", "30 minutos", "30 minute", "30 minutes"
+  const minMatch = s.match(/(\d+(?:\.\d+)?)\s*(?:minutos?|minutes?|mins?|m)(?=[^a-z]|$)/);
   if (minMatch) {
     totalMinutes += parseFloat(minMatch[1]);
     matched = true;
@@ -123,12 +125,12 @@ export function getTodayStr() {
 export function formatDateFriendly(dateStr) {
   if (!dateStr) return "";
   const today = getTodayStr();
-  if (dateStr === today) return "Hoy";
+  if (dateStr === today) return t("date.today");
   const parts = dateStr.split("-");
   if (parts.length !== 3) return dateStr;
   const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-  const daysWeek = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-  const months = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  const daysWeek = t.days() || ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+  const months = t.months() || ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
   return `${daysWeek[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`;
 }
 
@@ -160,6 +162,8 @@ export function getDayOfWeek(dateStr) {
 export function getDayAbbr(dateStr) {
   if (!dateStr) return "";
   const dow = getDayOfWeek(dateStr);
+  const shortDays = t.daysShort();
+  if (Array.isArray(shortDays) && shortDays[dow]) return shortDays[dow];
   return ["", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"][dow] || "";
 }
 
@@ -198,9 +202,9 @@ export function getScheduleForDate(state, envKey, dateStr) {
 export function getNextWorkingDays(startDateStr, count = 7, state = null, envKey = null) {
   const days = [];
   if (!startDateStr || typeof count !== "number" || count <= 0) return days;
-  const dayLetters = ["", "L", "M", "X", "J", "V", "S", "D"];
-  const dayNames = ["", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
-  const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+  const dayLetters = t.dayLetters() || ["", "L", "M", "X", "J", "V", "S", "D"];
+  const dayNames = t.days() || ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+  const monthNames = t.months() || ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
   let step = 1;
   while (days.length < count && step <= 90) {
@@ -211,12 +215,13 @@ export function getNextWorkingDays(startDateStr, count = 7, state = null, envKey
       const parts = nextDateStr.split("-").map(Number);
       const dayNum = parts[2];
       const monthNum = parts[1] - 1;
+      const dayName = dayNames[dow === 7 ? 0 : dow];
 
-      let friendlyLabel = `${dayNames[dow]} ${dayNum} ${monthNames[monthNum]}`;
+      let friendlyLabel = `${dayName} ${dayNum} ${monthNames[monthNum]}`;
       if (days.length === 0 && step === 1) {
-        friendlyLabel = `Mañana (${dayNames[dow]} ${dayNum})`;
+        friendlyLabel = `${t('date.tomorrow')} (${dayName} ${dayNum})`;
       } else if (days.length === 1 && step === 2) {
-        friendlyLabel = `Pasado mañana (${dayNames[dow]} ${dayNum})`;
+        friendlyLabel = `${t('date.dayAfterTomorrow')} (${dayName} ${dayNum})`;
       }
 
       days.push({
@@ -224,7 +229,7 @@ export function getNextWorkingDays(startDateStr, count = 7, state = null, envKey
         label: friendlyLabel,
         shortChip: `${dayLetters[dow]} ${dayNum}`,
         dow,
-        dowName: dayNames[dow],
+        dowName: dayName,
         dayNum
       });
     }
@@ -299,43 +304,47 @@ export function matchesRecurrenceRule(rule, dateStr) {
 export function formatRecurrenceRule(rule) {
   if (!rule || typeof rule !== 'object') {
     return {
-      freqText: 'Recurrente',
+      freqText: t('recurrence.ruleRecurring'),
       intervalText: '—',
       daysText: '—',
       daysShortText: '—',
       dateRangeText: '—',
-      summaryText: 'Recurrente'
+      summaryText: t('recurrence.ruleRecurring')
     };
   }
 
+  const dayNamesArr = t.days() || ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const dayShortsArr = t.daysShort() || ['', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+  const dayLettersArr = t.dayLetters() || ['', 'L', 'M', 'X', 'J', 'V', 'S', 'D'];
+
   const DAY_NAMES = {
-    1: { name: 'Lunes', short: 'Lun', letter: 'L' },
-    2: { name: 'Martes', short: 'Mar', letter: 'M' },
-    3: { name: 'Miércoles', short: 'Mié', letter: 'X' },
-    4: { name: 'Jueves', short: 'Jue', letter: 'J' },
-    5: { name: 'Viernes', short: 'Vie', letter: 'V' },
-    6: { name: 'Sábado', short: 'Sáb', letter: 'S' },
-    7: { name: 'Domingo', short: 'Dom', letter: 'D' }
+    1: { name: dayNamesArr[1], short: dayShortsArr[1], letter: dayLettersArr[1] },
+    2: { name: dayNamesArr[2], short: dayShortsArr[2], letter: dayLettersArr[2] },
+    3: { name: dayNamesArr[3], short: dayShortsArr[3], letter: dayLettersArr[3] },
+    4: { name: dayNamesArr[4], short: dayShortsArr[4], letter: dayLettersArr[4] },
+    5: { name: dayNamesArr[5], short: dayShortsArr[5], letter: dayLettersArr[5] },
+    6: { name: dayNamesArr[6], short: dayShortsArr[6], letter: dayLettersArr[6] },
+    7: { name: dayNamesArr[0], short: dayShortsArr[7], letter: dayLettersArr[7] }
   };
 
   const interval = (typeof rule.interval === 'number' && rule.interval > 0) ? Math.round(rule.interval) : 1;
   const freq = rule.freq || (Array.isArray(rule.daysOfWeek) ? 'weekly' : 'daily');
 
-  let freqText = 'Recurrente';
+  let freqText = t('recurrence.ruleRecurring');
   let intervalText = '';
   let daysText = '';
   let daysShortText = '';
   let summaryText = '';
 
   if (freq === 'daily') {
-    freqText = 'Diaria';
-    intervalText = interval === 1 ? 'Cada día' : `Cada ${interval} días`;
-    daysText = interval === 1 ? 'Todos los días' : `Cada ${interval} días`;
-    daysShortText = interval === 1 ? 'Diario' : `c/${interval}d`;
-    summaryText = interval === 1 ? 'Diaria' : `Cada ${interval} días`;
+    freqText = t('recurrence.ruleDaily');
+    intervalText = interval === 1 ? t('recurrence.intervalDaily1') : t('recurrence.intervalDailyN', { interval });
+    daysText = interval === 1 ? t('recurrence.allDays') : t('recurrence.intervalDailyN', { interval });
+    daysShortText = interval === 1 ? t('recurrence.dailyShort') : `c/${interval}d`;
+    summaryText = interval === 1 ? t('recurrence.ruleDaily') : t('recurrence.intervalDailyN', { interval });
   } else if (freq === 'weekly' || freq === 'custom_weeks') {
-    freqText = 'Semanal';
-    intervalText = interval === 1 ? 'Cada semana' : `Cada ${interval} semanas`;
+    freqText = t('recurrence.ruleWeekly');
+    intervalText = interval === 1 ? t('recurrence.intervalWeekly1') : t('recurrence.intervalWeeklyN', { interval });
 
     const sortedDays = Array.isArray(rule.daysOfWeek)
       ? [...rule.daysOfWeek].sort((a, b) => a - b).filter(d => DAY_NAMES[d])
@@ -347,20 +356,20 @@ export function formatRecurrenceRule(rule) {
       const letters = sortedDays.map(d => DAY_NAMES[d].letter).join(', ');
 
       if (interval === 1) {
-        summaryText = `Semanal (${letters})`;
+        summaryText = t('recurrence.summaryWeeklyLetters', { letters });
       } else {
-        summaryText = `Cada ${interval} semanas (${daysShortText})`;
+        summaryText = t('recurrence.summaryWeeklyWeeksDays', { interval, days: daysShortText });
       }
     } else {
       daysText = '—';
       daysShortText = '—';
-      summaryText = interval === 1 ? 'Semanal' : `Cada ${interval} semanas`;
+      summaryText = interval === 1 ? t('recurrence.ruleWeekly') : t('recurrence.intervalWeeklyN', { interval });
     }
   }
 
   let dateRangeText = '';
-  const start = rule.startDate ? `Desde ${rule.startDate}` : '';
-  const end = rule.endDate ? `Hasta ${rule.endDate}` : 'Indefinida';
+  const start = rule.startDate ? t('recurrence.rangeFrom', { date: rule.startDate }) : '';
+  const end = rule.endDate ? t('recurrence.rangeUntil', { date: rule.endDate }) : t('recurrence.rangeIndefinite');
   if (start) {
     dateRangeText = `${start} · ${end}`;
   } else {
@@ -509,11 +518,21 @@ export function matchesTaskSearch(task, query) {
   return matchesSearchQuery(searchableText, query);
 }
 
+export function getUrgencyLabel(urgency) {
+  const map = {
+    today: 'urgency.today',
+    days: 'urgency.days',
+    week: 'urgency.week',
+    later: 'urgency.later'
+  };
+  return t(map[urgency] || 'urgency.days');
+}
+
 export const URGENCY_LEVELS = {
-  today: { id: 'today', label: 'Hoy', shortLabel: 'Hoy', order: 1, icon: '🟠', color: '#F97316', bg: 'rgba(249, 115, 22, 0.12)' },
-  days:  { id: 'days',  label: 'Días', shortLabel: 'Días', order: 2, icon: '🔵', color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.12)' },
-  week:  { id: 'week',  label: 'Semana', shortLabel: 'Semana', order: 3, icon: '🟣', color: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.12)' },
-  later: { id: 'later', label: 'Más adelante', shortLabel: 'Más adelante', order: 4, icon: '⚪', color: '#6B7280', bg: 'rgba(107, 114, 128, 0.12)' }
+  today: { id: 'today', get label() { return t('urgency.today'); }, get shortLabel() { return t('urgency.today'); }, order: 1, icon: '🟠', color: '#F97316', bg: 'rgba(249, 115, 22, 0.12)' },
+  days:  { id: 'days',  get label() { return t('urgency.days'); },  get shortLabel() { return t('urgency.days'); },  order: 2, icon: '🔵', color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.12)' },
+  week:  { id: 'week',  get label() { return t('urgency.week'); },  get shortLabel() { return t('urgency.week'); },  order: 3, icon: '🟣', color: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.12)' },
+  later: { id: 'later', get label() { return t('urgency.later'); }, get shortLabel() { return t('urgency.later'); }, order: 4, icon: '⚪', color: '#6B7280', bg: 'rgba(107, 114, 128, 0.12)' }
 };
 
 export const DEFAULT_URGENCY = 'days';
@@ -684,6 +703,7 @@ export const TodayTasksUtils = {
   matchesSearchQuery,
   getTaskSearchableText,
   matchesTaskSearch,
+  getUrgencyLabel,
   URGENCY_LEVELS,
   DEFAULT_URGENCY,
   MAX_FEATURED_TASKS,

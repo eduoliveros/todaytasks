@@ -549,6 +549,57 @@ describe('TodayTasksCloud - detección de origen y sincronización', () => {
     const statusEl = document.getElementById('syncStatus');
     expect(statusEl.textContent).toContain('Actualizado desde otro dispositivo');
   });
+
+  it('localiza mensajes de sincronización y estado de nube en inglés', async () => {
+    const { setLocale } = await import('../js/i18n.js');
+    setLocale('en');
+
+    // 1. Primer snapshot
+    const initialSnapshot = {
+      metadata: { fromCache: false, hasPendingWrites: false },
+      exists: true,
+      data: () => ({ ...defaultState(), _lastUpdatedBy: cloud.getClientId() })
+    };
+    snapshotCallback(initialSnapshot);
+
+    const statusEl = document.getElementById('syncStatus');
+    expect(statusEl.textContent).toContain('Synced');
+
+    // 2. Snapshot de otro dispositivo
+    const otherDeviceSnapshot = {
+      metadata: { fromCache: false, hasPendingWrites: false },
+      exists: true,
+      data: () => ({
+        ...defaultState(),
+        _lastUpdatedBy: 'c_other_device_888',
+        _lastUpdatedAt: Date.now()
+      })
+    };
+    snapshotCallback(otherDeviceSnapshot);
+    expect(statusEl.textContent).toContain('Updated from another device');
+
+    // Restaurar a español
+    setLocale('es');
+  });
+
+  it('al estar autenticado con usuario de Google, appModeLabel mantiene la insignia de nube incluso tras ejecutar translateDOM', async () => {
+    const { translateDOM, setLocale } = await import('../js/i18n.js');
+    setLocale('es');
+
+    const modeLabel = document.getElementById('appModeLabel');
+    modeLabel.setAttribute('data-i18n', 'app.localDbBadge');
+    modeLabel.textContent = '💾 local · persistente';
+
+    // renderAuthArea con usuario activo debe fijar la insignia de nube y su data-i18n
+    cloud.renderAuthArea();
+    expect(modeLabel.getAttribute('data-i18n')).toBe('app.cloudDbBadge');
+    expect(modeLabel.textContent).toContain('nube');
+
+    // Al llamar a translateDOM (por ejemplo, en setState o cambio de idioma), no debe volver a local
+    translateDOM();
+    expect(modeLabel.textContent).toContain('nube');
+    expect(modeLabel.textContent).not.toContain('local');
+  });
 });
 
 

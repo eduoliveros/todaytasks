@@ -1,7 +1,16 @@
 /* app/weekly-schedule.js — Horario semanal (modal y lógica de derivación) */
+import { t } from '../i18n.js';
+
 export function TodayTasksWeeklySchedule(appCtx){
   // appCtx: { getState, saveState, viewsModule, fmt, timeToMinutes, showToast }
   const { getState, saveState, viewsModule, fmt, timeToMinutes, showToast } = appCtx;
+
+  function getDayName(d) {
+    const dayNames = t.days();
+    // En t.days(), índice 0 es Domingo y 1..6 es Lunes..Sábado
+    const dayIndex = d === 7 ? 0 : d;
+    return (Array.isArray(dayNames) && dayNames[dayIndex]) ? dayNames[dayIndex] : '';
+  }
 
   function derivePersonalFromWork() {
     const state = getState();
@@ -56,7 +65,6 @@ export function TodayTasksWeeklySchedule(appCtx){
     if (typeof document === "undefined") return;
     const container = document.getElementById('weeklyScheduleRows');
     if (!container) return;
-    const DAY_NAMES = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
     let html = '';
     for (let d = 1; d <= 7; d++) {
       const slot = schedule[d];
@@ -65,7 +73,7 @@ export function TodayTasksWeeklySchedule(appCtx){
       const endVal = (!isFree && slot) ? fmt(slot.end) : '18:00';
       html += `
         <div class="weekly-schedule-row${isFree ? ' is-free' : ''}" data-day="${d}">
-          <span class="weekly-day-name">${DAY_NAMES[d]}</span>
+          <span class="weekly-day-name">${getDayName(d)}</span>
           <div class="weekly-time-inputs">
             <input type="time" class="weekly-time-input weekly-start" value="${startVal}" ${isFree ? 'disabled' : ''}>
             <span class="weekly-time-sep">→</span>
@@ -73,7 +81,7 @@ export function TodayTasksWeeklySchedule(appCtx){
           </div>
           <label class="weekly-free-label">
             <input type="checkbox" class="weekly-free-check" ${isFree ? 'checked' : ''}>
-            Día libre
+            ${t('weeklySchedule.dayOffLabel')}
           </label>
         </div>
       `;
@@ -106,8 +114,7 @@ export function TodayTasksWeeklySchedule(appCtx){
         const startMin = timeToMinutes(sVal);
         const endMin = timeToMinutes(eVal);
         if (startMin === null || endMin === null || startMin >= endMin) {
-          const DAY_NAMES = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-          showToast(`⚠️ Horario inválido para el ${DAY_NAMES[d]}: la hora de inicio debe ser anterior a la de fin.`);
+          showToast(t('weeklySchedule.invalidRangeToast', { day: getDayName(d) }));
           return null;
         }
         result[d] = { start: startMin, end: endMin };
@@ -124,9 +131,9 @@ export function TodayTasksWeeklySchedule(appCtx){
     if (!modal) return;
     const titleEl = document.getElementById('weeklyScheduleTitle');
     const badgeEl = document.getElementById('weeklyScheduleEnvBadge');
-    if (titleEl) titleEl.textContent = '📅 Horario semanal';
+    if (titleEl) titleEl.textContent = t('modal.weeklyScheduleTitle');
     if (badgeEl) {
-      badgeEl.textContent = envKey === 'work' ? '💼 Trabajo' : '🏠 Personal';
+      badgeEl.textContent = envKey === 'work' ? `💼 ${t('env.work')}` : `🏠 ${t('env.personal')}`;
       badgeEl.className = 'weekly-env-badge ' + envKey;
     }
     const schedule = getOrDeriveWeeklySchedule(envKey);
@@ -182,7 +189,7 @@ export function TodayTasksWeeklySchedule(appCtx){
           viewsModule.renderAll();
         }
         closeWeeklyScheduleModal();
-        showToast('📅 Horario semanal guardado');
+        showToast(t('weeklySchedule.savedToast'));
       });
     }
   }

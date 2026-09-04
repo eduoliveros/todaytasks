@@ -1,5 +1,39 @@
 /* js/undo.js — Sistema de historial Deshacer / Rehacer (Undo / Redo) */
 import { wrapState } from './state.js';
+import { t } from './i18n.js';
+
+export function formatActionDescription(desc) {
+  if (!desc) return '';
+  if (typeof desc === 'object' && desc !== null && desc.key) {
+    return t(desc.key, desc.params || {});
+  }
+  if (typeof desc === 'string') {
+    const mAdd = desc.match(/^Añadir tarea "(.*)"$/);
+    if (mAdd) return t('actions.taskAdded', { title: mAdd[1] });
+    const mAddRec = desc.match(/^Añadir tarea recurrente "(.*)"$/);
+    if (mAddRec) return t('actions.taskAddedRecurring', { title: mAddRec[1] });
+    const mDel = desc.match(/^Eliminar tarea "(.*)"$/);
+    if (mDel) return t('actions.taskDeleted', { title: mDel[1] });
+    const mComp = desc.match(/^Completar tarea "(.*)"$/);
+    if (mComp) return t('actions.taskCompleted', { title: mComp[1] });
+    const mRest = desc.match(/^Restaurar tarea "(.*)"$/);
+    if (mRest) return t('actions.taskRestored', { title: mRest[1] });
+    const mEdit = desc.match(/^Editar tarea "(.*)"$/);
+    if (mEdit) return t('actions.taskEdited', { title: mEdit[1] });
+    const mFeat = desc.match(/^Destacar tarea "(.*)"$/);
+    if (mFeat) return t('actions.taskFeatured', { title: mFeat[1] });
+    const mUnfeat = desc.match(/^Quitar destacado de "(.*)"$/);
+    if (mUnfeat) return t('actions.taskUnfeatured', { title: mUnfeat[1] });
+    if (desc === 'Reordenar tareas') return t('actions.tasksReordered');
+    const mMeetAdd = desc.match(/^Añadir reunión "(.*)"$/);
+    if (mMeetAdd) return t('actions.meetingAdded', { title: mMeetAdd[1] });
+    const mMeetDel = desc.match(/^Eliminar reunión "(.*)"$/);
+    if (mMeetDel) return t('actions.meetingDeleted', { title: mMeetDel[1] });
+    const mMeetEdit = desc.match(/^Editar reunión "(.*)"$/);
+    if (mMeetEdit) return t('actions.meetingEdited', { title: mMeetEdit[1] });
+  }
+  return String(desc);
+}
 
 export function TodayTasksUndo(ctx) {
   const { getState, setState, saveState, renderAll, showToast } = ctx;
@@ -21,7 +55,7 @@ export function TodayTasksUndo(ctx) {
 
   function undo() {
     if (undoStack.length === 0) {
-      if (showToast) showToast("No hay acciones para deshacer.");
+      if (showToast) showToast(t("undo.noActions"));
       return false;
     }
     const current = JSON.parse(JSON.stringify(getState ? getState() : {}));
@@ -35,7 +69,8 @@ export function TodayTasksUndo(ctx) {
       if (saveState) saveState();
       if (renderAll) renderAll();
       if (showToast) {
-        showToast(entry.description ? `Deshecho: ${entry.description}` : "Acción deshecha.");
+        const descText = formatActionDescription(entry.description);
+        showToast(descText ? t("undo.undoneAction", { action: descText }) : t("undo.undone"));
       }
     } finally {
       isPerformingUndoRedo = false;
@@ -45,7 +80,7 @@ export function TodayTasksUndo(ctx) {
 
   function redo() {
     if (redoStack.length === 0) {
-      if (showToast) showToast("No hay acciones para rehacer.");
+      if (showToast) showToast(t("undo.noRedoActions"));
       return false;
     }
     const current = JSON.parse(JSON.stringify(getState ? getState() : {}));
@@ -59,7 +94,8 @@ export function TodayTasksUndo(ctx) {
       if (saveState) saveState();
       if (renderAll) renderAll();
       if (showToast) {
-        showToast(entry.description ? `Rehecho: ${entry.description}` : "Acción rehecha.");
+        const descText = formatActionDescription(entry.description);
+        showToast(descText ? t("undo.redoneAction", { action: descText }) : t("undo.redone"));
       }
     } finally {
       isPerformingUndoRedo = false;

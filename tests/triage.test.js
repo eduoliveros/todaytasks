@@ -117,12 +117,13 @@ describe('Triage Batch Actions', () => {
   });
 
   it('mueve múltiples tareas a otra fecha en bloque preservando orden y registrando undo', () => {
+    state.selectedDate = '2026-09-01';
     actions.addTask('Tarea A', '15');
     actions.addTask('Tarea B', '30');
     actions.addTask('Tarea C', '45');
 
     const idsToMove = [state.tasks[0].id, state.tasks[2].id];
-    const targetDate = '2026-09-04';
+    const targetDate = '2026-09-15';
 
     const movedCount = actions.moveTasksToDate(idsToMove, targetDate);
     expect(movedCount).toBe(2);

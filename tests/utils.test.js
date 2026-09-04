@@ -58,11 +58,21 @@ describe('TodayTasksUtils (ES Module)', () => {
       expect(utils.parseDuration('1h')).toBe(60);
       expect(utils.parseDuration('2h')).toBe(120);
       expect(utils.parseDuration('2 horas')).toBe(120);
+      expect(utils.parseDuration('1 hour')).toBe(60);
+      expect(utils.parseDuration('2 hours')).toBe(120);
       expect(utils.parseDuration('1.5h')).toBe(90);
+      expect(utils.parseDuration('1.5 hours')).toBe(90);
       expect(utils.parseDuration('1,5h')).toBe(90);
       expect(utils.parseDuration('0.5h')).toBe(30);
+      expect(utils.parseDuration('0.5 hour')).toBe(30);
       expect(utils.parseDuration('0,5 h')).toBe(30);
       expect(utils.parseDuration('2hrs')).toBe(120);
+    });
+
+    it('parsea formatos combinados y minutos en inglés ("1 hr 30 mins", "45 minutes")', () => {
+      expect(utils.parseDuration('1 hr 30 mins')).toBe(90);
+      expect(utils.parseDuration('45 minutes')).toBe(45);
+      expect(utils.parseDuration('10 minute')).toBe(10);
     });
 
     it('parsea formatos con solo minutos ("30m", "45min", "45 minutos")', () => {
@@ -274,6 +284,36 @@ describe('TodayTasksUtils (ES Module)', () => {
       expect(utils.matchesTaskSearch(taskNormal, 'destacada')).toBe(false);
       expect(utils.matchesTaskSearch(taskNormal, 'estrella')).toBe(false);
       expect(utils.matchesTaskSearch(taskNormal, '⭐')).toBe(false);
+    });
+  });
+
+  describe('i18n helpers in utils (getDayAbbr, formatDateFriendly, fmtRemaining, getUrgencyLabel, formatRecurrenceRule)', () => {
+    it('formatea según el idioma activo (es y en)', async () => {
+      const { setLocale } = await import('../js/i18n.js');
+
+      setLocale('es');
+      expect(utils.getDayAbbr('2026-08-05')).toBe('Mié');
+      expect(utils.formatDateFriendly('2026-08-05')).toBe('Miércoles, 5 ago');
+      expect(utils.fmtRemaining(600, 540).text).toBe('quedan 1h ');
+      expect(utils.fmtRemaining(540, 560).text).toBe('excedida 20 min');
+      expect(utils.getUrgencyLabel('today')).toBe('Hoy');
+      expect(utils.getUrgencyLabel('later')).toBe('Más adelante');
+
+      setLocale('en');
+      expect(utils.getDayAbbr('2026-08-05')).toBe('Wed');
+      expect(utils.formatDateFriendly('2026-08-05')).toBe('Wednesday, 5 Aug');
+      expect(utils.fmtRemaining(600, 540).text).toBe('1h  left');
+      expect(utils.fmtRemaining(540, 560).text).toBe('20 min overrun');
+      expect(utils.getUrgencyLabel('today')).toBe('Today');
+      expect(utils.getUrgencyLabel('later')).toBe('Later');
+
+      const rec = utils.formatRecurrenceRule({ freq: 'weekly', interval: 1, daysOfWeek: [1, 3] });
+      expect(rec.freqText).toBe('Weekly');
+      expect(rec.intervalText).toBe('Every week');
+      expect(rec.daysText).toBe('Monday, Wednesday');
+
+      // Reset to Spanish
+      setLocale('es');
     });
   });
 });

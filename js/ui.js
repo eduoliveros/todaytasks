@@ -1,3 +1,5 @@
+import { t } from './i18n.js';
+
 export function escapeHtml(str) {
   return String(str == null ? "" : str)
     .replace(/&/g, "&amp;")
@@ -76,7 +78,7 @@ export function showToast(message, action = null) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "toast-action-btn";
-    btn.textContent = action.label || "Deshacer";
+    btn.textContent = action.label || t("action.undo");
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       el.classList.remove("visible");

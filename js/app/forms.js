@@ -1,4 +1,6 @@
 /* app/forms.js — Formularios de reuniones y tareas, menú de posición */
+import { t } from '../i18n.js';
+
 export function TodayTasksForms(appCtx){
   const { getState, actionsModule, showToast, fmt, timeToMinutes } = appCtx;
 
@@ -46,13 +48,14 @@ export function TodayTasksForms(appCtx){
       });
     }
 
+    /* Recurrence frequency changes: toggle days of week visibility and unit label */
     const recFreqEl = document.getElementById("recFreq");
     if (recFreqEl) {
       recFreqEl.addEventListener("change", (e) => {
         const daysWrap = document.getElementById("recDaysWrap");
         const unitLabel = document.getElementById("recMeetingIntervalUnit");
         if (daysWrap) daysWrap.style.display = e.target.value === "daily" ? "none" : "block";
-        if (unitLabel) unitLabel.textContent = e.target.value === "daily" ? "día(s)" : "semana(s)";
+        if (unitLabel) unitLabel.textContent = e.target.value === "daily" ? t("recurrence.unitDays") : t("recurrence.unitWeeks");
       });
     }
 
@@ -62,7 +65,7 @@ export function TodayTasksForms(appCtx){
         const daysWrap = document.getElementById("recTaskDaysWrap");
         const unitLabel = document.getElementById("recTaskIntervalUnit");
         if (daysWrap) daysWrap.style.display = e.target.value === "daily" ? "none" : "block";
-        if (unitLabel) unitLabel.textContent = e.target.value === "daily" ? "día(s)" : "semana(s)";
+        if (unitLabel) unitLabel.textContent = e.target.value === "daily" ? t("recurrence.unitDays") : t("recurrence.unitWeeks");
       });
     }
 

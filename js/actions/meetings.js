@@ -1,5 +1,6 @@
 /* actions/meetings.js — Acciones de reuniones (CRUD y recurrencia) */
 import { getTodayStr } from '../utils.js';
+import { t } from '../i18n.js';
 
 export function TodayTasksMeetings(ctx, helpers) {
   const {
@@ -122,14 +123,14 @@ export function TodayTasksMeetings(ctx, helpers) {
     if (target && target.isRecurring) {
       const ruleId = target.ruleId || id;
       showRecurringModal(
-        `Eliminar "${target.title}" 🔁`,
-        `¿Deseas eliminar solo la reunión del día ${dateStr} o eliminar toda la serie recurrente?`,
+        i18n('modal.deleteRecurringMeetingTitle', { title: target.title }),
+        i18n('modal.deleteRecurringMeetingDesc', { date: dateStr }),
         () => {
-          if (ctx.undoModule && ctx.undoModule.pushSnapshot) ctx.undoModule.pushSnapshot(`Eliminar ocurrencia de reunión "${target.title}"`);
+          if (ctx.undoModule && ctx.undoModule.pushSnapshot) ctx.undoModule.pushSnapshot({ key: 'actions.meetingDeleted', params: { title: target.title } });
           deleteMeetingInstance(ruleId, dateStr);
         },
         () => {
-          if (ctx.undoModule && ctx.undoModule.pushSnapshot) ctx.undoModule.pushSnapshot(`Eliminar serie de reuniones "${target.title}"`);
+          if (ctx.undoModule && ctx.undoModule.pushSnapshot) ctx.undoModule.pushSnapshot({ key: 'actions.meetingDeleted', params: { title: target.title } });
           deleteMeetingSeries(ruleId);
         }
       );
@@ -156,8 +157,8 @@ export function TodayTasksMeetings(ctx, helpers) {
     saveState();
     renderAll();
     if (showToast) {
-      showToast(`Reunión "${target ? target.title : ''}" eliminada.`, {
-        label: "Deshacer",
+      showToast(t('meetings.meetingDeletedToast', { title: target ? target.title : '' }), {
+        label: t('action.undo'),
         onClick: () => { if (ctx.undoModule && ctx.undoModule.undo) ctx.undoModule.undo(); }
       });
     }
