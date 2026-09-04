@@ -292,6 +292,9 @@ TodayTasks implementa un motor nativo y modular de internacionalización (i18n) 
   - Fase 4: Vistas principales (Dashboard, Timeline/Board, Tareas, Reuniones, Modo Enfoque, PiP).
   - Fase 5: Vistas avanzadas (Triaje Rápido `#/triage`, Horario Semanal Recurrente y Panel Histórico `#/history`).
 
+* **Validación y Calidad:**
+  - Suite de paridad automatizada en `tests/i18n_parity.test.js` que verifica bidireccionalmente la paridad de claves entre diccionarios (`es.js` vs `en.js`), integridad de estructuras/plurales, igualdad en tokens de interpolación (`{var}`) y ausencia de cadenas vacías o valores nulos.
+
 ---
 
 ## 14. Directrices para Nuevos Desarrollos
