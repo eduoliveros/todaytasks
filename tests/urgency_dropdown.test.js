@@ -115,4 +115,63 @@ describe('TodayTasksUrgencyDropdown (js/app/urgency-dropdown.js)', () => {
     expect(starBtn.textContent).toBe('☆');
     expect(starBtn.classList.contains('is-featured')).toBe(false);
   });
+
+  it('openEditUrgencyDropdown enables selecting urgency for editing/adding and updates taskEdit and edit pill', () => {
+    let taskEdit = { id: '__new__', urgency: 'days' };
+    const pill = document.createElement('button');
+    pill.id = 'edit-urgency-pill-__new__';
+    pill.className = 'urgency-pill-btn urgency-btn-days';
+    pill.innerHTML = '<span>🔵</span> <span>Días</span> <span class="urgency-pill-chevron">▾</span>';
+    pill.getBoundingClientRect = () => ({ left: 100, top: 200, bottom: 230, width: 80, height: 30 });
+    document.body.appendChild(pill);
+
+    urgencyMod = TodayTasksUrgencyDropdown({
+      getState: () => state,
+      getActionsModule: () => mockActions,
+      getTaskEdit: () => taskEdit
+    });
+
+    urgencyMod.openEditUrgencyDropdown('__new__', { currentTarget: pill });
+
+    urgencyMod.selectTaskUrgency('today');
+
+    expect(mockActions.updateTaskEditField).toHaveBeenCalledWith('urgency', 'today');
+    expect(pill.className).toContain('urgency-btn-today');
+    expect(pill.textContent).toContain('Hoy');
+  });
+
+  it('selectTaskUrgency updates the pill inside triage edit modal even when an inline pill exists in DOM with the same id', () => {
+    let taskEdit = { id: 'task-1', urgency: 'days' };
+
+    // Inline element in task list (created first in DOM by tasks view)
+    const inlinePill = document.createElement('button');
+    inlinePill.id = 'edit-urgency-pill-task-1';
+    inlinePill.className = 'urgency-pill-btn urgency-btn-days';
+    inlinePill.innerHTML = '<span>🔵</span> <span>Días</span>';
+    document.body.appendChild(inlinePill);
+
+    // Modal element in triage edit modal (created second in DOM by triage view)
+    const modalBox = document.createElement('div');
+    modalBox.className = 'modal-box triage-edit-modal-box';
+    const modalPill = document.createElement('button');
+    modalPill.id = 'edit-urgency-pill-task-1';
+    modalPill.className = 'urgency-pill-btn urgency-btn-days';
+    modalPill.innerHTML = '<span>🔵</span> <span>Días</span>';
+    modalBox.appendChild(modalPill);
+    document.body.appendChild(modalBox);
+
+    urgencyMod = TodayTasksUrgencyDropdown({
+      getState: () => state,
+      getActionsModule: () => mockActions,
+      getTaskEdit: () => taskEdit
+    });
+
+    urgencyMod.openEditUrgencyDropdown('task-1', { currentTarget: modalPill });
+    urgencyMod.selectTaskUrgency('week');
+
+    // Both the modal pill and any inline pill must be updated
+    expect(modalPill.className).toContain('urgency-btn-week');
+    expect(modalPill.textContent).toContain('Semana');
+  });
 });
+

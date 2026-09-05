@@ -282,6 +282,21 @@ export function TodayTasksShortcuts(appCtx){
           const el = document.getElementById("taskTitle");
           if(el) el.focus();
         }, 50);
+      } else if(e.key === "n" || e.key === "N"){
+        e.preventDefault();
+        if(routerModule && routerModule.getCurrentView() === 'triage'){
+          if(typeof window !== 'undefined' && window.app && window.app.openTriageNewTaskModal) {
+            window.app.openTriageNewTaskModal();
+          }
+        } else {
+          if(routerModule && routerModule.getCurrentView() !== 'main'){
+            window.location.hash = '#/';
+          }
+          setTimeout(() => {
+            const el = document.getElementById("taskTitle");
+            if(el) el.focus();
+          }, 50);
+        }
       } else if(e.key === "/"){
         e.preventDefault();
         if(routerModule && routerModule.getCurrentView() !== 'main'){

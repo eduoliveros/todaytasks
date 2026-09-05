@@ -235,11 +235,344 @@ export function TodayTasksTriageView(ctx) {
     return ctx.actionsModule || actionsModule || (typeof window !== 'undefined' ? window.app : null) || {};
   }
 
+  function triageUndo() {
+    const actions = getActions();
+    if (actions && actions.undo) {
+      actions.undo();
+    } else if (ctx.undoModule && ctx.undoModule.undo) {
+      ctx.undoModule.undo();
+    }
+    renderTriageView();
+  }
+
+  function triageRedo() {
+    const actions = getActions();
+    if (actions && actions.redo) {
+      actions.redo();
+    } else if (ctx.undoModule && ctx.undoModule.redo) {
+      ctx.undoModule.redo();
+    }
+    renderTriageView();
+  }
+
+  function canTriageUndo() {
+    return !!(ctx.undoModule && ctx.undoModule.canUndo && ctx.undoModule.canUndo());
+  }
+
+  function canTriageRedo() {
+    return !!(ctx.undoModule && ctx.undoModule.canRedo && ctx.undoModule.canRedo());
+  }
+
+  function openTriageNewTaskModal(defaults = {}) {
+    const actions = getActions();
+    if (actions && actions.startNewTask) {
+      actions.startNewTask(defaults);
+    } else {
+      const setTaskEdit = (ctx && ctx.setTaskEdit) || null;
+      if (setTaskEdit) {
+        setTaskEdit({
+          id: '__new__',
+          isNew: true,
+          title: defaults.title || '',
+          duration: defaults.duration || '30',
+          actual: '0',
+          notes: defaults.notes || '',
+          autoMoveToToday: defaults.autoMoveToToday !== false,
+          urgency: defaults.urgency || DEFAULT_URGENCY,
+          featured: !!defaults.featured,
+          startAfter: defaults.startAfter || ''
+        });
+      }
+      renderTriageView();
+    }
+  }
+
+  function submitTriageNewTask(title, durationStr, urgency = DEFAULT_URGENCY, featured = false, startAfter = null, notes = '', autoMoveToToday = true) {
+    const cleanTitle = (title || '').trim();
+    if (!cleanTitle) {
+      if (typeof window !== 'undefined' && window.alert) alert(t('tasks.enterTitleAlert') || 'Indica un título para la tarea.');
+      return;
+    }
+    const actions = getActions();
+    if (actions && actions.addTask) {
+      actions.addTask(cleanTitle, durationStr, false, null, autoMoveToToday, urgency, featured, startAfter, notes);
+    }
+    const setTaskEdit = (ctx && ctx.setTaskEdit) || null;
+    if (setTaskEdit) setTaskEdit(null);
+    renderTriageView();
+  }
+
+  function openMobileAddModal() {
+    openTriageNewTaskModal();
+  }
+
+  function closeMobileAddModal() {
+    const actions = getActions();
+    if (actions && actions.cancelEditTask) {
+      actions.cancelEditTask();
+    } else {
+      const setTaskEdit = (ctx && ctx.setTaskEdit) || null;
+      if (setTaskEdit) setTaskEdit(null);
+      renderTriageView();
+    }
+  }
+
+  function handleTriageAddBarSubmit(form) {
+    openTriageNewTaskModal();
+  }
+
+  function handleMobileAddModalSubmit(form) {
+    openTriageNewTaskModal();
+  }
+
+  function focusTriageAddBar() {
+    openTriageNewTaskModal();
+  }
+
+  function moveTriageTaskDirection(taskId, direction) {
+    const actions = getActions();
+    if (actions && actions.moveTaskDirectly) {
+      actions.moveTaskDirectly(taskId, direction);
+    }
+    closeMobileMoveSheet();
+    renderTriageView();
+  }
+
+  let activeMoveSheetTaskId = null;
+
+  function openMobileMoveSheet(taskId, event) {
+    if (event && event.stopPropagation) event.stopPropagation();
+    activeMoveSheetTaskId = String(taskId);
+    const sheet = document.getElementById('triageMobileMoveSheet');
+    if (!sheet) return;
+    const state = getState();
+    const targetDateStr = getTargetDateStr();
+    const activeTasks = getActiveTasks(targetDateStr);
+    const task = activeTasks.find(t => String(t.id) === String(taskId)) ||
+                 (state.tasks || []).find(t => String(t.id) === String(taskId));
+    const titleEl = document.getElementById('triageMoveSheetTaskTitle');
+    if (titleEl && task) {
+      titleEl.textContent = task.title;
+    }
+
+    const runningNotice = document.getElementById('triageMoveSheetRunningNotice');
+    const moveGrid = sheet.querySelector('.triage-move-sheet-grid');
+    if (task && task.status === 'running') {
+      if (runningNotice) runningNotice.style.display = 'flex';
+      if (moveGrid) moveGrid.style.opacity = '0.4';
+    } else {
+      if (runningNotice) runningNotice.style.display = 'none';
+      if (moveGrid) moveGrid.style.opacity = '1';
+    }
+
+    sheet.style.display = 'flex';
+  }
+
+  function closeMobileMoveSheet() {
+    activeMoveSheetTaskId = null;
+    const sheet = document.getElementById('triageMobileMoveSheet');
+    if (sheet) sheet.style.display = 'none';
+  }
+
+  function getActiveMoveSheetTaskId() {
+    return activeMoveSheetTaskId;
+  }
+
+  // TOUCH LONG PRESS & DRAG
+  let touchHoldTimer = null;
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchSourceTaskId = null;
+  let touchSourceRowEl = null;
+  let isTouchDragging = false;
+  let currentTouchOverTaskId = null;
+  let didLongPressTrigger = false;
+  let touchDragJustEnded = false;
+
+  function handleTriageTouchStart(taskId, event) {
+    if (!event || !event.touches || event.touches.length === 0) return;
+    if (event.target.closest('button') || event.target.closest('input[type="checkbox"]')) {
+      return;
+    }
+
+    const state = getState();
+    const targetDateStr = getTargetDateStr();
+    const activeTasks = getActiveTasks(targetDateStr);
+    const task = activeTasks.find(t => String(t.id) === String(taskId)) ||
+                 (state.tasks || []).find(t => String(t.id) === String(taskId));
+    const isDraggable = task ? (task.status === 'pending' || task.status === 'paused') : true;
+
+    const touch = event.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    touchSourceTaskId = String(taskId);
+    didLongPressTrigger = false;
+    isTouchDragging = false;
+    currentTouchOverTaskId = null;
+
+    const row = event.currentTarget || (event.target ? event.target.closest('.triage-task-row') : null);
+    touchSourceRowEl = row;
+
+    if (touchHoldTimer) {
+      clearTimeout(touchHoldTimer);
+      touchHoldTimer = null;
+    }
+
+    const isHandle = !!(event.target && event.target.closest('.triage-drag-handle'));
+
+    if (!isDraggable) {
+      // Si la tarea no es arrastrable (por ej. 'running'), permitimos pulsación larga
+      // para abrir el menú móvil informativo, pero sin activar arrastre libre
+      touchHoldTimer = setTimeout(() => {
+        touchHoldTimer = null;
+        didLongPressTrigger = true;
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          try { navigator.vibrate(45); } catch (e) {}
+        }
+        openMobileMoveSheet(taskId, event);
+      }, 450);
+      return;
+    }
+
+    // Si pulsó la manija ⠿ directamente, iniciamos arrastre muy rápido (60ms)
+    // Si pulsó en el cuerpo de la fila, requiere pulsación prolongada (~420ms)
+    const delay = isHandle ? 60 : 420;
+
+    touchHoldTimer = setTimeout(() => {
+      touchHoldTimer = null;
+      didLongPressTrigger = true;
+      isTouchDragging = true;
+
+      if (triageClickTimer) {
+        clearTimeout(triageClickTimer);
+        triageClickTimer = null;
+      }
+
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try { navigator.vibrate(45); } catch (e) {}
+      }
+
+      if (touchSourceRowEl) {
+        touchSourceRowEl.classList.add('long-press-active', 'dragging');
+      }
+    }, delay);
+  }
+
+  function handleTriageTouchMove(event) {
+    if (!event || !event.touches || event.touches.length === 0) return;
+    const touch = event.touches[0];
+    const dx = Math.abs(touch.clientX - touchStartX);
+    const dy = Math.abs(touch.clientY - touchStartY);
+
+    if (!isTouchDragging) {
+      if (dx > 10 || dy > 10) {
+        if (touchHoldTimer) {
+          clearTimeout(touchHoldTimer);
+          touchHoldTimer = null;
+        }
+      }
+      return;
+    }
+
+    if (event.cancelable && typeof event.preventDefault === 'function') {
+      event.preventDefault();
+    }
+
+    if (typeof document !== 'undefined' && document.elementFromPoint) {
+      const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+      const overRow = targetEl ? targetEl.closest('.triage-task-row') : null;
+      const overTaskId = overRow ? overRow.getAttribute('data-task-id') : null;
+
+      document.querySelectorAll('.triage-task-row.drag-over').forEach(el => {
+        if (el !== overRow) el.classList.remove('drag-over');
+      });
+
+      if (overRow && overTaskId && overTaskId !== touchSourceTaskId) {
+        overRow.classList.add('drag-over');
+        currentTouchOverTaskId = overTaskId;
+      } else {
+        currentTouchOverTaskId = null;
+      }
+    }
+  }
+
+  function handleTriageTouchEnd(event) {
+    if (touchHoldTimer) {
+      clearTimeout(touchHoldTimer);
+      touchHoldTimer = null;
+    }
+
+    const wasLongPress = didLongPressTrigger;
+    const wasDragging = isTouchDragging;
+    const sourceId = touchSourceTaskId;
+    const targetId = currentTouchOverTaskId;
+
+    if (touchSourceRowEl) {
+      touchSourceRowEl.classList.remove('long-press-active', 'dragging');
+    }
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('.triage-task-row.drag-over, .triage-task-row.long-press-active, .triage-task-row.dragging').forEach(el => {
+        el.classList.remove('drag-over', 'long-press-active', 'dragging');
+      });
+    }
+
+    touchSourceTaskId = null;
+    touchSourceRowEl = null;
+    isTouchDragging = false;
+    currentTouchOverTaskId = null;
+    didLongPressTrigger = false;
+
+    // Evitar que el navegador emita un click sintético tras soltar el gesto
+    if (wasLongPress || wasDragging) {
+      touchDragJustEnded = true;
+      setTimeout(() => { touchDragJustEnded = false; }, 400);
+      if (event && event.cancelable && typeof event.preventDefault === 'function') {
+        event.preventDefault();
+      }
+    }
+
+    if ((wasLongPress || wasDragging) && sourceId) {
+      if (targetId && targetId !== sourceId) {
+        // Reutilización directa del mecanismo de drag & drop existente
+        const actions = getActions();
+        if (actions && actions.reorderTaskByDrag) {
+          actions.reorderTaskByDrag(sourceId, targetId);
+        } else if (actions && actions.taskDrop) {
+          actions.taskDrop(event || { preventDefault: () => {} }, targetId);
+        }
+        renderTriageView();
+      } else if (wasLongPress && !wasDragging) {
+        openMobileMoveSheet(sourceId, event);
+      }
+    }
+  }
+
+  function handleTriageTouchCancel(event) {
+    if (touchHoldTimer) {
+      clearTimeout(touchHoldTimer);
+      touchHoldTimer = null;
+    }
+    if (touchSourceRowEl) {
+      touchSourceRowEl.classList.remove('long-press-active', 'dragging');
+    }
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('.triage-task-row.drag-over, .triage-task-row.long-press-active, .triage-task-row.dragging').forEach(el => {
+        el.classList.remove('drag-over', 'long-press-active', 'dragging');
+      });
+    }
+    touchSourceTaskId = null;
+    touchSourceRowEl = null;
+    isTouchDragging = false;
+    currentTouchOverTaskId = null;
+    didLongPressTrigger = false;
+  }
+
   let triageClickTimer = null;
   let lastClickedTaskId = null;
   let lastClickTime = 0;
 
   function handleTriageRowClick(taskId, event) {
+    if (touchDragJustEnded) return;
     if (!event) return;
     // Si el clic vino de un botón, checkbox o manija de arrastre, no conmutar selección de fila
     if (event.target.closest('button') || event.target.closest('input[type="checkbox"]') || event.target.closest('.drag-handle')) {
@@ -588,39 +921,45 @@ export function TodayTasksTriageView(ctx) {
     }
     if (modalHost) {
       if (taskEdit && taskEdit.id) {
+        const isNewTask = taskEdit.isNew || String(taskEdit.id) === '__new__';
         const editUrgency = taskEdit.urgency || DEFAULT_URGENCY;
         const editUrgencyInfo = URGENCY_LEVELS[editUrgency] || URGENCY_LEVELS[DEFAULT_URGENCY];
-        const modalTitle = taskEdit.mode === 'series'
-          ? t('triage.editModalTitleSeries')
-          : (taskEdit.ruleId ? t('triage.editModalTitleInstance') : t('triage.editModalTitleTask'));
+        const modalTitle = isNewTask
+          ? t('triage.modalTitleNewTask')
+          : (taskEdit.mode === 'series'
+            ? t('triage.editModalTitleSeries')
+            : (taskEdit.ruleId ? t('triage.editModalTitleInstance') : t('triage.editModalTitleTask')));
+        const modalIcon = isNewTask ? '＋' : '✎';
+        const saveBtnText = isNewTask ? t('triage.addTaskSubmit') : t('action.save');
         const urgencyLabel = t('urgency.' + editUrgency) || editUrgencyInfo.label;
 
         modalHost.innerHTML = `
           <div class="modal-overlay" id="triageTaskEditModal" style="display:flex;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:100000;align-items:center;justify-content:center;" onclick="if(event.target===this) app.cancelEditTask()">
             <div class="modal-box triage-edit-modal-box" onclick="event.stopPropagation()">
               <div class="triage-edit-modal-header">
-                <h3><span>✎</span> ${escapeHtml(modalTitle)}</h3>
+                <h3><span>${modalIcon}</span> ${escapeHtml(modalTitle)}</h3>
                 <button type="button" class="close-modal-btn" onclick="app.cancelEditTask()" title="${escapeAttr(t('action.close'))} (Esc)" aria-label="${escapeAttr(t('action.close'))}">&times;</button>
               </div>
 
               <div class="triage-edit-modal-body">
                 <div style="margin-bottom:12px;">
                   <label class="triage-edit-label">${t('triage.editLabelTitle')}</label>
-                  <input type="text" id="triageEditTitleInput" class="triage-edit-input" value="${escapeAttr(taskEdit.title)}" onfocus="if(app.attachTagAutocompleteToEl) app.attachTagAutocompleteToEl(this)" oninput="app.updateTaskEditField('title', this.value)" placeholder="${escapeAttr(t('tasks.inputTitlePlaceholder'))}">
+                  <input type="text" id="triageEditTitleInput" class="triage-edit-input" value="${escapeAttr(taskEdit.title)}" onfocus="if(app.attachTagAutocompleteToEl) app.attachTagAutocompleteToEl(this)" oninput="app.updateTaskEditField('title', this.value)" onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); app.saveEditTask('${escapeAttr(taskEdit.id)}'); }" placeholder="${escapeAttr(t('tasks.inputTitlePlaceholder'))}">
                 </div>
 
                 <div class="triage-edit-time-grid">
                   <label class="triage-edit-label">
                     ${t('tasks.editPlanned')}
-                    <input type="text" class="triage-edit-input" value="${escapeAttr(taskEdit.duration)}" placeholder="${escapeAttr(t('tasks.editDurationPlaceholder'))}" oninput="app.updateTaskEditField('duration', this.value)">
+                    <input type="text" id="triageEditDurationInput" class="triage-edit-input" value="${escapeAttr(taskEdit.duration)}" placeholder="${escapeAttr(t('tasks.editDurationPlaceholder'))}" oninput="app.updateTaskEditField('duration', this.value)">
                   </label>
+                  ${!isNewTask ? `
                   <label class="triage-edit-label">
                     ${t('tasks.editSpent')}
-                    <input type="text" class="triage-edit-input" value="${escapeAttr(taskEdit.actual||0)}" placeholder="${escapeAttr(t('tasks.editActualPlaceholder'))}" oninput="app.updateTaskEditField('actual', this.value)">
-                  </label>
+                    <input type="text" id="triageEditActualInput" class="triage-edit-input" value="${escapeAttr(taskEdit.actual||0)}" placeholder="${escapeAttr(t('tasks.editActualPlaceholder'))}" oninput="app.updateTaskEditField('actual', this.value)">
+                  </label>` : ''}
                   <label class="triage-edit-label">
                     ${t('tasks.editStartAfter')}
-                    <input type="time" class="triage-edit-input" value="${escapeAttr(taskEdit.startAfter || '')}" oninput="app.updateTaskEditField('startAfter', this.value)">
+                    <input type="time" id="triageEditStartAfterInput" class="triage-edit-input" value="${escapeAttr(taskEdit.startAfter || '')}" oninput="app.updateTaskEditField('startAfter', this.value)">
                   </label>
                 </div>
 
@@ -660,14 +999,14 @@ export function TodayTasksTriageView(ctx) {
                 ${!taskEdit.ruleId ? `
                 <div style="margin-top:6px;margin-bottom:6px;">
                   <label style="font-size:0.82rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;color:var(--ink);">
-                    <input type="checkbox" ${taskEdit.autoMoveToToday ? 'checked' : ''} onchange="app.updateTaskEditField('autoMoveToToday', this.checked)"> ${t('tasks.autoMoveCheckbox')}
+                    <input type="checkbox" id="triageEditAutoMoveCb" ${taskEdit.autoMoveToToday ? 'checked' : ''} onchange="app.updateTaskEditField('autoMoveToToday', this.checked)"> ${t('tasks.autoMoveCheckbox')}
                   </label>
                 </div>` : ''}
               </div>
 
               <div class="triage-edit-modal-footer">
                 <button type="button" class="btn secondary small" onclick="app.cancelEditTask()">${t('action.cancel')}</button>
-                <button type="button" class="btn primary small done" onclick="app.saveEditTask('${escapeAttr(taskEdit.id)}')">${t('action.save')}</button>
+                <button type="button" class="btn primary small done" id="triageEditSaveBtn" onclick="app.saveEditTask('${escapeAttr(taskEdit.id)}')">${escapeHtml(saveBtnText)}</button>
               </div>
             </div>
           </div>
@@ -691,6 +1030,16 @@ export function TodayTasksTriageView(ctx) {
             <button class="btn secondary small triage-btn-back" onclick="if(window.location.hash==='#/triage') window.location.hash='#/'; else if(app.showView) app.showView('main');" title="${escapeAttr(t('triage.btnBackTooltip'))}">
               ${t('triage.btnBack')}
             </button>
+            <div class="triage-undo-redo-group">
+              <button type="button" class="btn secondary small triage-history-btn" id="triageUndoBtn" onclick="app.triageUndo()" ${canTriageUndo() ? '' : 'disabled'} title="${escapeAttr(t('triage.btnUndoTooltip'))}">
+                <span class="triage-history-icon">↶</span>
+                <span class="triage-history-label">${t('triage.btnUndo')}</span>
+              </button>
+              <button type="button" class="btn secondary small triage-history-btn" id="triageRedoBtn" onclick="app.triageRedo()" ${canTriageRedo() ? '' : 'disabled'} title="${escapeAttr(t('triage.btnRedoTooltip'))}">
+                <span class="triage-history-icon">↷</span>
+                <span class="triage-history-label">${t('triage.btnRedo')}</span>
+              </button>
+            </div>
             <div>
               <div class="triage-title-row">
                 <h1 class="triage-title">${t('triage.title')}</h1>
@@ -703,6 +1052,10 @@ export function TodayTasksTriageView(ctx) {
           </div>
 
           <div class="triage-header-right">
+            <button type="button" class="btn primary small triage-btn-add-task" id="triageBtnAddTask" onclick="app.openTriageNewTaskModal()" title="${escapeAttr(t('triage.btnAddTaskTooltip'))}">
+              ${t('triage.btnAddTask')}
+            </button>
+
             <div class="triage-sort-selector">
               <span class="triage-sort-label">${t('triage.sortLabel')}</span>
               ${sortButtons.map(b => `
@@ -801,11 +1154,18 @@ export function TodayTasksTriageView(ctx) {
                          ondragend="app.taskDragEnd(event)"`
                       : '';
                     const dragHandle = isDraggable
-                      ? `<span class="drag-handle triage-drag-handle" title="${escapeAttr(t('triage.dragHandleTooltip'))}" onmousedown="app.armTaskDrag()">⠿</span>`
+                      ? `<span class="drag-handle triage-drag-handle" title="${escapeAttr(t('triage.touchDragHint'))}" onmousedown="app.armTaskDrag()">⠿</span>`
                       : '';
 
                     return `
-                      <div class="triage-task-row ${isSelected ? 'selected' : ''} ${isRecurring ? 'is-recurring' : ''}" data-task-id="${escapeAttr(task.id)}" onclick="app.handleTriageRowClick('${escapeAttr(task.id)}', event)" ondblclick="app.handleTriageRowDblClick('${escapeAttr(task.id)}', event)" ${dragAttrs}>
+                      <div class="triage-task-row ${isSelected ? 'selected' : ''} ${isRecurring ? 'is-recurring' : ''}" data-task-id="${escapeAttr(task.id)}"
+                           onclick="app.handleTriageRowClick('${escapeAttr(task.id)}', event)"
+                           ondblclick="app.handleTriageRowDblClick('${escapeAttr(task.id)}', event)"
+                           ontouchstart="app.handleTriageTouchStart('${escapeAttr(task.id)}', event)"
+                           ontouchmove="app.handleTriageTouchMove(event)"
+                           ontouchend="app.handleTriageTouchEnd(event)"
+                           ontouchcancel="app.handleTriageTouchCancel(event)"
+                           ${dragAttrs}>
                         <!-- LADO IZQUIERDO: PUNTITOS, CHECKBOX, ESTRELLA, NOMBRE + DURACIÓN (EN 1 LÍNEA) -->
                         <div class="triage-task-left">
                           ${dragHandle}
@@ -950,6 +1310,54 @@ export function TodayTasksTriageView(ctx) {
             <span>⚪</span> <strong>${t('triage.groupLater')}</strong>
           </button>
         </div>
+
+        <!-- BOTÓN FLOTANTE MÓVIL (FAB) PARA AÑADIR TAREA -->
+        <button type="button" class="triage-fab-add" id="triageFabAddTask" onclick="app.openTriageNewTaskModal()" title="${escapeAttr(t('triage.fabAddTaskTooltip'))}" aria-label="${escapeAttr(t('triage.fabAddTaskTooltip'))}">
+          ＋
+        </button>
+
+        <!-- BOTTOM SHEET MÓVIL PARA MOVER TAREA (TRAS LONG-PRESS) -->
+        <div id="triageMobileMoveSheet" class="triage-bottom-modal" style="display:none;" onclick="if(event.target===this) app.closeMobileMoveSheet()">
+          <div class="triage-bottom-modal-card" onclick="event.stopPropagation()">
+            <div class="triage-bottom-modal-header">
+              <div>
+                <span class="triage-move-sheet-eyebrow">${t('triage.mobileMoveSheetTitle')}</span>
+                <h3 id="triageMoveSheetTaskTitle" class="triage-move-sheet-task-title">...</h3>
+              </div>
+              <button type="button" class="close-modal-btn" onclick="app.closeMobileMoveSheet()">&times;</button>
+            </div>
+            <div id="triageMoveSheetRunningNotice" style="display:none;padding:8px 12px;margin-bottom:12px;background:rgba(234,179,8,0.12);border:1px solid #EAB308;border-radius:8px;font-size:0.82rem;color:var(--ink);align-items:center;justify-content:space-between;gap:8px;">
+              <span>⚠️ ${t('triage.runningTaskMoveNotice')}</span>
+              <button type="button" class="btn small primary" style="white-space:nowrap;" onclick="if(app.pauseTask) { app.pauseTask(app.getActiveMoveSheetTaskId()); app.openMobileMoveSheet(app.getActiveMoveSheetTaskId()); }">
+                ⏸️ ${t('triage.btnPauseToMove')}
+              </button>
+            </div>
+            <div class="triage-move-sheet-grid">
+              <button type="button" class="triage-move-grid-btn" onclick="app.moveTriageTaskDirection(app.getActiveMoveSheetTaskId(), 'up')">
+                <span>${t('triage.moveUp')}</span>
+              </button>
+              <button type="button" class="triage-move-grid-btn" onclick="app.moveTriageTaskDirection(app.getActiveMoveSheetTaskId(), 'down')">
+                <span>${t('triage.moveDown')}</span>
+              </button>
+              <button type="button" class="triage-move-grid-btn" onclick="app.moveTriageTaskDirection(app.getActiveMoveSheetTaskId(), 'top')">
+                <span>${t('triage.moveToTop')}</span>
+              </button>
+              <button type="button" class="triage-move-grid-btn" onclick="app.moveTriageTaskDirection(app.getActiveMoveSheetTaskId(), 'bottom')">
+                <span>${t('triage.moveToBottom')}</span>
+              </button>
+            </div>
+            <div class="triage-move-sheet-dates">
+              <span class="triage-move-sheet-dates-label">${t('triage.moveSheetDateSection')}</span>
+              <div class="triage-move-dates-chips">
+                ${quick5Days.map(d => `
+                  <button type="button" class="triage-move-date-chip" onclick="app.moveTriageTaskToDate(app.getActiveMoveSheetTaskId(), '${escapeAttr(d.date)}', '${escapeAttr(d.label)}', event); app.closeMobileMoveSheet();">
+                    ${escapeHtml(d.label)}
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     `;
 
@@ -1005,7 +1413,27 @@ export function TodayTasksTriageView(ctx) {
     executeTriageBatchDelete,
     toggleTriageDropdown,
     getTargetDateStr,
-    applyAutoOrder
+    applyAutoOrder,
+    triageUndo,
+    triageRedo,
+    canTriageUndo,
+    canTriageRedo,
+    submitTriageNewTask,
+    openTriageNewTaskModal,
+    openMobileAddModal,
+    closeMobileAddModal,
+    handleTriageAddBarSubmit,
+    handleMobileAddModalSubmit,
+    focusTriageAddBar,
+    moveTriageTaskDirection,
+    openMobileMoveSheet,
+    closeMobileMoveSheet,
+    getActiveMoveSheetTaskId,
+    handleTriageTouchStart,
+    handleTriageTouchMove,
+    handleTriageTouchEnd,
+    handleTriageTouchCancel,
+    getSelectedTaskIds: () => selectedTaskIds
   };
 }
 

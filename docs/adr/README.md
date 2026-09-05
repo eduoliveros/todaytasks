@@ -17,6 +17,7 @@ Un **Architecture Decision Record (ADR)** es un documento breve que captura una 
 * [009. Arquitectura de Internacionalización (i18n) Multilingüe y Rollout Progresivo](./009-sistema-internacionalizacion-i18n.md)
 * [010. Buscador Global de Tareas y Command Palette (`Ctrl+K`)](./010-buscador-global-command-palette.md)
 * [011. Sistema de Etiquetas (Tags) en Tareas y Autocompletado de Hashtags](./011-sistema-etiquetas-tags-y-autocompletado.md)
+* [012. Triaje en Móvil: Botones Undo/Redo, Movimiento por Pulsación Prolongada (Long-Press) y Creación de Tareas](./012-triaje-movil-gestos-y-creacion-tareas.md)
 
 ## Plantilla sugerida para nuevos ADRs (`docs/adr/NNN-titulo.md`)
 

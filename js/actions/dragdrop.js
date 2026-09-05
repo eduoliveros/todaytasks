@@ -30,8 +30,10 @@ export function TodayTasksDragDrop(ctx){
   }
 
   function taskDrop(e, targetId){
-    e.preventDefault();
-    e.currentTarget.classList.remove("drag-over");
+    if(e && e.preventDefault) e.preventDefault();
+    if(e && e.currentTarget && e.currentTarget.classList){
+      e.currentTarget.classList.remove("drag-over");
+    }
     if(draggedTaskId !== null && draggedTaskId !== targetId){
       reorderTaskByDrag(draggedTaskId, targetId);
     }
@@ -52,7 +54,17 @@ export function TodayTasksDragDrop(ctx){
     const queue = state.tasks.filter(t=>t.status==="pending"||t.status==="paused")
                               .sort((a,b)=>a.order-b.order);
     const fromIdx = queue.findIndex(t => String(t.id) === String(fromId));
-    const toIdx = queue.findIndex(t => String(t.id) === String(toId));
+    let toIdx = queue.findIndex(t => String(t.id) === String(toId));
+
+    // Si toId es una tarea en ejecución (status: 'running'), colocar la tarea arrastrada
+    // en la primera posición de la cola de pendientes (toIdx = 0)
+    if(toIdx === -1) {
+      const targetTask = (state.tasks || []).find(t => String(t.id) === String(toId));
+      if(targetTask && targetTask.status === 'running') {
+        toIdx = 0;
+      }
+    }
+
     if(fromIdx === -1 || toIdx === -1) return;
 
     if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
@@ -70,8 +82,39 @@ export function TodayTasksDragDrop(ctx){
     renderAll();
   }
 
+  function moveTaskDirectly(taskId, direction){
+    const state = getState();
+    const queue = (state.tasks || []).filter(t=>t.status==="pending"||t.status==="paused")
+                              .sort((a,b)=>a.order-b.order);
+    const fromIdx = queue.findIndex(t => String(t.id) === String(taskId));
+    if(fromIdx === -1) return false;
+
+    let toIdx = fromIdx;
+    if(direction === 'up') toIdx = Math.max(0, fromIdx - 1);
+    else if(direction === 'down') toIdx = Math.min(queue.length - 1, fromIdx + 1);
+    else if(direction === 'top') toIdx = 0;
+    else if(direction === 'bottom') toIdx = queue.length - 1;
+
+    if(toIdx === fromIdx) return false;
+
+    if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+      ctx.undoModule.pushSnapshot('Reordenar tareas');
+    }
+
+    const [moved] = queue.splice(fromIdx, 1);
+    queue.splice(toIdx, 0, moved);
+    queue.forEach((t, i) => {
+      t.order = i + 1;
+      t.manualOrder = i + 1;
+    });
+    state.tasks.sort((x, y) => (x.order || 0) - (y.order || 0));
+    saveState();
+    renderAll();
+    return true;
+  }
+
   return {
-    armTaskDrag, taskDragStart, taskDragOver, taskDragLeave, taskDrop, taskDragEnd
+    armTaskDrag, taskDragStart, taskDragOver, taskDragLeave, taskDrop, taskDragEnd, moveTaskDirectly, reorderTaskByDrag
   };
 }
 

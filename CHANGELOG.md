@@ -4,6 +4,30 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.103] - 2026-09-05
+
+### Añadido
+- **Triaje Móvil y Creación Ágil de Tareas (Móvil y PC):**
+  - **Botones Undo/Redo en Triaje:** Controles táctiles permanentes `↶ Deshacer` y `↷ Rehacer` en la cabecera de Triaje (`#/triage`), con estado reactivo según disponibilidad en la pila histórica y diseño optimizado para pantallas táctiles móviles donde no existen atajos de teclado físicos.
+  - **Reordenación y Movimiento por Pulsación Prolongada (Long-Press):**
+    - Detección de toque prolongado (~450ms) en filas de tareas de triaje con feedback táctil háptico (`navigator.vibrate`) y elevación visual (`.long-press-active`).
+    - Desplazamiento táctil directo (`touchmove`) para reordenar tareas arrastrándolas verticalmente con el dedo, o despliegue de hoja inferior (Bottom Sheet) con opciones directas de posición ("Subir en la cola", "Bajar en la cola", "Al principio", "Al final") y salto a los próximos 5 días hábiles.
+    - Método puro `moveTaskDirectly(taskId, direction)` expuesto en `TodayTasksDragDrop` y `window.app` con generación de snapshots en `undoModule` para reversión inmediata.
+  - **Creación Unificada de Nuevas Tareas en Triaje (PC y Móvil):**
+    - Modal unificado (`#triageTaskEditModal` con `id: '__new__'`) que elimina la duplicidad de formularios, proporcionando paridad funcional total tanto en PC como en móvil: título con autocompletado de `#etiquetas`, duración, selector de urgencia, estrella de destacada, notas Markdown completas con barra de herramientas y previsualización, hora mínima `startAfter` y casilla de traslado automático.
+    - Activación mediante el botón `＋ Nueva tarea` en la cabecera (PC), atajo de teclado global <kbd>N</kbd>, o el botón flotante (FAB `#triageFabAddTask`) en móviles.
+    - Eliminación de la barra inline intermedia y del modal inferior simplificado anterior en favor de una experiencia 100% coherente.
+  - **Internacionalización y Pruebas:**
+    - Localización completa en Español e Inglés (`es` y `en`) con paridad 100%.
+    - Suite de pruebas unitarias dedicada en `tests/triage_mobile_features.test.js`.
+    - Registro de decisión arquitectónica en `docs/adr/012-triaje-movil-gestos-y-creacion-tareas.md`.
+
+### Corregido
+- **Selección y Actualización de Urgencia en el Popup de Triaje:**
+  - **Actualización visual en el popup:** Corregido el conflicto de selectores en el DOM donde el botón pill del modal `#triageTaskEditModal` compartía ID con el formulario inline de la vista principal, provocando que `selectTaskUrgency` solo actualizara el elemento en segundo plano. Se amplió el selector en `js/app/urgency-dropdown.js` para actualizar de forma unificada todos los botones pill correspondientes (`#triageTaskEditModal .urgency-pill-btn`, `.triage-edit-modal-box .urgency-pill-btn`, `#edit-urgency-pill-${id}`).
+  - **Sincronización y persistencia con `env.days`:** Modificadas las acciones `saveEditTask` y `setTaskUrgency` en `js/actions/tasks.js` para propagar y sincronizar inmediatamente cualquier cambio de urgencia y atributos editados hacia `env.days[d].tasks`, asegurando que al guardar la tarea en el popup de triaje se refleje y reagrupe de forma persistente.
+  - Cobertura de pruebas unitarias de regresión en `tests/urgency_dropdown.test.js` y `tests/triage_mobile_features.test.js`.
+
 ## [1.102] - 2026-09-05
 
 ### Añadido

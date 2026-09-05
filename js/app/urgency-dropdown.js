@@ -96,16 +96,31 @@ export function TodayTasksUrgencyDropdown(ctx) {
       if (labelEl) labelEl.textContent = info.label;
     } else if (_editUrgencyTaskId) {
       const editId = _editUrgencyTaskId;
+      _editUrgencyTaskId = null;
       if (actionsModule && actionsModule.updateTaskEditField) {
         actionsModule.updateTaskEditField('urgency', urgency);
       }
-      _editUrgencyTaskId = null;
-      const pill = document.getElementById(`edit-urgency-pill-${editId}`);
-      if (pill) {
+      if (typeof ctx.getTaskEdit === 'function') {
+        const te = ctx.getTaskEdit();
+        if (te) te.urgency = urgency;
+      }
+      const pills = [
+        ...document.querySelectorAll(`#triage-edit-urgency-pill-${editId}`),
+        ...document.querySelectorAll(`#edit-urgency-pill-${editId}`),
+        ...document.querySelectorAll('#triageTaskEditModal .urgency-pill-btn'),
+        ...document.querySelectorAll('.triage-edit-modal-box .urgency-pill-btn')
+      ];
+      const uniquePills = Array.from(new Set(pills));
+      if (uniquePills.length === 0) {
+        const fallback = document.querySelector('.modal-box .urgency-pill-btn');
+        if (fallback) uniquePills.push(fallback);
+      }
+      uniquePills.forEach(pill => {
         pill.className = `urgency-pill-btn ${info.cls}`;
         pill.setAttribute('aria-label', `Urgencia ${info.label}`);
+        pill.title = t('tasks.editUrgencyTooltip', { label: info.label }) || `Urgencia: ${info.label}`;
         pill.innerHTML = `<span>${info.icon}</span> <span>${info.label}</span> <span class="urgency-pill-chevron">▾</span>`;
-      }
+      });
     } else if (currentUrgencyTaskId) {
       if (actionsModule && actionsModule.setTaskUrgency) {
         actionsModule.setTaskUrgency(currentUrgencyTaskId, urgency);
@@ -167,18 +182,26 @@ export function TodayTasksUrgencyDropdown(ctx) {
   }
 
   function openEditUrgencyDropdown(taskId, event) {
-    _editUrgencyTaskId = taskId;
-    _formUrgencyMode = false;
-    currentUrgencyTaskId = null;
-    openUrgencyDropdown('__edit__', event);
-    const dropdown = document.getElementById('urgencyDropdownMenu');
-    if (dropdown) {
-      const taskEdit = typeof ctx.getTaskEdit === 'function' ? ctx.getTaskEdit() : null;
-      const currentState = typeof getState === 'function' ? getState() : {};
-      const currentUrgency = (taskEdit && taskEdit.urgency) || (currentState.tasks || []).find(x => String(x.id) === String(taskId))?.urgency || 'days';
-      dropdown.querySelectorAll('.urgency-option-item').forEach(item => {
-        item.classList.toggle('active', item.dataset.urgency === currentUrgency);
-      });
+    try {
+      if (event) {
+        if (typeof event.stopPropagation === 'function') event.stopPropagation();
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+      }
+      openUrgencyDropdown('__edit__', event);
+      _editUrgencyTaskId = taskId;
+      currentUrgencyTaskId = null;
+      _formUrgencyMode = false;
+      const dropdown = document.getElementById('urgencyDropdownMenu');
+      if (dropdown) {
+        const taskEdit = typeof ctx.getTaskEdit === 'function' ? ctx.getTaskEdit() : null;
+        const currentState = typeof getState === 'function' ? getState() : {};
+        const currentUrgency = (taskEdit && taskEdit.urgency) || (currentState.tasks || []).find(x => String(x.id) === String(taskId))?.urgency || 'days';
+        dropdown.querySelectorAll('.urgency-option-item').forEach(item => {
+          item.classList.toggle('active', item.dataset.urgency === currentUrgency);
+        });
+      }
+    } catch (err) {
+      console.error("Error in openEditUrgencyDropdown:", err);
     }
   }
 

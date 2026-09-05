@@ -156,6 +156,7 @@ export function TodayTasksActions(ctx) {
     addTask:                tasks.addTask,
     deleteTask:             tasks.deleteTask,
     startEditTask:          tasks.startEditTask,
+    startNewTask:           tasks.startNewTask,
     updateTaskEditField:    tasks.updateTaskEditField,
     cancelEditTask:         tasks.cancelEditTask,
     saveEditTask:           tasks.saveEditTask,
@@ -179,6 +180,8 @@ export function TodayTasksActions(ctx) {
     taskDragLeave:          dragdrop.taskDragLeave,
     taskDrop:               dragdrop.taskDrop,
     taskDragEnd:            dragdrop.taskDragEnd,
+    moveTaskDirectly:       dragdrop.moveTaskDirectly,
+    reorderTaskByDrag:      dragdrop.reorderTaskByDrag,
     /* Execution */
     startTask:              execution.startTask,
     pauseTask:              execution.pauseTask,

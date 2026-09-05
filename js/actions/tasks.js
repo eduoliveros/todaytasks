@@ -222,7 +222,17 @@ export function TodayTasksTasks(ctx, helpers){
 
   function setTaskUrgency(id, urgency){
     const state = getState();
-    const t = state.tasks.find(t => String(t.id) === String(id));
+    let t = (state.tasks || []).find(t => String(t.id) === String(id));
+    const envKey = state.activeEnv || "work";
+    const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+    if (!t && env && env.days) {
+      for (const d of Object.keys(env.days)) {
+        if (env.days[d] && Array.isArray(env.days[d].tasks)) {
+          const found = env.days[d].tasks.find(x => String(x.id) === String(id));
+          if (found) { t = found; break; }
+        }
+      }
+    }
     if(!t) return;
     if(!["today", "days", "week", "later"].includes(urgency)) return;
     if(t.urgency === urgency) return;
@@ -233,6 +243,16 @@ export function TodayTasksTasks(ctx, helpers){
     }
 
     t.urgency = urgency;
+    if (env && env.days) {
+      for (const d of Object.keys(env.days)) {
+        if (env.days[d] && Array.isArray(env.days[d].tasks)) {
+          const match = env.days[d].tasks.find(x => String(x.id) === String(id));
+          if (match && match !== t) {
+            match.urgency = urgency;
+          }
+        }
+      }
+    }
     state.tasks = sortTasksWithManualOrder(state.tasks);
     saveState();
     smartRender ? smartRender() : renderAll();
@@ -582,9 +602,52 @@ export function TodayTasksTasks(ctx, helpers){
     renderAll();
   }
 
+  function startNewTask(defaults = {}){
+    setTaskEdit({
+      id: '__new__',
+      isNew: true,
+      title: defaults.title || '',
+      duration: defaults.duration || '30',
+      actual: '0',
+      notes: defaults.notes || '',
+      autoMoveToToday: defaults.autoMoveToToday !== false,
+      urgency: defaults.urgency || DEFAULT_URGENCY,
+      featured: !!defaults.featured,
+      startAfter: defaults.startAfter || ''
+    });
+    renderAll();
+  }
+
   function saveEditTask(id){
     const taskEdit = getTaskEdit();
     if(!taskEdit || String(taskEdit.id) !== String(id)) return;
+
+    if (taskEdit.isNew || String(id) === '__new__') {
+      const title = (taskEdit.title || '').trim();
+      const parsedPlanned = parseDuration(taskEdit.duration);
+      const planned = (parsedPlanned !== null && parsedPlanned > 0) ? Math.round(parsedPlanned) : null;
+      if (!title || !planned || planned <= 0) {
+        if (typeof window !== 'undefined' && window.alert) {
+          alert('Indica un título y una duración en minutos o formato horas/minutos mayor que 0 (ej. 30 o 1h 30m).');
+        }
+        return;
+      }
+      addTask(
+        title,
+        taskEdit.duration,
+        false,
+        null,
+        taskEdit.autoMoveToToday !== false,
+        taskEdit.urgency || DEFAULT_URGENCY,
+        !!taskEdit.featured,
+        taskEdit.startAfter || null,
+        taskEdit.notes || ''
+      );
+      setTaskEdit(null);
+      renderAll();
+      return;
+    }
+
     const state = getState();
     let t = (state.tasks || []).find(t => String(t.id) === String(id));
     if (!t) {
@@ -712,6 +775,34 @@ export function TodayTasksTasks(ctx, helpers){
     t.title = title;
     t.tags = extractHashtags(title);
     t.planned = planned;
+
+    const envKey = state.activeEnv || "work";
+    const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+    if (env && env.days) {
+      for (const d of Object.keys(env.days)) {
+        if (env.days[d] && Array.isArray(env.days[d].tasks)) {
+          const match = env.days[d].tasks.find(x => String(x.id) === String(id));
+          if (match && match !== t) {
+            match.title = t.title;
+            match.tags = t.tags;
+            match.planned = t.planned;
+            match.notes = t.notes;
+            match.autoMoveToToday = t.autoMoveToToday;
+            match.urgency = t.urgency;
+            match.featured = t.featured;
+            match.startAfter = t.startAfter;
+            if (t.status === "completed") {
+              match.actualDuration = t.actualDuration;
+            } else {
+              match.elapsedBefore = t.elapsedBefore;
+              match.runningStart = t.runningStart;
+              match.runningStartEpoch = t.runningStartEpoch;
+            }
+          }
+        }
+      }
+    }
+
     setTaskEdit(null);
     state.tasks = sortTasksWithManualOrder(state.tasks);
     saveState();
@@ -865,7 +956,7 @@ export function TodayTasksTasks(ctx, helpers){
 
   return {
     materializeRecurringTasks,
-    addTask, deleteTask, deleteRecurringTaskInstance, startEditTask, updateTaskEditField,
+    addTask, deleteTask, deleteRecurringTaskInstance, startEditTask, startNewTask, updateTaskEditField,
     cancelEditTask, saveEditTask, updateTaskTimeFast, moveTask,
     setTaskUrgency, setTasksUrgency, setTaskFeatured, setTasksFeatured, toggleTaskFeatured, resolveFeaturedLimit,
     setTaskStartAfter, deleteTasks, applyAutoOrder
