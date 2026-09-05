@@ -38,6 +38,12 @@ describe('Sistema de Tags y Autocompletado', () => {
       expect(extractHashtags('#')).toEqual([]);
       expect(extractHashtags(null)).toEqual([]);
     });
+
+    it('no extrae códigos de entidad HTML ni apóstrofes como tags', () => {
+      expect(extractHashtags("you don't mind ")).toEqual([]);
+      expect(extractHashtags("you don&#39;t mind ")).toEqual([]);
+      expect(extractHashtags("palabra#falsa")).toEqual([]);
+    });
   });
 
   describe('getTagColorClass', () => {
@@ -74,6 +80,22 @@ describe('Sistema de Tags y Autocompletado', () => {
     it('devuelve string vacío si el título es nulo o vacío', () => {
       expect(formatTitleWithTags('')).toBe('');
       expect(formatTitleWithTags(null)).toBe('');
+    });
+
+    it('no confunde apóstrofes ni entidades HTML con hashtags (ej: you don\'t mind)', () => {
+      const formatted = formatTitleWithTags("you don't mind ");
+      expect(formatted).not.toContain('task-tag-syntax');
+      expect(formatted).not.toContain('#39');
+      expect(formatted).not.toContain('&<span');
+
+      const formatted2 = formatTitleWithTags("Tarea con apóstrofe: it's working y #real-tag");
+      expect(formatted2).toContain('#real-tag');
+      expect(formatted2).not.toContain('#39');
+    });
+
+    it('no formatea hashtags dentro de palabras o precedidos por ampersand', () => {
+      const formatted = formatTitleWithTags('palabra#falsa &#39;test&#39;');
+      expect(formatted).not.toContain('task-tag-syntax');
     });
   });
 

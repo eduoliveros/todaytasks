@@ -552,18 +552,18 @@ export function getTaskSearchableText(task) {
  */
 export function extractHashtags(text) {
   if (!text || typeof text !== 'string') return [];
-  const regex = /#([a-zA-Z0-9_\u00C0-\u017F-]+)/g;
-  const matches = text.match(regex);
-  if (!matches) return [];
-
+  // Asegura que # esté al inicio de línea o precedido por un espacio o signo de apertura,
+  // descartando entidades HTML (&#39;) o palabras con almohadilla interna (palabra#falsa).
+  const regex = /(^|[\s([{<«“'"]|&lt;|&quot;|&apos;|&#39;)#([a-zA-Z0-9_\u00C0-\u017F-]+)/g;
   const tagsSet = new Set();
-  matches.forEach(m => {
-    let tag = m.slice(1);
+  let m;
+  while ((m = regex.exec(text)) !== null) {
+    let tag = m[2];
     tag = tag.replace(/[-_.]+$/, '');
     if (tag.length > 0) {
       tagsSet.add(tag.toLowerCase());
     }
-  });
+  }
   return Array.from(tagsSet);
 }
 
@@ -628,7 +628,7 @@ function escapeHtmlSafe(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replace(/'/g, '&apos;');
 }
 
 /**
@@ -640,16 +640,22 @@ export function formatTitleWithTags(title, onClickHandlerName = 'app.filterByTag
   if (!title || typeof title !== 'string') return '';
   const escaped = escapeHtmlSafe(title);
 
-  // 1. Hashtags: #tag
-  const tagRegex = /#([a-zA-Z0-9_\u00C0-\u017F-]+)/g;
-  let formatted = escaped.replace(tagRegex, (match, tag) => {
-    const cleanTag = tag.replace(/[-_.]+$/, '');
+  // 1. Hashtags: #tag (no precedidos por & ni caracteres de palabra)
+  const tagRegex = /(^|[\s([{<«“'"]|&lt;|&quot;|&apos;|&#39;)#([a-zA-Z0-9_\u00C0-\u017F-]+)/g;
+  let formatted = escaped.replace(tagRegex, (match, prefix, tag) => {
+    let trailing = '';
+    const trailMatch = tag.match(/[-_.]+$/);
+    let cleanTag = tag;
+    if (trailMatch) {
+      trailing = trailMatch[0];
+      cleanTag = tag.slice(0, -trailing.length);
+    }
     if (!cleanTag) return match;
     const colorClass = getTagColorClass(cleanTag);
     const clickAttr = onClickHandlerName
       ? `onclick="${onClickHandlerName}('${cleanTag.toLowerCase()}', event)"`
       : '';
-    return `<span class="task-tag-syntax ${colorClass}" ${clickAttr} title="Filtrar por #${cleanTag.toLowerCase()}">#${cleanTag}</span>`;
+    return `${prefix}<span class="task-tag-syntax ${colorClass}" ${clickAttr} title="Filtrar por #${cleanTag.toLowerCase()}">#${cleanTag}</span>${trailing}`;
   });
 
   // 2. Menciones a personas: @Nombre (color único, ignorando emails)
