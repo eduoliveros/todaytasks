@@ -1,17 +1,17 @@
-/* app/tag-autocomplete.js — Menú flotante de autocompletado para hashtags (#cas...) */
-import { extractHashtags, getTagColorClass } from '../utils.js';
+/* app/tag-autocomplete.js — Menú flotante de autocompletado para hashtags (#cas...) y menciones a personas (@persona...) */
+import { extractHashtags, extractMentions, getTagColorClass } from '../utils.js';
 
 /**
- * Detecta si el cursor se encuentra sobre o justo después de un hashtag en un texto.
+ * Detecta si el cursor se encuentra sobre o justo después de un hashtag (#tag) o mención (@persona) en un texto.
  * Devuelve información de límites y el término de búsqueda actual.
  *
  * @param {string} text Texto completo del input
  * @param {number} cursorPosition Posición actual del cursor (0..length)
- * @returns {{ isHashtag: boolean, query: string, startIndex: number, endIndex: number }}
+ * @returns {{ isHashtag: boolean, isMention: boolean, trigger: string|null, query: string, startIndex: number, endIndex: number }}
  */
 export function getWordAtCursor(text, cursorPosition) {
   if (typeof text !== 'string' || cursorPosition == null || cursorPosition < 0) {
-    return { isHashtag: false, query: '', startIndex: -1, endIndex: -1 };
+    return { isHashtag: false, isMention: false, trigger: null, query: '', startIndex: -1, endIndex: -1 };
   }
 
   // Si el cursor está más allá de la longitud, acotar
@@ -34,13 +34,27 @@ export function getWordAtCursor(text, cursorPosition) {
     const query = word.slice(1);
     return {
       isHashtag: true,
+      isMention: false,
+      trigger: '#',
       query,
       startIndex: start,
       endIndex: end
     };
   }
 
-  return { isHashtag: false, query: '', startIndex: -1, endIndex: -1 };
+  if (word.startsWith('@')) {
+    const query = word.slice(1);
+    return {
+      isHashtag: false,
+      isMention: true,
+      trigger: '@',
+      query,
+      startIndex: start,
+      endIndex: end
+    };
+  }
+
+  return { isHashtag: false, isMention: false, trigger: null, query: '', startIndex: -1, endIndex: -1 };
 }
 
 /**
@@ -82,6 +96,44 @@ export function filterExistingTags(existingTags, query, maxResults = 8) {
 }
 
 /**
+ * Filtra la lista de referencias a personas existentes según el prefijo buscado,
+ * de manera totalmente insensible a mayúsculas y minúsculas (case-insensitive).
+ *
+ * @param {Array<{ name: string, count: number }>} existingMentions Lista de menciones con recuento
+ * @param {string} query Término buscado sin '@'
+ * @param {number} [maxResults=8] Límite de resultados
+ * @returns {Array<{ name: string, count: number }>}
+ */
+export function filterExistingMentions(existingMentions, query, maxResults = 8) {
+  if (!Array.isArray(existingMentions)) return [];
+  const q = (query || '').toLowerCase().trim();
+
+  if (!q) {
+    return [...existingMentions]
+      .sort((a, b) => b.count - a.count)
+      .slice(0, maxResults);
+  }
+
+  const prefixMatches = [];
+  const otherMatches = [];
+
+  for (const item of existingMentions) {
+    if (!item || !item.name) continue;
+    const lowerName = item.name.toLowerCase();
+    if (lowerName.startsWith(q)) {
+      prefixMatches.push(item);
+    } else if (lowerName.includes(q)) {
+      otherMatches.push(item);
+    }
+  }
+
+  prefixMatches.sort((a, b) => b.count - a.count);
+  otherMatches.sort((a, b) => b.count - a.count);
+
+  return [...prefixMatches, ...otherMatches].slice(0, maxResults);
+}
+
+/**
  * Reemplaza el hashtag parcial bajo el cursor por el tag seleccionado,
  * añadiendo un espacio después para que el usuario continúe escribiendo sin fricción.
  *
@@ -106,6 +158,40 @@ export function replaceTagAtCursor(text, cursorPosition, selectedTag) {
 
   const cleanTag = String(selectedTag).toLowerCase().replace(/^#+/, '').trim();
   const insertion = `#${cleanTag} `;
+  const newText = before + insertion + after;
+  const newCursorPosition = (before + insertion).length;
+
+  return {
+    text: newText,
+    newCursorPosition
+  };
+}
+
+/**
+ * Reemplaza la mención parcial bajo el cursor por la persona seleccionada,
+ * añadiendo un espacio después para que el usuario continúe escribiendo sin fricción.
+ *
+ * @param {string} text Texto actual
+ * @param {number} cursorPosition Posición del cursor
+ * @param {string} selectedMention Persona seleccionada (sin '@')
+ * @returns {{ text: string, newCursorPosition: number }}
+ */
+export function replaceMentionAtCursor(text, cursorPosition, selectedMention) {
+  const wordInfo = getWordAtCursor(text, cursorPosition);
+  if (!wordInfo.isMention || wordInfo.startIndex === -1) {
+    return { text, newCursorPosition: cursorPosition };
+  }
+
+  const before = text.substring(0, wordInfo.startIndex);
+  let after = text.substring(wordInfo.endIndex);
+
+  // Evitar doble espacio si lo siguiente ya era un espacio
+  if (after.startsWith(' ')) {
+    after = after.substring(1);
+  }
+
+  const cleanMention = String(selectedMention).replace(/^@+/, '').trim();
+  const insertion = `@${cleanMention} `;
   const newText = before + insertion + after;
   const newCursorPosition = (before + insertion).length;
 
@@ -190,6 +276,100 @@ export function getEnvironmentTags(state, targetEnv = null) {
 }
 
 /**
+ * Escanea el entorno activo (o todos si targetEnv es 'both' o 'all') para recopilar
+ * todas las referencias a personas (@Nombre) en tareas, días almacenados y reglas periódicas.
+ * Agrupa de forma insensible a mayúsculas y preserva la forma canónica más frecuente.
+ *
+ * @param {Object} state Estado global de la aplicación
+ * @param {string|null} [targetEnv=null] 'work' | 'personal' | 'both' | 'all' | null
+ * @returns {Array<{ name: string, count: number }>}
+ */
+export function getEnvironmentMentions(state, targetEnv = null) {
+  if (!state) return [];
+  const mentionMap = new Map();
+
+  function recordTaskMentions(item) {
+    if (!item) return;
+    const taskMentions = new Set();
+    const casingMap = new Map();
+
+    if (Array.isArray(item.mentions)) {
+      item.mentions.forEach(m => {
+        if (m) {
+          const clean = String(m).trim().replace(/^@+/, '').replace(/[-_.,;:!?]+$/, '');
+          if (clean) taskMentions.add(clean.toLowerCase());
+        }
+      });
+    }
+
+    if (item.title && typeof item.title === 'string') {
+      const regex = /(^|[\s([{<])@([a-zA-Z0-9_\u00C0-\u017F.-]+)/g;
+      let m;
+      while ((m = regex.exec(item.title)) !== null) {
+        const raw = m[2].replace(/[-_.,;:!?]+$/, '');
+        if (raw) {
+          const lower = raw.toLowerCase();
+          taskMentions.add(lower);
+          casingMap.set(lower, raw);
+        }
+      }
+    }
+
+    taskMentions.forEach(lower => {
+      const existing = mentionMap.get(lower);
+      const rawCasing = casingMap.get(lower) || lower;
+      if (existing) {
+        existing.count += 1;
+        if (rawCasing !== lower && existing.name === lower) {
+          existing.name = rawCasing;
+        }
+      } else {
+        mentionMap.set(lower, { name: rawCasing, count: 1 });
+      }
+    });
+  }
+
+  // 1. Tareas activas en el estado actual
+  if (Array.isArray(state.tasks)) {
+    state.tasks.forEach(recordTaskMentions);
+  }
+
+  const isBoth = targetEnv === 'both' || targetEnv === 'all';
+  const envsToScan = [];
+
+  if (state.environments && typeof state.environments === 'object') {
+    if (isBoth) {
+      Object.values(state.environments).forEach(env => {
+        if (env) envsToScan.push(env);
+      });
+    } else {
+      const envKey = targetEnv || state.activeEnv || 'work';
+      const env = state.environments[envKey] || state.environments.work;
+      if (env) envsToScan.push(env);
+    }
+  }
+
+  envsToScan.forEach(env => {
+    // 2. Tareas en días del entorno
+    if (env.days && typeof env.days === 'object') {
+      Object.values(env.days).forEach(day => {
+        if (day && Array.isArray(day.tasks)) {
+          day.tasks.forEach(recordTaskMentions);
+        }
+      });
+    }
+
+    // 3. Reglas periódicas del entorno
+    if (Array.isArray(env.recurringTasks)) {
+      env.recurringTasks.forEach(recordTaskMentions);
+    }
+  });
+
+  return Array.from(mentionMap.values())
+    .sort((a, b) => b.count - a.count);
+}
+
+/**
  * Conecta el comportamiento de autocompletado de hashtags a un input de texto.
  *
  * @param {HTMLInputElement|HTMLTextAreaElement} inputEl Elemento de entrada
@@ -209,6 +389,7 @@ export function attachTagAutocomplete(inputEl, options = {}) {
 
   let menuEl = null;
   let currentMatches = [];
+  let currentMode = 'tag'; // 'tag' | 'mention'
   let selectedIndex = -1;
   let isOpen = false;
 
@@ -218,7 +399,7 @@ export function attachTagAutocomplete(inputEl, options = {}) {
       menuEl.className = 'tag-autocomplete-dropdown';
       menuEl.style.display = 'none';
       menuEl.setAttribute('role', 'listbox');
-      menuEl.setAttribute('aria-label', 'Sugerencias de etiquetas');
+      menuEl.setAttribute('aria-label', 'Sugerencias de etiquetas o personas');
       document.body.appendChild(menuEl);
     }
   }
@@ -263,10 +444,12 @@ export function attachTagAutocomplete(inputEl, options = {}) {
     currentMatches = [];
   }
 
-  function selectTag(tagName) {
+  function selectItem(name) {
     const text = inputEl.value;
     const cursor = inputEl.selectionStart != null ? inputEl.selectionStart : text.length;
-    const replaced = replaceTagAtCursor(text, cursor, tagName);
+    const replaced = currentMode === 'mention'
+      ? replaceMentionAtCursor(text, cursor, name)
+      : replaceTagAtCursor(text, cursor, name);
 
     inputEl.value = replaced.text;
     inputEl.setSelectionRange(replaced.newCursorPosition, replaced.newCursorPosition);
@@ -276,7 +459,7 @@ export function attachTagAutocomplete(inputEl, options = {}) {
     inputEl.focus();
 
     if (typeof onSelect === 'function') {
-      onSelect(tagName);
+      onSelect(name, currentMode);
     }
   }
 
@@ -289,14 +472,24 @@ export function attachTagAutocomplete(inputEl, options = {}) {
 
     menuEl.innerHTML = currentMatches.map((item, idx) => {
       const isSelected = idx === selectedIndex;
-      const colorClass = getTagColorClass(item.name);
-      return `
-        <div class="tag-autocomplete-item ${isSelected ? 'selected' : ''}" data-index="${idx}" role="option" aria-selected="${isSelected}">
-          <span class="tag-dot ${colorClass}"></span>
-          <span class="tag-name">#${item.name}</span>
-          <span class="tag-count" title="${item.count} tarea(s)">${item.count}</span>
-        </div>
-      `;
+      if (currentMode === 'mention') {
+        return `
+          <div class="tag-autocomplete-item mention-item ${isSelected ? 'selected' : ''}" data-index="${idx}" role="option" aria-selected="${isSelected}">
+            <span class="tag-dot mention-dot"></span>
+            <span class="tag-name">@${item.name}</span>
+            <span class="tag-count" title="${item.count} tarea(s)">${item.count}</span>
+          </div>
+        `;
+      } else {
+        const colorClass = getTagColorClass(item.name);
+        return `
+          <div class="tag-autocomplete-item ${isSelected ? 'selected' : ''}" data-index="${idx}" role="option" aria-selected="${isSelected}">
+            <span class="tag-dot ${colorClass}"></span>
+            <span class="tag-name">#${item.name}</span>
+            <span class="tag-count" title="${item.count} tarea(s)">${item.count}</span>
+          </div>
+        `;
+      }
     }).join('');
 
     menuEl.style.display = 'block';
@@ -309,7 +502,7 @@ export function attachTagAutocomplete(inputEl, options = {}) {
         e.preventDefault(); // Evitar desenfoque del input
         const idx = parseInt(el.dataset.index, 10);
         if (!isNaN(idx) && currentMatches[idx]) {
-          selectTag(currentMatches[idx].name);
+          selectItem(currentMatches[idx].name);
         }
       });
     });
@@ -320,15 +513,23 @@ export function attachTagAutocomplete(inputEl, options = {}) {
     const cursor = inputEl.selectionStart != null ? inputEl.selectionStart : text.length;
     const wordInfo = getWordAtCursor(text, cursor);
 
-    if (!wordInfo.isHashtag) {
+    if (!wordInfo.isHashtag && !wordInfo.isMention) {
       closeMenu();
       return;
     }
 
     const state = typeof getState === 'function' ? getState() : {};
     const envOpt = typeof getEnv === 'function' ? getEnv() : (allEnvs ? 'both' : null);
-    const allTags = getEnvironmentTags(state, envOpt);
-    currentMatches = filterExistingTags(allTags, wordInfo.query, 8);
+
+    if (wordInfo.isHashtag) {
+      currentMode = 'tag';
+      const allTags = getEnvironmentTags(state, envOpt);
+      currentMatches = filterExistingTags(allTags, wordInfo.query, 8);
+    } else {
+      currentMode = 'mention';
+      const allMentions = getEnvironmentMentions(state, envOpt);
+      currentMatches = filterExistingMentions(allMentions, wordInfo.query, 8);
+    }
 
     if (currentMatches.length === 0) {
       closeMenu();
@@ -336,6 +537,7 @@ export function attachTagAutocomplete(inputEl, options = {}) {
     }
 
     ensureMenu();
+    menuEl.setAttribute('aria-label', currentMode === 'tag' ? 'Sugerencias de etiquetas' : 'Sugerencias de personas');
     selectedIndex = 0; // Preseleccionar el primer resultado para aceptar con Enter o Tab
     renderMenu();
   }
@@ -372,7 +574,7 @@ export function attachTagAutocomplete(inputEl, options = {}) {
         if (typeof e.stopImmediatePropagation === 'function') {
           e.stopImmediatePropagation();
         }
-        selectTag(currentMatches[selectedIndex].name);
+        selectItem(currentMatches[selectedIndex].name);
         return;
       }
     }

@@ -574,6 +574,20 @@
   color: #9ea4af;
 }
 
+/* --- Dark Mode: Task Mention Syntax --- */
+[data-theme="dark"] .task-mention-syntax {
+  color: #5eead4;
+  background: rgba(45, 212, 191, 0.18);
+  border: 1px solid rgba(45, 212, 191, 0.35);
+}
+[data-theme="dark"] .task-mention-syntax:hover {
+  background: rgba(45, 212, 191, 0.28);
+  border-color: rgba(45, 212, 191, 0.50);
+}
+[data-theme="dark"] .tag-autocomplete-item .tag-dot.mention-dot {
+  background-color: #2dd4bf;
+}
+
 /* Visible Task ID Badge Dark Theme */
 [data-theme="dark"] .task-id-badge {
   background: rgba(129, 140, 248, 0.15);

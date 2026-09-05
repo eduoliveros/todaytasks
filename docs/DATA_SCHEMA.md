@@ -83,6 +83,7 @@ interface Task {
   displayId?: string;                  // Identificador visible de cara al usuario ('W-1' en Trabajo o 'P-1' en Personal)
   title: string;                       // Título o descripción de la tarea
   tags?: string[];                     // Etiquetas normalizadas en minúsculas extraídas de hashtags (ej. ["frontend", "cliente-x"])
+  mentions?: string[];                 // Referencias a personas en minúsculas extraídas de menciones @Nombre (ej. ["carlos", "maria"])
   notes?: string;                      // Notas y enlaces de la tarea en Markdown ligero (**bold**, *italic*, URLs)
   planned: number;                     // Duración estimada en minutos (entero > 0, def: 30)
   order: number;                       // Posición ordinal en la lista del día (1, 2, 3...)
@@ -135,6 +136,7 @@ interface RecurringTaskRule {
   id: string;                          // 'rec_task_' + ID
   title: string;
   tags?: string[];                     // Etiquetas heredadas al materializar tareas
+  mentions?: string[];                 // Referencias a personas heredadas al materializar tareas
   notes?: string;                      // Notas y enlaces de la plantilla periódica
   planned: number;
   freq: "daily" | "weekly" | "monthly";

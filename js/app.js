@@ -771,6 +771,22 @@ function switchHeaderTab(target){
         this.setTaskSearch(`#${cleanTag}`);
       }
     },
+    filterByMention: function(mention, event) {
+      if (event) {
+        if (typeof event.stopPropagation === 'function') event.stopPropagation();
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+      }
+      if (routerModule && routerModule.getCurrentView && routerModule.getCurrentView() !== 'tasks') {
+        window.location.hash = '#/';
+      }
+      const cleanMention = String(mention).replace(/^@+/, '').trim();
+      const currentQuery = (taskSearchQuery || '').trim();
+      if (currentQuery.toLowerCase() === `@${cleanMention.toLowerCase()}`) {
+        this.clearTaskSearch();
+      } else {
+        this.setTaskSearch(`@${cleanMention}`);
+      }
+    },
     attachTagAutocompleteToEl: function(el) {
       if (!el || el._hasTagAutocomplete) return;
       el._hasTagAutocomplete = true;

@@ -371,7 +371,25 @@ Implementado en la versión `v1.104` ([ADR 013](./adr/013-identificadores-visibl
 
 ---
 
-## 17. Directrices para Nuevos Desarrollos
+## 17. Sistema de Referencias a Personas (@Nombre), Color Único y Autocompletado
+
+Implementado en la versión `v1.105` ([ADR 014](./adr/014-referencias-personas-menciones-autocompletado.md)):
+
+* **Sintaxis de Mención en Tareas:**
+  - Los usuarios pueden mencionar personas escribiendo `@Nombre` directamente en el título de la tarea o regla recurrente (ej: `@Carlos`, `@Maria`, `@ana.lopez`, `@juan-carlos`).
+  - Al renderizarse la tarea, `formatTitleWithTags()` transforma cada `@persona` en un elemento interactivo `<span class="task-mention-syntax">` con color único semántico **Teal / Verde Azulado** (`#0f766e` en claro, `#5eead4` en oscuro), micro-fondo redondeado y borde suave.
+  - Las menciones se extraen automáticamente en minúsculas en la propiedad `task.mentions: string[]` (y `rule.mentions: string[]`), descartando correos electrónicos para no generar falsos positivos.
+* **Autocompletado Dual (`#` y `@`) (`js/app/tag-autocomplete.js`):**
+  - Al escribir `@` en cualquier campo de entrada de título o buscador, se detecta el disparador bajo el cursor y se despliega el menú flotante con las personas existentes en el entorno (`getEnvironmentMentions`).
+  - Filtrado insensible a mayúsculas y minúsculas ordenado por frecuencia de uso, preservando el casing canónico preferente (ej: `@Carlos`).
+  - Soporte completo para navegación por teclado (<kbd>↓</kbd>, <kbd>↑</kbd>, <kbd>Enter</kbd>, <kbd>Tab</kbd>, <kbd>Esc</kbd>) y ratón. Al seleccionar, inserta `@Nombre ` con un espacio de continuación.
+* **Filtrado e Indexación:**
+  - Al hacer clic sobre cualquier mención, se invoca `app.filterByMention(nombre)`, aplicando el filtro de búsqueda inmediatamente sobre el tablero.
+  - `getTaskSearchableText()` indexa las menciones tanto en formato `@nombre` como `nombre` para búsquedas locales y globales (<kbd>Ctrl+K</kbd>).
+
+---
+
+## 18. Directrices para Nuevos Desarrollos
 
 1. **Separación Estricta de Responsabilidades:**
    * Las vistas (`views/`) **no** deben mutar el estado directamente; deben delegar en las acciones (`actions/`).

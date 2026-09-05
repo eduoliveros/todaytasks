@@ -4,6 +4,33 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.105] - 2026-09-06
+
+### Añadido
+- **Sistema de Referencias a Personas (@Nombre), Color Único Teal y Autocompletado Integrado:**
+  - **Sintaxis `@Nombre` en Tareas:**
+    * Inclusión de menciones a personas directamente en los títulos de tareas y reglas periódicas (`@Carlos`, `@Maria`, `@ana.lopez`, `@juan-carlos`).
+    * Extracción automática y normalizada en minúsculas en el modelo de datos (`task.mentions` y `rule.mentions`) mediante `extractMentions(text)` en `js/utils.js`.
+    * Soporte para caracteres latinos (acentos, tildes, eñes), guiones, barras bajas y puntos.
+    * Descarte estricto de direcciones de correo electrónico para prevenir falsos positivos (ej. `usuario@dominio.com` no se extrae ni resalta como mención).
+  - **Paleta Cromática Semántica Única (Teal / Verde Azulado):**
+    * Color único y homogéneo para todas las personas (`.task-mention-syntax`), diferenciándolas claramente de los hashtags `#tag` que alternan entre 9 colores rotativos.
+    * Modo claro: texto `#0f766e`, fondo `rgba(20, 184, 166, 0.10)`, borde `rgba(20, 184, 166, 0.25)`.
+    * Modo oscuro: texto `#5eead4`, fondo `rgba(45, 212, 191, 0.18)`, borde `rgba(45, 212, 191, 0.35)`.
+    * Resaltado seguro de sintaxis en `formatTitleWithTags()` con protección XSS.
+  - **Motor de Autocompletado Dual (`#` y `@`):**
+    * Detección dinámica de disparador en `getWordAtCursor` (`#` para tags, `@` para personas).
+    * Búsqueda insensible a mayúsculas y minúsculas entre todas las personas del entorno con `getEnvironmentMentions(state)`.
+    * Preservación del formato canónico con mayúsculas más frecuente (ej. `@Carlos`) y ordenación por frecuencia de uso.
+    * Inserción asistida de `@Nombre ` con navegación por teclado (<kbd>↓</kbd>, <kbd>↑</kbd>, <kbd>Enter</kbd>, <kbd>Tab</kbd>, <kbd>Esc</kbd>) y ratón.
+  - **Filtrado Rápido e Indexación:**
+    * Clic interactivo en cualquier `@Nombre` para filtrar al instante la vista diaria mediante `app.filterByMention()`.
+    * Indexación completa en `getTaskSearchableText()` para búsqueda rápida tanto por `@persona` como por `persona` en el buscador local y global (<kbd>Ctrl+K</kbd>).
+  - **Pruebas y Documentación:**
+    * 25 pruebas unitarias exhaustivas en `tests/mention_autocomplete.test.js`.
+    * Registro de Decisión Arquitectónica en `docs/adr/014-referencias-personas-menciones-autocompletado.md`.
+    * Actualización del esquema de datos en `docs/DATA_SCHEMA.md` y arquitectura en `docs/ARCHITECTURE.md`.
+
 ## [1.104] - 2026-09-06
 
 ### Añadido

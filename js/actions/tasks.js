@@ -2,7 +2,7 @@
 import {
   getTodayStr, matchesRecurrenceRule, getTaskElapsed, parseDuration,
   DEFAULT_URGENCY, MAX_FEATURED_TASKS, sortTasksByPriority, sortTasksWithManualOrder, URGENCY_LEVELS,
-  fmt, timeToMinutes, extractHashtags
+  fmt, timeToMinutes, extractHashtags, extractMentions
 } from '../utils.js';
 import { assignNextTaskDisplayId } from '../state.js';
 import { t as i18n } from '../i18n.js';
@@ -99,6 +99,7 @@ export function TodayTasksTasks(ctx, helpers){
         displayId,
         title: rule.title,
         tags: Array.isArray(rule.tags) ? [...rule.tags] : extractHashtags(rule.title),
+        mentions: Array.isArray(rule.mentions) ? [...rule.mentions] : extractMentions(rule.title),
         notes: rule.notes || "",
         planned: rule.planned,
         order: maxOrder + 1,
@@ -148,6 +149,7 @@ export function TodayTasksTasks(ctx, helpers){
 
     const cleanNotes = (typeof notes === "string") ? notes : (notes ? String(notes) : "");
     const cleanTags = extractHashtags(title);
+    const cleanMentions = extractMentions(title);
 
     // Verificar límite de 5 destacadas activas en el día
     if (cleanFeatured) {
@@ -168,6 +170,7 @@ export function TodayTasksTasks(ctx, helpers){
         id: ruleId,
         title,
         tags: cleanTags,
+        mentions: cleanMentions,
         notes: cleanNotes || (recurringData && recurringData.notes ? recurringData.notes : ""),
         planned,
         freq: recurringData.freq || "weekly",
@@ -205,6 +208,7 @@ export function TodayTasksTasks(ctx, helpers){
         displayId,
         title,
         tags: cleanTags,
+        mentions: cleanMentions,
         notes: cleanNotes,
         planned,
         order: newOrder,
@@ -753,9 +757,11 @@ export function TodayTasksTasks(ctx, helpers){
         }
       }
       const updatedTags = extractHashtags(title);
+      const updatedMentions = extractMentions(title);
       if (rule) {
         rule.title = title;
         rule.tags = updatedTags;
+        rule.mentions = updatedMentions;
         rule.planned = planned;
         if (taskEdit.notes !== undefined) rule.notes = t.notes;
         if (taskEdit.urgency) rule.urgency = taskEdit.urgency;
@@ -768,6 +774,7 @@ export function TodayTasksTasks(ctx, helpers){
             if (String(dt.ruleId) === String(taskEdit.ruleId)) {
               dt.title = title;
               dt.tags = updatedTags;
+              dt.mentions = updatedMentions;
               dt.planned = planned;
               if (taskEdit.notes !== undefined) dt.notes = t.notes;
               if (taskEdit.urgency) dt.urgency = taskEdit.urgency;
@@ -781,6 +788,7 @@ export function TodayTasksTasks(ctx, helpers){
 
     t.title = title;
     t.tags = extractHashtags(title);
+    t.mentions = extractMentions(title);
     t.planned = planned;
 
     const envKey = state.activeEnv || "work";
@@ -792,6 +800,7 @@ export function TodayTasksTasks(ctx, helpers){
           if (match && match !== t) {
             match.title = t.title;
             match.tags = t.tags;
+            match.mentions = t.mentions;
             match.planned = t.planned;
             match.notes = t.notes;
             match.autoMoveToToday = t.autoMoveToToday;

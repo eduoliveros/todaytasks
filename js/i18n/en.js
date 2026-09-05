@@ -637,7 +637,7 @@ export default {
   'triage.btnRedoTooltip': 'Redo last action (Ctrl+Y)',
   'triage.btnAddTask': '＋ New task',
   'triage.btnAddTaskTooltip': 'Add new task on this date (Key N)',
-  'triage.addTaskPlaceholder': 'New task title (supports #tags)...',
+  'triage.addTaskPlaceholder': 'New task title (supports #tags and @mentions)...',
   'triage.addTaskDurationPlaceholder': '30m',
   'triage.addTaskSubmit': 'Add',
   'triage.addTaskSubmitTooltip': 'Add task to today\'s queue',

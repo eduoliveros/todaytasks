@@ -1257,6 +1257,30 @@ input:focus, button:focus, select:focus { outline: 2px solid var(--accent-pendin
   border-radius: 10px;
 }
 
+/* --- Task Mention Syntax Highlighting (@Nombre) --- */
+.task-mention-syntax {
+  color: #0f766e;
+  background: rgba(20, 184, 166, 0.10);
+  border: 1px solid rgba(20, 184, 166, 0.25);
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 1px 5px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s ease, border-color 0.12s ease, filter 0.12s ease;
+  display: inline-block;
+  line-height: 1.25;
+}
+.task-mention-syntax:hover {
+  background: rgba(20, 184, 166, 0.20);
+  border-color: rgba(20, 184, 166, 0.40);
+  filter: brightness(0.95);
+}
+
+.tag-autocomplete-item .tag-dot.mention-dot {
+  background-color: #0d9488;
+}
+
 footer {
   text-align: center; color: var(--ink-soft); font-size: 12px; padding: 10px 0 30px;
 }

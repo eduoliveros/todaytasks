@@ -637,7 +637,7 @@ export default {
   'triage.btnRedoTooltip': 'Rehacer última acción (Ctrl+Y)',
   'triage.btnAddTask': '＋ Nueva tarea',
   'triage.btnAddTaskTooltip': 'Añadir nueva tarea en esta fecha (Tecla N)',
-  'triage.addTaskPlaceholder': 'Título de la nueva tarea (soporta #etiquetas)...',
+  'triage.addTaskPlaceholder': 'Título de la nueva tarea (soporta #etiquetas y @personas)...',
   'triage.addTaskDurationPlaceholder': '30m',
   'triage.addTaskSubmit': 'Añadir',
   'triage.addTaskSubmitTooltip': 'Añadir tarea a la cola de este día',

@@ -536,6 +536,12 @@ export function getTaskSearchableText(task) {
     parts.push(task.tags.map(tg => `#${tg}`).join(" "));
   }
 
+  // Personas / Menciones
+  if (Array.isArray(task.mentions) && task.mentions.length > 0) {
+    parts.push(task.mentions.join(" "));
+    parts.push(task.mentions.map(m => `@${m}`).join(" "));
+  }
+
   return parts.join(" ");
 }
 
@@ -559,6 +565,29 @@ export function extractHashtags(text) {
     }
   });
   return Array.from(tagsSet);
+}
+
+/**
+ * Extrae referencias a personas únicas en minúsculas de un texto (@Nombre).
+ * Soporta caracteres latinos (acentos, eñes), guiones, puntos y barras bajas.
+ * Ignora correos electrónicos (ej: contacto@empresa.com no se extrae como mención).
+ * Ej: "Reunión con @Maria y @juan-carlos" -> ["maria", "juan-carlos"]
+ */
+export function extractMentions(text) {
+  if (!text || typeof text !== 'string') return [];
+  // Asegura que @ esté al inicio de línea o precedido por un espacio o signo de apertura,
+  // descartando direcciones de email (usuario@dominio.com).
+  const regex = /(^|[\s([{<])@([a-zA-Z0-9_\u00C0-\u017F.-]+)/g;
+  const mentionsSet = new Set();
+  let m;
+  while ((m = regex.exec(text)) !== null) {
+    let mention = m[2];
+    mention = mention.replace(/[-_.,;:!?]+$/, '');
+    if (mention.length > 0) {
+      mentionsSet.add(mention.toLowerCase());
+    }
+  }
+  return Array.from(mentionsSet);
 }
 
 /**
@@ -603,16 +632,17 @@ function escapeHtmlSafe(str) {
 }
 
 /**
- * Formatea el título de una tarea sustituyendo los #tags por elementos <span>
- * con resaltado sutil de sintaxis y manejador de clic para filtrado rápido.
- * Escapa el HTML del título para máxima seguridad contra XSS.
+ * Formatea el título de una tarea sustituyendo los #tags y las @menciones a personas
+ * por elementos <span> interactivos con estilo propio y filtrado rápido al hacer clic.
+ * Escapa estrictamente el HTML del título para máxima seguridad contra XSS.
  */
-export function formatTitleWithTags(title, onClickHandlerName = 'app.filterByTag') {
+export function formatTitleWithTags(title, onClickHandlerName = 'app.filterByTag', onClickMentionHandlerName = 'app.filterByMention') {
   if (!title || typeof title !== 'string') return '';
   const escaped = escapeHtmlSafe(title);
-  const regex = /#([a-zA-Z0-9_\u00C0-\u017F-]+)/g;
 
-  return escaped.replace(regex, (match, tag) => {
+  // 1. Hashtags: #tag
+  const tagRegex = /#([a-zA-Z0-9_\u00C0-\u017F-]+)/g;
+  let formatted = escaped.replace(tagRegex, (match, tag) => {
     const cleanTag = tag.replace(/[-_.]+$/, '');
     if (!cleanTag) return match;
     const colorClass = getTagColorClass(cleanTag);
@@ -621,6 +651,25 @@ export function formatTitleWithTags(title, onClickHandlerName = 'app.filterByTag
       : '';
     return `<span class="task-tag-syntax ${colorClass}" ${clickAttr} title="Filtrar por #${cleanTag.toLowerCase()}">#${cleanTag}</span>`;
   });
+
+  // 2. Menciones a personas: @Nombre (color único, ignorando emails)
+  const mentionRegex = /(^|[\s([{<]|&lt;)@([a-zA-Z0-9_\u00C0-\u017F.-]+)/g;
+  formatted = formatted.replace(mentionRegex, (match, prefix, mention) => {
+    let trailing = '';
+    const trailMatch = mention.match(/[-_.,;:!?]+$/);
+    let cleanMention = mention;
+    if (trailMatch) {
+      trailing = trailMatch[0];
+      cleanMention = mention.slice(0, -trailing.length);
+    }
+    if (!cleanMention) return match;
+    const clickAttr = onClickMentionHandlerName
+      ? `onclick="${onClickMentionHandlerName}('${cleanMention.toLowerCase()}', event)"`
+      : '';
+    return `${prefix}<span class="task-mention-syntax" ${clickAttr} title="Filtrar por @${cleanMention}">@${cleanMention}</span>${trailing}`;
+  });
+
+  return formatted;
 }
 
 export function matchesTaskSearch(task, query) {
@@ -960,6 +1009,7 @@ export const TodayTasksUtils = {
   sortTasksByPriority,
   searchAllTasks,
   extractHashtags,
+  extractMentions,
   TAG_SYNTAX_PALETTE,
   getTagColorClass,
   formatTitleWithTags
