@@ -41,6 +41,7 @@ Cada entorno (`work` y `personal`) aísla por completo sus datos, tareas, reunio
 interface EnvState {
   name: "Trabajo" | "Personal";
   weeklySchedule: WeeklySchedule | null;      // Horario semanal configurado (o null si usa derivado)
+  nextTaskSeq: number;                        // Contador incremental para identificadores visibles de tareas ('W-1', 'P-1') (def: 1)
   days: Record<string, DayState>;             // Días detallados ("YYYY-MM-DD"). Retiene últimos 10 días
   history: HistoryEntry[];                    // Métricas agregadas por día. Retiene últimos 40 días
   recurringMeetings: RecurringMeetingRule[];  // Reglas maestras de reuniones periódicas
@@ -79,6 +80,7 @@ Representa una tarea programada o ejecutada en un día concreto:
 ```typescript
 interface Task {
   id: string;                          // Identificador único (UUID o 'id_N_timestamp')
+  displayId?: string;                  // Identificador visible de cara al usuario ('W-1' en Trabajo o 'P-1' en Personal)
   title: string;                       // Título o descripción de la tarea
   tags?: string[];                     // Etiquetas normalizadas en minúsculas extraídas de hashtags (ej. ["frontend", "cliente-x"])
   notes?: string;                      // Notas y enlaces de la tarea en Markdown ligero (**bold**, *italic*, URLs)

@@ -487,6 +487,18 @@ export function getTaskSearchableText(task) {
   const parts = [];
   if (task.title) parts.push(task.title);
 
+  // Identificador visible de tarea (ej: W-1, P-2, #1, 1)
+  if (task.displayId) {
+    parts.push(task.displayId);
+    parts.push(task.displayId.toLowerCase());
+    const match = task.displayId.match(/^([WP])-(\d+)$/i);
+    if (match) {
+      const num = match[2];
+      parts.push(`#${num}`);
+      parts.push(num);
+    }
+  }
+
   // Urgencia (Hoy, Días, Semana, Más adelante)
   const urgency = task.urgency || DEFAULT_URGENCY;
   if (urgency === 'today') {
@@ -672,6 +684,7 @@ export function searchAllTasks(state, query, options = {}) {
 
           results.push({
             id: task.id,
+            displayId: task.displayId || "",
             title: task.title,
             notes: task.notes || "",
             dateStr,

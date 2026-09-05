@@ -94,6 +94,10 @@ export default {
   'tasks.searchClearAria': 'Clear search',
   'tasks.taskDeletedToast': 'Task "{title}" deleted.',
   'tasks.tasksDeletedCountToast': '{count} tasks deleted.',
+  'tasks.copyIdTooltip': 'Copy ID ({id})',
+  'tasks.copiedIdToast': 'Identifier copied: {id} ✓',
+  'tasks.copyReferenceTooltip': 'Copy reference ({id} + title)',
+  'tasks.copiedReferenceToast': 'Copied: "{ref}" 📋',
 
   // Reuniones Formulario
   'meetings.heading': 'Meetings',
@@ -163,6 +167,7 @@ export default {
   'action.closeTooltip': 'Close (Esc)',
   'action.add': 'Add',
   'action.copy': 'Copy',
+  'action.copied': 'Copied!',
   'action.clear': 'Clear',
 
   // History Undo / Redo

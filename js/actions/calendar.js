@@ -1,6 +1,7 @@
 /* actions/calendar.js — Navegación de fechas, rollover, entorno, copia de tareas, día nuevo */
 import { getTodayStr, formatDateFriendly, addDays, getTaskElapsed } from '../utils.js';
 import { snapshotAndPrune, saveHistoryMetric as historySaveMetric, deleteHistoryMetric as historyDeleteMetric } from '../history.js';
+import { assignNextTaskDisplayId } from '../state.js';
 
 export function TodayTasksCalendar(ctx, helpers){
   const {
@@ -339,9 +340,11 @@ export function TodayTasksCalendar(ctx, helpers){
     if (!Array.isArray(targetDayObj.tasks)) targetDayObj.tasks = [];
 
     const maxOrder = targetDayObj.tasks.reduce((m, t) => Math.max(m, t.order || 0), 0);
+    const displayId = assignNextTaskDisplayId(env, envKey);
 
     const copiedTask = {
       id: newId(),
+      displayId,
       title: originalTask.title,
       planned: originalTask.planned,
       order: maxOrder + 1,

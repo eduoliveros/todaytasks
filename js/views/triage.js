@@ -1173,6 +1173,7 @@ export function TodayTasksTriageView(ctx) {
                           <button type="button" class="triage-star-btn ${task.featured ? 'is-featured' : ''}" onclick="app.toggleTriageTaskStar('${escapeAttr(task.id)}', event)" title="${task.featured ? escapeAttr(t('triage.unstarTooltip')) : escapeAttr(t('triage.starTooltip'))}">
                             ${task.featured ? '⭐' : '☆'}
                           </button>
+                          ${task.displayId ? `<button type="button" class="task-id-badge" onclick="app.copyTaskId('${escapeAttr(task.id)}', event)" title="${escapeAttr(t('tasks.copyIdTooltip', { id: task.displayId }))}">${escapeHtml(task.displayId)}</button>` : ''}
                           <span class="triage-task-title ${task.overflow ? 'is-overflow' : ''}" title="${escapeAttr(task.title)}">
                             ${formatTitleWithTags(task.title, 'app.filterByTag')}
                           </span>
@@ -1198,6 +1199,11 @@ export function TodayTasksTriageView(ctx) {
                               </button>
                             `).join('')}
                           </div>
+
+                          <!-- BOTÓN COPIAR REFERENCIA -->
+                          <button type="button" class="triage-copy-btn icon-btn" onclick="app.copyTaskReference('${escapeAttr(task.id)}', event)" title="${escapeAttr(t('tasks.copyReferenceTooltip', { id: task.displayId || '' }))}">
+                            <svg class="copy-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                          </button>
 
                           <!-- BOTÓN COMPLETAR -->
                           <button type="button" class="triage-complete-btn" onclick="app.completeTriageSingleTask('${escapeAttr(task.id)}', event)" title="${escapeAttr(t('triage.completeTaskTooltip'))}">

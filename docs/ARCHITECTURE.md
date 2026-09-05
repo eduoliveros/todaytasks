@@ -350,7 +350,28 @@ Implementado en la versión `v1.102` ([ADR 011](./adr/011-sistema-etiquetas-tags
 
 ---
 
-## 16. Directrices para Nuevos Desarrollos
+## 16. Identificadores Visibles de Tarea (`W-1`, `P-1`), Copiado Rápido y Búsqueda
+
+Implementado en la versión `v1.104` ([ADR 013](./adr/013-identificadores-visibles-tareas-y-copiado.md)):
+
+* **Identificadores Amigables por Entorno:**
+  - Cada entorno gestiona su propio contador incremental persistente `env.nextTaskSeq: number` (iniciado en 1).
+  - Al crearse una tarea, materializarse una recurrente o duplicarse una tarea, se le asigna `task.displayId`:
+    * Entorno Trabajo: `W-1`, `W-2`, `W-3`...
+    * Entorno Personal: `P-1`, `P-2`, `P-3`...
+  - Los identificadores técnicos internos (`task.id`) continúan siendo UUIDs para garantizar la estabilidad e integridad de referencias distribuidas, mientras que `displayId` es la cara pública para el usuario y sistemas externos (Git commits, Slack, Jira, notas personales).
+  - Si una tarea se traslada entre fechas (`moveTaskToDate` o `autoMoveToToday`), su `displayId` permanece inmutable.
+* **Doble Flujo de Copiado:**
+  1. **Badge en Título (`task-id-badge`):** Un clic sobre la insignia copia **exclusivamente el identificador** (`W-1` o `P-1`), con feedback in-situ (`✓ Copiado`) y notificación toast.
+  2. **Botón de Copia de Referencia (`copy-ref-btn` / `triage-copy-btn`):** Un clic copia el **identificador seguido del título** (`W-1 <título>`, ej: `P-1 Pedir cita para médico`), optimizado para mensajes y commits.
+  - Disponible tanto en las tarjetas del tablero principal (activas y completadas) como en cada fila de la vista de **Triaje** (`#/triage`).
+* **Búsqueda e Indexación Multidía:**
+  - `getTaskSearchableText()` indexa automáticamente `task.displayId` en mayúsculas, minúsculas y formato numérico directo (`W-1`, `w-1`, `#1`, `1`).
+  - Permite localizar instantáneamente tareas tanto en el filtro del día (`/`) como en el buscador global (<kbd>Ctrl+K</kbd>), mostrando la insignia `[W-1]` en los resultados.
+
+---
+
+## 17. Directrices para Nuevos Desarrollos
 
 1. **Separación Estricta de Responsabilidades:**
    * Las vistas (`views/`) **no** deben mutar el estado directamente; deben delegar en las acciones (`actions/`).

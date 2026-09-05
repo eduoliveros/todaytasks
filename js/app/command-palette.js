@@ -244,6 +244,7 @@ export function TodayTasksCommandPalette(ctx) {
              onclick="app.commandPaletteOnItemClick(${idx}, event)">
           <div class="global-search-item-info">
             <span class="global-search-status-dot status-${item.status}">${statusIcon}</span>
+            ${item.displayId ? `<span class="task-id-badge task-id-badge-sm">${escapeHtml(item.displayId)}</span>` : ''}
             <span class="global-search-item-title ${item.status === 'completed' ? 'line-through' : ''}">${escapeHtml(item.title)}</span>
             <span class="global-search-urgency-badge urgency-${item.urgency}">
               ${urgencyIcon} ${escapeHtml(urgencyLabel)}

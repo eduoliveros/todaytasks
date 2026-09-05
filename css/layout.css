@@ -149,6 +149,57 @@ input:focus, button:focus, select:focus { outline: 2px solid var(--accent-pendin
   font-size: 15px; padding: 2px 5px; border-radius: 4px;
 }
 .icon-btn:hover { background: var(--line); color: var(--ink); }
+
+/* Visible Task ID Badge */
+.task-id-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2.5px 6px;
+  margin-right: 6px;
+  border-radius: 4px;
+  background: rgba(79, 70, 229, 0.08);
+  color: #4F46E5;
+  border: 1px solid rgba(79, 70, 229, 0.25);
+  cursor: pointer;
+  vertical-align: middle;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.task-id-badge:hover {
+  background: rgba(79, 70, 229, 0.18);
+  border-color: rgba(79, 70, 229, 0.5);
+  transform: translateY(-1px);
+}
+.task-id-badge.copied {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #059669 !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+.task-id-badge-sm {
+  font-size: 10px;
+  padding: 1px 4px;
+  margin-right: 4px;
+}
+.copy-ref-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+.copy-ref-btn.copied {
+  color: #10B981 !important;
+  transform: scale(1.15);
+}
+.copy-icon-svg {
+  display: block;
+  pointer-events: none;
+}
 .empty { color: var(--ink-soft); font-size: 13px; padding: 6px 2px; }
 
 .task-item { position: relative; padding-left: 14px; }

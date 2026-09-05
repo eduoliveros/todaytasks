@@ -213,7 +213,7 @@ export function TodayTasksTasksView(ctx){
           <div style="display:flex;align-items:flex-start;gap:6px;flex:1;min-width:0;">
             ${dragHandle}
             <div style="flex:1;min-width:0;">
-              <div class="title">${formatTitleWithTags(task.title, 'app.filterByTag')}</div>
+              <div class="title">${task.displayId ? `<button type="button" class="task-id-badge" onclick="app.copyTaskId('${escapeAttr(task.id)}', event)" title="${escapeAttr(t('tasks.copyIdTooltip', { id: task.displayId }))}">${escapeHtml(task.displayId)}</button>` : ''}${formatTitleWithTags(task.title, 'app.filterByTag')}</div>
               <div class="time-range ${trClass}">
                 ${urgencyPill}
                 ${startAfterPill}
@@ -233,6 +233,7 @@ export function TodayTasksTasksView(ctx){
           </div>
           <div style="display:flex;align-items:center;gap:2px;">
             <button class="icon-btn star-btn ${task.featured ? 'is-featured' : ''}" title="${escapeAttr(task.featured ? t('tasks.unstarTooltip') : t('tasks.starTooltip'))}" onclick="app.toggleTaskFeatured('${escapeAttr(task.id)}')">${task.featured ? '⭐' : '☆'}</button>
+            <button type="button" class="icon-btn copy-ref-btn" title="${escapeAttr(t('tasks.copyReferenceTooltip', { id: task.displayId || '' }))}" onclick="app.copyTaskReference('${escapeAttr(task.id)}', event)"><svg class="copy-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
             <button class="icon-btn" title="${escapeAttr(t('tasks.btnSetStartAfterTooltip'))}" onclick="app.openStartAfterPopover('${escapeAttr(task.id)}', event)">⏰</button>
             ${!task.isRecurring && task.autoMoveToToday ? `
               <button class="icon-btn" title="${escapeAttr(t('tasks.btnMoveDayTooltip'))}" onclick="app.openCopyTaskModal('${escapeAttr(task.id)}')">➡️</button>
@@ -311,7 +312,7 @@ export function TodayTasksTasksView(ctx){
       <div class="item task-item completed-search-item" id="task-item-${escapeAttr(task.id)}" data-task-id="${escapeAttr(task.id)}">
         <div class="top">
           <div style="flex:1;min-width:0;">
-            <div class="title completed-title">${formatTitleWithTags(task.title, 'app.filterByTag')}</div>
+            <div class="title completed-title">${task.displayId ? `<button type="button" class="task-id-badge" onclick="app.copyTaskId('${escapeAttr(task.id)}', event)" title="${escapeAttr(t('tasks.copyIdTooltip', { id: task.displayId }))}">${escapeHtml(task.displayId)}</button>` : ''}${formatTitleWithTags(task.title, 'app.filterByTag')}</div>
             <div class="time-range tr-meeting">
               <span class="tag">${t('tasks.tagCompleted')}</span>
               ${task.completedAt !== null && task.completedAt !== undefined ? fmt(task.completedAt) : ''}
@@ -325,6 +326,7 @@ export function TodayTasksTasksView(ctx){
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:2px;">
+            <button type="button" class="icon-btn copy-ref-btn" title="${escapeAttr(t('tasks.copyReferenceTooltip', { id: task.displayId || '' }))}" onclick="app.copyTaskReference('${escapeAttr(task.id)}', event)"><svg class="copy-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
             <button class="icon-btn" title="${escapeAttr(t('tasks.btnCopyDayTooltip'))}" onclick="app.openCopyTaskModal('${escapeAttr(task.id)}')">📋</button>
             <button class="icon-btn" title="${escapeAttr(t('action.delete'))}" onclick="app.deleteTask('${escapeAttr(task.id)}')">✕</button>
           </div>

@@ -22,6 +22,7 @@ export function defaultEnvState(envKey) {
   return {
     name: isPersonal ? "Personal" : "Trabajo",
     weeklySchedule: null,
+    nextTaskSeq: 1,
     days: {
       [today]: defaultDayState(envKey)
     },
@@ -130,6 +131,9 @@ export function wrapState(rawState) {
         if (env.activeInterruption === undefined) env.activeInterruption = null;
         if (!("weeklySchedule" in env)) env.weeklySchedule = null;
 
+        const prefix = key === "personal" ? "P-" : "W-";
+        let maxSeqFound = 0;
+
         // Ensure each day in env.days is guarded
         Object.keys(env.days).forEach(d => {
           const dayObj = env.days[d];
@@ -151,12 +155,40 @@ export function wrapState(rawState) {
                   if (t.manualOrder === undefined) {
                     t.manualOrder = null;
                   }
+                  if (typeof t.displayId === "string") {
+                    const match = t.displayId.match(/^[WP]-(\d+)$/);
+                    if (match) {
+                      const num = parseInt(match[1], 10);
+                      if (!isNaN(num) && num > maxSeqFound) {
+                        maxSeqFound = num;
+                      }
+                    }
+                  }
                 }
               });
             }
             if (!Array.isArray(dayObj.interruptions)) dayObj.interruptions = [];
             if (typeof dayObj.planningMode !== "boolean") dayObj.planningMode = false;
             if (!Array.isArray(dayObj._deletedIds)) dayObj._deletedIds = [];
+          }
+        });
+
+        // Asegurar contador secuencial de tareas
+        if (typeof env.nextTaskSeq !== "number" || env.nextTaskSeq <= 0) {
+          env.nextTaskSeq = Math.max(1, maxSeqFound + 1);
+        } else if (env.nextTaskSeq <= maxSeqFound) {
+          env.nextTaskSeq = maxSeqFound + 1;
+        }
+
+        // Asignar displayId a tareas preexistentes que no lo tengan
+        Object.keys(env.days).forEach(d => {
+          const dayObj = env.days[d];
+          if (dayObj && Array.isArray(dayObj.tasks)) {
+            dayObj.tasks.forEach(t => {
+              if (t && typeof t === "object" && !t.displayId) {
+                t.displayId = `${prefix}${env.nextTaskSeq++}`;
+              }
+            });
           }
         });
       }
@@ -319,6 +351,20 @@ export function loadState(storageKey) {
     console.error("No se pudo leer el estado guardado", e);
     return defaultState();
   }
+}
+
+/**
+ * Genera y avanza el siguiente identificador legible de tarea para un entorno ('W-1', 'P-1').
+ * @param {object} env - Objeto de estado del entorno (work o personal)
+ * @param {string} envKey - Clave del entorno ('work' | 'personal')
+ * @returns {string} Identificador formateado (ej. 'W-1', 'P-2')
+ */
+export function assignNextTaskDisplayId(env, envKey) {
+  if (!env) return "";
+  const prefix = envKey === "personal" ? "P-" : "W-";
+  const seq = (typeof env.nextTaskSeq === "number" && env.nextTaskSeq >= 1) ? env.nextTaskSeq : 1;
+  env.nextTaskSeq = seq + 1;
+  return `${prefix}${seq}`;
 }
 
 export const TodayTasksState = { defaultState, wrapState, loadState, defaultDayState, defaultEnvState };

@@ -4,6 +4,30 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.104] - 2026-09-06
+
+### Añadido
+- **Identificadores Visibles de Tarea (`W-1`, `P-1`), Copiado Rápido y Búsqueda Multidía:**
+  - **Identificadores Amigables por Entorno:** Asignación secuencial e inmutable de identificadores públicos legibles (`displayId`) para tareas:
+    * `W-1`, `W-2`, `W-3`... para el entorno de Trabajo.
+    * `P-1`, `P-2`, `P-3`... para el entorno Personal.
+    * Los IDs técnicos internos persisten como UUIDs para estabilidad del sistema y sincronización offline-first.
+    * Migración retroactiva automática en `wrapState()` para tareas preexistentes y continuidad del contador `env.nextTaskSeq`.
+  - **Doble Modalidad de Copiado al Portapapeles (Tablero y Triaje):**
+    * **Badge en Título (`.task-id-badge`):** Al hacer clic sobre el badge, copia **únicamente el ID** (`"W-1"` o `"P-1"`) con feedback in-situ `✓ ¡Copiado!` y toast de confirmación.
+    * **Botón de Copia de Referencia (`.copy-ref-btn` / `.triage-copy-btn`):** Situado a la derecha en la tarjeta o fila de triaje, copia el **identificador seguido del título** (`"${task.displayId} ${task.title}"`, por ejemplo `"P-1 Pedir cita para médico"` o `"W-1 Revisar código"`).
+    * Ambas acciones disponibles con idéntico comportamiento en el tablero principal (tareas activas y completadas) y en cada fila de la vista de Triaje (`#/triage`).
+  - **Indexación y Búsqueda:**
+    * Indexación de `task.displayId` en `getTaskSearchableText()` permitiendo búsquedas por `W-1`, `w-1`, `#1` o `1` tanto en el filtro local del día (`/`) como en el buscador global (<kbd>Ctrl+K</kbd>).
+    * Visualización de la insignia `.task-id-badge` en los resultados de la paleta de comandos.
+  - **Estilos y Accesibilidad:**
+    * Tipografía monoespaciada suave, esquinas redondeadas y contraste accesible con soporte total para temas claro y oscuro (`css/layout.css`, `css/triage.css`, `css/theme-dark.css`).
+    * Claves i18n en español e inglés (`tasks.copyIdTooltip`, `tasks.copiedIdToast`, `tasks.copyReferenceTooltip`, `tasks.copiedReferenceToast`).
+  - **Pruebas y Documentación:**
+    * Suite de pruebas unitarias dedicada en `tests/task_display_id.test.js`.
+    * Registro de Decisión Arquitectónica en `docs/adr/013-identificadores-visibles-tareas-y-copiado.md`.
+    * Actualización de especificación en `docs/DATA_SCHEMA.md` y `docs/ARCHITECTURE.md`.
+
 ## [1.103] - 2026-09-05
 
 ### Añadido

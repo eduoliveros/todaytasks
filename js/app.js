@@ -495,8 +495,86 @@ function switchHeaderTab(target){
     }
   }
 
+  function findTaskById(taskId) {
+    if (!taskId) return null;
+    const strId = String(taskId);
+    if (state && Array.isArray(state.tasks)) {
+      const found = state.tasks.find(t => String(t.id) === strId);
+      if (found) return found;
+    }
+    const envKey = state ? (state.activeEnv || 'work') : 'work';
+    const env = state && state.environments ? (state.environments[envKey] || state.environments.work) : null;
+    if (env && env.days) {
+      if (state.selectedDate && env.days[state.selectedDate] && Array.isArray(env.days[state.selectedDate].tasks)) {
+        const found = env.days[state.selectedDate].tasks.find(t => String(t.id) === strId);
+        if (found) return found;
+      }
+      for (const d of Object.keys(env.days)) {
+        const dayTasks = env.days[d] && env.days[d].tasks;
+        if (Array.isArray(dayTasks)) {
+          const found = dayTasks.find(t => String(t.id) === strId);
+          if (found) return found;
+        }
+      }
+    }
+    return null;
+  }
+
+  function copyTaskId(taskId, event) {
+    if (event) {
+      if (typeof event.stopPropagation === 'function') event.stopPropagation();
+      if (typeof event.preventDefault === 'function') event.preventDefault();
+    }
+    const task = findTaskById(taskId);
+    if (!task || !task.displayId) return;
+    const textToCopy = task.displayId;
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard.writeText(textToCopy).catch(() => {});
+    }
+
+    const targetEl = (event && event.currentTarget) ? event.currentTarget : null;
+    if (targetEl) {
+      const originalText = targetEl.textContent;
+      targetEl.classList.add('copied');
+      targetEl.textContent = '✓ ' + (t('action.copied') || '¡Copiado!');
+      setTimeout(() => {
+        targetEl.textContent = originalText;
+        targetEl.classList.remove('copied');
+      }, 1200);
+    }
+
+    showToast(t('tasks.copiedIdToast', { id: textToCopy }) || `Identificador copiado: ${textToCopy} ✓`);
+  }
+
+  function copyTaskReference(taskId, event) {
+    if (event) {
+      if (typeof event.stopPropagation === 'function') event.stopPropagation();
+      if (typeof event.preventDefault === 'function') event.preventDefault();
+    }
+    const task = findTaskById(taskId);
+    if (!task) return;
+    const refText = task.displayId ? `${task.displayId} ${task.title}` : task.title;
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard.writeText(refText).catch(() => {});
+    }
+
+    const targetEl = (event && event.currentTarget) ? event.currentTarget : null;
+    if (targetEl) {
+      targetEl.classList.add('copied');
+      setTimeout(() => {
+        targetEl.classList.remove('copied');
+      }, 1200);
+    }
+
+    showToast(t('tasks.copiedReferenceToast', { ref: refText }) || `Copiado: "${refText}" 📋`);
+  }
+
   /* ---------------- Public API (window.app & export app) ---------------- */
   export const app = {
+    copyTaskId,
+    copyTaskReference,
     undo: () => undoModule.undo(),
     redo: () => undoModule.redo(),
     togglePlanningMode,

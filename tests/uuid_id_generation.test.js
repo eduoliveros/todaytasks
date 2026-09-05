@@ -146,15 +146,16 @@ describe('Robust ID generation with crypto.randomUUID() & UUID support', () => {
 
     const cloud = TodayTasksCloud(ctx);
 
+    const testDate = '2026-09-06';
     const localState = {
       activeEnv: 'work',
-      selectedDate: '2026-08-26',
+      selectedDate: testDate,
       nextId: 10,
       environments: {
         work: {
           name: 'Trabajo',
           days: {
-            '2026-08-26': {
+            [testDate]: {
               tasks: [{ id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d', title: 'Tarea Local', planned: 30, order: 1, status: 'pending' }],
               meetings: [{ id: 'f1e2d3c4-b5a6-4987-8765-43210fedcba9', title: 'Reunión Local', start: 600, end: 630 }],
               interruptions: []
@@ -170,13 +171,13 @@ describe('Robust ID generation with crypto.randomUUID() & UUID support', () => {
 
     const remoteState = {
       activeEnv: 'work',
-      selectedDate: '2026-08-26',
+      selectedDate: testDate,
       nextId: 12,
       environments: {
         work: {
           name: 'Trabajo',
           days: {
-            '2026-08-26': {
+            [testDate]: {
               tasks: [{ id: '98765432-10fe-4dcba-9876-543210fedcba', title: 'Tarea Remota', planned: 60, order: 1, status: 'pending' }],
               meetings: [],
               interruptions: []
@@ -191,9 +192,9 @@ describe('Robust ID generation with crypto.randomUUID() & UUID support', () => {
     };
 
     const merged = cloud.mergeStates(localState, remoteState);
-    expect(merged.environments.work.days['2026-08-26'].tasks.length).toBe(2);
-    expect(merged.environments.work.days['2026-08-26'].meetings.length).toBe(1);
-    expect(merged.environments.work.days['2026-08-26'].meetings[0].id).toBe('f1e2d3c4-b5a6-4987-8765-43210fedcba9');
+    expect(merged.environments.work.days[testDate].tasks.length).toBe(2);
+    expect(merged.environments.work.days[testDate].meetings.length).toBe(1);
+    expect(merged.environments.work.days[testDate].meetings[0].id).toBe('f1e2d3c4-b5a6-4987-8765-43210fedcba9');
     expect(typeof merged.nextId).toBe('number');
     expect(merged.nextId).toBeGreaterThanOrEqual(12);
   });

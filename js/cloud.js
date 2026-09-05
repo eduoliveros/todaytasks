@@ -1,6 +1,6 @@
 /* cloud.js — Firebase Cloud sync, autenticación y backup/restore */
 import { escapeHtml, escapeAttr, showToast } from './ui.js';
-import { defaultState, wrapState } from './state.js';
+import { defaultState, wrapState, assignNextTaskDisplayId } from './state.js';
 import { snapshotAndPrune } from './history.js';
 import TodayTasksConfig from './config.js';
 import { t } from './i18n.js';
@@ -310,6 +310,49 @@ export function TodayTasksCloud(ctx){
           }
         });
         mergedEnv.recurringTasks = Array.from(recTasksMap.values());
+
+        // Resolver colisiones de displayId en tareas agregadas desde local (offline)
+        // La nube (remoteEnv) es canónica: las tareas remotas conservan su displayId.
+        // Si una tarea que viene de local tiene un displayId que ya existe en el estado remoto
+        // o colisiona con otra tarea ya procesada en el merge, se le asigna el siguiente displayId disponible.
+        mergedEnv.nextTaskSeq = Math.max(1, remoteEnv.nextTaskSeq || 1, localEnv.nextTaskSeq || 1);
+        const assignedDisplayIds = new Set();
+
+        // 1. Registrar primero todos los displayIds canónicos provenientes del estado remoto
+        Object.values(mergedEnv.days || {}).forEach(day => {
+          (day.tasks || []).forEach(t => {
+            if (t && t.id != null && allRemoteTaskIds.has(String(t.id)) && t.displayId) {
+              assignedDisplayIds.add(String(t.displayId));
+            }
+          });
+        });
+
+        // 2. Para tareas provenientes de local (no estaban en remote): reasignar si colisionan
+        Object.values(mergedEnv.days || {}).forEach(day => {
+          (day.tasks || []).forEach(t => {
+            if (!t) return;
+            const isLocalNewTask = t.id == null || !allRemoteTaskIds.has(String(t.id));
+            if (isLocalNewTask) {
+              if (!t.displayId || assignedDisplayIds.has(String(t.displayId))) {
+                t.displayId = assignNextTaskDisplayId(mergedEnv, envKey);
+              }
+              assignedDisplayIds.add(String(t.displayId));
+            }
+          });
+        });
+
+        // 3. Garantizar que nextTaskSeq supere el número máximo de cualquier displayId presente
+        let maxSeq = mergedEnv.nextTaskSeq || 1;
+        assignedDisplayIds.forEach(idStr => {
+          const match = idStr.match(/^[WP]-(\d+)$/);
+          if (match) {
+            const num = parseInt(match[1], 10);
+            if (!isNaN(num) && num >= maxSeq) {
+              maxSeq = num + 1;
+            }
+          }
+        });
+        mergedEnv.nextTaskSeq = maxSeq;
       });
 
       let maxId = 0;

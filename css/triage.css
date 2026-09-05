@@ -550,6 +550,33 @@ body[data-theme="dark"] .triage-task-title.is-overflow {
   color: #FFFFFF;
 }
 
+.triage-copy-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  padding: 3px 5px;
+  border-radius: 4px;
+  color: var(--ink-soft);
+  transition: all 0.12s;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.triage-copy-btn:hover {
+  color: var(--primary, #4F46E5);
+  border-color: var(--primary, #4F46E5);
+  background: rgba(79, 70, 229, 0.08);
+  transform: scale(1.05);
+}
+
+.triage-copy-btn.copied {
+  color: #10B981 !important;
+  border-color: #10B981 !important;
+  background: rgba(16, 185, 129, 0.12) !important;
+}
+
 .triage-complete-btn {
   background: transparent;
   border: 1px solid rgba(16, 185, 129, 0.35);

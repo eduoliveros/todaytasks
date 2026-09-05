@@ -574,5 +574,36 @@
   color: #9ea4af;
 }
 
+/* Visible Task ID Badge Dark Theme */
+[data-theme="dark"] .task-id-badge {
+  background: rgba(129, 140, 248, 0.15);
+  color: #a5b4fc;
+  border-color: rgba(129, 140, 248, 0.3);
+}
+[data-theme="dark"] .task-id-badge:hover {
+  background: rgba(129, 140, 248, 0.25);
+  border-color: rgba(129, 140, 248, 0.5);
+}
+[data-theme="dark"] .task-id-badge.copied {
+  background: rgba(52, 211, 153, 0.2) !important;
+  color: #6ee7b7 !important;
+  border-color: rgba(52, 211, 153, 0.4) !important;
+}
+
+[data-theme="dark"] .triage-copy-btn {
+  border-color: #334155;
+  color: #94A3B8;
+}
+[data-theme="dark"] .triage-copy-btn:hover {
+  color: #a5b4fc;
+  border-color: #818cf8;
+  background: rgba(129, 140, 248, 0.15);
+}
+[data-theme="dark"] .triage-copy-btn.copied {
+  color: #34d399 !important;
+  border-color: #34d399 !important;
+  background: rgba(52, 211, 153, 0.2) !important;
+}
+
 
 

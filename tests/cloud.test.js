@@ -600,6 +600,41 @@ describe('TodayTasksCloud - detección de origen y sincronización', () => {
     expect(modeLabel.textContent).toContain('nube');
     expect(modeLabel.textContent).not.toContain('local');
   });
+
+  it('resuelve colisiones de displayId cuando una tarea creada offline coincide con una remota', () => {
+    const local = defaultState();
+    const remote = defaultState();
+
+    // Ambos dispositivos crearon una tarea en paralelo con displayId 'W-1'
+    remote.environments.work.nextTaskSeq = 2;
+    remote.environments.work.days['2026-09-06'] = {
+      tasks: [
+        { id: 'uuid-remote-1', title: 'Tarea creada en la nube', displayId: 'W-1' }
+      ]
+    };
+
+    local.environments.work.nextTaskSeq = 2;
+    local.environments.work.days['2026-09-06'] = {
+      tasks: [
+        { id: 'uuid-local-1', title: 'Tarea creada offline', displayId: 'W-1' }
+      ]
+    };
+
+    const merged = cloud.mergeStates(local, remote);
+    const tasks = merged.environments.work.days['2026-09-06'].tasks;
+
+    expect(tasks).toHaveLength(2);
+
+    const remoteTask = tasks.find(t => t.id === 'uuid-remote-1');
+    const offlineTask = tasks.find(t => t.id === 'uuid-local-1');
+
+    // La tarea remota conserva 'W-1'
+    expect(remoteTask.displayId).toBe('W-1');
+    // La tarea local/offline se reasigna al siguiente identificador disponible ('W-2')
+    expect(offlineTask.displayId).toBe('W-2');
+    // El contador de secuencia se actualiza coherentemente (al menos 3)
+    expect(merged.environments.work.nextTaskSeq).toBe(3);
+  });
 });
 
 

@@ -4,6 +4,7 @@ import {
   DEFAULT_URGENCY, MAX_FEATURED_TASKS, sortTasksByPriority, sortTasksWithManualOrder, URGENCY_LEVELS,
   fmt, timeToMinutes, extractHashtags
 } from '../utils.js';
+import { assignNextTaskDisplayId } from '../state.js';
 import { t as i18n } from '../i18n.js';
 
 export function TodayTasksTasks(ctx, helpers){
@@ -92,8 +93,10 @@ export function TodayTasksTasks(ctx, helpers){
       if (alreadyExists) return;
 
       const maxOrder = dayObj.tasks.reduce((m, t) => Math.max(m, t.order || 0), 0);
+      const displayId = assignNextTaskDisplayId(env, envKey);
       dayObj.tasks.push({
         id: newId(),
+        displayId,
         title: rule.title,
         tags: Array.isArray(rule.tags) ? [...rule.tags] : extractHashtags(rule.title),
         notes: rule.notes || "",
@@ -194,8 +197,12 @@ export function TodayTasksTasks(ctx, helpers){
         const maxOrder = state.tasks.reduce((m,t)=>Math.max(m,t.order), 0);
         newOrder = maxOrder + 1;
       }
+      const envKey = state.activeEnv || "work";
+      const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+      const displayId = assignNextTaskDisplayId(env, envKey);
       state.tasks.push({
         id: newId(),
+        displayId,
         title,
         tags: cleanTags,
         notes: cleanNotes,
