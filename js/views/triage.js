@@ -280,11 +280,73 @@ export function TodayTasksTriageView(ctx) {
           autoMoveToToday: defaults.autoMoveToToday !== false,
           urgency: defaults.urgency || DEFAULT_URGENCY,
           featured: !!defaults.featured,
-          startAfter: defaults.startAfter || ''
+          startAfter: defaults.startAfter || '',
+          isRecurring: !!defaults.isRecurring,
+          recurringFreq: defaults.recurringFreq || (defaults.recurring && defaults.recurring.freq) || 'weekly',
+          recurringInterval: defaults.recurringInterval || (defaults.recurring && defaults.recurring.interval) || 1,
+          recurringDaysOfWeek: defaults.recurringDaysOfWeek || (defaults.recurring && defaults.recurring.daysOfWeek) || [1],
+          recurringEndDate: defaults.recurringEndDate || (defaults.recurring && defaults.recurring.endDate) || null
         });
       }
       renderTriageView();
     }
+  }
+
+  function toggleTriageEditRecurring(checked) {
+    const taskEdit = (getTaskEdit ? getTaskEdit() : (ctx.getTaskEdit ? ctx.getTaskEdit() : null));
+    if (taskEdit) {
+      taskEdit.isRecurring = !!checked;
+      if (!taskEdit.recurringDaysOfWeek || taskEdit.recurringDaysOfWeek.length === 0) {
+        taskEdit.recurringDaysOfWeek = [1];
+      }
+      if (!taskEdit.recurringFreq) {
+        taskEdit.recurringFreq = 'weekly';
+      }
+      if (!taskEdit.recurringInterval) {
+        taskEdit.recurringInterval = 1;
+      }
+    }
+    const opts = document.getElementById('triageRecurringOptions');
+    if (opts) opts.style.display = checked ? 'block' : 'none';
+    const autoMoveWrap = document.getElementById('triageAutoMoveOptionWrap');
+    if (autoMoveWrap) autoMoveWrap.style.display = checked ? 'none' : 'block';
+  }
+
+  function onTriageRecurrenceFreqChange(freq) {
+    const taskEdit = (getTaskEdit ? getTaskEdit() : (ctx.getTaskEdit ? ctx.getTaskEdit() : null));
+    if (taskEdit) taskEdit.recurringFreq = freq;
+    const daysWrap = document.getElementById('triageRecDaysWrap');
+    const unitLabel = document.getElementById('triageRecIntervalUnit');
+    if (daysWrap) daysWrap.style.display = freq === 'daily' ? 'none' : 'block';
+    if (unitLabel) unitLabel.textContent = freq === 'daily' ? t('recurrence.unitDays') : t('recurrence.unitWeeks');
+  }
+
+  function toggleTriageRecurrenceDay(dayNum) {
+    const taskEdit = (getTaskEdit ? getTaskEdit() : (ctx.getTaskEdit ? ctx.getTaskEdit() : null));
+    if (!taskEdit) return;
+    const d = parseInt(dayNum, 10);
+    let days = Array.isArray(taskEdit.recurringDaysOfWeek) ? [...taskEdit.recurringDaysOfWeek] : [1];
+    if (days.includes(d)) {
+      if (days.length > 1) {
+        days = days.filter(x => x !== d);
+      }
+    } else {
+      days.push(d);
+      days.sort((a, b) => a - b);
+    }
+    taskEdit.recurringDaysOfWeek = days;
+    const buttons = document.querySelectorAll('#triageRecDaysRow .rec-pop-day-btn');
+    buttons.forEach(btn => {
+      const bDay = parseInt(btn.getAttribute('data-day'), 10);
+      btn.classList.toggle('active', days.includes(bDay));
+    });
+  }
+
+  function clearTriageRecurrenceEndDate() {
+    const input = document.getElementById('triageRecEndDate');
+    if (input) input.value = '';
+    const taskEdit = (getTaskEdit ? getTaskEdit() : (ctx.getTaskEdit ? ctx.getTaskEdit() : null));
+    if (taskEdit) taskEdit.recurringEndDate = null;
   }
 
   function submitTriageNewTask(title, durationStr, urgency = DEFAULT_URGENCY, featured = false, startAfter = null, notes = '', autoMoveToToday = true) {
@@ -996,8 +1058,56 @@ export function TodayTasksTriageView(ctx) {
                   <div id="task-edit-notes-preview-${escapeAttr(taskEdit.id)}" class="task-edit-notes-preview task-note-content" style="display:none;margin-top:6px;"></div>
                 </div>
 
-                ${!taskEdit.ruleId ? `
-                <div style="margin-top:6px;margin-bottom:6px;">
+                ${isNewTask ? `
+                <div class="triage-edit-recurring-section" style="margin-top:8px;margin-bottom:8px;padding-top:8px;border-top:1px solid var(--border,#e2e8f0);">
+                  <label style="font-size:0.85rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;color:var(--ink);font-weight:500;">
+                    <input type="checkbox" id="triageEditIsRecurringCb" ${taskEdit.isRecurring ? 'checked' : ''} onchange="app.toggleTriageEditRecurring(this.checked)">
+                    <span>${t('tasks.recurringLabel')}</span>
+                  </label>
+
+                  <div id="triageRecurringOptions" class="recurring-form-options-panel" style="display:${taskEdit.isRecurring ? 'block' : 'none'};margin-top:8px;">
+                    <div class="rec-form-grid">
+                      <div class="rec-form-field">
+                        <label class="rec-form-label" for="triageRecFreq">${t('recurrence.freqLabel')}</label>
+                        <select id="triageRecFreq" class="rec-form-select" onchange="app.onTriageRecurrenceFreqChange(this.value)">
+                          <option value="weekly" ${(taskEdit.recurringFreq || 'weekly') === 'weekly' ? 'selected' : ''}>${t('recurrence.freqWeekly')}</option>
+                          <option value="daily" ${taskEdit.recurringFreq === 'daily' ? 'selected' : ''}>${t('recurrence.freqDaily')}</option>
+                        </select>
+                      </div>
+                      <div class="rec-form-field">
+                        <label class="rec-form-label" for="triageRecInterval">${t('recurrence.repeatEvery')}</label>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                          <input type="number" id="triageRecInterval" value="${escapeAttr(taskEdit.recurringInterval || 1)}" min="1" max="99" class="rec-form-input-number" style="width:65px;" oninput="app.updateTaskEditField('recurringInterval', parseInt(this.value,10)||1)">
+                          <span id="triageRecIntervalUnit" class="rec-form-unit-label">${(taskEdit.recurringFreq || 'weekly') === 'daily' ? t('recurrence.unitDays') : t('recurrence.unitWeeks')}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div id="triageRecDaysWrap" class="rec-form-field" style="margin-top:8px;display:${(taskEdit.recurringFreq || 'weekly') === 'daily' ? 'none' : 'block'};">
+                      <label class="rec-form-label">${t('recurrence.daysLabel')}</label>
+                      <div class="rec-pop-days-row" id="triageRecDaysRow">
+                        ${[1,2,3,4,5,6,7].map(d => {
+                          const isSelected = (taskEdit.recurringDaysOfWeek || [1]).includes(d);
+                          const dayLetters = t.dayLetters ? t.dayLetters() : ['', 'L', 'M', 'X', 'J', 'V', 'S', 'D'];
+                          const dayNames = t.days ? t.days() : ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+                          const title = d === 7 ? dayNames[0] : dayNames[d];
+                          return `<button type="button" class="rec-pop-day-btn ${isSelected ? 'active' : ''}" data-day="${d}" onclick="app.toggleTriageRecurrenceDay(${d})" title="${escapeAttr(title)}">${dayLetters[d]}</button>`;
+                        }).join('')}
+                      </div>
+                    </div>
+
+                    <div class="rec-form-field" style="margin-top:8px;">
+                      <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <label class="rec-form-label" for="triageRecEndDate">${t('recurrence.endDateLabel')}</label>
+                        <button type="button" class="rec-pop-link-btn" onclick="app.clearTriageRecurrenceEndDate()">${t('recurrence.noLimitBtn')}</button>
+                      </div>
+                      <input type="date" id="triageRecEndDate" value="${escapeAttr(taskEdit.recurringEndDate || '')}" class="rec-form-input-date" style="width:100%;" onchange="app.updateTaskEditField('recurringEndDate', this.value || null)">
+                    </div>
+                  </div>
+                </div>` : ''}
+
+                ${(!taskEdit.ruleId && !taskEdit.isRecurring) ? `
+                <div id="triageAutoMoveOptionWrap" style="margin-top:6px;margin-bottom:6px;">
                   <label style="font-size:0.82rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;color:var(--ink);">
                     <input type="checkbox" id="triageEditAutoMoveCb" ${taskEdit.autoMoveToToday ? 'checked' : ''} onchange="app.updateTaskEditField('autoMoveToToday', this.checked)"> ${t('tasks.autoMoveCheckbox')}
                   </label>
@@ -1426,6 +1536,10 @@ export function TodayTasksTriageView(ctx) {
     canTriageRedo,
     submitTriageNewTask,
     openTriageNewTaskModal,
+    toggleTriageEditRecurring,
+    onTriageRecurrenceFreqChange,
+    toggleTriageRecurrenceDay,
+    clearTriageRecurrenceEndDate,
     openMobileAddModal,
     closeMobileAddModal,
     handleTriageAddBarSubmit,

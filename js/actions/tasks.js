@@ -624,7 +624,12 @@ export function TodayTasksTasks(ctx, helpers){
       autoMoveToToday: defaults.autoMoveToToday !== false,
       urgency: defaults.urgency || DEFAULT_URGENCY,
       featured: !!defaults.featured,
-      startAfter: defaults.startAfter || ''
+      startAfter: defaults.startAfter || '',
+      isRecurring: !!defaults.isRecurring,
+      recurringFreq: defaults.recurringFreq || (defaults.recurring && defaults.recurring.freq) || 'weekly',
+      recurringInterval: defaults.recurringInterval || (defaults.recurring && defaults.recurring.interval) || 1,
+      recurringDaysOfWeek: defaults.recurringDaysOfWeek || (defaults.recurring && defaults.recurring.daysOfWeek) || [1],
+      recurringEndDate: defaults.recurringEndDate || (defaults.recurring && defaults.recurring.endDate) || null
     });
     renderAll();
   }
@@ -643,12 +648,32 @@ export function TodayTasksTasks(ctx, helpers){
         }
         return;
       }
+      let recurringData = null;
+      if (taskEdit.isRecurring) {
+        const freq = taskEdit.recurringFreq || 'weekly';
+        const interval = parseInt(taskEdit.recurringInterval, 10) || 1;
+        const daysOfWeek = Array.isArray(taskEdit.recurringDaysOfWeek) && taskEdit.recurringDaysOfWeek.length > 0
+          ? taskEdit.recurringDaysOfWeek
+          : [1];
+        const endDate = taskEdit.recurringEndDate || null;
+        recurringData = {
+          isRecurring: true,
+          freq,
+          interval,
+          daysOfWeek,
+          endDate,
+          urgency: taskEdit.urgency || DEFAULT_URGENCY,
+          featured: !!taskEdit.featured,
+          startAfter: taskEdit.startAfter || null,
+          notes: taskEdit.notes || ''
+        };
+      }
       addTask(
         title,
         taskEdit.duration,
         false,
-        null,
-        taskEdit.autoMoveToToday !== false,
+        recurringData,
+        taskEdit.isRecurring ? false : (taskEdit.autoMoveToToday !== false),
         taskEdit.urgency || DEFAULT_URGENCY,
         !!taskEdit.featured,
         taskEdit.startAfter || null,

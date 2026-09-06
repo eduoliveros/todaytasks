@@ -4,6 +4,24 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.106] - 2026-09-06
+
+### Añadido
+- **Configuración de Recurrencia en Triaje al Crear Tareas:**
+  - **Paridad y Reutilización en Creación de Tareas:**
+    * Inclusión de la opción de recurrencia mediante el checkbox *"Repetir tarea 🔁"* dentro del modal unificado de triaje (`#triageTaskEditModal`), disponible desde el botón de cabecera `＋ Nueva tarea`, el atajo de teclado <kbd>N</kbd> y el botón flotante (FAB) móvil.
+    * Reutilización directa del sistema de estilos `.rec-pop-*` y `.recurring-form-options-panel` de `css/modals.css`, manteniendo total coherencia visual con el formulario y el popover de la página principal.
+    * Despliegue de selectores de frecuencia (semanal / diaria), intervalo numérico con unidad adaptativa (*semana(s)* / *día(s)*), botones interactivos de selección de días de la semana (`L`, `M`, `X`, `J`, `V`, `S`, `D`) y fecha límite opcional con botón *"Sin límite"*.
+    * Ocultación automática de la opción *"Auto-mover a hoy"* cuando la tarea se define como recurrente, alineado con las reglas periódicas del sistema.
+  - **Integración con el Motor Central de Recurrencias y Undo:**
+    * Paso dinámico de `recurringData` en `actionsModule.saveEditTask('__new__')` hacia `addTask()`.
+    * Materialización automática de la primera ocurrencia en el día seleccionado y creación de la regla maestra en `state.recurringTasks`.
+    * Soporte completo e inmediato para revertir la creación de la tarea recurrente mediante `triageUndo()` (<kbd>Ctrl+Z</kbd> o botón Deshacer de la cabecera).
+  - **Pruebas y Documentación:**
+    * Suite de pruebas unitarias en `tests/triage_recurring_task.test.js`.
+    * Registro de Decisión Arquitectónica en `docs/adr/015-triaje-creacion-tareas-recurrentes.md`.
+    * Actualización de arquitectura en `docs/ARCHITECTURE.md`.
+
 ## [1.105] - 2026-09-06
 
 ### Añadido
