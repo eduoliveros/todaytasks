@@ -2,7 +2,8 @@
 import {
   nowMinutes, fmt, fmtDur, fmtRemaining, getTaskElapsed, getTodayStr, matchesSearchQuery,
   matchesTaskSearch, formatRecurrenceRule,
-  URGENCY_LEVELS, DEFAULT_URGENCY, formatTitleWithTags
+  URGENCY_LEVELS, DEFAULT_URGENCY, formatTitleWithTags,
+  findTaskInEnvironment, isTaskBlocked, getTaskBlockingDetails, getTasksBlockedBy
 } from '../utils.js';
 import { escapeHtml, escapeAttr, renderNotesMarkdown } from '../ui.js';
 import { t } from '../i18n.js';
@@ -13,6 +14,25 @@ export function TodayTasksTasksView(ctx){
 
   function isTaskNotesExpanded(id) {
     return expandedNotesTasks.has(String(id));
+  }
+
+  function renderEditDependencyChips(deps, env) {
+    if (!deps || deps.length === 0) {
+      return `<span class="empty" style="font-size:0.8rem;">${escapeHtml(t('tasks.noDependencies'))}</span>`;
+    }
+    return deps.map(depId => {
+      const found = env ? findTaskInEnvironment(env, depId) : null;
+      const dTask = found ? found.task : null;
+      const dId = dTask?.displayId || depId;
+      const dTitle = dTask?.title || depId;
+      return `
+        <span class="dep-chip" data-dep-id="${escapeAttr(depId)}">
+          <span class="task-id-badge">${escapeHtml(dId)}</span>
+          <span class="dep-chip-title">${escapeHtml(dTitle)}</span>
+          <button type="button" class="dep-chip-remove" onclick="app.removeEditTaskDependency('${escapeAttr(depId)}')" title="${escapeAttr(t('action.delete'))}">✕</button>
+        </span>
+      `;
+    }).join('');
   }
 
   function toggleTaskNotes(id, event) {
@@ -45,6 +65,9 @@ export function TodayTasksTasksView(ctx){
     const urgencyInfo = URGENCY_LEVELS[urgencyKey] || URGENCY_LEVELS[DEFAULT_URGENCY];
 
     const isOverflow = (schedule && schedule.overflowIds) ? schedule.overflowIds.has(task.id) : false;
+    const state = typeof getState === 'function' ? getState() : {};
+    const envKey = state.activeEnv || 'work';
+    const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
 
     if(taskEdit && String(taskEdit.id) === String(task.id)){
       const isRecurring = task.isRecurring || !!taskEdit.ruleId;
@@ -53,7 +76,7 @@ export function TodayTasksTasksView(ctx){
       return `
       <div class="item task-item editing ${taskEdit.featured ? 'featured-task' : ''} ${isOverflow ? 'task-overflow' : ''}" id="task-item-${escapeAttr(task.id)}">
         <div class="row">
-          <input type="text" id="task-edit-title-${escapeAttr(task.id)}" value="${escapeAttr(taskEdit.title)}" onfocus="if(app.attachTagAutocompleteToEl) app.attachTagAutocompleteToEl(this)" oninput="app.updateTaskEditField('title', this.value)" placeholder="${escapeAttr(t('tasks.inputTitlePlaceholder'))}">
+          <input type="text" id="task-edit-title-${escapeAttr(task.id)}" value="${escapeAttr(taskEdit.title)}" onfocus="if(window.app && window.app.attachTagAutocompleteToEl) window.app.attachTagAutocompleteToEl(this)" oninput="app.updateTaskEditField('title', this.value)" placeholder="${escapeAttr(t('tasks.inputTitlePlaceholder'))}">
         </div>
         <div class="row" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
           <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">${t('tasks.editPlanned')}<br><input type="text" value="${escapeAttr(taskEdit.duration)}" placeholder="${escapeAttr(t('tasks.editDurationPlaceholder'))}" style="width:95px;margin-top:4px;" oninput="app.updateTaskEditField('duration', this.value)"></label>
@@ -89,6 +112,17 @@ export function TodayTasksTasksView(ctx){
           </div>
           <textarea id="task-edit-notes-${escapeAttr(task.id)}" class="task-edit-notes-textarea" rows="2" style="width:100%;box-sizing:border-box;" placeholder="${escapeAttr(t('tasks.notesPlaceholder'))}" oninput="app.updateTaskEditField('notes', this.value)">${escapeHtml(taskEdit.notes || '')}</textarea>
           <div id="task-edit-notes-preview-${escapeAttr(task.id)}" class="task-edit-notes-preview task-note-content" style="display:none;"></div>
+        </div>
+        <div class="task-form-dependencies-row" style="margin-bottom:10px;">
+          <div class="task-form-dependencies-header">
+            <span class="task-form-dependencies-label" style="font-size:0.82rem;color:var(--text-muted);font-weight:500;display:inline-flex;align-items:center;gap:4px;">
+              <span>🔒</span> ${t('tasks.dependenciesLabel')}
+            </span>
+            <button type="button" class="btn-add-dependency" onclick="app.openDependencySelector('${escapeAttr(task.id)}', 'task-edit')">${t('tasks.addDependencyBtn')}</button>
+          </div>
+          <div class="task-dependencies-chips-list" id="taskEditDependenciesList-${escapeAttr(task.id)}">
+            ${renderEditDependencyChips(taskEdit.dependsOn || [], env)}
+          </div>
         </div>
         ${!isRecurring ? `
         <div style="margin-bottom:8px;">
@@ -207,8 +241,49 @@ export function TodayTasksTasksView(ctx){
 
     const overflowClass = isOverflow ? 'task-overflow' : '';
 
+    const isBlocked = env ? isTaskBlocked(task, env) : false;
+    const blockingDetails = env ? getTaskBlockingDetails(task, env) : [];
+    const uncompletedBlockers = blockingDetails.filter(d => !d.isCompleted);
+    const blockedByList = env ? getTasksBlockedBy(task.id, env) : [];
+
+    let depBadges = '';
+    if (isBlocked) {
+      const firstBlocker = uncompletedBlockers[0];
+      const extraCount = uncompletedBlockers.length > 1 ? ` (+${uncompletedBlockers.length - 1})` : '';
+      const blockerDisplay = firstBlocker?.displayId || '...';
+      const blockerDate = firstBlocker?.dateStr || '';
+      const blockingListStr = uncompletedBlockers.map(b => (b.displayId ? `[${b.displayId}] ` : '') + b.title).join(', ');
+      depBadges += `
+        <button type="button" class="task-dep-badge blocked" onclick="event.stopPropagation(); app.goToTask('${escapeAttr(firstBlocker?.id || '')}', '${escapeAttr(blockerDate)}')" title="${escapeAttr(t('tasks.blockedTooltip'))}: ${escapeAttr(blockingListStr)}">
+          🔒 ${escapeHtml(t('tasks.blockedBadge'))} (${escapeHtml(blockerDisplay)}${escapeHtml(extraCount)})
+        </button>
+      `;
+    } else if (task.dependsOn && task.dependsOn.length > 0) {
+      const firstDepFound = env ? findTaskInEnvironment(env, task.dependsOn[0]) : null;
+      const depDisplay = firstDepFound?.task?.displayId || '...';
+      depBadges += `
+        <span class="task-dep-badge unlocked" title="${escapeAttr(t('tasks.badgeUnlocked'))}">
+          🔓 ${escapeHtml(depDisplay)} ✓
+        </span>
+      `;
+    }
+    if (blockedByList.length > 0) {
+      const firstTarget = blockedByList[0];
+      const extraBlocked = blockedByList.length > 1 ? ` (+${blockedByList.length - 1})` : '';
+      const targetDisplay = firstTarget.displayId || '...';
+      const targetDate = firstTarget.dateStr || '';
+      const blockedListStr = blockedByList.map(b => (b.displayId ? `[${b.displayId}] ` : '') + b.title).join(', ');
+      depBadges += `
+        <button type="button" class="task-dep-badge blocking" onclick="event.stopPropagation(); app.goToTask('${escapeAttr(firstTarget.id)}', '${escapeAttr(targetDate)}')" title="${escapeAttr(t('tasks.blocksTooltip', { id: targetDisplay, title: blockedListStr }))}">
+          ⛓️ ${escapeHtml(targetDisplay)}${escapeHtml(extraBlocked)}
+        </button>
+      `;
+    }
+
+    const blockedClass = isBlocked ? 'is-blocked' : '';
+
     return `
-      <div class="item task-item ${task.status} ${featuredClass} ${overflowClass}" id="task-item-${escapeAttr(task.id)}" data-task-id="${escapeAttr(task.id)}" ondblclick="app.startEditTask('${escapeAttr(task.id)}')" ${dragAttrs}>
+      <div class="item task-item ${task.status} ${featuredClass} ${overflowClass} ${blockedClass}" id="task-item-${escapeAttr(task.id)}" data-task-id="${escapeAttr(task.id)}" ondblclick="app.startEditTask('${escapeAttr(task.id)}')" ${dragAttrs}>
         <div class="top">
           <div style="display:flex;align-items:flex-start;gap:6px;flex:1;min-width:0;">
             ${dragHandle}
@@ -218,6 +293,7 @@ export function TodayTasksTasksView(ctx){
                 ${urgencyPill}
                 ${startAfterPill}
                 ${notesPill}
+                ${depBadges}
                 <span class="tag">${startTag}</span>${startVal}<span class="arrow">→</span><span class="tag">${endTag}</span>${endVal}
                 ${remainingChip}
                 ${recurringTag}
@@ -247,7 +323,7 @@ export function TodayTasksTasksView(ctx){
         ${notesPanel}
         <div class="task-actions">
           ${task.status==="pending" ? `
-            <button class="btn small run" onclick="app.startTask('${escapeAttr(task.id)}')">${t('tasks.btnStart')}</button>
+            <button class="btn small run ${isBlocked ? 'is-blocked' : ''}" onclick="app.startTask('${escapeAttr(task.id)}')">${isBlocked ? '🔒 ' : ''}${t('tasks.btnStart')}</button>
             <button class="btn small done" onclick="app.completeTask('${escapeAttr(task.id)}')">${t('tasks.btnComplete')}</button>
             <div class="order-controls">
               <button class="icon-btn" title="${escapeAttr(t('tasks.btnMoveUp'))}" data-action="move-up" data-task-id="${escapeAttr(task.id)}" onclick="app.moveTask('${escapeAttr(task.id)}',-1,event)">▲</button>
@@ -260,7 +336,7 @@ export function TodayTasksTasksView(ctx){
             <button class="btn small done" onclick="app.completeTask('${escapeAttr(task.id)}')">${t('tasks.btnComplete')}</button>
           ` : ""}
           ${task.status==="paused" ? `
-            <button class="btn small run" onclick="app.resumeTask('${escapeAttr(task.id)}')">${t('tasks.btnResume')}</button>
+            <button class="btn small run ${isBlocked ? 'is-blocked' : ''}" onclick="app.resumeTask('${escapeAttr(task.id)}')">${isBlocked ? '🔒 ' : ''}${t('tasks.btnResume')}</button>
             <button class="btn small done" onclick="app.completeTask('${escapeAttr(task.id)}')">${t('tasks.btnComplete')}</button>
             <div class="order-controls">
               <button class="icon-btn" title="${escapeAttr(t('tasks.btnMoveUp'))}" data-action="move-up" data-task-id="${escapeAttr(task.id)}" onclick="app.moveTask('${escapeAttr(task.id)}',-1,event)">▲</button>

@@ -1,3 +1,5 @@
+import { findTaskInEnvironment } from './utils.js';
+
 export function computeMeetingClusters(meetings, autoBreakEnabled = true) {
   if (!meetings || meetings.length === 0) return [];
   const sorted = [...meetings].sort((a, b) => a.start - b.start || a.end - b.end);
@@ -51,6 +53,49 @@ export function blockedIntervals(state) {
   return merged;
 }
 
+function getTaskDependencyStatus(t, state, env, segmentsByTask, remainingQueue) {
+  if (!Array.isArray(t.dependsOn) || t.dependsOn.length === 0) {
+    return { isBlockedExternally: false, isWaitingSameDay: false, minStartFromDeps: 0 };
+  }
+
+  let isBlockedExternally = false;
+  let isWaitingSameDay = false;
+  let minStartFromDeps = 0;
+
+  for (const depId of t.dependsOn) {
+    const strDepId = String(depId);
+    const sameDayTask = (state.tasks || []).find(x => x && String(x.id) === strDepId);
+
+    if (sameDayTask) {
+      if (sameDayTask.status === 'completed') {
+        continue;
+      }
+      if (segmentsByTask[strDepId] && segmentsByTask[strDepId].length > 0) {
+        const lastSeg = segmentsByTask[strDepId][segmentsByTask[strDepId].length - 1];
+        minStartFromDeps = Math.max(minStartFromDeps, lastSeg.end);
+      } else {
+        const isStillInQueue = remainingQueue.some(x => x && String(x.id) === strDepId);
+        if (isStillInQueue) {
+          isWaitingSameDay = true;
+        } else {
+          isBlockedExternally = true;
+        }
+      }
+    } else {
+      const found = findTaskInEnvironment(env, strDepId);
+      if (found && found.task) {
+        if (found.task.status === 'completed') {
+          continue;
+        } else {
+          isBlockedExternally = true;
+        }
+      }
+    }
+  }
+
+  return { isBlockedExternally, isWaitingSameDay, minStartFromDeps };
+}
+
 export function computeSchedule(state, nowMinutes) {
   const now = typeof nowMinutes === "function" ? nowMinutes() : nowMinutes;
   const autoBreakEnabled = state.autoBreakEnabled !== false;
@@ -101,6 +146,8 @@ export function computeSchedule(state, nowMinutes) {
     .sort((a, b) => a.order - b.order);
 
   const remainingQueue = [...queue];
+  const envKey = state.activeEnv || 'work';
+  const env = (state.environments && state.environments[envKey]) ? state.environments[envKey] : null;
 
   while (remainingQueue.length > 0) {
     if (cursor >= 24 * 60) {
@@ -115,25 +162,40 @@ export function computeSchedule(state, nowMinutes) {
       continue;
     }
 
-    // Buscar la siguiente tarea elegible (sin startAfter o con startAfter <= cursor)
-    const eligibleIndex = remainingQueue.findIndex(t => {
-      if (t.startAfter === null || t.startAfter === undefined || isNaN(t.startAfter)) return true;
-      return t.startAfter <= cursor;
-    });
+    // Buscar la siguiente tarea elegible considerando dependencias y startAfter
+    let eligibleIndex = -1;
+    let minCandidateStart = Infinity;
+
+    for (let i = 0; i < remainingQueue.length; i++) {
+      const t = remainingQueue[i];
+      const depStatus = getTaskDependencyStatus(t, state, env, segmentsByTask, remainingQueue);
+
+      if (depStatus.isBlockedExternally) {
+        continue;
+      }
+      if (depStatus.isWaitingSameDay) {
+        continue;
+      }
+
+      const taskStartAfter = (t.startAfter !== null && t.startAfter !== undefined && !isNaN(t.startAfter)) ? t.startAfter : 0;
+      const effectiveStart = Math.max(taskStartAfter, depStatus.minStartFromDeps);
+
+      if (effectiveStart <= cursor) {
+        eligibleIndex = i;
+        break;
+      } else if (effectiveStart > cursor) {
+        if (effectiveStart < minCandidateStart) {
+          minCandidateStart = effectiveStart;
+        }
+      }
+    }
 
     if (eligibleIndex === -1) {
-      // Ninguna tarea puede empezar en el cursor actual.
-      // Avanzar cursor a la hora mínima startAfter de las tareas restantes.
-      const validStarts = remainingQueue
-        .map(t => (t.startAfter !== null && t.startAfter !== undefined && !isNaN(t.startAfter)) ? t.startAfter : Infinity)
-        .filter(st => st > cursor);
-      const minStartAfter = validStarts.length > 0 ? Math.min(...validStarts) : Infinity;
-
-      if (minStartAfter === Infinity || minStartAfter <= cursor) {
+      if (minCandidateStart === Infinity || minCandidateStart <= cursor || minCandidateStart >= 24 * 60) {
         remainingQueue.forEach(t => overflowIds.add(t.id));
         break;
       }
-      cursor = minStartAfter;
+      cursor = minCandidateStart;
       continuousWork = 0;
       lastPlacedEnd = cursor;
       continue;

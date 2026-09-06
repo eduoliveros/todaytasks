@@ -100,6 +100,7 @@ interface Task {
   autoMoveToToday?: boolean;           // Si true, se traslada automáticamente a hoy si queda pendiente
   isRecurring?: boolean;               // true si fue materializada desde una RecurringTaskRule
   ruleId?: string | null;              // ID de la regla de recurrencia de origen
+  dependsOn?: string[];                // IDs de tareas de las que depende directamente esta tarea (deben estar completadas antes de ejecutar)
 }
 ```
 

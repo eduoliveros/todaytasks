@@ -2,7 +2,8 @@
 import {
   nowMinutes, fmt, fmtDur, getTaskElapsed, getTodayStr, formatDateFriendly,
   getDayOfWeek, getNextWorkingDays, URGENCY_LEVELS, DEFAULT_URGENCY, MAX_FEATURED_TASKS,
-  formatRecurrenceRule, formatTitleWithTags
+  formatRecurrenceRule, formatTitleWithTags,
+  findTaskInEnvironment, isTaskBlocked, getTaskBlockingDetails, getTasksBlockedBy
 } from '../utils.js';
 import { escapeHtml, escapeAttr, showToast } from '../ui.js';
 import { computeSchedule } from '../scheduler.js';
@@ -10,6 +11,25 @@ import { t } from '../i18n.js';
 
 export function TodayTasksTriageView(ctx) {
   const { getState, saveState, renderAll, smartRender, actionsModule, getTaskEdit } = ctx;
+
+  function renderTriageDependencyChips(deps, env) {
+    if (!deps || deps.length === 0) {
+      return `<span class="empty" style="font-size:0.8rem;">${escapeHtml(t('tasks.noDependencies'))}</span>`;
+    }
+    return deps.map(depId => {
+      const found = env ? findTaskInEnvironment(env, depId) : null;
+      const dTask = found ? found.task : null;
+      const dId = dTask?.displayId || depId;
+      const dTitle = dTask?.title || depId;
+      return `
+        <span class="dep-chip" data-dep-id="${escapeAttr(depId)}">
+          <span class="task-id-badge">${escapeHtml(dId)}</span>
+          <span class="dep-chip-title">${escapeHtml(dTitle)}</span>
+          <button type="button" class="dep-chip-remove" onclick="app.removeEditTaskDependency('${escapeAttr(depId)}')" title="${escapeAttr(t('action.delete'))}">✕</button>
+        </span>
+      `;
+    }).join('');
+  }
 
   let currentSort = 'urgency'; // 'urgency' | 'viability' | 'duration' | 'featured'
   const collapsedGroups = new Set(['days', 'week', 'later']); // por defecto 'today' abierto, resto plegados
@@ -981,6 +1001,8 @@ export function TodayTasksTriageView(ctx) {
       modalHost.id = 'triageEditModalHost';
       document.body.appendChild(modalHost);
     }
+    const envKey = state.activeEnv || 'work';
+    const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
     if (modalHost) {
       if (taskEdit && taskEdit.id) {
         const isNewTask = taskEdit.isNew || String(taskEdit.id) === '__new__';
@@ -1006,7 +1028,7 @@ export function TodayTasksTriageView(ctx) {
               <div class="triage-edit-modal-body">
                 <div style="margin-bottom:12px;">
                   <label class="triage-edit-label">${t('triage.editLabelTitle')}</label>
-                  <input type="text" id="triageEditTitleInput" class="triage-edit-input" value="${escapeAttr(taskEdit.title)}" onfocus="if(app.attachTagAutocompleteToEl) app.attachTagAutocompleteToEl(this)" oninput="app.updateTaskEditField('title', this.value)" onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); app.saveEditTask('${escapeAttr(taskEdit.id)}'); }" placeholder="${escapeAttr(t('tasks.inputTitlePlaceholder'))}">
+                  <input type="text" id="triageEditTitleInput" class="triage-edit-input" value="${escapeAttr(taskEdit.title)}" onfocus="if(window.app && window.app.attachTagAutocompleteToEl) window.app.attachTagAutocompleteToEl(this)" oninput="app.updateTaskEditField('title', this.value)" onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); app.saveEditTask('${escapeAttr(taskEdit.id)}'); }" placeholder="${escapeAttr(t('tasks.inputTitlePlaceholder'))}">
                 </div>
 
                 <div class="triage-edit-time-grid">
@@ -1112,6 +1134,18 @@ export function TodayTasksTriageView(ctx) {
                     <input type="checkbox" id="triageEditAutoMoveCb" ${taskEdit.autoMoveToToday ? 'checked' : ''} onchange="app.updateTaskEditField('autoMoveToToday', this.checked)"> ${t('tasks.autoMoveCheckbox')}
                   </label>
                 </div>` : ''}
+
+                <div class="task-form-dependencies-row" style="margin-top:8px;margin-bottom:8px;padding-top:8px;border-top:1px solid var(--border,#e2e8f0);">
+                  <div class="task-form-dependencies-header">
+                    <span class="task-form-dependencies-label" style="font-size:0.85rem;font-weight:500;color:var(--ink);display:inline-flex;align-items:center;gap:5px;">
+                      <span>🔒</span> ${t('tasks.dependenciesLabel')}
+                    </span>
+                    <button type="button" class="btn-add-dependency" onclick="app.openDependencySelector('${escapeAttr(taskEdit.id)}', 'triage')">${t('tasks.addDependencyBtn')}</button>
+                  </div>
+                  <div class="task-dependencies-chips-list" id="triageTaskDependenciesList">
+                    ${renderTriageDependencyChips(taskEdit.dependsOn || [], env)}
+                  </div>
+                </div>
               </div>
 
               <div class="triage-edit-modal-footer">
@@ -1267,8 +1301,47 @@ export function TodayTasksTriageView(ctx) {
                       ? `<span class="drag-handle triage-drag-handle" title="${escapeAttr(t('triage.touchDragHint'))}" onmousedown="app.armTaskDrag()">⠿</span>`
                       : '';
 
+                    const isBlocked = env ? isTaskBlocked(task, env) : false;
+                    const blockingDetails = env ? getTaskBlockingDetails(task, env) : [];
+                    const uncompletedBlockers = blockingDetails.filter(d => !d.isCompleted);
+                    const blockedByList = env ? getTasksBlockedBy(task.id, env) : [];
+
+                    let triageDepBadges = '';
+                    if (isBlocked) {
+                      const firstBlocker = uncompletedBlockers[0];
+                      const extraCount = uncompletedBlockers.length > 1 ? ` (+${uncompletedBlockers.length - 1})` : '';
+                      const blockerDisplay = firstBlocker?.displayId || '...';
+                      const blockerDate = firstBlocker?.dateStr || '';
+                      const blockingListStr = uncompletedBlockers.map(b => (b.displayId ? `[${b.displayId}] ` : '') + b.title).join(', ');
+                      triageDepBadges += `
+                        <button type="button" class="task-dep-badge blocked" onclick="event.stopPropagation(); app.goToTask('${escapeAttr(firstBlocker?.id || '')}', '${escapeAttr(blockerDate)}')" title="${escapeAttr(t('tasks.blockedTooltip'))}: ${escapeAttr(blockingListStr)}">
+                          🔒 ${escapeHtml(t('tasks.blockedBadge'))} (${escapeHtml(blockerDisplay)}${escapeHtml(extraCount)})
+                        </button>
+                      `;
+                    } else if (task.dependsOn && task.dependsOn.length > 0) {
+                      const firstDepFound = env ? findTaskInEnvironment(env, task.dependsOn[0]) : null;
+                      const depDisplay = firstDepFound?.task?.displayId || '...';
+                      triageDepBadges += `
+                        <span class="task-dep-badge unlocked" title="${escapeAttr(t('tasks.badgeUnlocked'))}">
+                          🔓 ${escapeHtml(depDisplay)} ✓
+                        </span>
+                      `;
+                    }
+                    if (blockedByList.length > 0) {
+                      const firstTarget = blockedByList[0];
+                      const extraBlocked = blockedByList.length > 1 ? ` (+${blockedByList.length - 1})` : '';
+                      const targetDisplay = firstTarget.displayId || '...';
+                      const targetDate = firstTarget.dateStr || '';
+                      const blockedListStr = blockedByList.map(b => (b.displayId ? `[${b.displayId}] ` : '') + b.title).join(', ');
+                      triageDepBadges += `
+                        <button type="button" class="task-dep-badge blocking" onclick="event.stopPropagation(); app.goToTask('${escapeAttr(firstTarget.id)}', '${escapeAttr(targetDate)}')" title="${escapeAttr(t('tasks.blocksTooltip', { id: targetDisplay, title: blockedListStr }))}">
+                          ⛓️ ${escapeHtml(targetDisplay)}${escapeHtml(extraBlocked)}
+                        </button>
+                      `;
+                    }
+
                     return `
-                      <div class="triage-task-row ${isSelected ? 'selected' : ''} ${isRecurring ? 'is-recurring' : ''}" data-task-id="${escapeAttr(task.id)}"
+                      <div class="triage-task-row ${isSelected ? 'selected' : ''} ${isRecurring ? 'is-recurring' : ''} ${isBlocked ? 'is-blocked' : ''}" data-task-id="${escapeAttr(task.id)}"
                            onclick="app.handleTriageRowClick('${escapeAttr(task.id)}', event)"
                            ondblclick="app.handleTriageRowDblClick('${escapeAttr(task.id)}', event)"
                            ontouchstart="app.handleTriageTouchStart('${escapeAttr(task.id)}', event)"
@@ -1284,6 +1357,7 @@ export function TodayTasksTriageView(ctx) {
                             ${task.featured ? '⭐' : '☆'}
                           </button>
                           ${task.displayId ? `<button type="button" class="task-id-badge" onclick="app.copyTaskId('${escapeAttr(task.id)}', event)" title="${escapeAttr(t('tasks.copyIdTooltip', { id: task.displayId }))}">${escapeHtml(task.displayId)}</button>` : ''}
+                          ${triageDepBadges}
                           <span class="triage-task-title ${task.overflow ? 'is-overflow' : ''}" title="${escapeAttr(task.title)}">
                             ${formatTitleWithTags(task.title, 'app.filterByTag')}
                           </span>

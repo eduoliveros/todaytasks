@@ -172,6 +172,10 @@ export function TodayTasksActions(ctx) {
     deleteTasks:            tasks.deleteTasks,
     deleteRecurringTaskInstance: tasks.deleteRecurringTaskInstance,
     applyAutoOrder:         tasks.applyAutoOrder,
+    addDependency:          tasks.addDependency,
+    removeDependency:       tasks.removeDependency,
+    addEditTaskDependency:  tasks.addEditTaskDependency,
+    removeEditTaskDependency: tasks.removeEditTaskDependency,
     showFeaturedLimitModal,
     /* Drag & Drop */
     armTaskDrag:            dragdrop.armTaskDrag,

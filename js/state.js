@@ -155,6 +155,11 @@ export function wrapState(rawState) {
                   if (t.manualOrder === undefined) {
                     t.manualOrder = null;
                   }
+                  if (!Array.isArray(t.dependsOn)) {
+                    t.dependsOn = [];
+                  } else {
+                    t.dependsOn = t.dependsOn.filter(id => typeof id === "string" && id && id !== t.id);
+                  }
                   if (typeof t.displayId === "string") {
                     const match = t.displayId.match(/^[WP]-(\d+)$/);
                     if (match) {

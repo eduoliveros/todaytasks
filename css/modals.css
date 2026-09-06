@@ -934,3 +934,170 @@
   animation: taskFocusPulse 1.2s ease-out 2;
   border-color: var(--primary) !important;
 }
+
+/* --- Dependency Selector Modal --- */
+#dependencySelectorModal {
+  z-index: 100010;
+}
+
+#blockedTaskConfirmModal {
+  z-index: 100020;
+}
+
+.dependency-selector-box {
+  max-width: 520px;
+  width: 90%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  gap: 12px;
+}
+
+.dependency-selector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dependency-selector-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dependency-selector-search-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.dependency-selector-search-wrap input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 12px 9px 36px;
+  border-radius: 8px;
+  border: 1px solid var(--line, #e5e7eb);
+  background: var(--bg-body, #f9fafb);
+  font-size: 13px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dependency-selector-search-wrap input:focus {
+  border-color: var(--primary, #4f46e5);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+.dependency-selector-search-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--ink-soft, #6b7280);
+  pointer-events: none;
+}
+
+.dependency-selector-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin: 0;
+}
+
+.dependency-selector-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line, #e5e7eb);
+  background: var(--panel, #ffffff);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
+  user-select: none;
+}
+
+.dependency-selector-item:hover {
+  background: var(--bg-body, #f9fafb);
+  border-color: var(--primary, #4f46e5);
+}
+
+.dependency-selector-item.selected,
+.dependency-selector-item.already-added {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.dependency-selector-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.dependency-selector-item-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dependency-selector-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ink-soft);
+  flex-shrink: 0;
+}
+
+.dependency-selector-empty {
+  padding: 30px 16px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+/* --- Blocked Task Confirmation Modal --- */
+.blocked-confirm-box {
+  max-width: 440px;
+  width: 90%;
+}
+
+.blocked-confirm-icon {
+  font-size: 2rem;
+  color: #f59e0b;
+  margin-bottom: 8px;
+  display: inline-block;
+}
+
+.blocked-confirm-details {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 12px 0 18px;
+  font-size: 12px;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.blocked-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+

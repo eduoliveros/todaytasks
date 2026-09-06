@@ -21,6 +21,7 @@ Un **Architecture Decision Record (ADR)** es un documento breve que captura una 
 * [013. Identificadores Visibles de Tarea (W-1, P-1), Copiado Rápido y Búsqueda](./013-identificadores-visibles-tareas-y-copiado.md)
 * [014. Sistema de Referencias a Personas (@Nombre), Color Único y Autocompletado](./014-referencias-personas-menciones-autocompletado.md)
 * [015. Triaje: Creación de Tareas Recurrentes y Reutilización del Sistema de Recurrencia](./015-triaje-creacion-tareas-recurrentes.md)
+* [016. Dependencias Direccionales entre Tareas (`dependsOn`), Detección de Ciclos y Desbloqueo Suave](./016-dependencias-entre-tareas.md)
 
 ## Plantilla sugerida para nuevos ADRs (`docs/adr/NNN-titulo.md`)
 

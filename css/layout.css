@@ -200,6 +200,126 @@ input:focus, button:focus, select:focus { outline: 2px solid var(--accent-pendin
   display: block;
   pointer-events: none;
 }
+
+/* Task Dependency Badges */
+.task-dep-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: all 0.15s ease;
+  user-select: none;
+  border: 1px solid transparent;
+  background: none;
+}
+.task-dep-badge.blocked {
+  background: #FEF3C7;
+  color: #92400E;
+  border-color: #FCD34D;
+}
+.task-dep-badge.blocked:hover {
+  background: #FDE68A;
+  border-color: #F59E0B;
+}
+.task-dep-badge.unlocked {
+  background: #ECFDF5;
+  color: #065F46;
+  border-color: #A7F3D0;
+}
+.task-dep-badge.unlocked:hover {
+  background: #D1FAE5;
+  border-color: #6EE7B7;
+}
+.task-dep-badge.blocking {
+  background: rgba(79, 70, 229, 0.08);
+  color: #4338CA;
+  border-color: rgba(79, 70, 229, 0.25);
+}
+.task-dep-badge.blocking:hover {
+  background: rgba(79, 70, 229, 0.16);
+  border-color: rgba(79, 70, 229, 0.45);
+}
+
+/* Blocked state on task card */
+.task-item.is-blocked {
+  border-left: 3px solid #F59E0B;
+}
+.btn.is-blocked {
+  border: 1px solid #FCD34D;
+}
+
+/* Form dependencies row */
+.task-form-dependencies-row {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.task-form-dependencies-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.task-form-dependencies-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.btn-add-dependency {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.btn-add-dependency:hover {
+  background: rgba(79, 70, 229, 0.08);
+}
+.task-dependencies-chips-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 24px;
+  align-items: center;
+}
+.dep-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: var(--ink);
+}
+.dep-chip-remove {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  border-radius: 3px;
+  line-height: 1;
+}
+.dep-chip-remove:hover {
+  color: var(--danger);
+}
 .empty { color: var(--ink-soft); font-size: 13px; padding: 6px 2px; }
 
 .task-item { position: relative; padding-left: 14px; }

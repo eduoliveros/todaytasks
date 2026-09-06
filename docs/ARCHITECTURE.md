@@ -61,6 +61,7 @@ todaytasks/
 │   │   └── triage.js            # Vista de triaje rápido, agrupación y operaciones masivas
 │   └── app/                     # Submódulos auxiliares de app.js
 │       ├── command-palette.js   # Command Palette modal y buscador global de tareas (Ctrl+K)
+│       ├── dependencies.js      # Gestión de dependencias entre tareas, chips, selector modal y confirmación de bloqueo
 │       ├── forms.js             # Gestión de formularios, formato markdown de notas y opciones avanzadas
 │       ├── history-metrics.js   # Gestión de prompts y edición de métricas históricas
 │       ├── popovers.js          # Control de popovers de tiempo, startAfter y recurrencia
@@ -390,7 +391,32 @@ Implementado en la versión `v1.105` ([ADR 014](./adr/014-referencias-personas-m
 
 ---
 
-## 18. Directrices para Nuevos Desarrollos
+## 18. Sistema de Dependencias Direccionales entre Tareas (`dependsOn`)
+
+Implementado en la versión `v1.107` ([ADR 016](./adr/016-dependencias-entre-tareas.md)):
+
+* **Modelo de Datos y Normalización:**
+  - Cada tarea puede definir `dependsOn?: string[]` conteniendo los identificadores únicos (`id`) de las tareas predecesoras directas de las que depende.
+  - `wrapState()` garantiza que sea siempre un array inmutable sin auto-dependencias ni duplicados.
+* **Detección y Prevención de Dependencias Circulares:**
+  - `checkCircularDependency(sourceTaskId, targetTaskId, env)` en `js/utils.js` recorre el grafo dirigido en profundidad (DFS) para detectar si vincular dos tareas generaría una referencia circular directa o indirecta.
+  - En el selector modal, cualquier tarea que cerraría un ciclo se desactiva visualmente impidiendo su selección.
+* **Selector Modal Multidía (`js/app/dependencies.js` y `#dependencySelectorModal`):**
+  - Permite buscar en tiempo real entre todas las tareas del entorno (`searchAllTasks()`), indexando identificadores visibles (`W-1`, `P-1`), títulos y etiquetas.
+  - Excluye la propia tarea y aquellas que provoquen ciclos, e indica visualmente las tareas ya agregadas.
+* **Paridad Total de Interfaz (Tablero Principal y Triaje):**
+  - **Formulario principal:** Opciones avanzadas con indicador dinámico de candado 🔒 (`#formDependenciesBadge`) y fila de dependencias con chips interactivos eliminables.
+  - **Triaje (`#/triage`):** Integración directa en `#triageTaskEditModal` tanto en creación de tareas (`id: '__new__'`) como en edición de tareas existentes.
+  - **Edición inline:** Disponible en la tarjeta de tarea (`renderTaskItemEdit`) del tablero diario.
+* **Planificación Temporal y Desbordamiento (`scheduler.js`):**
+  - Las tareas pendientes con bloqueadores incompletos se retienen hasta que su predecesora termine si está planificada en el mismo día, o se marcan como desbordadas (`overflowIds`) si el bloqueador pertenece a otra fecha o no hay margen en la jornada.
+* **Desbloqueo Suave (*Soft-Blocking*) y Navegación Rápida:**
+  - Las tareas bloqueadas muestran la insignia `.task-dep-badge.blocked` y un icono de candado 🔒 en el botón de reproducción.
+  - Al pulsar en iniciar una tarea bloqueada, se abre `#blockedTaskConfirmModal` detallando los bloqueadores pendientes con botones para saltar directamente a la tarea bloqueante (`app.goToTask()`) o forzar el inicio inmediato (`actionsModule.startTask(taskId, { force: true })`).
+
+---
+
+## 19. Directrices para Nuevos Desarrollos
 
 1. **Separación Estricta de Responsabilidades:**
    * Las vistas (`views/`) **no** deben mutar el estado directamente; deben delegar en las acciones (`actions/`).
@@ -404,4 +430,5 @@ Implementado en la versión `v1.105` ([ADR 014](./adr/014-referencias-personas-m
    * En corrección de errores, implementar primero el test unitario que reproduzca el fallo (TDD) antes de aplicar la solución.
 5. **Versionado:**
    * Al realizar cambios de versión importantes, actualizar de forma sincronizada tanto `index.html` como `version.json`.
+
 

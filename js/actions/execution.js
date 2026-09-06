@@ -1,5 +1,4 @@
-/* actions/execution.js — Ejecución de tareas e interrupciones */
-import { MAX_FEATURED_TASKS, sortTasksByPriority, sortTasksWithManualOrder } from '../utils.js';
+import { MAX_FEATURED_TASKS, sortTasksByPriority, sortTasksWithManualOrder, isTaskBlocked } from '../utils.js';
 import { t as i18n } from '../i18n.js';
 
 export function TodayTasksExecution(ctx, helpers){
@@ -23,10 +22,21 @@ export function TodayTasksExecution(ctx, helpers){
     return 0;
   }
 
-  function startTask(id){
+  function startTask(id, force = false){
     const state = getState();
     const targetTask = state.tasks.find(t => String(t.id) === String(id));
     if(!targetTask) return;
+
+    if (!force) {
+      const envKey = state.activeEnv || "work";
+      const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+      if (isTaskBlocked(targetTask, env)) {
+        if (ctx.confirmBlockedTaskStart && typeof ctx.confirmBlockedTaskStart === 'function') {
+          ctx.confirmBlockedTaskStart(targetTask, () => startTask(id, true));
+          return;
+        }
+      }
+    }
 
     if(targetTask.status === "completed"){
       const activeFeatured = (state.tasks || []).filter(t2 => String(t2.id) !== String(id) && t2.status !== "completed" && t2.featured).length;

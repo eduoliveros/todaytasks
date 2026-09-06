@@ -2,7 +2,8 @@
 import {
   getTodayStr, matchesRecurrenceRule, getTaskElapsed, parseDuration,
   DEFAULT_URGENCY, MAX_FEATURED_TASKS, sortTasksByPriority, sortTasksWithManualOrder, URGENCY_LEVELS,
-  fmt, timeToMinutes, extractHashtags, extractMentions
+  fmt, timeToMinutes, extractHashtags, extractMentions,
+  findTaskInEnvironment, checkCircularDependency
 } from '../utils.js';
 import { assignNextTaskDisplayId } from '../state.js';
 import { t as i18n } from '../i18n.js';
@@ -119,7 +120,7 @@ export function TodayTasksTasks(ctx, helpers){
     return changed;
   }
 
-  function addTask(title, durationStr, toTop = false, recurringData = null, autoMoveToToday = true, urgency = DEFAULT_URGENCY, featured = false, startAfter = null, notes = ""){
+  function addTask(title, durationStr, toTop = false, recurringData = null, autoMoveToToday = true, urgency = DEFAULT_URGENCY, featured = false, startAfter = null, notes = "", dependsOn = []){
     if(!title){
       alert("Indica un título para la tarea.");
       return;
@@ -203,6 +204,7 @@ export function TodayTasksTasks(ctx, helpers){
       const envKey = state.activeEnv || "work";
       const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
       const displayId = assignNextTaskDisplayId(env, envKey);
+      const cleanDependsOn = Array.isArray(dependsOn) ? dependsOn.filter(id => typeof id === "string" && id) : [];
       state.tasks.push({
         id: newId(),
         displayId,
@@ -221,7 +223,8 @@ export function TodayTasksTasks(ctx, helpers){
         autoMoveToToday: !!autoMoveToToday,
         urgency: cleanUrgency,
         featured: cleanFeatured,
-        startAfter: cleanStartAfter
+        startAfter: cleanStartAfter,
+        dependsOn: cleanDependsOn
       });
 
       // Reordenar respetando el orden manual y la prioridad
@@ -478,6 +481,17 @@ export function TodayTasksTasks(ctx, helpers){
     }
 
     state.tasks = state.tasks.filter(t => String(t.id) !== String(id));
+    if (env && env.days) {
+      Object.keys(env.days).forEach(d => {
+        if (env.days[d] && Array.isArray(env.days[d].tasks)) {
+          env.days[d].tasks.forEach(task => {
+            if (task && Array.isArray(task.dependsOn) && task.dependsOn.includes(String(id))) {
+              task.dependsOn = task.dependsOn.filter(depId => String(depId) !== String(id));
+            }
+          });
+        }
+      });
+    }
     if(getTaskEdit() && String(getTaskEdit().id) === String(id)) setTaskEdit(null);
     saveState();
     renderAll();
@@ -517,6 +531,17 @@ export function TodayTasksTasks(ctx, helpers){
     }
 
     state.tasks = state.tasks.filter(t => !idsSet.has(String(t.id)));
+    if (env && env.days) {
+      Object.keys(env.days).forEach(d => {
+        if (env.days[d] && Array.isArray(env.days[d].tasks)) {
+          env.days[d].tasks.forEach(task => {
+            if (task && Array.isArray(task.dependsOn) && task.dependsOn.some(depId => idsSet.has(String(depId)))) {
+              task.dependsOn = task.dependsOn.filter(depId => !idsSet.has(String(depId)));
+            }
+          });
+        }
+      });
+    }
     if (getTaskEdit() && idsSet.has(String(getTaskEdit().id))) setTaskEdit(null);
 
     saveState();
@@ -598,7 +623,8 @@ export function TodayTasksTasks(ctx, helpers){
       autoMoveToToday: !!t.autoMoveToToday,
       urgency: t.urgency || DEFAULT_URGENCY,
       featured: !!t.featured,
-      startAfter: (t.startAfter !== null && t.startAfter !== undefined) ? fmt(t.startAfter) : ""
+      startAfter: (t.startAfter !== null && t.startAfter !== undefined) ? fmt(t.startAfter) : "",
+      dependsOn: Array.isArray(t.dependsOn) ? [...t.dependsOn] : []
     });
     renderAll();
   }
@@ -606,6 +632,27 @@ export function TodayTasksTasks(ctx, helpers){
   function updateTaskEditField(field, value){
     const taskEdit = getTaskEdit();
     if(taskEdit) taskEdit[field] = value;
+  }
+
+  function addEditTaskDependency(depTaskId){
+    const taskEdit = getTaskEdit();
+    if (!taskEdit) return false;
+    if (!Array.isArray(taskEdit.dependsOn)) taskEdit.dependsOn = [];
+    const strId = String(depTaskId);
+    if (!taskEdit.dependsOn.some(id => String(id) === strId)) {
+      taskEdit.dependsOn.push(strId);
+    }
+    renderAll();
+    return true;
+  }
+
+  function removeEditTaskDependency(depTaskId){
+    const taskEdit = getTaskEdit();
+    if (!taskEdit || !Array.isArray(taskEdit.dependsOn)) return false;
+    const strId = String(depTaskId);
+    taskEdit.dependsOn = taskEdit.dependsOn.filter(id => String(id) !== strId);
+    renderAll();
+    return true;
   }
 
   function cancelEditTask(){
@@ -625,6 +672,7 @@ export function TodayTasksTasks(ctx, helpers){
       urgency: defaults.urgency || DEFAULT_URGENCY,
       featured: !!defaults.featured,
       startAfter: defaults.startAfter || '',
+      dependsOn: Array.isArray(defaults.dependsOn) ? [...defaults.dependsOn] : [],
       isRecurring: !!defaults.isRecurring,
       recurringFreq: defaults.recurringFreq || (defaults.recurring && defaults.recurring.freq) || 'weekly',
       recurringInterval: defaults.recurringInterval || (defaults.recurring && defaults.recurring.interval) || 1,
@@ -677,7 +725,8 @@ export function TodayTasksTasks(ctx, helpers){
         taskEdit.urgency || DEFAULT_URGENCY,
         !!taskEdit.featured,
         taskEdit.startAfter || null,
-        taskEdit.notes || ''
+        taskEdit.notes || '',
+        Array.isArray(taskEdit.dependsOn) ? taskEdit.dependsOn : []
       );
       setTaskEdit(null);
       renderAll();
@@ -818,6 +867,14 @@ export function TodayTasksTasks(ctx, helpers){
 
     const envKey = state.activeEnv || "work";
     const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+
+    if (Array.isArray(taskEdit.dependsOn)) {
+      const validDeps = taskEdit.dependsOn.filter(depId => {
+        return depId && String(depId) !== String(t.id) && !checkCircularDependency(t.id, depId, env);
+      });
+      t.dependsOn = validDeps;
+    }
+
     if (env && env.days) {
       for (const d of Object.keys(env.days)) {
         if (env.days[d] && Array.isArray(env.days[d].tasks)) {
@@ -832,6 +889,7 @@ export function TodayTasksTasks(ctx, helpers){
             match.urgency = t.urgency;
             match.featured = t.featured;
             match.startAfter = t.startAfter;
+            match.dependsOn = t.dependsOn;
             if (t.status === "completed") {
               match.actualDuration = t.actualDuration;
             } else {
@@ -995,12 +1053,65 @@ export function TodayTasksTasks(ctx, helpers){
     }
   }
 
+  function addDependency(taskId, depTaskId) {
+    if (!taskId || !depTaskId || String(taskId) === String(depTaskId)) return false;
+    const state = getState();
+    const envKey = state.activeEnv || "work";
+    const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+    if (!env) return false;
+
+    if (checkCircularDependency(taskId, depTaskId, env)) {
+      if (showToast) showToast(i18n('tasks.circularDepError') || 'No se puede añadir esta dependencia porque crearía una referencia circular.');
+      return false;
+    }
+
+    const found = findTaskInEnvironment(env, taskId);
+    if (!found || !found.task) return false;
+
+    if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+      ctx.undoModule.pushSnapshot(`Vincular dependencia en "${found.task.title}"`);
+    }
+
+    if (!Array.isArray(found.task.dependsOn)) found.task.dependsOn = [];
+    const strDepId = String(depTaskId);
+    if (!found.task.dependsOn.some(id => String(id) === strDepId)) {
+      found.task.dependsOn.push(strDepId);
+    }
+
+    saveState();
+    smartRender ? smartRender() : renderAll();
+    return true;
+  }
+
+  function removeDependency(taskId, depTaskId) {
+    if (!taskId || !depTaskId) return false;
+    const state = getState();
+    const envKey = state.activeEnv || "work";
+    const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+    if (!env) return false;
+
+    const found = findTaskInEnvironment(env, taskId);
+    if (!found || !found.task || !Array.isArray(found.task.dependsOn)) return false;
+
+    if (ctx.undoModule && ctx.undoModule.pushSnapshot) {
+      ctx.undoModule.pushSnapshot(`Quitar dependencia en "${found.task.title}"`);
+    }
+
+    found.task.dependsOn = found.task.dependsOn.filter(id => String(id) !== String(depTaskId));
+
+    saveState();
+    smartRender ? smartRender() : renderAll();
+    return true;
+  }
+
   return {
     materializeRecurringTasks,
     addTask, deleteTask, deleteRecurringTaskInstance, startEditTask, startNewTask, updateTaskEditField,
     cancelEditTask, saveEditTask, updateTaskTimeFast, moveTask,
     setTaskUrgency, setTasksUrgency, setTaskFeatured, setTasksFeatured, toggleTaskFeatured, resolveFeaturedLimit,
-    setTaskStartAfter, deleteTasks, applyAutoOrder
+    setTaskStartAfter, deleteTasks, applyAutoOrder,
+    addDependency, removeDependency,
+    addEditTaskDependency, removeEditTaskDependency
   };
 }
 

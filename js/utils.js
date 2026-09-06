@@ -979,6 +979,110 @@ export function sortTasksWithManualOrder(tasks) {
   return finalTasks;
 }
 
+export function findTaskInEnvironment(env, taskId) {
+  if (!env || !env.days || !taskId) return null;
+  const strId = String(taskId);
+  for (const dateStr of Object.keys(env.days)) {
+    const dayObj = env.days[dateStr];
+    if (dayObj && Array.isArray(dayObj.tasks)) {
+      const task = dayObj.tasks.find(t => t && String(t.id) === strId);
+      if (task) {
+        return { task, dateStr };
+      }
+    }
+  }
+  return null;
+}
+
+export function isTaskBlocked(task, env) {
+  if (!task || !Array.isArray(task.dependsOn) || task.dependsOn.length === 0) return false;
+  if (!env) return false;
+
+  for (const depId of task.dependsOn) {
+    const found = findTaskInEnvironment(env, depId);
+    if (found && found.task && found.task.status !== 'completed') {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function getTaskBlockingDetails(task, env) {
+  if (!task || !Array.isArray(task.dependsOn) || task.dependsOn.length === 0) return [];
+  if (!env) return [];
+
+  const details = [];
+  for (const depId of task.dependsOn) {
+    const found = findTaskInEnvironment(env, depId);
+    if (found && found.task) {
+      details.push({
+        id: found.task.id,
+        displayId: found.task.displayId || '',
+        title: found.task.title,
+        status: found.task.status || 'pending',
+        dateStr: found.dateStr,
+        isCompleted: found.task.status === 'completed'
+      });
+    }
+  }
+  return details;
+}
+
+export function getTasksBlockedBy(taskId, env) {
+  if (!taskId || !env || !env.days) return [];
+  const strId = String(taskId);
+  const blockedTasks = [];
+
+  for (const dateStr of Object.keys(env.days)) {
+    const dayObj = env.days[dateStr];
+    if (dayObj && Array.isArray(dayObj.tasks)) {
+      for (const t of dayObj.tasks) {
+        if (t && Array.isArray(t.dependsOn) && t.dependsOn.some(id => String(id) === strId)) {
+          blockedTasks.push({
+            id: t.id,
+            displayId: t.displayId || '',
+            title: t.title,
+            status: t.status || 'pending',
+            dateStr,
+            isCompleted: t.status === 'completed'
+          });
+        }
+      }
+    }
+  }
+  return blockedTasks;
+}
+
+export function checkCircularDependency(sourceTaskId, targetTaskId, env) {
+  if (!sourceTaskId || !targetTaskId || !env) return false;
+  const srcId = String(sourceTaskId);
+  const tgtId = String(targetTaskId);
+  if (srcId === tgtId) return true;
+
+  const visited = new Set();
+  const queue = [tgtId];
+
+  while (queue.length > 0) {
+    const currentId = queue.shift();
+    if (currentId === srcId) return true;
+    if (visited.has(currentId)) continue;
+    visited.add(currentId);
+
+    const found = findTaskInEnvironment(env, currentId);
+    if (found && found.task && Array.isArray(found.task.dependsOn)) {
+      for (const nextId of found.task.dependsOn) {
+        const nextStr = String(nextId);
+        if (nextStr === srcId) return true;
+        if (!visited.has(nextStr)) {
+          queue.push(nextStr);
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 export const TodayTasksUtils = {
   nowMinutes,
   getTaskElapsed,
@@ -1018,7 +1122,12 @@ export const TodayTasksUtils = {
   extractMentions,
   TAG_SYNTAX_PALETTE,
   getTagColorClass,
-  formatTitleWithTags
+  formatTitleWithTags,
+  findTaskInEnvironment,
+  isTaskBlocked,
+  getTaskBlockingDetails,
+  getTasksBlockedBy,
+  checkCircularDependency
 };
 
 export default TodayTasksUtils;

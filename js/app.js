@@ -20,6 +20,7 @@ import { TodayTasksPopovers } from './app/popovers.js';
 import { TodayTasksUrgencyDropdown, getUrgencyMap } from './app/urgency-dropdown.js';
 import { TodayTasksHistoryMetrics } from './app/history-metrics.js';
 import { TodayTasksCommandPalette } from './app/command-palette.js';
+import { TodayTasksDependencies } from './app/dependencies.js';
 import { attachTagAutocomplete } from './app/tag-autocomplete.js';
 import { t, setLocale, translateDOM } from './i18n.js';
 
@@ -114,8 +115,10 @@ const ctx = {
   syncFormInputsFromState: () => viewsModule && viewsModule.syncFormInputsFromState(),
   refreshPlanningModeBtn: () => viewsModule && viewsModule.refreshPlanningModeBtn(),
   resetBoardScroll: () => viewsModule && viewsModule.resetBoardScroll && viewsModule.resetBoardScroll(),
+  confirmBlockedTaskStart: (task, onConfirm) => dependenciesModule && dependenciesModule.confirmBlockedTaskStart(task, onConfirm),
 };
 
+let dependenciesModule = null;
 let undoModule = TodayTasksUndo({
   getState: () => state,
   setState: (newState) => { state = wrapState(newState); },
@@ -476,6 +479,18 @@ function switchHeaderTab(target){
   });
   ctx.commandPaletteModule = commandPaletteModule;
 
+  /* ---------------- Task Dependencies sub-module ---------------- */
+  dependenciesModule = TodayTasksDependencies({
+    getState: () => state,
+    actionsModule,
+    showToast,
+    renderAll: () => viewsModule && viewsModule.renderAll(),
+    getTaskEdit: () => taskEdit,
+    goToTask: (taskId, dateStr) => commandPaletteModule && commandPaletteModule.goToTask(taskId, dateStr),
+    updateTaskAdvancedIndicators: () => formsModule && formsModule.updateTaskAdvancedIndicators && formsModule.updateTaskAdvancedIndicators()
+  });
+  ctx.dependenciesModule = dependenciesModule;
+
   function promptAddHistoryMetric(){
     return historyMetricsModule.promptAddHistoryMetric();
   }
@@ -811,7 +826,23 @@ function switchHeaderTab(target){
     commandPaletteMoveToToday: (taskId, isCompleted, event) => commandPaletteModule && commandPaletteModule.moveTaskToToday(taskId, isCompleted, event),
     openRecurringRuleEdit: (ruleId, event) => commandPaletteModule && commandPaletteModule.openRecurringRuleEdit(ruleId, event),
     commandPaletteOnItemClick: (idx, event) => commandPaletteModule && commandPaletteModule.onItemClick(idx, event),
-    commandPalette: commandPaletteModule
+    commandPalette: commandPaletteModule,
+    /* Dependencies */
+    openDependencySelector: (targetTaskId, source) => dependenciesModule && dependenciesModule.openDependencySelector(targetTaskId, source),
+    closeDependencySelector: () => dependenciesModule && dependenciesModule.closeDependencySelector(),
+    onDependencySearchInput: (val) => dependenciesModule && dependenciesModule.onDependencySearchInput(val),
+    selectDependency: (depId) => dependenciesModule && dependenciesModule.selectDependency(depId),
+    addFormDependency: (depId) => dependenciesModule && dependenciesModule.addFormDependency(depId),
+    removeFormDependency: (depId) => dependenciesModule && dependenciesModule.removeFormDependency(depId),
+    closeBlockedConfirmModal: () => dependenciesModule && dependenciesModule.closeBlockedConfirmModal(),
+    forceStartBlockedTask: () => dependenciesModule && dependenciesModule.forceStartBlockedTask(),
+    jumpToBlockingTask: () => dependenciesModule && dependenciesModule.jumpToBlockingTask(),
+    goToTask: (taskId, dateStr) => commandPaletteModule && commandPaletteModule.goToTask(taskId, dateStr),
+    addDependency: actionsModule.addDependency,
+    removeDependency: actionsModule.removeDependency,
+    addEditTaskDependency: (depId) => actionsModule && actionsModule.addEditTaskDependency(depId),
+    removeEditTaskDependency: (depId) => actionsModule && actionsModule.removeEditTaskDependency(depId),
+    dependencies: dependenciesModule
   };
 
   if (typeof window !== "undefined") {

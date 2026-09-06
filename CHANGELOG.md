@@ -4,6 +4,30 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.107] - 2026-09-06
+
+### Añadido
+- **Sistema de Dependencias Direccionales entre Tareas (`dependsOn`) con Paridad Total:**
+  - **Paridad Funcional en Creación y Edición (Tablero Principal y Triaje):**
+    * Inclusión de la sección *"Depende de"* en el formulario lateral principal bajo *⚙️ Opciones avanzadas* con indicador dinámico de candado 🔒 (`#formDependenciesBadge`) y lista de chips interactivos eliminables.
+    * Integración plena en la vista de Triaje (`#/triage`) dentro del modal `#triageTaskEditModal`, con idéntica capacidad de añadir y remover dependencias tanto al crear nuevas tareas (`id: '__new__'`) como al editar tareas existentes.
+    * Soporte de dependencias en la edición inline de tarjetas en el tablero (`renderTaskItemEdit`).
+  - **Selector Modal Multidía y Detección de Ciclos (`#dependencySelectorModal`):**
+    * Búsqueda en tiempo real entre todas las tareas del entorno (día actual, días pasados y futuros) mediante `searchAllTasks()`, indexando identificadores visibles (`W-1`, `P-1`), títulos y hashtags.
+    * Prevención matemática de referencias circulares (ciclos A ➔ B ➔ A) mediante algoritmo DFS (`checkCircularDependency`), desactivando visualmente las tareas inválidas para evitar dependencias recursivas.
+    * Exclusión de auto-dependencias e indicación visual de tareas ya añadidas.
+  - **Planificación Temporal Inteligente (`scheduler.js`):**
+    * El algoritmo de cálculo de horarios (`computeSchedule`) retiene las tareas dependientes hasta que concluyan sus predecesoras planificadas en el mismo día.
+    * Si una tarea predecesora pertenece a otra fecha o su ejecución desborda el horario laboral, la tarea dependiente se marca y resalta como desbordada (`overflowIds`).
+  - **Desbloqueo Suave (*Soft-Blocking*) y Navegación Rápida:**
+    * Las tareas bloqueadas muestran la insignia semántica `.task-dep-badge.blocked` con el candado 🔒 y el recuento de bloqueadores activos, así como un icono de candado en el botón de reproducción.
+    * Al pulsar en iniciar una tarea bloqueada, se abre `#blockedTaskConfirmModal` detallando las tareas bloqueantes con su `displayId`, título y fecha.
+    * El modal ofrece el botón *"Ir a la tarea"* (`app.goToTask()`) para saltar de inmediato al día y tarjeta bloqueante con animación de enfoque suave, y el botón *"Iniciar de todos modos"* para forzar el inicio si el usuario lo requiere.
+  - **Pruebas y Documentación:**
+    * Suites de pruebas unitarias y de integración en `tests/task_dependencies.test.js`, `tests/scheduler_dependencies.test.js` y `tests/task_dependencies_ui.test.js` (25 tests nuevos, 100% pasando).
+    * Registro de Decisión Arquitectónica en `docs/adr/016-dependencias-entre-tareas.md`.
+    * Actualizaciones de esquema en `docs/DATA_SCHEMA.md` y arquitectura en `docs/ARCHITECTURE.md`.
+
 ## [1.106] - 2026-09-06
 
 ### Añadido

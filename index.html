@@ -18,7 +18,7 @@
   <!-- Barra superior: logo + switcher + pestañas -->
   <div class="topbar-title-row">
     <div class="brand">
-      <h1><span data-i18n="app.title">TodayTasks</span> <span class="app-version">v1.106</span></h1>
+      <h1><span data-i18n="app.title">TodayTasks</span> <span class="app-version">v1.107</span></h1>
       <span class="db-status-badge" id="appModeLabel" data-i18n="app.localDbBadge" title="Tipo de base de datos en uso">💾 local · persistente</span>
       <button type="button" class="topbar-global-search-btn" id="globalSearchBtn" onclick="app.openCommandPalette()" data-i18n-title="globalSearch.openTooltip" title="Buscar en todos los días (Ctrl+K)">
         <span class="search-btn-icon" aria-hidden="true">🔍</span>
@@ -171,6 +171,7 @@
             <div class="task-advanced-indicators" id="taskAdvancedIndicators">
               <span id="formAutoMoveBadge" class="badge-adv-icon" data-i18n-title="tasks.autoMoveBadgeTooltip" title="Auto-mover a hoy si no se completa">⏩</span>
               <span id="formRecurringBadge" class="badge-adv-icon" data-i18n-title="tasks.recurringBadgeTooltip" title="Tarea recurrente" style="display:none;">🔁</span>
+              <span id="formDependenciesBadge" class="badge-adv-icon" data-i18n-title="tasks.dependenciesBadgeTooltip" title="Depende de otras tareas" style="display:none;">🔒</span>
               <span id="formNotesBadge" class="badge-adv-icon" data-i18n-title="tasks.notesBadgeTooltip" title="Tiene notas / enlaces" style="display:none;">📝</span>
               <span id="formStartAfterBadge" class="badge-startafter-summary" style="display:none;"></span>
             </div>
@@ -266,6 +267,19 @@
               </div>
             </div>
             <textarea id="taskNotesInput" class="task-form-notes-textarea" rows="2" data-i18n-placeholder="tasks.notesPlaceholder" placeholder="Notas, enlaces o contexto (ej. **importante**, https://... o [PR](url))" oninput="if(app.updateTaskAdvancedIndicators) app.updateTaskAdvancedIndicators()"></textarea>
+          </div>
+
+          <!-- 5. Dependencias entre tareas -->
+          <div class="task-form-dependencies-row">
+            <div class="task-form-dependencies-header">
+              <span class="task-form-dependencies-label" data-i18n-html="tasks.dependenciesLabel">
+                <span>🔒</span> Depende de:
+              </span>
+              <button type="button" class="btn-add-dependency" id="btnAddFormDependency" onclick="app.openDependencySelector(null, 'form')" data-i18n="tasks.addDependencyBtn">＋ Añadir dependencia...</button>
+            </div>
+            <div class="task-dependencies-chips-list" id="formTaskDependenciesList">
+              <span class="empty" data-i18n="tasks.noDependencies">Sin dependencias</span>
+            </div>
           </div>
         </div>
       </div>
@@ -659,11 +673,43 @@
   </div>
 </div>
 
+<!-- Modal: Selector de Dependencias -->
+<div id="dependencySelectorModal" class="modal-overlay" style="display:none;z-index:100010;" role="dialog" aria-modal="true" aria-labelledby="dependencySelectorTitle" onclick="if(event.target===this) app.closeDependencySelector()">
+  <div class="modal-box dependency-selector-box">
+    <div class="dependency-selector-header">
+      <h3 id="dependencySelectorTitle">
+        <span>🔒</span> <span data-i18n="tasks.selectDependencyModalTitle">Seleccionar tarea bloqueadora</span>
+      </h3>
+      <button class="close-modal-btn" onclick="app.closeDependencySelector()" data-i18n-title="action.closeTooltip" data-i18n-aria="action.close" title="Cerrar (Esc)" aria-label="Cerrar">&times;</button>
+    </div>
+    <div class="dependency-selector-search-wrap">
+      <span class="dependency-selector-search-icon" aria-hidden="true">🔍</span>
+      <input type="text" id="dependencySelectorSearchInput" data-i18n-placeholder="tasks.searchDependencyPlaceholder" placeholder="Buscar por código, título o etiqueta... (ej. W-2, api)" autocomplete="off" spellcheck="false" oninput="app.onDependencySearchInput(this.value)">
+    </div>
+    <div id="dependencySelectorList" class="dependency-selector-list" role="listbox"></div>
+  </div>
+</div>
+
+<!-- Modal: Confirmación de inicio de tarea bloqueada -->
+<div id="blockedTaskConfirmModal" class="modal-overlay" style="display:none;z-index:100020;" role="dialog" aria-modal="true" aria-labelledby="blockedConfirmTitle" onclick="if(event.target===this) app.closeBlockedConfirmModal()">
+  <div class="modal-box blocked-confirm-box">
+    <div class="blocked-confirm-icon">⚠️</div>
+    <h3 id="blockedConfirmTitle" data-i18n="tasks.confirmStartBlockedTitle">Tarea con dependencias pendientes</h3>
+    <p id="blockedConfirmDesc" data-i18n="tasks.confirmStartBlockedHint">Puedes ir a la tarea bloqueadora para completarla primero, o forzar el inicio de esta tarea.</p>
+    <div id="blockedConfirmDetails" class="blocked-confirm-details"></div>
+    <div class="blocked-confirm-actions">
+      <button type="button" class="btn secondary" id="btnCancelBlockedStart" onclick="app.closeBlockedConfirmModal()" data-i18n="action.cancel">Cancelar</button>
+      <button type="button" class="btn secondary" id="btnJumpToBlockingTask" data-i18n="tasks.goToBlockingTask">→ Ir a la tarea bloqueadora</button>
+      <button type="button" class="btn danger" id="btnForceStartBlockedTask" data-i18n="tasks.startAnyway">Iniciar de todos modos</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-<script type="module" src="js/app.js?v=1.101"></script>
+<script type="module" src="js/app.js?v=1.107"></script>
 </body>
 </html>
 

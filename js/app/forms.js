@@ -212,7 +212,12 @@ export function TodayTasksForms(appCtx){
       autoMoveToToday = autoMoveCb ? autoMoveCb.checked : true;
     }
 
-    actionsModule.addTask(title, dur, toTop, recurringData, autoMoveToToday, urgency, featured, startAfter, notes);
+    const dependsOn = appCtx.dependenciesModule ? appCtx.dependenciesModule.getFormDependencies() : [];
+
+    actionsModule.addTask(title, dur, toTop, recurringData, autoMoveToToday, urgency, featured, startAfter, notes, dependsOn);
+    if (appCtx.dependenciesModule) {
+      appCtx.dependenciesModule.clearFormDependencies();
+    }
     titleEl.value = "";
     document.getElementById("taskDuration").value = "";
     if (notesEl) notesEl.value = "";
@@ -410,12 +415,17 @@ export function TodayTasksForms(appCtx){
     const recBadge = document.getElementById('formRecurringBadge');
     const startAfterBadge = document.getElementById('formStartAfterBadge');
     const notesBadge = document.getElementById('formNotesBadge');
+    const depBadge = document.getElementById('formDependenciesBadge');
 
     if (autoMoveBadge) {
       autoMoveBadge.style.display = (autoMoveCb && autoMoveCb.checked && (!recCb || !recCb.checked)) ? 'inline-flex' : 'none';
     }
     if (recBadge) {
       recBadge.style.display = (recCb && recCb.checked) ? 'inline-flex' : 'none';
+    }
+    if (depBadge) {
+      const deps = appCtx.dependenciesModule ? appCtx.dependenciesModule.getFormDependencies() : [];
+      depBadge.style.display = (deps && deps.length > 0) ? 'inline-flex' : 'none';
     }
     if (startAfterBadge) {
       const val = startAfterInput ? startAfterInput.value.trim() : '';
