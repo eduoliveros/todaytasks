@@ -192,7 +192,7 @@ export function TodayTasksPiP(ctx) {
 
     // 2. Buscar tarea activa (en marcha o pausada)
     const runningTask = (state.tasks || []).find(t => t.status === 'running');
-    const pausedTask = !runningTask ? (state.tasks || []).find(t => t.status === 'paused') : null;
+    const pausedTask = !runningTask ? (state.tasks || []).filter(t => t.status === 'paused').sort((a, b) => (a.order || 0) - (b.order || 0))[0] : null;
     const activeTask = runningTask || pausedTask;
 
     if (activeTask) {
@@ -418,7 +418,9 @@ export function TodayTasksPiP(ctx) {
 
   function renderIdleMode(state) {
     const pipDoc = pipWindow.document;
-    const pendingTasks = (state.tasks || []).filter(task => task.status !== 'completed');
+    const pendingTasks = (state.tasks || [])
+      .filter(task => task.status !== 'completed')
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
     const nextTask = pendingTasks.length > 0 ? pendingTasks[0] : null;
 
     pipDoc.body.innerHTML = `

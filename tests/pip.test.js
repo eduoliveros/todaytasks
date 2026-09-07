@@ -190,6 +190,25 @@ describe('TodayTasksPiP (Document Picture-in-Picture Mini-Widget)', () => {
     expect(mockActions.startTask).toHaveBeenCalledWith('task-next');
   });
 
+  it('selecciona la primera tarea según su orden (order) en modo reposo aunque el array no esté ordenado físicamente', async () => {
+    state.tasks = [
+      { id: 'task-afternoon', title: 'Tarea tarde 16:25', status: 'pending', planned: 30, order: 5 },
+      { id: 'task-morning', title: 'Tarea mañana 09:00', status: 'pending', planned: 45, order: 1 }
+    ];
+
+    const pip = TodayTasksPiP(ctx);
+    await pip.openPiP();
+
+    const body = mockPipWindow.document.body;
+    expect(body.textContent).toContain('Tarea mañana 09:00');
+    expect(body.textContent).not.toContain('Tarea tarde 16:25');
+
+    const startBtn = mockPipWindow.document.getElementById('pipStartNextBtn');
+    expect(startBtn).toBeTruthy();
+    startBtn.click();
+    expect(mockActions.startTask).toHaveBeenCalledWith('task-morning');
+  });
+
   it('cierra la ventana PiP y limpia temporizadores con closePiP()', async () => {
     const pip = TodayTasksPiP(ctx);
     await pip.openPiP();
