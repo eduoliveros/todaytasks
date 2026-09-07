@@ -209,6 +209,44 @@ describe('TodayTasksPiP (Document Picture-in-Picture Mini-Widget)', () => {
     expect(mockActions.startTask).toHaveBeenCalledWith('task-morning');
   });
 
+  it('no prioriza una tarea pausada posterior si la primera tarea de la cola es pendiente', async () => {
+    state.tasks = [
+      { id: 'task-paused-later', title: 'W-94 mandar los datos', status: 'paused', planned: 30, order: 5, elapsedBefore: 10 },
+      { id: 'task-first-pending', title: 'W-122 Montar reu Kyle', status: 'pending', planned: 45, order: 1 }
+    ];
+
+    const pip = TodayTasksPiP(ctx);
+    await pip.openPiP();
+
+    const body = mockPipWindow.document.body;
+    expect(body.textContent).toContain('W-122 Montar reu Kyle');
+    expect(body.textContent).not.toContain('W-94 mandar los datos');
+
+    const startBtn = mockPipWindow.document.getElementById('pipStartNextBtn');
+    expect(startBtn).toBeTruthy();
+    startBtn.click();
+    expect(mockActions.startTask).toHaveBeenCalledWith('task-first-pending');
+  });
+
+  it('muestra la tarea en pausa si esta es la primera de la cola', async () => {
+    state.tasks = [
+      { id: 'task-first-paused', title: 'W-122 Tarea pausada primera', status: 'paused', planned: 45, order: 1, elapsedBefore: 10 },
+      { id: 'task-second-pending', title: 'W-94 Tarea pendiente segunda', status: 'pending', planned: 30, order: 2 }
+    ];
+
+    const pip = TodayTasksPiP(ctx);
+    await pip.openPiP();
+
+    const body = mockPipWindow.document.body;
+    expect(body.textContent).toContain('W-122 Tarea pausada primera');
+    expect(body.textContent).toContain('En pausa');
+
+    const resumeBtn = mockPipWindow.document.getElementById('pipResumeBtn');
+    expect(resumeBtn).toBeTruthy();
+    resumeBtn.click();
+    expect(mockActions.resumeTask).toHaveBeenCalledWith('task-first-paused');
+  });
+
   it('cierra la ventana PiP y limpia temporizadores con closePiP()', async () => {
     const pip = TodayTasksPiP(ctx);
     await pip.openPiP();

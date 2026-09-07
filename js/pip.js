@@ -190,15 +190,23 @@ export function TodayTasksPiP(ctx) {
       return;
     }
 
-    // 2. Buscar tarea activa (en marcha o pausada)
+    // 2. Si hay tarea en marcha, esa es siempre la prioritaria
     const runningTask = (state.tasks || []).find(t => t.status === 'running');
-    const pausedTask = !runningTask ? (state.tasks || []).filter(t => t.status === 'paused').sort((a, b) => (a.order || 0) - (b.order || 0))[0] : null;
-    const activeTask = runningTask || pausedTask;
+    if (runningTask) {
+      renderTaskActiveMode(runningTask, state, now);
+      return;
+    }
 
-    if (activeTask) {
-      renderTaskActiveMode(activeTask, state, now);
+    // 3. Si no hay ninguna en marcha, obtener la primera tarea no completada según el orden del tablero
+    const uncompletedTasks = (state.tasks || [])
+      .filter(t => t.status !== 'completed')
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+    const firstTask = uncompletedTasks.length > 0 ? uncompletedTasks[0] : null;
+
+    if (firstTask && firstTask.status === 'paused') {
+      renderTaskActiveMode(firstTask, state, now);
     } else {
-      renderIdleMode(state);
+      renderIdleMode(state, firstTask);
     }
   }
 
@@ -416,12 +424,15 @@ export function TodayTasksPiP(ctx) {
     };
   }
 
-  function renderIdleMode(state) {
+  function renderIdleMode(state, firstTask = null) {
     const pipDoc = pipWindow.document;
-    const pendingTasks = (state.tasks || [])
-      .filter(task => task.status !== 'completed')
-      .sort((a, b) => (a.order || 0) - (b.order || 0));
-    const nextTask = pendingTasks.length > 0 ? pendingTasks[0] : null;
+    let nextTask = firstTask;
+    if (nextTask === null || nextTask === undefined) {
+      const pendingTasks = (state.tasks || [])
+        .filter(task => task.status !== 'completed')
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+      nextTask = pendingTasks.length > 0 ? pendingTasks[0] : null;
+    }
 
     pipDoc.body.innerHTML = `
       <div class="pip-container">
