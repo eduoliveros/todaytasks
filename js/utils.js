@@ -419,10 +419,11 @@ export function computeOccupiedMeetingTime(meetings) {
 }
 
 export function computeDayDeviation(tasks, nowVal) {
-  // Desviación del día (Modelo Híbrido Realista):
-  // - Tareas completadas: actualDuration - planned (ahorro o sobrecoste consolidado).
-  // - Tareas en curso (running o paused): si consumed > planned, suma el exceso como sobrecoste en vivo.
-  //   Si consumed <= planned, computa 0 para evitar falsos adelantos prematuros.
+  // Desviación del día (Modelo Híbrido Realista Aislado por Jornada):
+  // - Aísla el cálculo descontando t.initialElapsed (minutos ya consumidos en jornadas anteriores).
+  // - Tareas completadas: actualDuration - planned (ahorro o sobrecoste consolidado del día).
+  // - Tareas en curso (running o paused): si consumedDay > plannedDay, suma el exceso como sobrecoste en vivo.
+  //   Si consumedDay <= plannedDay, computa 0 para evitar falsos adelantos prematuros.
   // Devuelve { deviationMin, realMin, plannedMin, evaluatedCount }.
   const result = { deviationMin: 0, realMin: 0, plannedMin: 0, evaluatedCount: 0 };
   if (!Array.isArray(tasks)) return result;
@@ -435,22 +436,27 @@ export function computeDayDeviation(tasks, nowVal) {
   for (const t of tasks) {
     if (!t || typeof t !== "object") continue;
     const status = t.status;
+    const base = (typeof t.initialElapsed === "number" && t.initialElapsed > 0) ? t.initialElapsed : 0;
+    const plTotal = (typeof t.planned === "number" && t.planned > 0) ? t.planned : 0;
+    const plDay = Math.max(0, plTotal - base);
 
     if (status === "completed") {
-      const act = typeof t.actualDuration === "number" ? t.actualDuration : (t.elapsedBefore || 0);
-      const pl = (typeof t.planned === "number" && t.planned > 0) ? t.planned : 0;
-      realSum += act;
-      plannedSum += pl;
-      devSum += (act - pl);
-      count++;
+      const actTotal = typeof t.actualDuration === "number" ? t.actualDuration : (t.elapsedBefore || 0);
+      const actDay = Math.max(0, actTotal - base);
+      if (actDay > 0 || plDay > 0) {
+        realSum += actDay;
+        plannedSum += plDay;
+        devSum += (actDay - plDay);
+        count++;
+      }
     } else if (status === "running" || status === "paused") {
-      const consumed = getTaskElapsed(t, nowVal);
-      const pl = (typeof t.planned === "number" && t.planned > 0) ? t.planned : 0;
-      if (consumed > pl) {
+      const consumedTotal = getTaskElapsed(t, nowVal);
+      const consumedDay = Math.max(0, consumedTotal - base);
+      if (consumedDay > plDay) {
         // Sobrecoste en tiempo real
-        realSum += consumed;
-        plannedSum += pl;
-        devSum += (consumed - pl);
+        realSum += consumedDay;
+        plannedSum += plDay;
+        devSum += (consumedDay - plDay);
         count++;
       }
     }

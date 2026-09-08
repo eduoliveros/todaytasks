@@ -81,6 +81,71 @@ describe('computeDayDeviation (Modelo Híbrido Realista)', () => {
     expect(r.plannedMin).toBe(45);
     expect(r.deviationMin).toBe(-11.7);
   });
+
+  describe('Aislamiento de tareas trasladadas con initialElapsed', () => {
+    it('inicia en 0 la desviación cuando una tarea auto-movida ya superó su plan en días anteriores pero no se ha tocado hoy', () => {
+      // Tarea de 30m en la que ayer se consumieron 45m (initialElapsed: 45, elapsedBefore: 45)
+      const rolledTask = {
+        status: 'paused',
+        planned: 30,
+        elapsedBefore: 45,
+        initialElapsed: 45,
+        runningStart: null
+      };
+      const r = computeDayDeviation([rolledTask]);
+      expect(r.evaluatedCount).toBe(0);
+      expect(r.realMin).toBe(0);
+      expect(r.plannedMin).toBe(0);
+      expect(r.deviationMin).toBe(0);
+    });
+
+    it('evalúa únicamente el sobrecoste generado hoy si se trabaja en una tarea auto-movida sin plan restante', () => {
+      // Tarea de 30m, ayer 45m. Hoy se corre durante 15m (runningStart: 100, now: 115 -> elapsed 60)
+      const rolledTask = {
+        status: 'running',
+        planned: 30,
+        elapsedBefore: 45,
+        initialElapsed: 45,
+        runningStart: 100
+      };
+      const r = computeDayDeviation([rolledTask], () => 115);
+      expect(r.evaluatedCount).toBe(1);
+      expect(r.realMin).toBe(15);
+      expect(r.plannedMin).toBe(0);
+      expect(r.deviationMin).toBe(15);
+    });
+
+    it('evalúa ahorro o retraso relativo a hoy si una tarea con plan remanente se completa hoy', () => {
+      // Tarea de 60m, ayer 40m (initialElapsed: 40, plan restante: 20m).
+      // Hoy se completa con actualDuration: 55m (es decir, 15m hoy -> ahorro de 5m hoy).
+      const rolledTask = {
+        status: 'completed',
+        planned: 60,
+        initialElapsed: 40,
+        actualDuration: 55
+      };
+      const r = computeDayDeviation([rolledTask]);
+      expect(r.evaluatedCount).toBe(1);
+      expect(r.realMin).toBe(15);
+      expect(r.plannedMin).toBe(20);
+      expect(r.deviationMin).toBe(-5);
+    });
+
+    it('no genera desviación hoy si una tarea trasladada se completa administrativamente sin trabajo hoy', () => {
+      // Tarea de 30m, ayer 45m (initialElapsed: 45), hoy se completa sin tiempo hoy (actualDuration: 45)
+      const rolledTask = {
+        status: 'completed',
+        planned: 30,
+        initialElapsed: 45,
+        actualDuration: 45
+      };
+      const r = computeDayDeviation([rolledTask]);
+      expect(r.evaluatedCount).toBe(0);
+      expect(r.realMin).toBe(0);
+      expect(r.plannedMin).toBe(0);
+      expect(r.deviationMin).toBe(0);
+    });
+  });
 });
 
 describe('getTaskElapsed (dependencia de computeDayDeviation)', () => {

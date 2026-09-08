@@ -94,6 +94,36 @@ describe('TodayTasksDashboard - Internacionalización (i18n)', () => {
     setLocale('es');
   });
 
+  it('ajusta "Tareas por hacer" a lo que falta realmente (tiempo remanente)', () => {
+    // Tarea 1: plan 60, elapsedBefore 40 -> faltan 20 min
+    // Tarea 2: plan 30, elapsedBefore 45 (ya superada) -> faltan 0 min
+    // Tarea 3: plan 45, elapsedBefore 0 -> faltan 45 min
+    // Total que falta realmente = 20 + 0 + 45 = 65 min = 1h 05m
+    state.tasks = [
+      { id: 1, title: 'T1', planned: 60, status: 'paused', elapsedBefore: 40 },
+      { id: 2, title: 'T2', planned: 30, status: 'paused', elapsedBefore: 45 },
+      { id: 3, title: 'T3', planned: 45, status: 'pending', elapsedBefore: 0 }
+    ];
+
+    dashboard.renderHeaderStats();
+    const statsEl = document.getElementById('headerStats');
+    expect(statsEl.textContent).toContain('Tareas por hacer 1h 5min');
+  });
+
+  it('computa "Completado hoy" utilizando exclusivamente el tiempo invertido en la jornada (descontando initialElapsed)', () => {
+    // Tarea completada que venía de ayer con 40m de initialElapsed y finalizó en 55m -> 15m hoy
+    // Tarea completada creada hoy de 30m finalizada en 25m -> 25m hoy
+    // Total completado hoy = 15m + 25m = 40 min
+    state.tasks = [
+      { id: 1, title: 'T1', planned: 60, status: 'completed', initialElapsed: 40, actualDuration: 55 },
+      { id: 2, title: 'T2', planned: 30, status: 'completed', initialElapsed: 0, actualDuration: 25 }
+    ];
+
+    dashboard.renderHeaderStats();
+    const statsEl = document.getElementById('headerStats');
+    expect(statsEl.textContent).toContain('Completado hoy 40 min');
+  });
+
   it('renderiza barra de progreso en español e inglés', () => {
     dashboard.renderTaskProgressBar();
     const container = document.getElementById('taskProgressContainer');

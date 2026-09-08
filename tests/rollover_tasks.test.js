@@ -134,6 +134,7 @@ describe('TodayTasksActions - Auto-mover tareas pendientes a Hoy (Rollover)', ()
     expect(todayTasks.some(t => t.id === 101 && t.title === 'Tarea no terminada con auto-mover')).toBe(true);
     const movedTask = todayTasks.find(t => t.id === 101);
     expect(movedTask.elapsedBefore).toBe(15);
+    expect(movedTask.initialElapsed).toBe(15);
     expect(movedTask.autoMoveToToday).toBe(true);
 
     // En ayer NO debe estar la tarea 101, pero SÍ la 102 y la 103

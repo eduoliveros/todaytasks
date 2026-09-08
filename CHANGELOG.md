@@ -4,6 +4,26 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.108] - 2026-09-08
+
+### Añadido
+- **Aislamiento de Desviación Diaria y Métricas de Cabecera para Tareas Trasladadas (`initialElapsed`):**
+  - **Línea Base del Día para Tareas Auto-Movidas:**
+    * Inclusión de la propiedad `task.initialElapsed` en el modelo de datos (`DATA_SCHEMA.md` y `state.js`), asignada automáticamente al transferir tareas pendientes entre fechas mediante `rolloverPendingTasks`, `moveTaskToDate` o `moveTasksToDate`.
+    * Las tareas que inician una nueva jornada con tiempo consumido previo arrancan con una línea base que aísla el cálculo de la jornada actual respecto al histórico acumulado.
+  - **Desviación del Día Limpia en Cero (`computeDayDeviation`):**
+    * Refactorización del modelo híbrido en `js/utils.js`: descuenta `initialElapsed` tanto del plan remanente del día (`plDay = Math.max(0, planned - initialElapsed)`) como del tiempo consumido hoy (`consumedDay = Math.max(0, consumed - initialElapsed)`).
+    * Garantiza que al abrir una nueva jornada la desviación diaria empiece estrictamente en `0` (evaluadas: `0`), erradicando falsos indicadores de retraso en tareas sobrepasadas en días anteriores.
+    * Si la tarea se ejecuta hoy, computa de forma precisa el sobrecoste o ahorro generado exclusivamente durante la jornada en curso.
+    * Omisión de cierres administrativos (completar una tarea trasladada sin haber invertido tiempo en el día actual).
+  - **Sincronización de Estadísticas en el Panel Resumen (`#headerStats`):**
+    * **Tareas por hacer (`tasksTotal`):** Ajustado para reflejar lo que falta realmente por realizar ($\sum \max(0, \text{planned} - \text{getTaskElapsed}(t))$), en perfecta sincronía con el motor del timeline (`scheduler.js`) y proporcionando un cálculo exacto de *"Tiempo no asignado"*.
+    * **Completado hoy (`completedTotal`):** Suma exclusivamente los minutos invertidos durante la jornada en curso en tareas completadas ($\sum \max(0, \text{actualDuration} - \text{initialElapsed})$).
+  - **Pruebas y Documentación:**
+    * Suites de pruebas unitarias y de integración en `tests/day_deviation.test.js`, `tests/dashboard_view.test.js`, `tests/rollover_tasks.test.js` y `tests/copy_task.test.js`.
+    * Registro de Decisión de Arquitectura en `docs/adr/017-aislamiento-desviacion-y-metricas-diarias.md`.
+    * Actualización de arquitectura en `docs/ARCHITECTURE.md` y esquema en `docs/DATA_SCHEMA.md`.
+
 ## [1.107] - 2026-09-06
 
 ### Añadido

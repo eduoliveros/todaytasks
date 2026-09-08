@@ -102,6 +102,7 @@ describe('TodayTasksActions - Copiar Tareas a Otro Día', () => {
       title: 'Tarea con seguimiento',
       planned: 50,
       elapsedBefore: 25,
+      initialElapsed: 25,
       status: 'paused',
       autoMoveToToday: true
     });

@@ -98,6 +98,7 @@ interface Task {
   featured: boolean;                   // Tarea destacada en el top del día (máx. 5 por día)
   startAfter?: number | null;          // Minuto del día (0..1439, ej: 960 = 16:00) a partir del cual planificar la tarea
   autoMoveToToday?: boolean;           // Si true, se traslada automáticamente a hoy si queda pendiente
+  initialElapsed?: number;             // Minutos consumidos acumulados al trasladar/auto-mover la tarea a la fecha actual (def: 0)
   isRecurring?: boolean;               // true si fue materializada desde una RecurringTaskRule
   ruleId?: string | null;              // ID de la regla de recurrencia de origen
   dependsOn?: string[];                // IDs de tareas de las que depende directamente esta tarea (deben estar completadas antes de ejecutar)

@@ -160,6 +160,9 @@ export function wrapState(rawState) {
                   } else {
                     t.dependsOn = t.dependsOn.filter(id => typeof id === "string" && id && id !== t.id);
                   }
+                  if (typeof t.initialElapsed !== "number" || t.initialElapsed < 0) {
+                    t.initialElapsed = 0;
+                  }
                   if (typeof t.displayId === "string") {
                     const match = t.displayId.match(/^[WP]-(\d+)$/);
                     if (match) {

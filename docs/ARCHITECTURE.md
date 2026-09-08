@@ -204,11 +204,16 @@ La interfaz utiliza menús flotantes contextuales ligeros (*popovers*) para conf
 
 El panel *Resumen* de la cabecera incluye un indicador en formato **chip dual** (`⏱ Real / Plan [±Delta]`) que compara el tiempo real consumido frente a la duración planificada de las tareas de la jornada:
 
-* **Modelo Matemático Híbrido Realista:**
+* **Modelo Matemático Híbrido Realista Aislado por Jornada (v1.108 / ADR 017):**
   - Implementado en `computeDayDeviation(tasks, nowVal)` dentro de [`js/utils.js`](../js/utils.js).
   - Devuelve `{ deviationMin, realMin, plannedMin, evaluatedCount }`.
-  - **Tareas completadas:** $\text{actualDuration} - \text{planned}$ (ahorro consolidado con signo negativo o sobrecoste con signo positivo).
-  - **Tareas en curso (`running` o `paused`):** Solo si el tiempo consumido ya ha rebasado la estimación ($\text{elapsed} > \text{planned}$), se computa el sobrecoste acumulado en tiempo real. Si la tarea está dentro del margen previsto, computa $0$ para erradicar falsos adelantos al inicio de una tarea.
+  - **Aislamiento de tareas trasladadas (`initialElapsed`):** Para tareas que provienen de días anteriores vía auto-move (`rolloverPendingTasks`) o movimiento manual (`moveTaskToDate`), se almacena `initialElapsed` con los minutos ya consumidos en jornadas previas.
+  - La línea base diaria descuenta `initialElapsed`: $\text{plDay} = \max(0, \text{planned} - \text{initialElapsed})$ y $\text{realDay} = \max(0, \text{consumed} - \text{initialElapsed})$.
+  - **Tareas completadas:** $\text{actDay} - \text{plDay}$ (ahorro consolidado o sobrecoste atribuible a la jornada presente). Se descartan cierres administrativos sin tiempo invertido hoy ($\text{actDay} = 0 \land \text{plDay} = 0$).
+  - **Tareas en curso (`running` o `paused`):** Solo si el tiempo consumido hoy supera lo planificado para hoy ($\text{realDay} > \text{plDay}$), se computa el sobrecoste acumulado en tiempo real. Al iniciar el día, $\text{realDay} = 0$, garantizando que la desviación arranque estrictamente en $0$ y con $0$ tareas evaluadas.
+* **Sincronización de Estadísticas en el Panel Resumen (`#headerStats`):**
+  - **Tareas por hacer (`tasksTotal`):** Suma exactamente lo que resta por realizar en tareas activas: $\sum \max(0, \text{planned} - \text{getTaskElapsed}(t))$, en perfecta paridad con el algoritmo del timeline en [`scheduler.js`](../js/scheduler.js).
+  - **Completado hoy (`completedTotal`):** Suma exclusivamente los minutos invertidos durante la jornada actual en tareas completadas: $\sum \max(0, \text{actualDuration} - \text{initialElapsed})$.
 * **Presentación Visual (Chip Dual):**
   - Muestra explícitamente ambas magnitudes y una pastilla destacada con el delta neto (ej. `⏱ 1h 15m / 1h 00m [+15m]`).
   - **Semántica:** Rojo (`.stat-dev-over`) en retraso, verde (`.stat-dev-under`) en adelanto/ahorro y neutro (`.stat-dev-neutral`) en paridad.

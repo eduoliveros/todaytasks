@@ -151,6 +151,7 @@ export function TodayTasksCalendar(ctx, helpers){
               status: taskStatus,
               runningStart: null,
               elapsedBefore: savedElapsed,
+              initialElapsed: savedElapsed,
               completedAt: null,
               actualDuration: null
             });
@@ -450,6 +451,7 @@ export function TodayTasksCalendar(ctx, helpers){
       status: taskStatus,
       runningStart: null,
       elapsedBefore: savedElapsed,
+      initialElapsed: savedElapsed,
       completedAt: originalTask.status === "completed" ? originalTask.completedAt : null,
       actualDuration: originalTask.status === "completed" ? originalTask.actualDuration : null
     };
@@ -520,6 +522,7 @@ export function TodayTasksCalendar(ctx, helpers){
         status: taskStatus,
         runningStart: null,
         elapsedBefore: savedElapsed,
+        initialElapsed: savedElapsed,
         completedAt: originalTask.status === "completed" ? originalTask.completedAt : null,
         actualDuration: originalTask.status === "completed" ? originalTask.actualDuration : null
       };

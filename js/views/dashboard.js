@@ -1,5 +1,5 @@
 /* views/dashboard.js — Reloj, estadísticas de cabecera, barra de progreso, entorno, formularios */
-import { nowMinutes, fmt, fmtDur, computeOccupiedMeetingTime, computeDayDeviation, getTodayStr, getDayAbbr } from '../utils.js';
+import { nowMinutes, fmt, fmtDur, computeOccupiedMeetingTime, computeDayDeviation, getTodayStr, getDayAbbr, getTaskElapsed } from '../utils.js';
 import { t } from '../i18n.js';
 
 export function TodayTasksDashboard(ctx){
@@ -18,10 +18,17 @@ export function TodayTasksDashboard(ctx){
     const state = getState();
     const meetingsTotal = computeOccupiedMeetingTime(state.meetings);
     const activeTasks = (state.tasks || []).filter(t => t.status !== "completed");
-    const tasksTotal = activeTasks.reduce((s,t) => s + t.planned, 0);
+    const tasksTotal = activeTasks.reduce((s,t) => {
+      const done = getTaskElapsed(t);
+      return s + Math.max(0, (t.planned || 0) - done);
+    }, 0);
     const completedTotal = (state.tasks || [])
       .filter(t => t.status === "completed")
-      .reduce((s,t) => s + (t.actualDuration||0), 0);
+      .reduce((s,t) => {
+        const base = (typeof t.initialElapsed === "number" && t.initialElapsed > 0) ? t.initialElapsed : 0;
+        const dur = typeof t.actualDuration === "number" ? t.actualDuration : (t.elapsedBefore || 0);
+        return s + Math.max(0, dur - base);
+      }, 0);
     const intTotal = (state.interruptions||[]).reduce((s,i) => s + (i.duration||0), 0);
     const dev = computeDayDeviation(state.tasks);
 
