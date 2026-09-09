@@ -22,6 +22,7 @@ import { TodayTasksHistoryMetrics } from './app/history-metrics.js';
 import { TodayTasksCommandPalette } from './app/command-palette.js';
 import { TodayTasksDependencies } from './app/dependencies.js';
 import { attachTagAutocomplete } from './app/tag-autocomplete.js';
+import { exportOpenTasksCSV } from './app/export-csv.js';
 import { t, setLocale, translateDOM } from './i18n.js';
 
 const STORAGE_KEY = (TodayTasksConfig && TodayTasksConfig.storageKey) ? TodayTasksConfig.storageKey : "todaytasks_state_v1";
@@ -259,6 +260,8 @@ function switchHeaderTab(target){
   viewsModule.refreshPlanningModeBtn();
 
   document.getElementById("newDayBtn").addEventListener("click", actionsModule.startNewDay);
+  const exportCsvBtnEl = document.getElementById("exportCsvBtn");
+  if (exportCsvBtnEl) exportCsvBtnEl.addEventListener("click", () => exportOpenTasksCSV(state));
   const autoOrderBtnEl = document.getElementById("autoOrderBtn");
   if(autoOrderBtnEl) autoOrderBtnEl.addEventListener("click", actionsModule.applyAutoOrder);
   document.getElementById("notifyBtn").addEventListener("click", requestNotificationPermission);

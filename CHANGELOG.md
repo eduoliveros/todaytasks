@@ -4,6 +4,22 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.109] - 2026-09-09
+
+### Añadido
+- **Exportación CSV de Tareas Abiertas (panel Configuración `3`):**
+  - Nuevo botón **"⬇ Exportar CSV"** en el panel de Configuración, inmediatamente antes de "↻ Nuevo día".
+  - Genera y descarga un archivo `.csv` con todas las tareas abiertas (`pending`, `running`, `paused`) de todos los días retenidos en el entorno activo, más las reglas maestras de tareas recurrentes activas.
+  - **Compatible con Microsoft Excel** sin asistente de importación: BOM UTF-8 (`\uFEFF`) nativo y separador `;`.
+  - **17 columnas exportadas:** ID, Tipo, Título, Estado, Urgencia (con prefijo numérico ordenable `1-Hoy`/`1-Today`, `2-Días`/`2-Days`, etc.), Destacada, Duración estimada (min), Tiempo consumido (min), Tiempo restante (min), Dependencias, Entorno, Fecha, Recurrente, Patrón recurrencia, Etiquetas, Menciones, Notas.
+  - **Localización dinámica (i18n):** cabeceras, estados, valores y nombre del archivo generados en el idioma activo (Español / English).
+  - **Escape RFC 4180:** campos con `;`, `"` o saltos de línea correctamente entre comillas; las notas Markdown multilinea quedan en una sola celda.
+  - **Mitigación de CSV Formula Injection:** campos que comienzan por `=`, `+`, `-` o `@` reciben un apóstrofe previo.
+  - **Liberación de recursos:** `URL.revokeObjectURL()` invocado inmediatamente tras la descarga.
+  - Módulo nuevo: `js/app/export-csv.js` con funciones `csvField`, `localizeUrgency` y `exportOpenTasksCSV`.
+  - Claves i18n añadidas: `export.*` (32 claves) en `js/i18n/es.js` y `js/i18n/en.js`.
+  - Suite de 30 tests unitarios en `tests/export_csv.test.js` (cobertura completa de todos los casos del plan).
+
 ## [1.108] - 2026-09-08
 
 ### Añadido

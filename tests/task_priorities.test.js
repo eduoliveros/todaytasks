@@ -65,13 +65,18 @@ describe('Task Priorities (Urgency & Featured)', () => {
 
   describe('State Migration & Defaults', () => {
     it('migrates legacy tasks without urgency or featured fields to default values', () => {
+      // Usar la fecha de hoy dinámicamente para evitar que snapshotAndPrune
+      // pode el día como "antiguo" cuando la fecha estática supere los 10 días
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
       const legacyState = {
         activeEnv: 'work',
-        selectedDate: '2026-08-29',
+        selectedDate: todayStr,
         environments: {
           work: {
             days: {
-              '2026-08-29': {
+              [todayStr]: {
                 tasks: [
                   { id: 'legacy-1', title: 'Old Task', planned: 30, order: 1, status: 'pending' }
                 ]
