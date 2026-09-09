@@ -42,4 +42,9 @@ describe('Header responsivo en móvil (Opción A)', () => {
     expect(btn).not.toBeNull();
     expect(btn.textContent).toContain('Orden automático');
   });
+
+  it('la cabecera header.topbar permanece fija/sticky en la parte superior', () => {
+    expect(cssContent).toMatch(/header\.topbar\s*\{[^}]*position:\s*sticky/i);
+    expect(cssContent).toMatch(/header\.topbar\s*\{[^}]*top:\s*0/i);
+  });
 });
