@@ -185,6 +185,7 @@ export function TodayTasksActions(ctx) {
     taskDrop:               dragdrop.taskDrop,
     taskDragEnd:            dragdrop.taskDragEnd,
     moveTaskDirectly:       dragdrop.moveTaskDirectly,
+    moveTasksGroupDirectly: dragdrop.moveTasksGroupDirectly,
     reorderTaskByDrag:      dragdrop.reorderTaskByDrag,
     /* Execution */
     startTask:              execution.startTask,

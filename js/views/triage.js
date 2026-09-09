@@ -467,9 +467,21 @@ export function TodayTasksTriageView(ctx) {
   function moveTriageTaskDirection(taskId, direction) {
     const actions = getActions();
     if (actions && actions.moveTaskDirectly) {
-      actions.moveTaskDirectly(taskId, direction);
+      actions.moveTaskDirectly(taskId, direction, selectedTaskIds);
     }
     closeMobileMoveSheet();
+    renderTriageView();
+  }
+
+  function executeTriageBatchMoveDirection(direction) {
+    if (selectedTaskIds.size === 0) return;
+    const actions = getActions();
+    if (actions && actions.moveTasksGroupDirectly) {
+      actions.moveTasksGroupDirectly(selectedTaskIds, direction);
+    } else if (actions && actions.moveTaskDirectly) {
+      const firstId = Array.from(selectedTaskIds)[0];
+      actions.moveTaskDirectly(firstId, direction, selectedTaskIds);
+    }
     renderTriageView();
   }
 
@@ -487,7 +499,11 @@ export function TodayTasksTriageView(ctx) {
                  (state.tasks || []).find(t => String(t.id) === String(taskId));
     const titleEl = document.getElementById('triageMoveSheetTaskTitle');
     if (titleEl && task) {
-      titleEl.textContent = task.title;
+      if (selectedTaskIds.has(String(taskId)) && selectedTaskIds.size > 1) {
+        titleEl.textContent = `${task.title} (+${selectedTaskIds.size - 1} seleccionadas)`;
+      } else {
+        titleEl.textContent = task.title;
+      }
     }
 
     const runningNotice = document.getElementById('triageMoveSheetRunningNotice');
@@ -590,6 +606,12 @@ export function TodayTasksTriageView(ctx) {
       if (touchSourceRowEl) {
         touchSourceRowEl.classList.add('long-press-active', 'dragging');
       }
+      if (selectedTaskIds.has(String(taskId))) {
+        selectedTaskIds.forEach(id => {
+          const r = document.querySelector(`.triage-task-row[data-task-id="${id}"]`);
+          if (r) r.classList.add('long-press-active', 'dragging');
+        });
+      }
     }, delay);
   }
 
@@ -667,13 +689,13 @@ export function TodayTasksTriageView(ctx) {
     }
 
     if ((wasLongPress || wasDragging) && sourceId) {
-      if (targetId && targetId !== sourceId) {
-        // Reutilización directa del mecanismo de drag & drop existente
+      if (targetId && (targetId !== sourceId || (wasDragging && selectedTaskIds.has(String(targetId)) && selectedTaskIds.size > 1))) {
+        // Reutilización directa del mecanismo de drag & drop existente con soporte multiselección
         const actions = getActions();
         if (actions && actions.reorderTaskByDrag) {
-          actions.reorderTaskByDrag(sourceId, targetId);
+          actions.reorderTaskByDrag(sourceId, targetId, selectedTaskIds);
         } else if (actions && actions.taskDrop) {
-          actions.taskDrop(event || { preventDefault: () => {} }, targetId);
+          actions.taskDrop(event || { preventDefault: () => {} }, targetId, selectedTaskIds);
         }
         renderTriageView();
       } else if (wasLongPress && !wasDragging) {
@@ -823,10 +845,20 @@ export function TodayTasksTriageView(ctx) {
     if (event) event.stopPropagation();
     if (!targetDateStr) return;
     const actions = getActions();
-    if (actions && actions.moveTaskToDate) {
-      actions.moveTaskToDate(taskId, targetDateStr);
+    const strId = String(taskId);
+    if (selectedTaskIds.has(strId)) {
+      const ids = Array.from(selectedTaskIds);
+      if (actions && actions.moveTasksToDate) {
+        actions.moveTasksToDate(ids, targetDateStr);
+      } else if (actions && actions.moveTaskToDate) {
+        ids.forEach(id => actions.moveTaskToDate(id, targetDateStr));
+      }
+    } else {
+      if (actions && actions.moveTaskToDate) {
+        actions.moveTaskToDate(taskId, targetDateStr);
+      }
+      selectedTaskIds.delete(strId);
     }
-    selectedTaskIds.delete(String(taskId));
     renderTriageView();
   }
 
@@ -1038,6 +1070,21 @@ export function TodayTasksTriageView(ctx) {
     `;
   }
 
+  function triageTaskDragStart(event, taskId) {
+    const actions = getActions();
+    if (actions && actions.taskDragStart) {
+      actions.taskDragStart(event, taskId, selectedTaskIds);
+    }
+  }
+
+  function triageTaskDrop(event, taskId) {
+    const actions = getActions();
+    if (actions && actions.taskDrop) {
+      actions.taskDrop(event, taskId, selectedTaskIds);
+    }
+    renderTriageView();
+  }
+
   function renderTriageTaskRow(task, env, quick5Days) {
     const state = getState();
     const isSelected = selectedTaskIds.has(String(task.id));
@@ -1069,10 +1116,10 @@ export function TodayTasksTriageView(ctx) {
     const isDraggable = task.status === "pending" || task.status === "paused";
     const dragAttrs = isDraggable
       ? `draggable="true"
-         ondragstart="app.taskDragStart(event, '${escapeAttr(task.id)}')"
+         ondragstart="app.triageTaskDragStart(event, '${escapeAttr(task.id)}')"
          ondragover="app.taskDragOver(event)"
          ondragleave="app.taskDragLeave(event)"
-         ondrop="app.taskDrop(event, '${escapeAttr(task.id)}')"
+         ondrop="app.triageTaskDrop(event, '${escapeAttr(task.id)}')"
          ondragend="app.taskDragEnd(event)"`
       : '';
     const dragHandle = isDraggable
@@ -1634,6 +1681,22 @@ export function TodayTasksTriageView(ctx) {
           </div>
 
           <div class="triage-floating-actions">
+            <!-- BOTONES DE REORDENACIÓN DE POSICIÓN POR LOTE -->
+            <div class="triage-batch-move-group">
+              <button type="button" class="btn secondary small triage-batch-move-btn triage-batch-move-top" onclick="app.executeTriageBatchMoveDirection('top')" title="${escapeAttr(t('triage.moveToTop') || 'Mover al inicio')}">
+                <span>⤒</span>
+              </button>
+              <button type="button" class="btn secondary small triage-batch-move-btn triage-batch-move-up" onclick="app.executeTriageBatchMoveDirection('up')" title="${escapeAttr(t('triage.moveUp') || 'Subir')}">
+                <span>▲</span>
+              </button>
+              <button type="button" class="btn secondary small triage-batch-move-btn triage-batch-move-down" onclick="app.executeTriageBatchMoveDirection('down')" title="${escapeAttr(t('triage.moveDown') || 'Bajar')}">
+                <span>▼</span>
+              </button>
+              <button type="button" class="btn secondary small triage-batch-move-btn triage-batch-move-bottom" onclick="app.executeTriageBatchMoveDirection('bottom')" title="${escapeAttr(t('triage.moveToBottom') || 'Mover al final')}">
+                <span>⤓</span>
+              </button>
+            </div>
+
             <!-- BOTÓN MOVER A FECHA (7 DÍAS LABORABLES) -->
             <div class="triage-dropdown-anchor">
               <button type="button" class="btn primary small" onclick="app.toggleTriageDropdown('triageMoveDropdown', event)">
@@ -1834,6 +1897,7 @@ export function TodayTasksTriageView(ctx) {
     handleMobileAddModalSubmit,
     focusTriageAddBar,
     moveTriageTaskDirection,
+    executeTriageBatchMoveDirection,
     openMobileMoveSheet,
     closeMobileMoveSheet,
     getActiveMoveSheetTaskId,
@@ -1841,6 +1905,8 @@ export function TodayTasksTriageView(ctx) {
     handleTriageTouchMove,
     handleTriageTouchEnd,
     handleTriageTouchCancel,
+    triageTaskDragStart,
+    triageTaskDrop,
     getSelectedTaskIds: () => selectedTaskIds,
     setTriageSearchQuery,
     getTriageSearchQuery,

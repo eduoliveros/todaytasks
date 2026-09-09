@@ -690,6 +690,31 @@ body[data-theme="dark"] .triage-task-title.is-overflow {
   flex-wrap: wrap;
 }
 
+.triage-batch-move-group {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+
+.triage-batch-move-btn {
+  border-radius: 0 !important;
+  border: none !important;
+  border-right: 1px solid var(--line) !important;
+  padding: 4px 7px !important;
+  font-size: 0.85rem !important;
+  line-height: 1 !important;
+  min-width: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.triage-batch-move-btn:last-child {
+  border-right: none !important;
+}
+
 .triage-dropdown-anchor {
   position: relative;
 }

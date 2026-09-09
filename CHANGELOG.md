@@ -4,6 +4,27 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.111] - 2026-09-09
+
+### Añadido
+- **Reordenación y Movimiento en Bloque de Tareas Multiseleccionadas en Triaje (`#/triage`):**
+  - **Drag & Drop Masivo (Escritorio y Táctil):** Al seleccionar múltiples tareas y arrastrar una de ellas, todo el grupo seleccionado se mueve junto en bloque respetando estrictamente su orden relativo original (`order`).
+    - Si se suelta sobre una tarea no seleccionada: al arrastrar hacia abajo se ubica tras la tarea destino; al arrastrar hacia arriba se ubica en su posición desplazándola hacia abajo.
+    - Si se suelta sobre una tarea que forma parte de la propia selección: todas las tareas seleccionadas se agrupan contiguamente alrededor de la tarea objetivo.
+    - Si se arrastra una tarea no seleccionada: solo se mueve dicha tarea, sin afectar a la selección ni a las tareas seleccionadas.
+    - Feedback visual reactivo: todas las tareas seleccionadas se marcan con `.dragging` durante el arrastre.
+    - Persistencia: las tareas se mantienen seleccionadas tras reordenar para permitir encadenar operaciones sucesivas.
+  - **Controles de Posición en la Barra Flotante Masiva (`#triageFloatingBar`):**
+    - Grupo de botones de movimiento directo de posición: **⤒ Inicio**, **▲ Subir**, **▼ Bajar** y **⤓ Fin**.
+    - Permiten desplazar todo el bloque seleccionado de forma accesible tanto con ratón como en pantallas táctiles.
+  - **Bottom Sheet Móvil con Soporte Multiselección:**
+    - Al abrir la hoja inferior de movimiento táctil sobre una tarea seleccionada, se indica el recuento de tareas (`+X seleccionadas`) y las acciones de dirección (Subir, Bajar, Al inicio, Al final) mueven el conjunto completo.
+  - **Mover Fecha Masivo desde Botones Rápidos por Fila:**
+    - Al pulsar uno de los 5 botones rápidos de día (`[HOY]`, `[MAÑ]`, etc.) en una tarea seleccionada, todas las tareas seleccionadas se mueven juntas a la fecha elegida.
+- **Documentación y Pruebas:**
+  - Nueva suite de pruebas unitarias: `tests/triage_multiselect_move.test.js` (12 tests).
+  - Registro de Decisión de Arquitectura: [ADR 019](docs/adr/019-triaje-reordenacion-masiva-bloque-seleccionado.md).
+
 ## [1.110] - 2026-09-09
 
 ### Añadido
