@@ -695,6 +695,9 @@ function switchHeaderTab(target){
     handleTriageTouchMove: (event) => viewsModule && viewsModule.handleTriageTouchMove && viewsModule.handleTriageTouchMove(event),
     handleTriageTouchEnd: (event) => viewsModule && viewsModule.handleTriageTouchEnd && viewsModule.handleTriageTouchEnd(event),
     handleTriageTouchCancel: (event) => viewsModule && viewsModule.handleTriageTouchCancel && viewsModule.handleTriageTouchCancel(event),
+    setTriageSearch: (query) => viewsModule && viewsModule.setTriageSearchQuery && viewsModule.setTriageSearchQuery(query),
+    getTriageSearchQuery: () => viewsModule && viewsModule.getTriageSearchQuery ? viewsModule.getTriageSearchQuery() : '',
+    clearTriageSearch: () => viewsModule && viewsModule.clearTriageSearch && viewsModule.clearTriageSearch(),
     openTimePopover: (taskId, event) => popoversModule.openTimePopover(taskId, event),
     closeTimePopover: () => popoversModule.closeTimePopover(),
     saveTimePopover: () => popoversModule.saveTimePopover(),
@@ -782,10 +785,20 @@ function switchHeaderTab(target){
         if (typeof event.stopPropagation === 'function') event.stopPropagation();
         if (typeof event.preventDefault === 'function') event.preventDefault();
       }
+      const isTriage = routerModule && routerModule.getCurrentView && routerModule.getCurrentView() === 'triage';
+      const cleanTag = String(tag).replace(/^#+/, '').trim();
+      if (isTriage) {
+        const currentQuery = (viewsModule && viewsModule.getTriageSearchQuery ? viewsModule.getTriageSearchQuery() : '').trim();
+        if (currentQuery === `#${cleanTag}`) {
+          if (viewsModule && viewsModule.clearTriageSearch) viewsModule.clearTriageSearch();
+        } else {
+          if (viewsModule && viewsModule.setTriageSearchQuery) viewsModule.setTriageSearchQuery(`#${cleanTag}`);
+        }
+        return;
+      }
       if (routerModule && routerModule.getCurrentView && routerModule.getCurrentView() !== 'tasks') {
         window.location.hash = '#/';
       }
-      const cleanTag = String(tag).replace(/^#+/, '').trim();
       const currentQuery = (taskSearchQuery || '').trim();
       if (currentQuery === `#${cleanTag}`) {
         this.clearTaskSearch();
@@ -798,10 +811,20 @@ function switchHeaderTab(target){
         if (typeof event.stopPropagation === 'function') event.stopPropagation();
         if (typeof event.preventDefault === 'function') event.preventDefault();
       }
+      const isTriage = routerModule && routerModule.getCurrentView && routerModule.getCurrentView() === 'triage';
+      const cleanMention = String(mention).replace(/^@+/, '').trim();
+      if (isTriage) {
+        const currentQuery = (viewsModule && viewsModule.getTriageSearchQuery ? viewsModule.getTriageSearchQuery() : '').trim();
+        if (currentQuery.toLowerCase() === `@${cleanMention.toLowerCase()}`) {
+          if (viewsModule && viewsModule.clearTriageSearch) viewsModule.clearTriageSearch();
+        } else {
+          if (viewsModule && viewsModule.setTriageSearchQuery) viewsModule.setTriageSearchQuery(`@${cleanMention}`);
+        }
+        return;
+      }
       if (routerModule && routerModule.getCurrentView && routerModule.getCurrentView() !== 'tasks') {
         window.location.hash = '#/';
       }
-      const cleanMention = String(mention).replace(/^@+/, '').trim();
       const currentQuery = (taskSearchQuery || '').trim();
       if (currentQuery.toLowerCase() === `@${cleanMention.toLowerCase()}`) {
         this.clearTaskSearch();

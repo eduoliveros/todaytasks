@@ -141,6 +141,9 @@ export function TodayTasksViews(ctx){
     handleTriageTouchMove:        triageV.handleTriageTouchMove,
     handleTriageTouchEnd:         triageV.handleTriageTouchEnd,
     handleTriageTouchCancel:      triageV.handleTriageTouchCancel,
+    setTriageSearchQuery:         triageV.setTriageSearchQuery,
+    getTriageSearchQuery:         triageV.getTriageSearchQuery,
+    clearTriageSearch:            triageV.clearTriageSearch,
     /* Orchestration */
     renderAll,
     smartRender

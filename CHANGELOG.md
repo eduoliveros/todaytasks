@@ -4,7 +4,30 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.110] - 2026-09-09
+
+### Añadido
+- **Búsqueda de Tareas en Vista de Triaje (`#/triage`):**
+  - Barra de búsqueda (`#triageSearchBar`, `#triageSearchInput`, `#triageSearchClearBtn`) integrada en la cabecera de la vista de triaje.
+  - Reutilización de `matchesTaskSearch` para filtrar tareas activas en los grupos por título, notas, etiquetas (`#tag`), personas/menciones (`@persona`), urgencia (`urg:hoy`, `urg:dias`, `today`, etc.) y estado destacado (`star`).
+  - Renderizado reactivo de la sección `.triage-completed-list` con las tareas completadas que coinciden con la búsqueda y acción directa para reabrirlas (`app.uncompleteTask`).
+  - Banner informativo (`.search-results-info`) con contadores de tareas activas y completadas coincidentes.
+  - Botón de limpieza rápida (✕) y atajo con la tecla `Escape` para restablecer la vista.
+  - Atajo de teclado `/` enfoca directamente el buscador de triaje cuando la vista activa es `triage`.
+  - Integración de autocompletado en caliente de `#etiquetas` y `@menciones` en el input de búsqueda de triaje.
+  - Actualización selectiva del DOM en `oninput` para evitar parpadeos y preservar el foco de escritura.
+- **Autocompletado Ubicuo de Etiquetas (#) y Menciones (@) en Edición de Tareas:**
+  - Elevación de la capa de visualización de los menús desplegables de autocompletado a `z-index: 200000` (en `js/app/tag-autocomplete.js` y `css/layout.css`), asegurando que siempre se muestren por encima de las capas de modales (`.modal-overlay` con `z-index: 100000`).
+  - Autocompletado integrado en el modal de edición de tareas en triaje (`#triageEditTitleInput` y `#task-edit-notes-${id}`).
+  - Autocompletado integrado en la edición en línea del tablero principal (`#task-edit-title-${id}` y `#task-edit-notes-${id}`).
+  - Autocompletado integrado en el campo de notas al crear tareas (`#taskNotesInput`).
+  - Enriquecimiento de `getEnvironmentTags` y `getEnvironmentMentions` para extraer etiquetas y menciones también desde el campo `notes` en tareas activas y días del historial.
+- **Documentación y Pruebas:**
+  - Nuevas suites de pruebas unitarias: `tests/triage_search.test.js` (12 tests) y `tests/task_edit_autocomplete.test.js` (4 tests).
+  - Registro de Decisión de Arquitectura: [ADR 018](docs/adr/018-triaje-busqueda-y-autocompletado-edicion.md).
+
 ## [1.109] - 2026-09-09
+
 
 ### Añadido
 - **Exportación CSV de Tareas Abiertas (panel Configuración `3`):**

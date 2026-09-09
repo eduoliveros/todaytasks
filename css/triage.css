@@ -1136,3 +1136,18 @@ body[data-theme="dark"] .triage-task-title.is-overflow {
     bottom: 84px;
   }
 }
+
+/* Buscador de tareas en triaje */
+.triage-search-bar {
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.triage-completed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+

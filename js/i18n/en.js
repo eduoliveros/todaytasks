@@ -212,6 +212,7 @@ export default {
 
   // Acciones comunes
   'action.save': 'Save',
+  'action.edit': 'Edit',
   'action.cancel': 'Cancel',
   'action.delete': 'Delete',
   'action.undo': 'Undo',

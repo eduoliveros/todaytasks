@@ -270,6 +270,12 @@ Para resolver la sobrecarga cognitiva cuando se acumulan decenas de tareas pendi
   - Reutilización del modal completo `#triageTaskEditModal` en modo creación (`id: '__new__'`) para garantizar coherencia de interfaz y paridad total de funcionalidades (autocompletado de `#etiquetas`, duración planificada, selector visual de urgencia, conmutador de destacada ⭐, notas Markdown con barra de herramientas, hora mínima `startAfter`, casilla de traslado automático y **definición completa de patrones de recurrencia periódica 🔁**).
   - La sección de recurrencia reutiliza íntegramente las clases `.rec-pop-*` de `css/modals.css` y la lógica de días/frecuencias del sistema, ocultando automáticamente la opción de auto-mover y conectando con `actionsModule.addTask(..., recurringData)` con soporte transaccional de Undo.
   - Activación mediante el botón de cabecera `＋ Nueva tarea` en PC, atajo de teclado global <kbd>N</kbd>, o el botón de acción flotante (FAB `#triageFabAddTask`) en móviles.
+* **Buscador Integrado en Triaje (`#triageSearchBar`, `v1.110` / [ADR 018](./adr/018-triaje-busqueda-y-autocompletado-edicion.md)):**
+  - Reutilización de `matchesTaskSearch(task, query)` de `js/utils.js` para filtrar tareas activas por texto, etiquetas (`#tag`), menciones (`@persona`), urgencia (`urg:hoy`, `urg:dias`, etc.) y estado destacado (`star`).
+  - Renderizado dinámico de la sección `.triage-completed-list` con las tareas completadas coincidentes y botón de reapertura inmediata (`app.uncompleteTask`).
+  - Banner informativo con recuento de tareas activas y completadas coincidentes.
+  - Botón de limpieza rápida (✕), atajo de teclado <kbd>Esc</kbd> para vaciar la búsqueda, y atajo global <kbd>/</kbd> para enfocar el buscador de triaje desde cualquier punto de la vista.
+  - Actualización selectiva del DOM en `oninput` para mantener intacto el foco del input y la interacción con los menús de autocompletado.
 
 ---
 
@@ -354,6 +360,10 @@ Implementado en la versión `v1.102` ([ADR 011](./adr/011-sistema-etiquetas-tags
   - Navegación completa por teclado (<kbd>↓</kbd>, <kbd>↑</kbd>, <kbd>Enter</kbd>, <kbd>Tab</kbd>, <kbd>Esc</kbd>) y ratón. Al aceptar una sugerencia, inserta el tag y un espacio para continuar escribiendo sin interrupciones.
 * **Filtrado Reactivo:**
   - Al hacer clic sobre cualquier hashtag en una tarea (o mediante `app.filterByTag(tag)`), el buscador principal se auto-rellena con `#tag` y filtra la lista de tareas y el tablero cronológico instantáneamente. Si se vuelve a hacer clic en el mismo tag, se limpia el filtro.
+* **Autocompletado Ubicuo en Edición y Creación (`v1.110` / [ADR 018](./adr/018-triaje-busqueda-y-autocompletado-edicion.md)):**
+  - Elevación de capa a `z-index: 200000` en `js/app/tag-autocomplete.js` y `css/layout.css` para sobreponerse de forma confiable sobre modales (`.modal-overlay` con `z-index: 100000`).
+  - Integrado en todas las áreas de redacción de tareas: creación (`#taskTitle` y `#taskNotesInput`), edición inline en el tablero (`#task-edit-title-${id}` y `#task-edit-notes-${id}`), y modal de triaje (`#triageEditTitleInput` y `#task-edit-notes-${id}`).
+  - Extracción ampliada: `getEnvironmentTags` y `getEnvironmentMentions` escanean tanto los títulos como el campo `notes` en tareas activas e histórico de días.
 
 ---
 

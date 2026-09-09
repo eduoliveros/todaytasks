@@ -323,7 +323,15 @@ export function TodayTasksShortcuts(appCtx){
         }
       } else if(e.key === "/"){
         e.preventDefault();
-        if(routerModule && routerModule.getCurrentView() !== 'main'){
+        if(routerModule && routerModule.getCurrentView && routerModule.getCurrentView() === 'triage'){
+          const el = document.getElementById("triageSearchInput");
+          if(el) {
+            el.focus();
+            el.select();
+          }
+          return;
+        }
+        if(routerModule && routerModule.getCurrentView && routerModule.getCurrentView() !== 'main'){
           window.location.hash = '#/';
         }
         setTimeout(() => {

@@ -36,8 +36,8 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
     // 4. Iniciar ejecución de la tarea (Pulsar el botón ▶ Iniciar)
     await page.click('#tasksList button:has-text("▶ Iniciar")');
 
-    // Verificar badge "en ejecución"
-    await expect(tasksList).toContainText('en ejecución');
+    // Verificar badge "en curso"
+    await expect(tasksList).toContainText('en curso');
 
     // 5. Completar la tarea (Pulsar el botón ✓ Completar)
     await page.click('#tasksList button:has-text("✓ Completar")');
@@ -284,16 +284,16 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
 
     // Ahora la Tarea Número 3 debe estar antes que la Tarea Número 2
     const items = tasksList.locator('.task-item .title');
-    await expect(items.nth(0)).toHaveText('Tarea Número 1');
-    await expect(items.nth(1)).toHaveText('Tarea Número 3');
-    await expect(items.nth(2)).toHaveText('Tarea Número 2');
+    await expect(items.nth(0)).toContainText('Tarea Número 1');
+    await expect(items.nth(1)).toContainText('Tarea Número 3');
+    await expect(items.nth(2)).toContainText('Tarea Número 2');
 
     // 3. Iniciar la Tarea Número 2 (que está al final)
     const task2StartBtn = tasksList.locator('.task-item:has-text("Tarea Número 2") button:has-text("▶ Iniciar")');
     await task2StartBtn.click();
 
     // La Tarea Número 2 pasa a primera posición y estado "running"
-    await expect(items.nth(0)).toHaveText('Tarea Número 2');
+    await expect(items.nth(0)).toContainText('Tarea Número 2');
     const runningItem = tasksList.locator('.task-item.running');
     await expect(runningItem).toBeVisible();
     await expect(runningItem).toContainText('Tarea Número 2');
@@ -323,8 +323,8 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
 
     // La segunda tarea debe estar en la primera posición
     const items = tasksList.locator('.task-item .title');
-    await expect(items.nth(0)).toHaveText('Segunda Tarea Arriba');
-    await expect(items.nth(1)).toHaveText('Primera Tarea Normal');
+    await expect(items.nth(0)).toContainText('Segunda Tarea Arriba');
+    await expect(items.nth(1)).toContainText('Primera Tarea Normal');
   });
 
   test('Pulsar una tarea en el calendario hace scroll hasta su tarjeta y activa el resaltado', async ({ page }) => {

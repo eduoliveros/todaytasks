@@ -76,7 +76,7 @@ export function TodayTasksTasksView(ctx){
       return `
       <div class="item task-item editing ${taskEdit.featured ? 'featured-task' : ''} ${isOverflow ? 'task-overflow' : ''}" id="task-item-${escapeAttr(task.id)}">
         <div class="row">
-          <input type="text" id="task-edit-title-${escapeAttr(task.id)}" value="${escapeAttr(taskEdit.title)}" onfocus="if(window.app && window.app.attachTagAutocompleteToEl) window.app.attachTagAutocompleteToEl(this)" oninput="app.updateTaskEditField('title', this.value)" placeholder="${escapeAttr(t('tasks.inputTitlePlaceholder'))}">
+          <input type="text" id="task-edit-title-${escapeAttr(task.id)}" value="${escapeAttr(taskEdit.title)}" onfocus="if(window.app && window.app.attachTagAutocompleteToEl) window.app.attachTagAutocompleteToEl(this)" oninput="if(window.app) window.app.updateTaskEditField('title', this.value)" placeholder="${escapeAttr(t('tasks.inputTitlePlaceholder'))}">
         </div>
         <div class="row" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
           <label style="font-size:0.82rem;color:var(--text-muted);font-weight:500;">${t('tasks.editPlanned')}<br><input type="text" value="${escapeAttr(taskEdit.duration)}" placeholder="${escapeAttr(t('tasks.editDurationPlaceholder'))}" style="width:95px;margin-top:4px;" oninput="app.updateTaskEditField('duration', this.value)"></label>
@@ -110,7 +110,7 @@ export function TodayTasksTasksView(ctx){
               <button type="button" class="btn-notes-tool" id="btn-preview-edit-${escapeAttr(task.id)}" onclick="app.toggleEditNotesPreview('${escapeAttr(task.id)}')" title="${escapeAttr(t('markdown.previewTooltip'))}">👁️</button>
             </div>
           </div>
-          <textarea id="task-edit-notes-${escapeAttr(task.id)}" class="task-edit-notes-textarea" rows="2" style="width:100%;box-sizing:border-box;" placeholder="${escapeAttr(t('tasks.notesPlaceholder'))}" oninput="app.updateTaskEditField('notes', this.value)">${escapeHtml(taskEdit.notes || '')}</textarea>
+          <textarea id="task-edit-notes-${escapeAttr(task.id)}" class="task-edit-notes-textarea" rows="2" style="width:100%;box-sizing:border-box;" placeholder="${escapeAttr(t('tasks.notesPlaceholder'))}" onfocus="if(window.app && window.app.attachTagAutocompleteToEl) window.app.attachTagAutocompleteToEl(this)" oninput="if(window.app) window.app.updateTaskEditField('notes', this.value)">${escapeHtml(taskEdit.notes || '')}</textarea>
           <div id="task-edit-notes-preview-${escapeAttr(task.id)}" class="task-edit-notes-preview task-note-content" style="display:none;"></div>
         </div>
         <div class="task-form-dependencies-row" style="margin-bottom:10px;">
@@ -477,61 +477,70 @@ export function TodayTasksTasksView(ctx){
     if(!searchQuery){
       if(active.length === 0){
         el.innerHTML = `<div class="empty">${t('tasks.empty')}</div>`;
-        return;
+      } else {
+        el.innerHTML = active.map(t => renderTaskItem(t, schedule, taskEdit)).join("");
       }
-      el.innerHTML = active.map(t => renderTaskItem(t, schedule, taskEdit)).join("");
-      return;
-    }
-
-    // Búsqueda inteligente activa (título, urgencia y destacado)
-    const matchingActive = active.filter(t => matchesTaskSearch(t, searchQuery));
-    const matchingCompleted = (state.tasks || [])
-      .filter(t => t.status === "completed" && matchesTaskSearch(t, searchQuery))
-      .sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
-
-    if(matchingActive.length === 0 && matchingCompleted.length === 0){
-      el.innerHTML = `
-        <div class="search-results-info">
-          <span>${t('tasks.searchTitle', { queryHtml: `<strong>"${escapeHtml(searchQuery)}"</strong>` })}</span>
-          <button class="search-clear-link" onclick="app.clearTaskSearch()">${t('tasks.searchClear')}</button>
-        </div>
-        <div class="empty">${t('tasks.searchNoResults', { query: escapeHtml(searchQuery) })}</div>
-      `;
-      return;
-    }
-
-    let html = `
-      <div class="search-results-info">
-        <span>${t('tasks.searchResultsHeader', { queryHtml: `<strong>"${escapeHtml(searchQuery)}"</strong>`, active: matchingActive.length, completed: matchingCompleted.length })}</span>
-        <button class="search-clear-link" onclick="app.clearTaskSearch()">${t('tasks.searchClear')}</button>
-      </div>
-    `;
-
-    // Sección de tareas activas
-    html += `
-      <div class="search-section-heading active-heading">
-        <span>${t('tasks.searchSectionActive', { count: matchingActive.length })}</span>
-      </div>
-    `;
-    if(matchingActive.length > 0){
-      html += matchingActive.map(t => renderTaskItem(t, schedule, taskEdit)).join("");
     } else {
-      html += `<div class="empty empty-subtle">${t('tasks.searchNoActiveMatch')}</div>`;
+      // Búsqueda inteligente activa (título, urgencia y destacado)
+      const matchingActive = active.filter(t => matchesTaskSearch(t, searchQuery));
+      const matchingCompleted = (state.tasks || [])
+        .filter(t => t.status === "completed" && matchesTaskSearch(t, searchQuery))
+        .sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
+
+      if(matchingActive.length === 0 && matchingCompleted.length === 0){
+        el.innerHTML = `
+          <div class="search-results-info">
+            <span>${t('tasks.searchTitle', { queryHtml: `<strong>"${escapeHtml(searchQuery)}"</strong>` })}</span>
+            <button class="search-clear-link" onclick="app.clearTaskSearch()">${t('tasks.searchClear')}</button>
+          </div>
+          <div class="empty">${t('tasks.searchNoResults', { query: escapeHtml(searchQuery) })}</div>
+        `;
+      } else {
+        let html = `
+          <div class="search-results-info">
+            <span>${t('tasks.searchResultsHeader', { queryHtml: `<strong>"${escapeHtml(searchQuery)}"</strong>`, active: matchingActive.length, completed: matchingCompleted.length })}</span>
+            <button class="search-clear-link" onclick="app.clearTaskSearch()">${t('tasks.searchClear')}</button>
+          </div>
+        `;
+
+        // Sección de tareas activas
+        html += `
+          <div class="search-section-heading active-heading">
+            <span>${t('tasks.searchSectionActive', { count: matchingActive.length })}</span>
+          </div>
+        `;
+        if(matchingActive.length > 0){
+          html += matchingActive.map(t => renderTaskItem(t, schedule, taskEdit)).join("");
+        } else {
+          html += `<div class="empty empty-subtle">${t('tasks.searchNoActiveMatch')}</div>`;
+        }
+
+        // Sección de tareas completadas
+        html += `
+          <div class="search-section-heading completed-heading">
+            <span>${t('tasks.searchSectionCompleted', { count: matchingCompleted.length })}</span>
+          </div>
+        `;
+        if(matchingCompleted.length > 0){
+          html += matchingCompleted.map(t => renderCompletedSearchItem(t)).join("");
+        } else {
+          html += `<div class="empty empty-subtle">${t('tasks.searchNoCompletedMatch')}</div>`;
+        }
+
+        el.innerHTML = html;
+      }
     }
 
-    // Sección de tareas completadas
-    html += `
-      <div class="search-section-heading completed-heading">
-        <span>${t('tasks.searchSectionCompleted', { count: matchingCompleted.length })}</span>
-      </div>
-    `;
-    if(matchingCompleted.length > 0){
-      html += matchingCompleted.map(t => renderCompletedSearchItem(t)).join("");
-    } else {
-      html += `<div class="empty empty-subtle">${t('tasks.searchNoCompletedMatch')}</div>`;
+    if (taskEdit && taskEdit.id) {
+      setTimeout(() => {
+        const titleInp = document.getElementById(`task-edit-title-${taskEdit.id}`);
+        const notesInp = document.getElementById(`task-edit-notes-${taskEdit.id}`);
+        if (typeof window !== 'undefined' && window.app && window.app.attachTagAutocompleteToEl) {
+          if (titleInp) window.app.attachTagAutocompleteToEl(titleInp);
+          if (notesInp) window.app.attachTagAutocompleteToEl(notesInp);
+        }
+      }, 20);
     }
-
-    el.innerHTML = html;
   }
 
   return { renderTasks, renderTaskItem, renderCompletedSearchItem, toggleTaskNotes, isTaskNotesExpanded };

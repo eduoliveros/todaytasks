@@ -230,6 +230,7 @@ export function getEnvironmentTags(state, targetEnv = null) {
     state.tasks.forEach(t => {
       if (Array.isArray(t.tags)) t.tags.forEach(record);
       if (t.title) recordFromTitle(t.title);
+      if (t.notes) recordFromTitle(t.notes);
     });
   }
 
@@ -256,6 +257,7 @@ export function getEnvironmentTags(state, targetEnv = null) {
           day.tasks.forEach(t => {
             if (Array.isArray(t.tags)) t.tags.forEach(record);
             if (t.title) recordFromTitle(t.title);
+            if (t.notes) recordFromTitle(t.notes);
           });
         }
       });
@@ -306,6 +308,19 @@ export function getEnvironmentMentions(state, targetEnv = null) {
       const regex = /(^|[\s([{<])@([a-zA-Z0-9_\u00C0-\u017F.-]+)/g;
       let m;
       while ((m = regex.exec(item.title)) !== null) {
+        const raw = m[2].replace(/[-_.,;:!?]+$/, '');
+        if (raw) {
+          const lower = raw.toLowerCase();
+          taskMentions.add(lower);
+          casingMap.set(lower, raw);
+        }
+      }
+    }
+
+    if (item.notes && typeof item.notes === 'string') {
+      const regex = /(^|[\s([{<])@([a-zA-Z0-9_\u00C0-\u017F.-]+)/g;
+      let m;
+      while ((m = regex.exec(item.notes)) !== null) {
         const raw = m[2].replace(/[-_.,;:!?]+$/, '');
         if (raw) {
           const lower = raw.toLowerCase();
@@ -431,7 +446,7 @@ export function attachTagAutocomplete(inputEl, options = {}) {
       // Mostrar por debajo
       menuEl.style.top = `${rect.bottom + 6}px`;
     }
-    menuEl.style.zIndex = '99999';
+    menuEl.style.zIndex = '200000';
   }
 
   function closeMenu() {

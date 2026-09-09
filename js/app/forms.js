@@ -390,6 +390,13 @@ export function TodayTasksForms(appCtx){
       });
     }
 
+    const taskNotesInput = document.getElementById("taskNotesInput");
+    if (taskNotesInput) {
+      attachTagAutocomplete(taskNotesInput, {
+        getState: typeof getState === 'function' ? getState : () => ({})
+      });
+    }
+
     ["taskTitle", "taskDuration"].forEach(id => {
       const el = document.getElementById(id);
       if(el){

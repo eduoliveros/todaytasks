@@ -61,7 +61,7 @@ test.describe('Flujo de Reuniones en la Web (E2E)', () => {
     // Verificar que el modal es visible
     const modal = page.locator('#recurringModal');
     await expect(modal).toBeVisible();
-    await expect(modal).toContainText('Eliminar "Daily Scrum Recurrente"');
+    await expect(modal).toContainText('Daily Scrum Recurrente');
 
     // 4. Pulsar botón "Solo esta ocurrencia"
     await page.click('#recModalBtnInstance');

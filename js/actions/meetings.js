@@ -1,6 +1,6 @@
 /* actions/meetings.js — Acciones de reuniones (CRUD y recurrencia) */
 import { getTodayStr } from '../utils.js';
-import { t } from '../i18n.js';
+import { t, t as i18n } from '../i18n.js';
 
 export function TodayTasksMeetings(ctx, helpers) {
   const {
