@@ -577,6 +577,8 @@ export function TodayTasksCloud(ctx){
     }
 
     let lifecycleListenersAttached = false;
+    let lastResumeSyncAt = 0;
+    const RESUME_THROTTLE_MS = 3000; // Máximo una invocación de resumeSync cada 3 segundos
 
     function handleVisibilityChange() {
       if (typeof document === "undefined") return;
@@ -596,12 +598,20 @@ export function TodayTasksCloud(ctx){
     }
 
     function handleWindowFocus() {
-      // Al recibir el foco de ventana en la pestaña
+      // Al recibir el foco de ventana en la pestaña.
+      // visibilitychange: visible y focus se disparan juntos al volver a la pestaña:
+      // el throttle evita que enableNetwork y flushPendingCloudPush se invoquen dos veces seguidas.
       resumeSync();
     }
 
     function resumeSync() {
       if (!currentUser || !fbDb) return;
+
+      // Throttle: no ejecutar más de una vez cada RESUME_THROTTLE_MS para evitar
+      // invocaciones redundantes cuando visibilitychange y focus se disparan conjuntamente.
+      const now = Date.now();
+      if (now - lastResumeSyncAt < RESUME_THROTTLE_MS) return;
+      lastResumeSyncAt = now;
 
       // 1. Reactivar la red de Firestore si estaba suspendida o en reposo
       try {

@@ -115,6 +115,28 @@ describe('TodayTasksCloud - Ciclo de Vida Móvil y Resiliencia de Red', () => {
     expect(statusEl.textContent).toContain('Conectando');
   });
 
+  it('el throttle evita que resumeSync invoque enableNetwork dos veces si visibilitychange y focus se disparan juntos', () => {
+    cloud.attachLifecycleListeners();
+
+    // Primera invocación: visible al volver a la pestaña
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'visible'
+    });
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(mockDb.enableNetwork).toHaveBeenCalledTimes(1);
+
+    // Segunda invocación inmediata: focus se dispara justo después
+    window.dispatchEvent(new Event('focus'));
+    // Debe seguir siendo 1 (bloqueada por el throttle de 3 s)
+    expect(mockDb.enableNetwork).toHaveBeenCalledTimes(1);
+
+    // Tras avanzar más de 3 segundos, una nueva invocación sí debe ejecutarse
+    vi.advanceTimersByTime(3001);
+    window.dispatchEvent(new Event('focus'));
+    expect(mockDb.enableNetwork).toHaveBeenCalledTimes(2);
+  });
+
   it('detachLifecycleListeners desvincula los listeners para evitar fugas de memoria', () => {
     cloud.attachLifecycleListeners();
     cloud.detachLifecycleListeners();
