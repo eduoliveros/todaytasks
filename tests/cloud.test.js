@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { defaultState } from '../js/state.js';
 import { TodayTasksCloud } from '../js/cloud.js';
+import { getTodayStr, addDays } from '../js/utils.js';
 
 describe('TodayTasksCloud - mergeStates', () => {
   let cloud;
@@ -225,8 +226,8 @@ describe('TodayTasksCloud - mergeStates', () => {
 
   it('no duplica una tarea entre días si la nube la tiene en un día futuro y el estado local la tiene en hoy', () => {
     const local = defaultState();
-    const today = '2026-08-29';
-    const futureDate = '2026-09-05';
+    const today = getTodayStr();
+    const futureDate = addDays(today, 5);
 
     // Local tiene la tarea 99 en today (por ejemplo por rollover previo)
     local.environments.work.days = {
@@ -263,7 +264,7 @@ describe('TodayTasksCloud - mergeStates', () => {
   });
 
   it('no resucita tareas locales si su ID está registrado en _deletedIds de la nube (tombstone)', () => {
-    const today = '2026-08-31';
+    const today = getTodayStr();
     const local = defaultState();
     local.environments.work.days[today] = {
       meetings: [],
@@ -295,7 +296,7 @@ describe('TodayTasksCloud - mergeStates', () => {
   });
 
   it('no resucita tareas remotas si fueron borradas localmente (_deletedIds local)', () => {
-    const today = '2026-08-31';
+    const today = getTodayStr();
     const local = defaultState();
     local.environments.work.days[today] = {
       meetings: [],
@@ -322,7 +323,7 @@ describe('TodayTasksCloud - mergeStates', () => {
   });
 
   it('no resucita reuniones borradas en remoto si están en _deletedIds de la nube', () => {
-    const today = '2026-08-31';
+    const today = getTodayStr();
     const local = defaultState();
     local.environments.work.days[today] = {
       meetings: [
@@ -351,7 +352,7 @@ describe('TodayTasksCloud - mergeStates', () => {
   });
 
   it('no resucita interrupciones borradas en remoto si están en _deletedIds de la nube', () => {
-    const today = '2026-08-31';
+    const today = getTodayStr();
     const local = defaultState();
     local.environments.work.days[today] = {
       meetings: [],
@@ -602,26 +603,27 @@ describe('TodayTasksCloud - detección de origen y sincronización', () => {
   });
 
   it('resuelve colisiones de displayId cuando una tarea creada offline coincide con una remota', () => {
+    const today = getTodayStr();
     const local = defaultState();
     const remote = defaultState();
 
     // Ambos dispositivos crearon una tarea en paralelo con displayId 'W-1'
     remote.environments.work.nextTaskSeq = 2;
-    remote.environments.work.days['2026-09-06'] = {
+    remote.environments.work.days[today] = {
       tasks: [
         { id: 'uuid-remote-1', title: 'Tarea creada en la nube', displayId: 'W-1' }
       ]
     };
 
     local.environments.work.nextTaskSeq = 2;
-    local.environments.work.days['2026-09-06'] = {
+    local.environments.work.days[today] = {
       tasks: [
         { id: 'uuid-local-1', title: 'Tarea creada offline', displayId: 'W-1' }
       ]
     };
 
     const merged = cloud.mergeStates(local, remote);
-    const tasks = merged.environments.work.days['2026-09-06'].tasks;
+    const tasks = merged.environments.work.days[today].tasks;
 
     expect(tasks).toHaveLength(2);
 
