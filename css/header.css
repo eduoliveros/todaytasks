@@ -163,6 +163,10 @@ header.topbar {
 
 /* --- Responsive Top bar (Mobile / Tablets) --- */
 @media (max-width: 860px) {
+  /* On small screens the sticky header eats too much vertical space */
+  header.topbar {
+    position: relative;
+  }
   .topbar-title-row {
     flex-direction: column;
     padding: 0 16px;
