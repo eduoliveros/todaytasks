@@ -4,6 +4,18 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.112] - 2026-09-12
+
+### Añadido
+- **Resiliencia de Sincronización en la Nube ante el Ciclo de Vida Móvil (`cloud.js`):**
+  - **Descarga Inmediata al Suspender (`visibilitychange: hidden`):** Al bloquear la pantalla o cambiar de aplicación en dispositivos móviles, cualquier escritura o cambio retenido en el temporizador de *debounce* (`pushDebounceTimer`) se descarga y envía de inmediato a Firestore (`flushPendingCloudPush`) antes de que el proceso sea congelado por el sistema operativo.
+  - **Reanudación y Despertar de Conexión (`visibilitychange: visible` y `focus`):** Al volver a la aplicación o desbloquear el móvil, se ejecuta `resumeSync()` para invocar `fbDb.enableNetwork()` de Firestore de forma defensiva, evitando conexiones latentes o zombis (*half-open sockets*), descargando cualquier dato pendiente y recuperando el estado de conexión si estaba en error.
+  - **Reconexión Automática ante Recuperación de Cobertura (`window.online`):** Reactiva inmediatamente la red de Firestore y sincroniza datos acumulados tras caídas temporales de WiFi o cobertura móvil.
+  - **Exposición en API Pública (`window.app`):** Se exponen `app.resumeSync()` y `app.flushPendingCloudPush()` para permitir la reanudación y descarga manuales desde la consola o atajos de desarrollo.
+- **Documentación y Pruebas:**
+  - Nueva suite de pruebas unitarias: `tests/cloud_lifecycle.test.js` (5 tests).
+  - Registro de Decisión de Arquitectura: [ADR 020](docs/adr/020-resiliencia-sincronizacion-ciclo-de-vida-movil.md).
+
 ## [1.111] - 2026-09-09
 
 ### Añadido

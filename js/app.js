@@ -649,6 +649,8 @@ function switchHeaderTab(target){
     editHistoryMetricPrompt,
     deleteHistoryMetric: actionsModule.deleteHistoryMetric,
     restoreLocalBackup: cloudModule.restoreLocalBackup,
+    resumeSync: () => cloudModule && cloudModule.resumeSync && cloudModule.resumeSync(),
+    flushPendingCloudPush: () => cloudModule && cloudModule.flushPendingCloudPush && cloudModule.flushPendingCloudPush(),
     scrollToElement,
     /* Triage View */
     renderTriageView: () => viewsModule && viewsModule.renderTriageView && viewsModule.renderTriageView(),

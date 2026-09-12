@@ -576,6 +576,78 @@ export function TodayTasksCloud(ctx){
       });
     }
 
+    let lifecycleListenersAttached = false;
+
+    function handleVisibilityChange() {
+      if (typeof document === "undefined") return;
+      if (document.visibilityState === "hidden") {
+        // Al ocultar la pestaña, apagar pantalla o cambiar de app en móvil, vaciar inmediatamente
+        // cualquier guardado pendiente en el debounce antes de que el proceso sea suspendido.
+        flushPendingCloudPush();
+      } else if (document.visibilityState === "visible") {
+        // Al volver a primer plano, asegurar salud de la conexión y reanudar sincronización
+        resumeSync();
+      }
+    }
+
+    function handleOnline() {
+      // Al recuperar conexión a Internet (WiFi / datos móviles), reanudar red y sincronización
+      resumeSync();
+    }
+
+    function handleWindowFocus() {
+      // Al recibir el foco de ventana en la pestaña
+      resumeSync();
+    }
+
+    function resumeSync() {
+      if (!currentUser || !fbDb) return;
+
+      // 1. Reactivar la red de Firestore si estaba suspendida o en reposo
+      try {
+        if (typeof fbDb.enableNetwork === "function") {
+          fbDb.enableNetwork().catch(err => {
+            console.warn("No se pudo reactivar la red de Firestore en reanudación:", err);
+          });
+        }
+      } catch (e) {
+        // Ignorar si el método no está soportado en este entorno
+      }
+
+      // 2. Descargar cualquier cambio pendiente que haya quedado acumulado
+      flushPendingCloudPush();
+
+      // 3. Si el indicador visual estaba en estado de error, indicar reconexión
+      const el = document.getElementById("syncStatus");
+      if (el && el.classList.contains("error")) {
+        setSyncStatus("saving", t("cloud.statusConnecting"));
+      }
+    }
+
+    function attachLifecycleListeners() {
+      if (lifecycleListenersAttached) return;
+      if (typeof document !== "undefined") {
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+      }
+      if (typeof window !== "undefined") {
+        window.addEventListener("online", handleOnline);
+        window.addEventListener("focus", handleWindowFocus);
+      }
+      lifecycleListenersAttached = true;
+    }
+
+    function detachLifecycleListeners() {
+      if (!lifecycleListenersAttached) return;
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      }
+      if (typeof window !== "undefined") {
+        window.removeEventListener("online", handleOnline);
+        window.removeEventListener("focus", handleWindowFocus);
+      }
+      lifecycleListenersAttached = false;
+    }
+
     function initFirebase(){
       if(typeof firebase === "undefined"){
         console.error("El SDK de Firebase no se cargó.");
@@ -591,6 +663,8 @@ export function TodayTasksCloud(ctx){
         });
 
         fbDb.settings({ experimentalAutoDetectLongPolling: true });
+
+        attachLifecycleListeners();
 
         fbAuth.onAuthStateChanged(user => {
           currentUser = user;
@@ -621,6 +695,7 @@ export function TodayTasksCloud(ctx){
       getClientId, pushToCloud, pushToCloudDebounced, flushPendingCloudPush,
       backupLocalState, restoreLocalBackup, mergeStates,
       attachCloudSync, detachCloudSync, renderAuthArea, signInWithGoogle, initFirebase,
+      resumeSync, attachLifecycleListeners, detachLifecycleListeners,
       getCurrentUser: () => currentUser
     };
 }
