@@ -117,6 +117,19 @@ const ctx = {
   refreshPlanningModeBtn: () => viewsModule && viewsModule.refreshPlanningModeBtn(),
   resetBoardScroll: () => viewsModule && viewsModule.resetBoardScroll && viewsModule.resetBoardScroll(),
   confirmBlockedTaskStart: (task, onConfirm) => dependenciesModule && dependenciesModule.confirmBlockedTaskStart(task, onConfirm),
+  onCloudDataLoaded: () => {
+    if (actionsModule) {
+      if (actionsModule.materializeRecurringTasks) {
+        actionsModule.materializeRecurringTasks();
+      }
+      if (actionsModule.rolloverPendingTasks) {
+        actionsModule.rolloverPendingTasks();
+      }
+    }
+    if (viewsModule && viewsModule.renderAll) {
+      viewsModule.renderAll();
+    }
+  },
 };
 
 let dependenciesModule = null;

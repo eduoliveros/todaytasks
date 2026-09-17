@@ -208,7 +208,9 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
     await expect(page.locator('#copyTaskBtnCustomDate')).toHaveText('Mover');
 
     // 4. Mover a una fecha futura (dentro de 5 días)
-    const futureDate = '2026-08-30';
+    const now = new Date();
+    const future = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 5);
+    const futureDate = `${future.getFullYear()}-${String(future.getMonth() + 1).padStart(2, '0')}-${String(future.getDate()).padStart(2, '0')}`;
     await page.fill('#copyTaskDateInput', futureDate);
     await page.click('#copyTaskBtnCustomDate');
 

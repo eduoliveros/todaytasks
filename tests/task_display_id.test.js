@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { defaultState, wrapState, assignNextTaskDisplayId } from '../js/state.js';
 import { TodayTasksTasks } from '../js/actions/tasks.js';
 import { TodayTasksCalendar } from '../js/actions/calendar.js';
-import { getTaskSearchableText, matchesTaskSearch, searchAllTasks } from '../js/utils.js';
+import { getTaskSearchableText, matchesTaskSearch, searchAllTasks, getTodayStr } from '../js/utils.js';
 
 describe('Identificadores Visibles de Tarea (W-1 / P-1)', () => {
   it('assignNextTaskDisplayId genera W-1, W-2 para trabajo y P-1, P-2 para personal', () => {
@@ -18,14 +18,15 @@ describe('Identificadores Visibles de Tarea (W-1 / P-1)', () => {
   });
 
   it('wrapState asigna retroactivamente displayId a tareas preexistentes sin identificador', () => {
+    const today = getTodayStr();
     const raw = {
       activeEnv: 'work',
-      selectedDate: '2026-09-06',
+      selectedDate: today,
       environments: {
         work: {
           name: 'Trabajo',
           days: {
-            '2026-09-06': {
+            [today]: {
               tasks: [
                 { id: 'uuid-1', title: 'Tarea antigua 1', planned: 30, status: 'pending' },
                 { id: 'uuid-2', title: 'Tarea antigua 2', planned: 45, status: 'pending' }
@@ -36,7 +37,7 @@ describe('Identificadores Visibles de Tarea (W-1 / P-1)', () => {
         personal: {
           name: 'Personal',
           days: {
-            '2026-09-06': {
+            [today]: {
               tasks: [
                 { id: 'uuid-p1', title: 'Tarea personal antigua', planned: 20, status: 'pending' }
               ]
@@ -47,26 +48,27 @@ describe('Identificadores Visibles de Tarea (W-1 / P-1)', () => {
     };
 
     const state = wrapState(raw);
-    const workTasks = state.environments.work.days['2026-09-06'].tasks;
+    const workTasks = state.environments.work.days[today].tasks;
     expect(workTasks[0].displayId).toBe('W-1');
     expect(workTasks[1].displayId).toBe('W-2');
     expect(state.environments.work.nextTaskSeq).toBe(3);
 
-    const personalTasks = state.environments.personal.days['2026-09-06'].tasks;
+    const personalTasks = state.environments.personal.days[today].tasks;
     expect(personalTasks[0].displayId).toBe('P-1');
     expect(state.environments.personal.nextTaskSeq).toBe(2);
   });
 
   it('wrapState respeta displayId existentes y ajusta nextTaskSeq al siguiente número libre', () => {
+    const today = getTodayStr();
     const raw = {
       activeEnv: 'work',
-      selectedDate: '2026-09-06',
+      selectedDate: today,
       environments: {
         work: {
           name: 'Trabajo',
           nextTaskSeq: 1,
           days: {
-            '2026-09-06': {
+            [today]: {
               tasks: [
                 { id: 'uuid-10', displayId: 'W-10', title: 'Tarea diez', planned: 30, status: 'pending' }
               ]
@@ -79,7 +81,7 @@ describe('Identificadores Visibles de Tarea (W-1 / P-1)', () => {
 
     const state = wrapState(raw);
     expect(state.environments.work.nextTaskSeq).toBe(11);
-    expect(state.environments.work.days['2026-09-06'].tasks[0].displayId).toBe('W-10');
+    expect(state.environments.work.days[today].tasks[0].displayId).toBe('W-10');
   });
 
   it('addTask asigna displayId consecutivo a la nueva tarea', () => {

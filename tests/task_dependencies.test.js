@@ -4,7 +4,8 @@ import {
   isTaskBlocked,
   getTaskBlockingDetails,
   getTasksBlockedBy,
-  checkCircularDependency
+  checkCircularDependency,
+  getTodayStr
 } from '../js/utils.js';
 import { wrapState } from '../js/state.js';
 
@@ -122,14 +123,15 @@ describe('Task Dependencies and Graph Utilities', () => {
 
   describe('wrapState normalization of dependsOn', () => {
     it('normalizes dependsOn to array and removes self-references and invalid values', () => {
+      const today = getTodayStr();
       const raw = {
         activeEnv: 'work',
-        selectedDate: '2026-09-06',
+        selectedDate: today,
         environments: {
           work: {
             name: 'Trabajo',
             days: {
-              '2026-09-06': {
+              [today]: {
                 tasks: [
                   { id: 't1', title: 'T1', dependsOn: 'invalid' },
                   { id: 't2', title: 'T2', dependsOn: ['t2', 't1', null, 123, ''] }
@@ -142,7 +144,7 @@ describe('Task Dependencies and Graph Utilities', () => {
       };
 
       const wrapped = wrapState(raw);
-      const tasks = wrapped.environments.work.days['2026-09-06'].tasks;
+      const tasks = wrapped.environments.work.days[today].tasks;
       expect(Array.isArray(tasks[0].dependsOn)).toBe(true);
       expect(tasks[0].dependsOn).toEqual([]);
 

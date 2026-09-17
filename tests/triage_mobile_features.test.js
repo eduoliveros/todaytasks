@@ -4,6 +4,7 @@ import { TodayTasksActions } from '../js/actions.js';
 import { TodayTasksTriageView } from '../js/views/triage.js';
 import { TodayTasksUndo } from '../js/undo.js';
 import { TodayTasksUrgencyDropdown } from '../js/app/urgency-dropdown.js';
+import { getTodayStr } from '../js/utils.js';
 
 describe('Triage Mobile Features & Task Creation (TDD)', () => {
   let state;
@@ -29,7 +30,7 @@ describe('Triage Mobile Features & Task Creation (TDD)', () => {
     container = document.getElementById('view-triage');
 
     state = defaultState();
-    state.selectedDate = '2026-09-02';
+    state.selectedDate = getTodayStr();
     state.tasks = [
       { id: 'task-1', title: 'Primera tarea', planned: 30, urgency: 'today', order: 1, manualOrder: 1, status: 'pending' },
       { id: 'task-2', title: 'Segunda tarea', planned: 45, urgency: 'today', order: 2, manualOrder: 2, status: 'pending' },

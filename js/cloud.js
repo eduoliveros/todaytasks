@@ -8,14 +8,16 @@ import { t } from './i18n.js';
 export function TodayTasksCloud(ctx){
   const {
     getState, setState, setMeetingEdit, setTaskEdit, saveState,
-    STORAGE_KEY, syncFormInputsFromState, renderAll
+    STORAGE_KEY, syncFormInputsFromState, renderAll, onCloudDataLoaded
   } = ctx;
 
   const firebaseConfig = TodayTasksConfig && TodayTasksConfig.firebase;
   let fbAuth = null, fbDb = null, currentUser = null, cloudUnsubscribe = null;
+  let slowConnectionTimer = null, fallbackGetTimer = null;
   let applyingRemoteUpdate = false;
   let pushDebounceTimer = null;
   const DEFAULT_DEBOUNCE_MS = 500;
+  const FALLBACK_TIMEOUT_MS = 5000;
   const clientId = 'c_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
 
   function getClientId(){
@@ -399,11 +401,123 @@ export function TodayTasksCloud(ctx){
     function attachCloudSync(uid){
       setSyncStatus("saving", t("cloud.statusConnecting"));
       let firstUsableSnapshotSeen = false;
-      let slowConnectionTimer = setTimeout(()=>{
+      if (slowConnectionTimer) clearTimeout(slowConnectionTimer);
+      if (fallbackGetTimer) clearTimeout(fallbackGetTimer);
+
+      slowConnectionTimer = setTimeout(()=>{
         if(!firstUsableSnapshotSeen){
           setSyncStatus("error", t("cloud.statusConnectingSlow"));
         }
       }, 8000);
+
+      fallbackGetTimer = setTimeout(()=>{
+        if(!firstUsableSnapshotSeen && fbDb){
+          cloudDocRef(uid).get().then(doc => {
+            if(!firstUsableSnapshotSeen && doc){
+              handleInitialSnapshot(doc);
+            }
+          }).catch(err => {
+            console.warn("No se pudo obtener el documento inicial de Firestore mediante fallback get():", err);
+          });
+        }
+      }, FALLBACK_TIMEOUT_MS);
+
+      function handleInitialSnapshot(doc){
+        if(firstUsableSnapshotSeen) return;
+        firstUsableSnapshotSeen = true;
+        if(slowConnectionTimer) { clearTimeout(slowConnectionTimer); slowConnectionTimer = null; }
+        if(fallbackGetTimer) { clearTimeout(fallbackGetTimer); fallbackGetTimer = null; }
+
+        if(doc.exists){
+          const state = getState();
+          const cloudData = doc.data() || {};
+          const cloudCounts = countItems(cloudData);
+          const localCounts = countItems(state);
+
+          const cloudHasData = cloudCounts.total > 0 || cloudCounts.hasSchedule;
+          const localHasData = localCounts.total > 0 || localCounts.hasSchedule;
+
+          if(!cloudHasData && localHasData){
+            console.log("La nube está vacía pero el dispositivo tiene datos. Protegiendo datos locales y subiendo a la nube...");
+            pushToCloud();
+            showToast(t("cloud.toastProtectedUploaded"));
+          }
+          else if(localCounts.total === 0 && cloudCounts.total > 0 && !localCounts.hasSchedule){
+            // Local sin tareas ni horario → cargar nube directamente
+            backupLocalState();
+            applyingRemoteUpdate = true;
+            const loadedCloud = wrapState(cloudData);
+            loadedCloud.selectedDate = (getState && getState().selectedDate) || defaultState().selectedDate;
+            setState(loadedCloud);
+            setMeetingEdit(null); setTaskEdit(null);
+            applyingRemoteUpdate = false;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
+            syncFormInputsFromState();
+            if(typeof onCloudDataLoaded === 'function'){
+              onCloudDataLoaded();
+            } else {
+              renderAll();
+            }
+            showToast(t("cloud.toastLoadedFromCloud"));
+          }
+          else if(localCounts.total === 0 && cloudCounts.total > 0 && localCounts.hasSchedule){
+            // Local tiene horario pero sin tareas, nube tiene tareas → merge para no perder el horario local
+            backupLocalState();
+            applyingRemoteUpdate = true;
+            setState(mergeStates(state, cloudData));
+            setMeetingEdit(null); setTaskEdit(null);
+            applyingRemoteUpdate = false;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
+            syncFormInputsFromState();
+            if(typeof onCloudDataLoaded === 'function'){
+              onCloudDataLoaded();
+            } else {
+              renderAll();
+            }
+            pushToCloud();
+            showToast(t("cloud.toastLoadedFromCloud"));
+          }
+          else if(localCounts.total > 0 && cloudCounts.total > 0){
+            backupLocalState();
+            applyingRemoteUpdate = true;
+            setState(mergeStates(state, cloudData));
+            setMeetingEdit(null); setTaskEdit(null);
+            applyingRemoteUpdate = false;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
+            syncFormInputsFromState();
+            if(typeof onCloudDataLoaded === 'function'){
+              onCloudDataLoaded();
+            } else {
+              renderAll();
+            }
+            pushToCloud();
+            showToast(t("cloud.toastMergedSynced"));
+          } else if(cloudHasData && !localHasData){
+            // Nube tiene solo horario (sin tareas), local vacío → cargar nube
+            backupLocalState();
+            applyingRemoteUpdate = true;
+            const loadedCloud = wrapState(cloudData);
+            loadedCloud.selectedDate = (getState && getState().selectedDate) || defaultState().selectedDate;
+            setState(loadedCloud);
+            setMeetingEdit(null); setTaskEdit(null);
+            applyingRemoteUpdate = false;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
+            syncFormInputsFromState();
+            if(typeof onCloudDataLoaded === 'function'){
+              onCloudDataLoaded();
+            } else {
+              renderAll();
+            }
+            showToast(t("cloud.toastLoadedFromCloud"));
+          } else {
+            // Ambos vacíos (sin tareas y sin horario): subir estado local
+            pushToCloud();
+          }
+        } else {
+          pushToCloud();
+        }
+        setSyncStatus("", t("cloud.statusSynced"));
+      }
 
       if(cloudUnsubscribe) cloudUnsubscribe();
       cloudUnsubscribe = cloudDocRef(uid).onSnapshot({includeMetadataChanges: true}, doc => {
@@ -412,82 +526,7 @@ export function TodayTasksCloud(ctx){
         }
 
         if(!firstUsableSnapshotSeen){
-          firstUsableSnapshotSeen = true;
-          clearTimeout(slowConnectionTimer);
-
-          if(doc.exists){
-            const state = getState();
-            const cloudData = doc.data() || {};
-            const cloudCounts = countItems(cloudData);
-            const localCounts = countItems(state);
-
-            const cloudHasData = cloudCounts.total > 0 || cloudCounts.hasSchedule;
-            const localHasData = localCounts.total > 0 || localCounts.hasSchedule;
-
-            if(!cloudHasData && localHasData){
-              console.log("La nube está vacía pero el dispositivo tiene datos. Protegiendo datos locales y subiendo a la nube...");
-              pushToCloud();
-              showToast(t("cloud.toastProtectedUploaded"));
-            }
-            else if(localCounts.total === 0 && cloudCounts.total > 0 && !localCounts.hasSchedule){
-              // Local sin tareas ni horario → cargar nube directamente
-              backupLocalState();
-              applyingRemoteUpdate = true;
-              const loadedCloud = wrapState(cloudData);
-              loadedCloud.selectedDate = (getState && getState().selectedDate) || defaultState().selectedDate;
-              setState(loadedCloud);
-              setMeetingEdit(null); setTaskEdit(null);
-              applyingRemoteUpdate = false;
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
-              syncFormInputsFromState();
-              renderAll();
-              showToast(t("cloud.toastLoadedFromCloud"));
-            }
-            else if(localCounts.total === 0 && cloudCounts.total > 0 && localCounts.hasSchedule){
-              // Local tiene horario pero sin tareas, nube tiene tareas → merge para no perder el horario local
-              backupLocalState();
-              applyingRemoteUpdate = true;
-              setState(mergeStates(state, cloudData));
-              setMeetingEdit(null); setTaskEdit(null);
-              applyingRemoteUpdate = false;
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
-              syncFormInputsFromState();
-              renderAll();
-              pushToCloud();
-              showToast(t("cloud.toastLoadedFromCloud"));
-            }
-            else if(localCounts.total > 0 && cloudCounts.total > 0){
-              backupLocalState();
-              applyingRemoteUpdate = true;
-              setState(mergeStates(state, cloudData));
-              setMeetingEdit(null); setTaskEdit(null);
-              applyingRemoteUpdate = false;
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
-              syncFormInputsFromState();
-              renderAll();
-              pushToCloud();
-              showToast(t("cloud.toastMergedSynced"));
-            } else if(cloudHasData && !localHasData){
-              // Nube tiene solo horario (sin tareas), local vacío → cargar nube
-              backupLocalState();
-              applyingRemoteUpdate = true;
-              const loadedCloud = wrapState(cloudData);
-              loadedCloud.selectedDate = (getState && getState().selectedDate) || defaultState().selectedDate;
-              setState(loadedCloud);
-              setMeetingEdit(null); setTaskEdit(null);
-              applyingRemoteUpdate = false;
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
-              syncFormInputsFromState();
-              renderAll();
-              showToast(t("cloud.toastLoadedFromCloud"));
-            } else {
-              // Ambos vacíos (sin tareas y sin horario): subir estado local
-              pushToCloud();
-            }
-          } else {
-            pushToCloud();
-          }
-          setSyncStatus("", t("cloud.statusSynced"));
+          handleInitialSnapshot(doc);
           return;
         }
 
@@ -510,17 +549,24 @@ export function TodayTasksCloud(ctx){
         applyingRemoteUpdate = false;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
         syncFormInputsFromState();
-        renderAll();
+        if(typeof onCloudDataLoaded === 'function'){
+          onCloudDataLoaded();
+        } else {
+          renderAll();
+        }
         setSyncStatus("", t("cloud.statusUpdatedRemote"));
         showToast(t("cloud.toastUpdatedRemote"));
       }, err => {
-        clearTimeout(slowConnectionTimer);
+        if(slowConnectionTimer) { clearTimeout(slowConnectionTimer); slowConnectionTimer = null; }
+        if(fallbackGetTimer) { clearTimeout(fallbackGetTimer); fallbackGetTimer = null; }
         console.error("Error en la escucha de Firestore", err);
         setSyncStatus("error", t("cloud.statusLostConnection"));
       });
     }
 
     function detachCloudSync(){
+      if(slowConnectionTimer) { clearTimeout(slowConnectionTimer); slowConnectionTimer = null; }
+      if(fallbackGetTimer) { clearTimeout(fallbackGetTimer); fallbackGetTimer = null; }
       if(cloudUnsubscribe){ cloudUnsubscribe(); cloudUnsubscribe = null; }
     }
 

@@ -415,6 +415,7 @@ describe('TodayTasksCloud - detección de origen y sincronización', () => {
     snapshotCallback = null;
     mockDocRef = {
       set: vi.fn().mockResolvedValue(true),
+      get: vi.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
       onSnapshot: vi.fn((opts, cb) => {
         snapshotCallback = cb || opts;
         return vi.fn();
@@ -636,6 +637,75 @@ describe('TodayTasksCloud - detección de origen y sincronización', () => {
     expect(offlineTask.displayId).toBe('W-2');
     // El contador de secuencia se actualiza coherentemente (al menos 3)
     expect(merged.environments.work.nextTaskSeq).toBe(3);
+  });
+
+  it('ejecuta fallback get() cuando onSnapshot no emite snapshot en la conexión inicial', async () => {
+    vi.useFakeTimers();
+    try {
+      const remoteState = defaultState();
+      remoteState.environments.work.days[getTodayStr()] = {
+        meetings: [{ id: 'm1', title: 'Reunión Cloud', start: 600, end: 660 }],
+        tasks: [{ id: 't1', title: 'Tarea Cloud', planned: 30, status: 'pending' }],
+        interruptions: []
+      };
+
+      mockDocRef.get = vi.fn().mockResolvedValue({
+        exists: true,
+        data: () => remoteState
+      });
+
+      cloud.attachCloudSync('user_123');
+
+      // No invocamos snapshotCallback (simula onSnapshot congelado)
+      // Avanzamos el temporizador de fallback (5000 ms)
+      await vi.advanceTimersByTimeAsync(5100);
+
+      expect(mockDocRef.get).toHaveBeenCalledTimes(1);
+      expect(setStateSpy).toHaveBeenCalled();
+      const finalState = setStateSpy.mock.calls[0][0];
+      expect(finalState.environments.work.days[getTodayStr()].tasks[0].title).toBe('Tarea Cloud');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('invoca onCloudDataLoaded al cargar datos de la nube en la conexión inicial', () => {
+    let customSnapshotCb = null;
+    const customDocRef = {
+      set: vi.fn().mockResolvedValue(true),
+      get: vi.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+      onSnapshot: vi.fn((opts, cb) => {
+        customSnapshotCb = cb || opts;
+        return vi.fn();
+      })
+    };
+    mockDb.collection = vi.fn().mockReturnValue({
+      doc: vi.fn().mockReturnValue(customDocRef)
+    });
+
+    const onCloudDataLoadedSpy = vi.fn();
+    const customCtx = {
+      ...ctx,
+      onCloudDataLoaded: onCloudDataLoadedSpy
+    };
+    const customCloud = TodayTasksCloud(customCtx);
+    customCloud.initFirebase();
+    customCloud.attachCloudSync('user_123');
+
+    const remoteState = defaultState();
+    remoteState.environments.work.days[getTodayStr()] = {
+      meetings: [{ id: 'm1', title: 'Reunión Cloud', start: 600, end: 660 }],
+      tasks: [{ id: 't1', title: 'Tarea Cloud', planned: 30, status: 'pending' }],
+      interruptions: []
+    };
+
+    customSnapshotCb({
+      metadata: { fromCache: false, hasPendingWrites: false },
+      exists: true,
+      data: () => remoteState
+    });
+
+    expect(onCloudDataLoadedSpy).toHaveBeenCalled();
   });
 });
 

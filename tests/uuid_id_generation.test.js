@@ -4,6 +4,7 @@ import { TodayTasksTasks } from '../js/actions/tasks.js';
 import { TodayTasksExecution } from '../js/actions/execution.js';
 import { TodayTasksCloud } from '../js/cloud.js';
 import { defaultState, wrapState } from '../js/state.js';
+import { getTodayStr } from '../js/utils.js';
 
 describe('Robust ID generation with crypto.randomUUID() & UUID support', () => {
   it('generates valid RFC 4122 v4 UUID format strings', () => {
@@ -146,7 +147,7 @@ describe('Robust ID generation with crypto.randomUUID() & UUID support', () => {
 
     const cloud = TodayTasksCloud(ctx);
 
-    const testDate = '2026-09-06';
+    const testDate = getTodayStr();
     const localState = {
       activeEnv: 'work',
       selectedDate: testDate,
