@@ -313,6 +313,31 @@ describe('TodayTasksTriageView (UI & Sorting & Selection)', () => {
     expect(quickDaysButtons.length).toBeGreaterThanOrEqual(15); // 3 tareas * 5 botones
   });
 
+  it('renderiza la información de horario HH:mm -> HH:mm en cada tarea del triaje', () => {
+    state.workStart = 9 * 60; // 09:00
+    state.workEnd = 18 * 60;  // 18:00
+    state.planningMode = true;
+
+    actions.addTask('Tarea A', '60', false, null, true, 'today');
+    actions.addTask('Tarea B', '30', false, null, true, 'today');
+
+    triageView.renderTriageView();
+
+    const container = document.getElementById('view-triage');
+    const timeElements = container.querySelectorAll('.triage-task-time');
+    expect(timeElements.length).toBe(2);
+
+    // Tarea A: 09:00 -> 10:00
+    expect(timeElements[0].textContent).toContain('09:00');
+    expect(timeElements[0].textContent).toContain('10:00');
+    expect(timeElements[0].textContent).toContain('→');
+
+    // Tarea B: 10:10 -> 10:40 (tras descanso automático de 10 min por 60 min de trabajo)
+    expect(timeElements[1].textContent).toContain('10:10');
+    expect(timeElements[1].textContent).toContain('10:40');
+    expect(timeElements[1].textContent).toContain('→');
+  });
+
   it('permite reordenar manualmente las tareas con drag & drop y la ordenación manual tiene prioridad', () => {
     actions.addTask('Tarea Primera', '15', false, null, true, 'today');
     actions.addTask('Tarea Segunda', '20', false, null, true, 'today');

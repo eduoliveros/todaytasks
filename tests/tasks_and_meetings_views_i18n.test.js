@@ -86,15 +86,19 @@ describe('Tasks and Meetings Views - Internacionalización (i18n)', () => {
 
     tasksView.renderTasks({ segmentsByTask: { t1: [{ start: 600, end: 630 }] } });
     const tasksList = document.getElementById('tasksList');
-    expect(tasksList.textContent).toContain('Inicio prev.');
-    expect(tasksList.textContent).toContain('Fin prev.');
+    expect(tasksList.textContent).toContain('10:00');
+    expect(tasksList.textContent).toContain('10:30');
+    expect(tasksList.textContent).not.toContain('Inicio prev.');
+    expect(tasksList.textContent).not.toContain('Fin prev.');
     expect(tasksList.textContent).toContain('▶ Iniciar');
     expect(tasksList.textContent).toContain('✓ Completar');
 
     setLocale('en');
     tasksView.renderTasks({ segmentsByTask: { t1: [{ start: 600, end: 630 }] } });
-    expect(tasksList.textContent).toContain('Est. start');
-    expect(tasksList.textContent).toContain('Est. end');
+    expect(tasksList.textContent).toContain('10:00');
+    expect(tasksList.textContent).toContain('10:30');
+    expect(tasksList.textContent).not.toContain('Est. start');
+    expect(tasksList.textContent).not.toContain('Est. end');
     expect(tasksList.textContent).toContain('▶ Start');
     expect(tasksList.textContent).toContain('✓ Complete');
     setLocale('es');

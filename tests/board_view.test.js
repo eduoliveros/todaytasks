@@ -76,8 +76,9 @@ describe('TodayTasksBoardView - Internacionalización (i18n)', () => {
     expect(meetingsEl.textContent).toContain('End');
 
     const pendingEl = document.getElementById('pendingList');
-    expect(pendingEl.textContent).toContain('Est. start');
-    expect(pendingEl.textContent).toContain('Est. end');
+    expect(pendingEl.textContent).not.toContain('Est. start');
+    expect(pendingEl.textContent).not.toContain('Est. end');
+    expect(pendingEl.textContent).toContain('→');
     expect(pendingEl.textContent).toContain('pending');
 
     setLocale('es');

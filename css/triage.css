@@ -461,6 +461,43 @@ body[data-theme="dark"] .triage-task-title.is-overflow {
   flex-shrink: 0;
 }
 
+.triage-task-time {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--accent-pending, #4F46E5);
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.triage-task-time .arrow {
+  color: var(--ink-soft, #9CA3AF);
+  font-weight: 400;
+}
+
+.triage-task-time.tr-running {
+  color: #9a6c00;
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.triage-task-time.tr-paused {
+  color: var(--accent-paused, #7C3AED);
+}
+
+body[data-theme="dark"] .triage-task-time.tr-running {
+  color: #F0B040;
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.12);
+}
+
 .triage-overflow-tag {
   font-size: 0.68rem;
   font-weight: 600;

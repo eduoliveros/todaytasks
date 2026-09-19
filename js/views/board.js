@@ -397,12 +397,12 @@ export function TodayTasksBoardView(ctx){
           const plannedEnd = tTask.runningStart + (tTask.planned - (tTask.elapsedBefore||0));
           const rem = fmtRemaining(plannedEnd, nowMinutes());
           const chip = `<span class="remaining-chip${rem.overrun?" overrun":""}">${escapeHtml(rem.text)}</span>`;
-          rangeHtml = `<div class="time-range tr-running"><span class="tag">${t('summary.tagRealStart')}</span>${fmt(tTask.runningStart)}<span class="arrow">→</span><span class="tag">${t('summary.tagPlannedEnd')}</span>${fmt(plannedEnd)} ${chip}</div>`;
+          rangeHtml = `<div class="time-range tr-running">${fmt(tTask.runningStart)}<span class="arrow">→</span>${fmt(plannedEnd)} ${chip}</div>`;
         } else {
           const segs = (schedule && schedule.segmentsByTask && schedule.segmentsByTask[tTask.id]) || [];
           if(segs.length){
             const trClass = tTask.status === "paused" ? "tr-paused" : "tr-pending";
-            rangeHtml = `<div class="time-range ${trClass}"><span class="tag">${t('summary.tagEstStart')}</span>${fmt(segs[0].start)}<span class="arrow">→</span><span class="tag">${t('summary.tagEstEnd')}</span>${fmt(segs[segs.length-1].end)}</div>`;
+            rangeHtml = `<div class="time-range ${trClass}">${fmt(segs[0].start)}<span class="arrow">→</span>${fmt(segs[segs.length-1].end)}</div>`;
           } else {
             rangeHtml = `<div class="meta" style="color:var(--danger)">${t('summary.noSlotBeforeEnd')}</div>`;
           }

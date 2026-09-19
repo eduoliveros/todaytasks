@@ -119,9 +119,9 @@ export function TodayTasksTriageView(ctx) {
 
     // Si coincide con la fecha seleccionada en el estado y ctx.computeSchedule existe,
     // usamos la proyección idéntica a la pantalla principal
-    if (ctx && typeof ctx.computeSchedule === 'function' && state.selectedDate === targetDateStr) {
+    if (ctx && typeof ctx.computeSchedule === 'function' && (state.selectedDate || getTodayStr()) === targetDateStr) {
       const sched = ctx.computeSchedule();
-      if (sched && sched.overflowIds) {
+      if (sched && sched.overflowIds && sched.segmentsByTask) {
         return sched;
       }
     }
@@ -167,8 +167,8 @@ export function TodayTasksTriageView(ctx) {
     return computeSchedule(schedState, nowFn);
   }
 
-  function getGroups(activeTasks, targetDateStr) {
-    const schedule = getEffectiveSchedule(targetDateStr, activeTasks);
+  function getGroups(activeTasks, targetDateStr, schedule) {
+    if (!schedule) schedule = getEffectiveSchedule(targetDateStr, activeTasks);
     const overflowIds = schedule && schedule.overflowIds ? schedule.overflowIds : new Set();
 
     function isTaskOverflow(task) {
@@ -1050,6 +1050,11 @@ export function TodayTasksTriageView(ctx) {
 
   function renderTriageCompletedRow(task) {
     const isRecurring = !!(task.isRecurring || task.ruleId);
+    let completedTimeHtml = '';
+    if (task.completedAt !== undefined && task.actualDuration !== undefined && !isNaN(task.completedAt) && !isNaN(task.actualDuration)) {
+      const realStart = task.completedAt - task.actualDuration;
+      completedTimeHtml = `<span class="triage-task-time tr-running">${fmt(realStart)}<span class="arrow">→</span>${fmt(task.completedAt)}</span>`;
+    }
     return `
       <div class="triage-task-row is-completed triage-completed-item" data-task-id="${escapeAttr(task.id)}">
         <div class="triage-task-left">
@@ -1059,6 +1064,7 @@ export function TodayTasksTriageView(ctx) {
             ${formatTitleWithTags(task.title, 'app.filterByTag')}
           </span>
           <span class="triage-task-duration" title="${escapeAttr(t('triage.durationTooltip'))}">${formatShortDuration(task.planned || 0)}</span>
+          ${completedTimeHtml}
           ${isRecurring ? `<span class="triage-recurring-icon" style="margin-left:6px;" title="${escapeAttr(t('tasks.recurringTagLabel'))}">🔁</span>` : ''}
         </div>
         <div class="triage-task-right">
@@ -1085,13 +1091,32 @@ export function TodayTasksTriageView(ctx) {
     renderTriageView();
   }
 
-  function renderTriageTaskRow(task, env, quick5Days) {
+  function renderTriageTaskRow(task, env, quick5Days, schedule) {
     const state = getState();
     const isSelected = selectedTaskIds.has(String(task.id));
     const urgencyKey = task.urgency || DEFAULT_URGENCY;
     const uInfo = URGENCY_LEVELS[urgencyKey] || URGENCY_LEVELS[DEFAULT_URGENCY];
     const urgencyLabel = t('urgency.' + urgencyKey) || uInfo.label;
     const isRecurring = !!(task.isRecurring || task.ruleId);
+
+    const effSched = schedule || getEffectiveSchedule(getTargetDateStr(), getActiveTasks(getTargetDateStr()));
+    const segs = (effSched && effSched.segmentsByTask && (effSched.segmentsByTask[task.id] || effSched.segmentsByTask[String(task.id)])) || [];
+    let startVal, endVal, trClass;
+    if (task.status === "running") {
+      const plannedEnd = task.runningStart + (task.planned - (task.elapsedBefore || 0));
+      startVal = fmt(task.runningStart);
+      endVal = fmt(plannedEnd);
+      trClass = "tr-running";
+    } else if (segs.length > 0) {
+      startVal = fmt(segs[0].start);
+      endVal = fmt(segs[segs.length - 1].end);
+      trClass = task.status === "paused" ? "tr-paused" : "tr-pending";
+    } else {
+      startVal = "—";
+      endVal = "—";
+      trClass = "tr-pending";
+    }
+    const timeRangeHtml = `<span class="triage-task-time ${trClass}">${startVal}<span class="arrow">→</span>${endVal}</span>`;
 
     let recurringTag = '';
     if (isRecurring) {
@@ -1187,6 +1212,7 @@ export function TodayTasksTriageView(ctx) {
             ${formatTitleWithTags(task.title, 'app.filterByTag')}
           </span>
           <span class="triage-task-duration" title="${escapeAttr(t('triage.durationTooltip'))}">${formatShortDuration(task.planned || 0)}</span>
+          ${timeRangeHtml}
           ${recurringTag}
           ${task.overflow ? `<span class="triage-overflow-tag" title="${escapeAttr(t('triage.overflowTooltip'))}">${t('triage.overflowTag')}</span>` : ''}
         </div>
@@ -1228,7 +1254,7 @@ export function TodayTasksTriageView(ctx) {
     `;
   }
 
-  function renderTriageGroupsContent(activeTasks, groups, isSearching, matchingCompleted, friendlyDate, searchQuery, env, quick5Days) {
+  function renderTriageGroupsContent(activeTasks, groups, isSearching, matchingCompleted, friendlyDate, searchQuery, env, quick5Days, schedule) {
     if (!isSearching && activeTasks.length === 0) {
       return `
         <div class="triage-empty-state">
@@ -1292,7 +1318,7 @@ export function TodayTasksTriageView(ctx) {
               <div class="triage-group-empty">${t('triage.groupEmpty')}</div>
             ` : `
               <div class="triage-tasks-list">
-                ${g.tasks.map(task => renderTriageTaskRow(task, env, quick5Days)).join('')}
+                ${g.tasks.map(task => renderTriageTaskRow(task, env, quick5Days, schedule)).join('')}
               </div>
             `}
           </div>
@@ -1369,7 +1395,8 @@ export function TodayTasksTriageView(ctx) {
                       .sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0))
       : [];
 
-    const groups = getGroups(activeTasks, targetDateStr);
+    const schedule = getEffectiveSchedule(targetDateStr, allActiveTasks);
+    const groups = getGroups(activeTasks, targetDateStr, schedule);
 
     const next7Days = getNextWorkingDays(targetDateStr, 7, state, state.activeEnv || 'work');
     const quick5Days = next7Days.slice(0, 5);
@@ -1568,7 +1595,7 @@ export function TodayTasksTriageView(ctx) {
     if (innerEl && searchInpEl && !isDifferentDate) {
       const groupsContainer = container.querySelector('.triage-groups-container');
       if (groupsContainer) {
-        groupsContainer.innerHTML = renderTriageGroupsContent(activeTasks, groups, isSearching, matchingCompleted, friendlyDate, searchQuery, env, quick5Days);
+        groupsContainer.innerHTML = renderTriageGroupsContent(activeTasks, groups, isSearching, matchingCompleted, friendlyDate, searchQuery, env, quick5Days, schedule);
         groupsContainer.querySelectorAll('.triage-group-cb[data-indeterminate="true"]').forEach(cb => {
           cb.indeterminate = true;
         });
@@ -1669,7 +1696,7 @@ export function TodayTasksTriageView(ctx) {
 
         <!-- GRUPOS DE TAREAS -->
         <main class="triage-groups-container">
-          ${renderTriageGroupsContent(activeTasks, groups, isSearching, matchingCompleted, friendlyDate, searchQuery, env, quick5Days)}
+          ${renderTriageGroupsContent(activeTasks, groups, isSearching, matchingCompleted, friendlyDate, searchQuery, env, quick5Days, schedule)}
         </main>
 
         <!-- BARRA FLOTANTE DE ACCIONES POR LOTE -->

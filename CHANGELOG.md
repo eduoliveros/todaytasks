@@ -4,6 +4,13 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.113] - 2026-09-19
+
+### Cambiado
+- **Simplificación del rango horario de tareas en la ventana principal:**
+  - Se eliminaron las etiquetas textuales redundantes ("EST. START" y "EST. END" / "Inicio prev." y "Fin prev.") en la lista de tareas activas (`#tasksList`) y en la lista de tareas pendientes de la agenda (`#pendingList`).
+  - Ahora se muestra exclusivamente el formato conciso `HH:mm → HH:mm` para un diseño más limpio y legible.
+
 ## [1.112] - 2026-09-12
 
 ### Añadido

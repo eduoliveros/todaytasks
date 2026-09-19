@@ -143,25 +143,25 @@ export function TodayTasksTasksView(ctx){
                 : t('task.statusPending');
     const badgeClass = task.status;
 
-    let startTag, startVal, endTag, endVal, trClass, splitNote = "", remainingChip = "";
+    let startVal, endVal, trClass, splitNote = "", remainingChip = "";
     if(task.status === "running"){
       const plannedEnd = task.runningStart + (task.planned - (task.elapsedBefore||0));
-      startTag = t('summary.tagRealStart'); startVal = fmt(task.runningStart);
-      endTag = t('tasks.tagEstEnd'); endVal = fmt(plannedEnd);
+      startVal = fmt(task.runningStart);
+      endVal = fmt(plannedEnd);
       trClass = "tr-running";
       const rem = fmtRemaining(plannedEnd, nowMinutes());
       remainingChip = `<span class="remaining-chip ${rem.overrun ? 'overrun' : ''}">${escapeHtml(rem.text)}</span>`;
     } else if(segs.length > 0){
-      startTag = t('tasks.tagEstStart'); startVal = fmt(segs[0].start);
-      endTag = t('tasks.tagEstEnd'); endVal = fmt(segs[segs.length-1].end);
+      startVal = fmt(segs[0].start);
+      endVal = fmt(segs[segs.length-1].end);
       trClass = "tr-pending";
       if(segs.length > 1){
         const parts = segs.map(s => `${fmt(s.start)}-${fmt(s.end)}`).join(", ");
         splitNote = `<div class="meta" style="color:#B45309">${t('tasks.splitByMeetings', { parts })}</div>`;
       }
     } else {
-      startTag = t('tasks.tagEstStart'); startVal = "—";
-      endTag = t('tasks.tagEstEnd'); endVal = "—";
+      startVal = "—";
+      endVal = "—";
       trClass = "tr-pending";
     }
 
@@ -294,7 +294,7 @@ export function TodayTasksTasksView(ctx){
                 ${startAfterPill}
                 ${notesPill}
                 ${depBadges}
-                <span class="tag">${startTag}</span>${startVal}<span class="arrow">→</span><span class="tag">${endTag}</span>${endVal}
+                ${startVal}<span class="arrow">→</span>${endVal}
                 ${remainingChip}
                 ${recurringTag}
                 ${autoMoveTag}
