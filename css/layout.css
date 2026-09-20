@@ -354,6 +354,12 @@ input:focus, button:focus, select:focus { outline: 2px solid var(--accent-pendin
   outline: 2px dashed var(--accent-pending);
   outline-offset: 3px;
 }
+.task-item.drag-forbidden {
+  outline: 2px dashed #EF4444;
+  outline-offset: 3px;
+  background: rgba(239, 68, 68, 0.08) !important;
+  cursor: not-allowed !important;
+}
 .task-item.long-press-active {
   transform: scale(1.02);
   box-shadow: 0 10px 24px -4px rgba(79, 70, 229, 0.35);

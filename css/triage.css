@@ -396,6 +396,13 @@ body[data-theme="dark"] .triage-task-row.long-press-active {
   background: rgba(79, 70, 229, 0.08) !important;
 }
 
+.triage-task-row.drag-forbidden {
+  outline: 2px dashed #EF4444;
+  outline-offset: 2px;
+  background: rgba(239, 68, 68, 0.08) !important;
+  cursor: not-allowed !important;
+}
+
 /* Lado izquierdo de la fila */
 .triage-task-left {
   display: flex;

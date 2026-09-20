@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { defaultState } from '../js/state.js';
 import { TodayTasksActions } from '../js/actions.js';
-import { getTodayStr } from '../js/utils.js';
+import { getTodayStr, addDays } from '../js/utils.js';
+import { setLocale } from '../js/i18n.js';
 
 describe('TodayTasksActions - Copiar Tareas a Otro Día', () => {
   let actions;
@@ -131,11 +132,13 @@ describe('TodayTasksActions - Copiar Tareas a Otro Día', () => {
     const descEl = document.getElementById('copyTaskModalDesc');
     const btnTodayText = document.getElementById('copyTaskBtnTodayText');
     const btnCustom = document.getElementById('copyTaskBtnCustomDate');
+    const dateInput = document.getElementById('copyTaskDateInput');
 
     expect(titleEl.textContent).toContain('Copiar');
     expect(descEl.textContent).toContain('copiar');
     expect(btnTodayText.textContent).toContain('Copiar a Hoy');
     expect(btnCustom.textContent).toBe('Copiar');
+    expect(dateInput.value).toBe(addDays(getTodayStr(), 1));
 
     // 2. Tarea auto-move
     actions.addTask('Tarea AutoMove', '40', false, null, true);
@@ -146,6 +149,107 @@ describe('TodayTasksActions - Copiar Tareas a Otro Día', () => {
     expect(descEl.textContent).toContain('mover');
     expect(btnTodayText.textContent).toContain('Mover a Hoy');
     expect(btnCustom.textContent).toBe('Mover');
+  });
+
+  it('openCopyTaskModal muestra los textos en inglés cuando el idioma activo es "en"', () => {
+    setLocale('en');
+    try {
+      document.body.innerHTML = `
+        <div id="copyTaskModal" style="display:none;">
+          <h3 id="copyTaskModalTitle"></h3>
+          <p id="copyTaskModalDesc"></p>
+          <span id="copyTaskBtnTodayText"></span>
+          <button id="copyTaskBtnToday"></button>
+          <input type="date" id="copyTaskDateInput" />
+          <button id="copyTaskBtnCustomDate"></button>
+          <button id="copyTaskBtnCancel"></button>
+          <small id="copyTaskTodayLabel"></small>
+        </div>
+      `;
+
+      // 1. Tarea normal en inglés
+      actions.addTask('English Task', '30', false, null, false);
+      const normalTaskId = state.tasks[0].id;
+      actions.openCopyTaskModal(normalTaskId);
+
+      const titleEl = document.getElementById('copyTaskModalTitle');
+      const descEl = document.getElementById('copyTaskModalDesc');
+      const btnTodayText = document.getElementById('copyTaskBtnTodayText');
+      const btnCustom = document.getElementById('copyTaskBtnCustomDate');
+      const dateInput = document.getElementById('copyTaskDateInput');
+
+      expect(titleEl.textContent).toContain('Copy');
+      expect(descEl.textContent).toContain('Which date do you want to copy this task to?');
+      expect(btnTodayText.textContent).toContain('Copy to Today');
+      expect(btnCustom.textContent).toBe('Copy');
+      expect(dateInput.value).toBe(addDays(getTodayStr(), 1));
+
+      // 2. Tarea auto-move en inglés
+      actions.addTask('English AutoMove Task', '40', false, null, true);
+      const autoTaskId = state.tasks[1].id;
+      actions.openCopyTaskModal(autoTaskId);
+
+      expect(titleEl.textContent).toContain('Move');
+      expect(descEl.textContent).toContain('Which date do you want to move this task to?');
+      expect(btnTodayText.textContent).toContain('Move to Today');
+      expect(btnCustom.textContent).toBe('Move');
+    } finally {
+      setLocale('es');
+    }
+  });
+
+  describe('startNewDay (Reiniciar día / Borrar tareas)', () => {
+    it('pide confirmación advirtiendo del borrado de tareas y reuniones, y borra si se confirma', () => {
+      actions.addTask('Tarea a borrar', '30');
+      state.meetings = [{ id: 'm1', title: 'Reunión 1', start: '10:00', duration: 30 }];
+
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+      actions.startNewDay();
+
+      expect(confirmSpy).toHaveBeenCalled();
+      const confirmPrompt = confirmSpy.mock.calls[0][0];
+      expect(confirmPrompt).toContain('Vas a reiniciar el día');
+      expect(confirmPrompt).toContain('Se borrarán permanentemente todas las tareas y reuniones');
+      expect(confirmPrompt).toContain('¿Estás seguro de que deseas borrar todas las tareas?');
+
+      expect(state.tasks).toHaveLength(0);
+      expect(state.meetings).toHaveLength(0);
+      confirmSpy.mockRestore();
+    });
+
+    it('no borra nada si el usuario cancela la confirmación', () => {
+      actions.addTask('Tarea que sobrevive', '45');
+      state.meetings = [{ id: 'm2', title: 'Reunión intacta', start: '11:00', duration: 45 }];
+
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+      actions.startNewDay();
+
+      expect(confirmSpy).toHaveBeenCalled();
+      expect(state.tasks).toHaveLength(1);
+      expect(state.meetings).toHaveLength(1);
+      confirmSpy.mockRestore();
+    });
+
+    it('genera el mensaje de confirmación en inglés cuando locale es en', () => {
+      setLocale('en');
+      try {
+        actions.addTask('English Task to wipe', '20');
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+        actions.startNewDay();
+
+        expect(confirmSpy).toHaveBeenCalled();
+        const confirmPrompt = confirmSpy.mock.calls[0][0];
+        expect(confirmPrompt).toContain('You are about to reset the day');
+        expect(confirmPrompt).toContain('All tasks and meetings for this date will be permanently deleted');
+        expect(confirmPrompt).toContain('Are you sure you want to delete all tasks?');
+        confirmSpy.mockRestore();
+      } finally {
+        setLocale('es');
+      }
+    });
   });
 });
 

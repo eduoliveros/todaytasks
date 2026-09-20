@@ -115,7 +115,7 @@ export function TodayTasksActions(ctx) {
   /* Instanciar sub-módulos */
   const meetings  = TodayTasksMeetings(ctx, helpers);
   const tasks     = TodayTasksTasks(ctx, helpers);
-  const dragdrop  = TodayTasksDragDrop(ctx);
+  const dragdrop  = TodayTasksDragDrop(ctx, helpers);
   const execution = TodayTasksExecution(ctx, helpers);
   const calendar  = TodayTasksCalendar(ctx, helpers);
 
@@ -187,6 +187,7 @@ export function TodayTasksActions(ctx) {
     moveTaskDirectly:       dragdrop.moveTaskDirectly,
     moveTasksGroupDirectly: dragdrop.moveTasksGroupDirectly,
     reorderTaskByDrag:      dragdrop.reorderTaskByDrag,
+    checkIsDropTargetAllowed: dragdrop.checkIsDropTargetAllowed,
     /* Execution */
     startTask:              execution.startTask,
     pauseTask:              execution.pauseTask,

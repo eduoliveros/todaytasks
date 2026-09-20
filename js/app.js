@@ -721,6 +721,8 @@ function switchHeaderTab(target){
     handleTriageTouchCancel: (event) => viewsModule && viewsModule.handleTriageTouchCancel && viewsModule.handleTriageTouchCancel(event),
     triageTaskDragStart: (event, taskId) => viewsModule && viewsModule.triageTaskDragStart && viewsModule.triageTaskDragStart(event, taskId),
     triageTaskDrop: (event, taskId) => viewsModule && viewsModule.triageTaskDrop && viewsModule.triageTaskDrop(event, taskId),
+    triageGroupDragOver: (event, groupId) => viewsModule && viewsModule.triageGroupDragOver && viewsModule.triageGroupDragOver(event, groupId),
+    triageGroupDrop: (event, groupId) => viewsModule && viewsModule.triageGroupDrop && viewsModule.triageGroupDrop(event, groupId),
     getSelectedTaskIds: () => viewsModule && viewsModule.getSelectedTaskIds ? viewsModule.getSelectedTaskIds() : new Set(),
     setTriageSearch: (query) => viewsModule && viewsModule.setTriageSearchQuery && viewsModule.setTriageSearchQuery(query),
     getTriageSearchQuery: () => viewsModule && viewsModule.getTriageSearchQuery ? viewsModule.getTriageSearchQuery() : '',

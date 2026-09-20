@@ -20,6 +20,7 @@ export function createTouchDragEngine(options = {}) {
     onDragStart = null,
     onDrop = null,
     onLongPressNotDraggable = null,
+    isDropTargetAllowed = null,
     holdDelay = 420,
     handleHoldDelay = 60,
     longPressNotDraggableDelay = 450,
@@ -55,8 +56,8 @@ export function createTouchDragEngine(options = {}) {
       touchSourceRowEl.classList.remove('long-press-active', 'dragging');
     }
     if (typeof document !== 'undefined') {
-      document.querySelectorAll(`${rowSelector}.drag-over, ${rowSelector}.long-press-active, ${rowSelector}.dragging`)
-        .forEach(el => el.classList.remove('drag-over', 'long-press-active', 'dragging'));
+      document.querySelectorAll(`${rowSelector}.drag-over, ${rowSelector}.drag-forbidden, ${rowSelector}.long-press-active, ${rowSelector}.dragging`)
+        .forEach(el => el.classList.remove('drag-over', 'drag-forbidden', 'long-press-active', 'dragging'));
     }
   }
 
@@ -139,12 +140,19 @@ export function createTouchDragEngine(options = {}) {
       const overRow = targetEl ? targetEl.closest(rowSelector) : null;
       const overTaskId = overRow ? overRow.getAttribute('data-task-id') : null;
 
-      document.querySelectorAll(`${rowSelector}.drag-over`).forEach(el => {
-        if (el !== overRow) el.classList.remove('drag-over');
+      document.querySelectorAll(`${rowSelector}.drag-over, ${rowSelector}.drag-forbidden`).forEach(el => {
+        if (el !== overRow) el.classList.remove('drag-over', 'drag-forbidden');
       });
 
       if (overRow && overTaskId && overTaskId !== touchSourceTaskId) {
-        overRow.classList.add('drag-over');
+        const allowed = isDropTargetAllowed ? isDropTargetAllowed(touchSourceTaskId, overTaskId) : true;
+        if (!allowed) {
+          overRow.classList.add('drag-forbidden');
+          overRow.classList.remove('drag-over');
+        } else {
+          overRow.classList.add('drag-over');
+          overRow.classList.remove('drag-forbidden');
+        }
         currentTouchOverTaskId = overTaskId;
       } else {
         currentTouchOverTaskId = null;

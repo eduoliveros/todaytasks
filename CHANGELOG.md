@@ -4,6 +4,19 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.116] - 2026-09-20
+
+### Añadido
+- **Restricciones de Ordenación en Drag & Drop (Dependencias y `startAfter`):**
+  - **Invariante de Dependencias (`dependsOn`):** Una tarea dependiente no puede colocarse por delante de su tarea bloqueadora en la cola del día, ni una tarea bloqueadora por detrás de sus tareas dependientes.
+  - **Invariante de Hora de Inicio (`startAfter`):** Una tarea con hora fijada no puede preceder a otra con hora programada posterior. Las tareas sin hora no sufren restricciones y pueden intercalarse libremente según la prioridad del usuario.
+  - **Feedback Visual en Tiempo Real (`.drag-forbidden`):** Durante el arrastre de tareas (tanto en escritorio como en móvil por pulsación táctil prolongada), los destinos no permitidos se iluminan con la clase `.drag-forbidden` (borde discontinuo rojo/ámbar y cursor de prohibido) para comunicar la invalidez antes de soltar.
+  - **Auto-corrección Inteligente al Soltar:** Si el usuario suelta en una posición no permitida, el sistema ubica automáticamente la tarea en la primera posición válida respetando la intención del usuario y muestra un aviso contextual (*toast*) explicativo.
+  - **Coherencia Total:** Comportamiento idéntico en el tablero principal y en la vista de Triaje rápido (`#/triage`), tanto para arrastres individuales como para arrastre y desplazamiento en bloque de multiselección.
+  - **Documentación y Pruebas:**
+    - Nueva suite de pruebas unitarias: `tests/dragdrop_constraints.test.js`.
+    - Registro de Decisión de Arquitectura: [ADR 023](docs/adr/023-restricciones-ordenacion-dragdrop-dependencias-startafter.md) y actualización de `docs/ARCHITECTURE.md`.
+
 ## [1.115] - 2026-09-20
 
 ### Añadido

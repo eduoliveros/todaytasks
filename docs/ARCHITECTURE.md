@@ -306,6 +306,10 @@ TodayTasks implementa un modelo híbrido donde las decisiones explícitas de reo
   4. **Intercalado inteligente de nuevas tareas:** Las tareas flotantes se insertan automáticamente antes de tareas ancladas de prioridad inferior (por ejemplo, antes de una tarea que el usuario mandó conscientemente al final del día como 'más adelante').
 * **Acción para Restablecer Orden Automático (`applyAutoOrder`):**
   - Tanto en la vista de triaje rápido (`#triageAutoOrderBtn`) como en el panel de configuración (`#autoOrderBtn`), el usuario dispone de un botón `⚡ Orden automático` que limpia todas las anclas (`manualOrder = null`), reordena estrictamente por prioridad (urgencia → destacada) y registra un snapshot en el historial de deshacer (`Ctrl+Z`).
+* **Restricciones de Ordenación en Drag & Drop (`v1.116` / [ADR 023](./adr/023-restricciones-ordenacion-dragdrop-dependencias-startafter.md)):**
+  - **Invariante de Dependencias:** Una tarea con dependencias pendientes en el día no puede reordenarse por delante de su tarea bloqueadora, ni la bloqueadora por detrás de sus dependientes.
+  - **Invariante de Hora de Inicio (`startAfter`):** Una tarea con hora programada no puede preceder a otra tarea con hora fijada más tardía. Las tareas sin hora de inicio programada no sufren restricciones y se pueden intercalar libremente.
+  - **Feedback Visual y Autocorrección:** Durante el arrastre se señalizan los destinos no permitidos (`.drag-forbidden`), y si se suelta en una zona inválida, el sistema sitúa la tarea en la primera posición válida respetando la intención del usuario y emite un aviso contextual (*toast*).
 
 ---
 

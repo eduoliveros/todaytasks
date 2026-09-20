@@ -1,5 +1,6 @@
 /* actions/calendar.js — Navegación de fechas, rollover, entorno, copia de tareas, día nuevo */
 import { getTodayStr, formatDateFriendly, addDays, getTaskElapsed } from '../utils.js';
+import { t } from '../i18n.js';
 import { snapshotAndPrune, saveHistoryMetric as historySaveMetric, deleteHistoryMetric as historyDeleteMetric } from '../history.js';
 import { assignNextTaskDisplayId } from '../state.js';
 
@@ -250,22 +251,25 @@ export function TodayTasksCalendar(ctx, helpers){
 
   function startNewDay(){
     const state = getState();
-    const envName = state.activeEnv === 'work' ? "Trabajo" : "Personal";
+    const envName = state.activeEnv === 'work' ? t('env.work') : t('env.personal');
     const completedCount = state.tasks.filter(t=>t.status==="completed").length;
     const pendingCount = state.tasks.filter(t=>t.status!=="completed").length;
     const meetingsCount = state.meetings.length;
     const anyRunning = state.tasks.some(t=>t.status==="running");
 
     if(meetingsCount === 0 && state.tasks.length === 0){
-      showToast(`El ambiente ${envName} ya está vacío, listo para empezar.`);
+      showToast(t('config.newDayEmpty', { env: envName }));
       return;
     }
 
-    let msg = `Vas a empezar un día nuevo en el ambiente "${envName}". Se borrarán:\n`;
-    msg += "· " + meetingsCount + " reunión(es)\n";
-    msg += "· " + completedCount + " tarea(s) completada(s)\n";
-    msg += "· " + pendingCount + " tarea(s) pendiente(s) o en pausa" + (anyRunning ? " (incluida una en ejecución)" : "") + "\n";
-    msg += "\nEsta acción no afectará al otro ambiente. ¿Continuar?";
+    const runningText = anyRunning ? t('config.newDayConfirmRunning') : '';
+    const msg = t('config.newDayConfirm', {
+      env: envName,
+      meetings: meetingsCount,
+      completed: completedCount,
+      pending: pendingCount,
+      running: runningText
+    });
 
     if(typeof window !== "undefined" && !window.confirm(msg)) return;
 
@@ -304,7 +308,7 @@ export function TodayTasksCalendar(ctx, helpers){
     setTaskEdit(null);
     saveState();
     renderAll();
-    showToast(`Día nuevo iniciado en "${envName}". Reuniones y tareas anteriores se han borrado.`);
+    showToast(t('config.newDaySuccess', { env: envName }));
   }
 
   function copyTaskToDate(taskId, targetDateStr) {
@@ -575,8 +579,9 @@ export function TodayTasksCalendar(ctx, helpers){
     const actionFn = isAutoMove ? (moveTaskToDateFn || moveTaskToDate) : (copyTaskToDateFn || copyTaskToDate);
 
     if (!modal) {
-      const verb = isAutoMove ? "mover" : "copiar";
-      const targetDate = prompt(`¿A qué fecha deseas ${verb} "${taskTitle || 'la tarea'}"? (YYYY-MM-DD)`, today);
+      const promptKey = isAutoMove ? 'modal.movePrompt' : 'modal.copyPrompt';
+      const promptText = t(promptKey, { title: taskTitle || (isAutoMove ? t('modal.moveTitle') : t('modal.copyTitle')) });
+      const targetDate = prompt(promptText, today);
       if (targetDate && targetDate.trim()) actionFn(taskId, targetDate.trim());
       return;
     }
@@ -587,19 +592,20 @@ export function TodayTasksCalendar(ctx, helpers){
     const btnCustom = document.getElementById("copyTaskBtnCustomDate");
 
     if (isAutoMove) {
-      if (titleEl) titleEl.textContent = taskTitle ? `Mover "${taskTitle}" ➡️` : "Mover tarea ➡️";
-      if (descEl) descEl.textContent = "¿A qué fecha deseas mover esta tarea? Se trasladará conservando el tiempo consumido y se quitará del día actual.";
-      if (labelTodaySpan) labelTodaySpan.innerHTML = "📅 <strong>Mover a Hoy</strong>";
-      if (btnCustom) btnCustom.textContent = "Mover";
+      if (titleEl) titleEl.textContent = taskTitle ? t('modal.moveTitleNamed', { title: taskTitle }) : t('modal.moveTitle');
+      if (descEl) descEl.textContent = t('modal.moveDesc');
+      if (labelTodaySpan) labelTodaySpan.innerHTML = t('modal.moveToToday');
+      if (btnCustom) btnCustom.textContent = t('action.move');
     } else {
-      if (titleEl) titleEl.textContent = taskTitle ? `Copiar "${taskTitle}" 📋` : "Copiar tarea 📋";
-      if (descEl) descEl.textContent = "¿A qué fecha deseas copiar esta tarea? Se creará una copia en estado pendiente con la duración completa original.";
-      if (labelTodaySpan) labelTodaySpan.innerHTML = "📅 <strong>Copiar a Hoy</strong>";
-      if (btnCustom) btnCustom.textContent = "Copiar";
+      if (titleEl) titleEl.textContent = taskTitle ? t('modal.copyTitleNamed', { title: taskTitle }) : t('modal.copyTitle');
+      if (descEl) descEl.textContent = t('modal.copyDesc');
+      if (labelTodaySpan) labelTodaySpan.innerHTML = t('modal.copyToToday');
+      if (btnCustom) btnCustom.textContent = t('action.copy');
     }
 
     const dateInput = document.getElementById("copyTaskDateInput");
-    if (dateInput) dateInput.value = state.selectedDate && state.selectedDate !== today ? state.selectedDate : today;
+    const defaultDate = state.selectedDate && state.selectedDate !== today ? state.selectedDate : addDays(today, 1);
+    if (dateInput) dateInput.value = defaultDate;
 
     const btnToday = document.getElementById("copyTaskBtnToday");
     const btnCancel = document.getElementById("copyTaskBtnCancel");
@@ -627,7 +633,7 @@ export function TodayTasksCalendar(ctx, helpers){
       btnCustom.onclick = () => {
         const val = dateInput ? dateInput.value : today;
         if (!val) {
-          alert("Selecciona una fecha válida.");
+          alert(t('modal.selectValidDate'));
           return;
         }
         cleanup();

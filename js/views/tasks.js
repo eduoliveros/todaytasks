@@ -37,6 +37,12 @@ export function TodayTasksTasksView(ctx){
       if (ctx.actionsModule && ctx.actionsModule.reorderTaskByDrag) {
         ctx.actionsModule.reorderTaskByDrag(sourceId, targetId, null);
       }
+    },
+    isDropTargetAllowed: (sourceId, targetId) => {
+      if (ctx.actionsModule && typeof ctx.actionsModule.checkIsDropTargetAllowed === 'function') {
+        return ctx.actionsModule.checkIsDropTargetAllowed(targetId);
+      }
+      return true;
     }
   });
 

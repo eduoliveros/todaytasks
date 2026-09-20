@@ -916,6 +916,45 @@ describe('TodayTasksTriageView (UI & Sorting & Selection)', () => {
     expect(state.tasks[0].urgency).toBe('today');
     expect(state.tasks[1].urgency).toBe('later');
   });
+
+  it('al arrastrar una tarea sobre una tarea de otro grupo de urgencia en triaje, actualiza la urgencia de la tarea', () => {
+    actions.addTask('Tarea Hoy', '30', false, null, true, 'today');
+    actions.addTask('Tarea Días', '30', false, null, true, 'days');
+
+    const idToday = state.tasks[0].id;
+    const idDays = state.tasks[1].id;
+
+    triageView.renderTriageView();
+
+    // Simulamos arrastrar 'Tarea Días' y soltar sobre 'Tarea Hoy'
+    const mockDropEvent = {
+      stopPropagation: vi.fn(),
+      preventDefault: vi.fn(),
+      dataTransfer: { getData: vi.fn().mockReturnValue(idDays) }
+    };
+    triageView.triageTaskDrop(mockDropEvent, idToday);
+
+    const taskDays = state.tasks.find(t => t.id === idDays);
+    expect(taskDays.urgency).toBe('today');
+  });
+
+  it('al soltar una tarea en la cabecera/cuerpo de un grupo en triaje, adopta la urgencia del grupo', () => {
+    actions.addTask('Tarea Para Cambiar', '30', false, null, true, 'days');
+    const idTask = state.tasks[0].id;
+
+    triageView.renderTriageView();
+
+    // Soltar en el grupo 'today'
+    const mockDropEvent = {
+      stopPropagation: vi.fn(),
+      preventDefault: vi.fn(),
+      dataTransfer: { getData: vi.fn().mockReturnValue(idTask) }
+    };
+    triageView.triageGroupDrop(mockDropEvent, 'today');
+
+    const task = state.tasks.find(t => t.id === idTask);
+    expect(task.urgency).toBe('today');
+  });
 });
 
 describe('Triage Keyboard Shortcut X', () => {

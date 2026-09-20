@@ -154,6 +154,8 @@ export function TodayTasksViews(ctx){
     handleTriageTouchCancel:      triageV.handleTriageTouchCancel,
     triageTaskDragStart:          triageV.triageTaskDragStart,
     triageTaskDrop:               triageV.triageTaskDrop,
+    triageGroupDragOver:          triageV.triageGroupDragOver,
+    triageGroupDrop:              triageV.triageGroupDrop,
     getSelectedTaskIds:           triageV.getSelectedTaskIds,
     setTriageSearchQuery:         triageV.setTriageSearchQuery,
     getTriageSearchQuery:         triageV.getTriageSearchQuery,

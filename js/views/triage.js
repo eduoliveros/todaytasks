@@ -568,6 +568,29 @@ export function TodayTasksTriageView(ctx) {
       }
     },
     onDrop: (sourceId, targetId, selectedIds) => {
+      const state = getState();
+      const targetDateStr = getTargetDateStr();
+      const activeTasks = getActiveTasks(targetDateStr);
+      const targetTask = activeTasks.find(t => String(t.id) === String(targetId)) ||
+                         (state.tasks || []).find(t => String(t.id) === String(targetId));
+      const movingIds = (selectedIds && selectedIds.size > 0 && selectedIds.has(String(sourceId)))
+        ? Array.from(selectedIds)
+        : [sourceId];
+
+      if (targetTask && movingIds.length > 0) {
+        if (currentSort === 'urgency' && targetTask.urgency) {
+          movingIds.forEach(id => {
+            const tObj = (state.tasks || []).find(x => String(x.id) === String(id));
+            if (tObj) tObj.urgency = targetTask.urgency;
+          });
+        } else if (currentSort === 'featured' && targetTask.featured !== undefined) {
+          movingIds.forEach(id => {
+            const tObj = (state.tasks || []).find(x => String(x.id) === String(id));
+            if (tObj) tObj.featured = targetTask.featured;
+          });
+        }
+      }
+
       const actions = getActions();
       if (actions && actions.reorderTaskByDrag) {
         actions.reorderTaskByDrag(sourceId, targetId, selectedIds);
@@ -578,6 +601,13 @@ export function TodayTasksTriageView(ctx) {
     },
     onLongPressNotDraggable: (taskId, event) => {
       openMobileMoveSheet(taskId, event);
+    },
+    isDropTargetAllowed: (sourceId, targetId) => {
+      const actions = getActions();
+      if (actions && typeof actions.checkIsDropTargetAllowed === 'function') {
+        return actions.checkIsDropTargetAllowed(targetId);
+      }
+      return true;
     }
   });
 
@@ -952,7 +982,9 @@ export function TodayTasksTriageView(ctx) {
       completedTimeHtml = `<span class="triage-task-time tr-running">${fmt(realStart)}<span class="arrow">→</span>${fmt(task.completedAt)}</span>`;
     }
     return `
-      <div class="triage-task-row is-completed triage-completed-item" data-task-id="${escapeAttr(task.id)}">
+      <div class="triage-task-row is-completed triage-completed-item" data-task-id="${escapeAttr(task.id)}"
+           ondragover="app.taskDragOver(event)"
+           ondrop="app.triageTaskDrop(event, '${escapeAttr(task.id)}')">
         <div class="triage-task-left">
           <span class="status-badge completed" style="margin-right:6px;">✓</span>
           ${task.displayId ? `<button type="button" class="task-id-badge" onclick="app.copyTaskId('${escapeAttr(task.id)}', event)" title="${escapeAttr(t('tasks.copyIdTooltip', { id: task.displayId }))}">${escapeHtml(task.displayId)}</button>` : ''}
@@ -979,7 +1011,97 @@ export function TodayTasksTriageView(ctx) {
     }
   }
 
+  function triageGroupDragOver(event, groupId) {
+    if (event) {
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    }
+  }
+
+  function triageGroupDrop(event, groupId) {
+    if (event && event.preventDefault) event.preventDefault();
+    if (event && event.stopPropagation) event.stopPropagation();
+
+    const state = getState();
+    const targetDateStr = getTargetDateStr();
+    const activeTasks = getActiveTasks(targetDateStr);
+
+    if (currentSort === 'viability' || currentSort === 'duration') {
+      showToast(t('tasks.toastCannotChangeGroupAuto'));
+      return;
+    }
+
+    let draggedId = null;
+    if (event && event.dataTransfer) {
+      try { draggedId = event.dataTransfer.getData('text/plain'); } catch (e) {}
+    }
+
+    const movingIds = (selectedTaskIds.size > 0 && draggedId && selectedTaskIds.has(String(draggedId)))
+      ? Array.from(selectedTaskIds)
+      : (draggedId ? [draggedId] : []);
+
+    if (movingIds.length === 0) return;
+
+    const actions = getActions();
+    if (currentSort === 'urgency') {
+      movingIds.forEach(id => {
+        const tObj = (state.tasks || []).find(x => String(x.id) === String(id));
+        if (tObj) tObj.urgency = groupId;
+      });
+      const groups = getGroups(activeTasks, targetDateStr);
+      const targetGroup = groups.find(g => g.id === groupId);
+      if (targetGroup && targetGroup.tasks.length > 0) {
+        const lastTask = targetGroup.tasks[targetGroup.tasks.length - 1];
+        if (actions && actions.taskDrop) {
+          actions.taskDrop(event, lastTask.id, selectedTaskIds);
+        }
+      } else {
+        saveState();
+      }
+    } else if (currentSort === 'featured') {
+      const enable = (groupId === 'feat');
+      movingIds.forEach(id => {
+        const tObj = (state.tasks || []).find(x => String(x.id) === String(id));
+        if (tObj) tObj.featured = enable;
+      });
+      saveState();
+    }
+
+    renderTriageView();
+  }
+
   function triageTaskDrop(event, taskId) {
+    if (event && event.stopPropagation) event.stopPropagation();
+    const state = getState();
+    const targetDateStr = getTargetDateStr();
+    const activeTasks = getActiveTasks(targetDateStr);
+
+    let draggedId = null;
+    if (event && event.dataTransfer) {
+      try { draggedId = event.dataTransfer.getData('text/plain'); } catch (e) {}
+    }
+
+    const movingIds = (selectedTaskIds.size > 0 && draggedId && selectedTaskIds.has(String(draggedId)))
+      ? Array.from(selectedTaskIds)
+      : (draggedId ? [draggedId] : []);
+
+    const targetTask = activeTasks.find(t => String(t.id) === String(taskId)) ||
+                       (state.tasks || []).find(t => String(t.id) === String(taskId));
+
+    if (targetTask && movingIds.length > 0) {
+      if (currentSort === 'urgency' && targetTask.urgency) {
+        movingIds.forEach(id => {
+          const tObj = (state.tasks || []).find(x => String(x.id) === String(id));
+          if (tObj) tObj.urgency = targetTask.urgency;
+        });
+      } else if (currentSort === 'featured' && targetTask.featured !== undefined) {
+        movingIds.forEach(id => {
+          const tObj = (state.tasks || []).find(x => String(x.id) === String(id));
+          if (tObj) tObj.featured = targetTask.featured;
+        });
+      }
+    }
+
     const actions = getActions();
     if (actions && actions.taskDrop) {
       actions.taskDrop(event, taskId, selectedTaskIds);
@@ -1042,7 +1164,7 @@ export function TodayTasksTriageView(ctx) {
          ondragleave="app.taskDragLeave(event)"
          ondrop="app.triageTaskDrop(event, '${escapeAttr(task.id)}')"
          ondragend="app.taskDragEnd(event)"`
-      : '';
+      : `ondragover="app.taskDragOver(event)" ondrop="app.triageTaskDrop(event, '${escapeAttr(task.id)}')"` ;
     const dragHandle = isDraggable
       ? `<span class="drag-handle triage-drag-handle" title="${escapeAttr(t('triage.touchDragHint'))}" onmousedown="app.armTaskDrag()">⠿</span>`
       : '';
@@ -1193,9 +1315,12 @@ export function TodayTasksTriageView(ctx) {
       const someSelected = g.tasks.some(task => selectedTaskIds.has(String(task.id))) && !allSelected;
 
       html += `
-        <div class="triage-group-card ${isCollapsed ? 'collapsed' : ''}" id="triage-group-${escapeAttr(g.id)}">
+        <div class="triage-group-card ${isCollapsed ? 'collapsed' : ''}" id="triage-group-${escapeAttr(g.id)}"
+             ondragover="app.triageGroupDragOver(event, '${escapeAttr(g.id)}')">
           <!-- CABECERA DE GRUPO -->
-          <div class="triage-group-header" onclick="app.toggleTriageGroup('${escapeAttr(g.id)}')">
+          <div class="triage-group-header" onclick="app.toggleTriageGroup('${escapeAttr(g.id)}')"
+               ondragover="app.triageGroupDragOver(event, '${escapeAttr(g.id)}')"
+               ondrop="app.triageGroupDrop(event, '${escapeAttr(g.id)}')">
             <div class="triage-group-header-left">
               <button type="button" class="triage-chevron-btn" title="${isCollapsed ? escapeAttr(t('triage.groupExpandTooltip')) : escapeAttr(t('triage.groupCollapseTooltip'))}">
                 ▾
@@ -1213,9 +1338,11 @@ export function TodayTasksTriageView(ctx) {
           </div>
 
           <!-- CONTENIDO PLEGABLE DEL GRUPO -->
-          <div class="triage-group-body" style="${isCollapsed ? 'display:none;' : ''}">
+          <div class="triage-group-body" style="${isCollapsed ? 'display:none;' : ''}"
+               ondragover="app.triageGroupDragOver(event, '${escapeAttr(g.id)}')"
+               ondrop="app.triageGroupDrop(event, '${escapeAttr(g.id)}')">
             ${g.tasks.length === 0 ? `
-              <div class="triage-group-empty">${t('triage.groupEmpty')}</div>
+              <div class="triage-group-empty" ondragover="app.triageGroupDragOver(event, '${escapeAttr(g.id)}')" ondrop="app.triageGroupDrop(event, '${escapeAttr(g.id)}')">${t('triage.groupEmpty')}</div>
             ` : `
               <div class="triage-tasks-list">
                 ${g.tasks.map(task => renderTriageTaskRow(task, env, quick5Days, schedule)).join('')}
@@ -1836,6 +1963,8 @@ export function TodayTasksTriageView(ctx) {
     handleTriageTouchCancel,
     triageTaskDragStart,
     triageTaskDrop,
+    triageGroupDragOver,
+    triageGroupDrop,
     getSelectedTaskIds: () => selectedTaskIds,
     setTriageSearchQuery,
     getTriageSearchQuery,
