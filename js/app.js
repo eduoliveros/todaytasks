@@ -21,6 +21,7 @@ import { TodayTasksUrgencyDropdown, getUrgencyMap } from './app/urgency-dropdown
 import { TodayTasksHistoryMetrics } from './app/history-metrics.js';
 import { TodayTasksCommandPalette } from './app/command-palette.js';
 import { TodayTasksDependencies } from './app/dependencies.js';
+import { TodayTasksTaskDetailSheet } from './app/task-detail-sheet.js';
 import { attachTagAutocomplete } from './app/tag-autocomplete.js';
 import { exportOpenTasksCSV } from './app/export-csv.js';
 import { t, setLocale, translateDOM } from './i18n.js';
@@ -166,6 +167,9 @@ let pipModule = TodayTasksPiP({
   showToast
 });
 ctx.pipModule = pipModule;
+
+let taskDetailSheetModule = TodayTasksTaskDetailSheet(ctx);
+ctx.taskDetailSheetModule = taskDetailSheetModule;
 
 const { refreshNotifyBtn, requestNotificationPermission, checkRunningTaskNotification, checkMeetingNotifications } =
   TodayTasksNotifications({
@@ -888,7 +892,16 @@ function switchHeaderTab(target){
     removeDependency: actionsModule.removeDependency,
     addEditTaskDependency: (depId) => actionsModule && actionsModule.addEditTaskDependency(depId),
     removeEditTaskDependency: (depId) => actionsModule && actionsModule.removeEditTaskDependency(depId),
-    dependencies: dependenciesModule
+    dependencies: dependenciesModule,
+    /* Mobile Task Detail Sheet */
+    handleTaskMobileClick: (taskId, event) => taskDetailSheetModule && taskDetailSheetModule.handleTaskClick(taskId, event),
+    openTaskDetailSheet: (taskId) => taskDetailSheetModule && taskDetailSheetModule.openTaskDetailSheet(taskId),
+    closeTaskDetailSheet: () => taskDetailSheetModule && taskDetailSheetModule.closeTaskDetailSheet(),
+    taskDetailSheetAction: (actionType) => taskDetailSheetModule && taskDetailSheetModule.handleAction(actionType),
+    taskDetailSheetMove: (direction, event) => taskDetailSheetModule && taskDetailSheetModule.handleMove(direction, event),
+    taskDetailSheetReschedule: (dateStr) => taskDetailSheetModule && taskDetailSheetModule.handleReschedule(dateStr),
+    refreshTaskDetailSheet: () => taskDetailSheetModule && taskDetailSheetModule.refreshIfOpen && taskDetailSheetModule.refreshIfOpen(),
+    taskDetailSheet: taskDetailSheetModule
   };
 
   if (typeof window !== "undefined") {

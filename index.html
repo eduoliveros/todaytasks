@@ -18,7 +18,7 @@
   <!-- Barra superior: logo + switcher + pestañas -->
   <div class="topbar-title-row">
     <div class="brand">
-      <h1><span data-i18n="app.title">TodayTasks</span> <span class="app-version">v1.113</span></h1>
+      <h1><span data-i18n="app.title">TodayTasks</span> <span class="app-version">v1.115</span></h1>
       <span class="db-status-badge" id="appModeLabel" data-i18n="app.localDbBadge" title="Tipo de base de datos en uso">💾 local · persistente</span>
       <button type="button" class="topbar-global-search-btn" id="globalSearchBtn" onclick="app.openCommandPalette()" data-i18n-title="globalSearch.openTooltip" title="Buscar en todos los días (Ctrl+K)">
         <span class="search-btn-icon" aria-hidden="true">🔍</span>
@@ -131,7 +131,7 @@
     <div class="panel">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
         <h2 style="margin:0;" data-i18n="tasks.heading">Tareas</h2>
-        <a href="#/triage" class="btn secondary small" id="triageViewBtn" data-i18n-title="tasks.triageTooltip" data-i18n="tasks.triageBtn" title="Abrir vista de triaje rápido (Tecla 'X')" style="text-decoration:none;">⚡ Triaje [X]</a>
+        <a href="#/triage" class="btn primary small triage-nav-btn" id="triageViewBtn" data-i18n-title="tasks.triageTooltip" data-i18n="tasks.triageBtn" title="Abrir vista de triaje rápido (Tecla 'X')" style="text-decoration:none;">⚡ Triaje [X]</a>
       </div>
       <div class="row">
         <input type="text" id="taskTitle" data-i18n-placeholder="tasks.inputTitlePlaceholder" placeholder="Título de la tarea">
@@ -706,11 +706,30 @@
   </div>
 </div>
 
+<!-- Bottom Sheet Móvil: Detalle y Acciones de Tarea -->
+<div id="taskDetailSheet" class="task-detail-bottom-modal" style="display:none;" onclick="if(event.target===this) app.closeTaskDetailSheet()" role="dialog" aria-modal="true" aria-labelledby="taskDetailSheetTitle">
+  <div class="task-detail-bottom-card" onclick="event.stopPropagation()">
+    <div class="task-detail-sheet-header">
+      <div>
+        <span class="task-detail-sheet-eyebrow" data-i18n="tasks.detailSheetTitle">Detalle de la tarea</span>
+        <h3 id="taskDetailSheetTitle" class="task-detail-sheet-title">...</h3>
+      </div>
+      <button type="button" class="close-modal-btn" onclick="app.closeTaskDetailSheet()" data-i18n-title="action.closeTooltip" data-i18n-aria="action.close" title="Cerrar (Esc)" aria-label="Cerrar">&times;</button>
+    </div>
+    <div id="taskDetailSheetMeta"></div>
+    <div id="taskDetailSheetNotes" style="display:none;"></div>
+    <div id="taskDetailSheetDeps" style="display:none;"></div>
+    <div id="taskDetailSheetActions" class="task-detail-actions-grid"></div>
+    <div id="taskDetailSheetPosition" class="task-detail-section" style="display:none;"></div>
+    <div id="taskDetailSheetReschedule" class="task-detail-section" style="display:none;"></div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-<script type="module" src="js/app.js?v=1.112"></script>
+<script type="module" src="js/app.js?v=1.115"></script>
 </body>
 </html>
 

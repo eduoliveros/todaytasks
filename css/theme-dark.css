@@ -679,3 +679,17 @@
   background: rgba(245, 158, 11, 0.12);
   border-color: rgba(245, 158, 11, 0.3);
 }
+
+[data-theme="dark"] #triageViewBtn,
+[data-theme="dark"] .triage-btn-back {
+  background: #6366F1 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+}
+
+[data-theme="dark"] #triageViewBtn:hover,
+[data-theme="dark"] .triage-btn-back:hover {
+  background: #4F46E5 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.5);
+}

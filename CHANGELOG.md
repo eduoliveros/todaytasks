@@ -4,6 +4,36 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.115] - 2026-09-20
+
+### Añadido
+- **Triaje Móvil Compacto y Unificación con Bottom Sheet (`triage.js`, `triage.css`, `task-detail-sheet.js`):**
+  - **Filas de Triaje Compactas en Móvil ($\le$ 640px):** En pantallas pequeñas, se ocultan los botones redundantes del lado derecho (`.triage-quick-days-wrap`, `.triage-copy-btn`, `.triage-complete-btn`, `.triage-delete-btn`) y el rango horario en la fila, otorgando todo el ancho disponible al título con truncado elíptico limpio. En el botón de urgencia se mantiene únicamente el icono para minimizar espacio horizontal (~28px).
+  - **Interacción Móvil en Triaje (Tap $\to$ Detalle y Acciones):** Al pulsar el cuerpo de una fila de triaje en móvil, ya no se marca/selecciona la tarea accidentalmente, sino que se despliega directamente el *Bottom Sheet* unificado (`#taskDetailSheet`) con toda la información, notas, dependencias y botones de acción.
+  - **Selección Múltiple Móvil con Checkbox:** Para seleccionar/marcar tareas en lote en móvil, se utiliza el selector de casilla de verificación explícito (`.triage-task-cb`), preservando la barra flotante de acciones masivas sin interferir con la navegación táctil.
+  - **Sección de Reordenación y Posición en Bottom Sheet:** Se integraron botones táctiles (`⤒ Inicio`, `▲ Subir`, `▼ Bajar`, `⤓ Fin`) para reordenar tareas en la cola sin requerir arrastre manual en pantallas táctiles reducidas, con aviso de seguridad cuando la tarea está en curso activo.
+  - **Sección de Reprogramación Rápida a Días Laborables:** Se agregaron fichas (*chips*) con los próximos 5 días hábiles en el *Bottom Sheet* para trasladar tareas de fecha con un solo toque desde cualquier vista.
+  - **Cero Regresiones en Escritorio:** La vista de triaje en ordenadores de escritorio (> 640px) preserva sus 5 botones rápidos de fecha, botones directos de acción y selección rápida de filas por clic simple y edición por doble clic.
+
+## [1.114] - 2026-09-20
+
+### Añadido
+- **Vista Móvil Compacta y Bottom Sheet de Detalle de Tareas (`task-detail-sheet.js`, `layout.css`):**
+  - **Tarjetas Compactas en Móvil ($\le$ 640px):** En pantallas estrechas, las tarjetas de tareas activas y completadas se sintetizan visualmente, mostrando de forma limpia el indicador lateral de estado y el título con truncado automático (`text-overflow: ellipsis`), eliminando la sobrecarga de pastillas y botones en la lista.
+  - **Bottom Sheet de Detalle y Acciones (`#taskDetailSheet`):** Al tocar cualquier tarjeta en móvil, se despliega una hoja inferior táctil animada (`taskDetailSlideUp`) con:
+    - Identificador visible (`[W-1]`), título íntegro y estrella de destacada.
+    - Fila de pastillas completas: nivel de urgencia, estado (en curso, en pausa, pendiente, completada), repetición recurrente, inicio condicional `startAfter` y rango de horario en tiempo real.
+    - Desglose de tiempo planificado vs. tiempo real consumido.
+    - Bloque de notas con formato Markdown y enlaces web interactivos.
+    - Indicador de dependencias bloqueadoras pendientes en tareas con bloqueos.
+    - Botonera táctil con altura accesible ($\ge$ 44px) adaptada al estado: Iniciar, Pausar, Reanudar, Completar, Reabrir, Editar, Destacar, Copiar referencia y Eliminar.
+  - **Accesibilidad y Atajos:** Soporte de cierre mediante pulsación en el fondo (*backdrop*), botón `✕` superior, selección de acción o tecla <kbd>Esc</kbd>.
+  - **Cero Regresiones en Escritorio:** Las tarjetas de tareas en ordenadores de escritorio (> 640px) mantienen íntegro su diseño y controles directos.
+  - **Pruebas y Documentación:**
+    - Pruebas unitarias: `tests/task_detail_sheet.test.js` y `tests/mobile_compact_tasks.test.js`.
+    - Pruebas E2E: `e2e/tasks.spec.js`.
+    - Registro de Decisión de Arquitectura: [ADR 021](docs/adr/021-vista-movil-compacta-bottom-sheet.md) y actualización de `docs/ARCHITECTURE.md`.
+
 ## [1.113] - 2026-09-19
 
 ### Cambiado

@@ -283,7 +283,7 @@ export function TodayTasksTasksView(ctx){
     const blockedClass = isBlocked ? 'is-blocked' : '';
 
     return `
-      <div class="item task-item ${task.status} ${featuredClass} ${overflowClass} ${blockedClass}" id="task-item-${escapeAttr(task.id)}" data-task-id="${escapeAttr(task.id)}" ondblclick="app.startEditTask('${escapeAttr(task.id)}')" ${dragAttrs}>
+      <div class="item task-item ${task.status} ${featuredClass} ${overflowClass} ${blockedClass}" id="task-item-${escapeAttr(task.id)}" data-task-id="${escapeAttr(task.id)}" onclick="if(window.app && window.app.handleTaskMobileClick) window.app.handleTaskMobileClick('${escapeAttr(task.id)}', event)" ondblclick="app.startEditTask('${escapeAttr(task.id)}')" ${dragAttrs}>
         <div class="top">
           <div style="display:flex;align-items:flex-start;gap:6px;flex:1;min-width:0;">
             ${dragHandle}
@@ -385,7 +385,7 @@ export function TodayTasksTasksView(ctx){
       </div>
     ` : '';
     return `
-      <div class="item task-item completed-search-item" id="task-item-${escapeAttr(task.id)}" data-task-id="${escapeAttr(task.id)}">
+      <div class="item task-item completed-search-item" id="task-item-${escapeAttr(task.id)}" data-task-id="${escapeAttr(task.id)}" onclick="if(window.app && window.app.handleTaskMobileClick) window.app.handleTaskMobileClick('${escapeAttr(task.id)}', event)">
         <div class="top">
           <div style="flex:1;min-width:0;">
             <div class="title completed-title">${task.displayId ? `<button type="button" class="task-id-badge" onclick="app.copyTaskId('${escapeAttr(task.id)}', event)" title="${escapeAttr(t('tasks.copyIdTooltip', { id: task.displayId }))}">${escapeHtml(task.displayId)}</button>` : ''}${formatTitleWithTags(task.title, 'app.filterByTag')}</div>

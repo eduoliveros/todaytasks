@@ -49,6 +49,18 @@ export function TodayTasksShortcuts(appCtx){
           return;
         }
 
+        const taskDetailSheet = document.getElementById("taskDetailSheet");
+        if(taskDetailSheet && taskDetailSheet.style.display === "flex"){
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          if(window.app && typeof window.app.closeTaskDetailSheet === "function") {
+            window.app.closeTaskDetailSheet();
+          } else {
+            taskDetailSheet.style.display = "none";
+          }
+          return;
+        }
+
         const blockedConfirmModal = document.getElementById("blockedTaskConfirmModal");
         if(blockedConfirmModal && blockedConfirmModal.style.display === "flex"){
           e.preventDefault();

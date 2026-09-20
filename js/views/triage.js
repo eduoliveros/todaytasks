@@ -464,7 +464,8 @@ export function TodayTasksTriageView(ctx) {
     openTriageNewTaskModal();
   }
 
-  function moveTriageTaskDirection(taskId, direction) {
+  function moveTriageTaskDirection(taskId, direction, event) {
+    if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
     const actions = getActions();
     if (actions && actions.moveTaskDirectly) {
       actions.moveTaskDirectly(taskId, direction, selectedTaskIds);
@@ -542,7 +543,7 @@ export function TodayTasksTriageView(ctx) {
 
   function handleTriageTouchStart(taskId, event) {
     if (!event || !event.touches || event.touches.length === 0) return;
-    if (event.target.closest('button') || event.target.closest('input[type="checkbox"]')) {
+    if (event.target.closest('button') || event.target.closest('input[type="checkbox"]') || event.target.closest('.triage-cb-wrap')) {
       return;
     }
 
@@ -728,14 +729,37 @@ export function TodayTasksTriageView(ctx) {
   let lastClickedTaskId = null;
   let lastClickTime = 0;
 
+  function isMobileViewport() {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+    return window.matchMedia('(max-width: 640px)').matches;
+  }
+
   function handleTriageRowClick(taskId, event) {
     if (touchDragJustEnded) return;
     if (!event) return;
     // Si el clic vino de un botón, checkbox o manija de arrastre, no conmutar selección de fila
-    if (event.target.closest('button') || event.target.closest('input[type="checkbox"]') || event.target.closest('.drag-handle')) {
+    if (event.target.closest('button') || event.target.closest('input[type="checkbox"]') || event.target.closest('.triage-cb-wrap') || event.target.closest('.drag-handle') || event.target.closest('.triage-drag-handle')) {
       return;
     }
     if (event.stopPropagation) event.stopPropagation();
+
+    // EN MÓVIL (<= 640px): pulsar la fila abre el bottom sheet de detalle y acciones,
+    // NO marca ni selecciona la tarea (para seleccionar en móvil se usa el checkbox explícito).
+    if (isMobileViewport()) {
+      if (triageClickTimer) {
+        clearTimeout(triageClickTimer);
+        triageClickTimer = null;
+      }
+      lastClickedTaskId = null;
+      lastClickTime = 0;
+      if (window.app && window.app.openTaskDetailSheet) {
+        window.app.openTaskDetailSheet(taskId);
+      } else if (ctx && ctx.taskDetailSheetModule && ctx.taskDetailSheetModule.openTaskDetailSheet) {
+        ctx.taskDetailSheetModule.openTaskDetailSheet(taskId);
+      }
+      return;
+    }
+
     const strId = String(taskId);
     const now = Date.now();
 
@@ -1202,7 +1226,9 @@ export function TodayTasksTriageView(ctx) {
         <!-- LADO IZQUIERDO: PUNTITOS, CHECKBOX, ESTRELLA, NOMBRE + DURACIÓN (EN 1 LÍNEA) -->
         <div class="triage-task-left">
           ${dragHandle}
-          <input type="checkbox" class="triage-task-cb" ${isSelected ? 'checked' : ''} onclick="app.toggleTriageTaskSelect('${escapeAttr(task.id)}', event)">
+          <label class="triage-cb-wrap" onclick="event.stopPropagation()">
+            <input type="checkbox" class="triage-task-cb" ${isSelected ? 'checked' : ''} onclick="app.toggleTriageTaskSelect('${escapeAttr(task.id)}', event)">
+          </label>
           <button type="button" class="triage-star-btn ${task.featured ? 'is-featured' : ''}" onclick="app.toggleTriageTaskStar('${escapeAttr(task.id)}', event)" title="${task.featured ? escapeAttr(t('triage.unstarTooltip')) : escapeAttr(t('triage.starTooltip'))}">
             ${task.featured ? '⭐' : '☆'}
           </button>
@@ -1302,7 +1328,9 @@ export function TodayTasksTriageView(ctx) {
               <button type="button" class="triage-chevron-btn" title="${isCollapsed ? escapeAttr(t('triage.groupExpandTooltip')) : escapeAttr(t('triage.groupCollapseTooltip'))}">
                 ▾
               </button>
-              <input type="checkbox" class="triage-group-cb" ${allSelected ? 'checked' : ''} ${someSelected ? 'data-indeterminate="true"' : ''} onclick="app.toggleTriageGroupSelect('${escapeAttr(g.id)}', event)" title="${escapeAttr(t('triage.groupSelectAllTooltip'))}">
+              <label class="triage-cb-wrap" onclick="event.stopPropagation()">
+                <input type="checkbox" class="triage-group-cb" ${allSelected ? 'checked' : ''} ${someSelected ? 'data-indeterminate="true"' : ''} onclick="app.toggleTriageGroupSelect('${escapeAttr(g.id)}', event)" title="${escapeAttr(t('triage.groupSelectAllTooltip'))}">
+              </label>
               <span class="triage-group-icon">${g.icon}</span>
               <span class="triage-group-title">${escapeHtml(g.title)}</span>
               <span class="triage-group-badge">${t('triage.groupTaskCount', { count: g.tasks.length })}</span>
@@ -1608,6 +1636,11 @@ export function TodayTasksTriageView(ctx) {
       if (subtitleEl) {
         subtitleEl.innerHTML = t('triage.subtitle', { date: escapeHtml(friendlyDate), dateStr: escapeHtml(targetDateStr), totalTime: formatShortDuration(totalMinutes) });
       }
+      container.classList.toggle('has-floating-bar', selectedCount > 0);
+      const innerEl = container.querySelector('.triage-view-inner');
+      if (innerEl) {
+        innerEl.classList.toggle('has-floating-bar', selectedCount > 0);
+      }
       const floatingBar = document.getElementById('triageFloatingBar');
       if (floatingBar) {
         floatingBar.className = `triage-floating-bar ${selectedCount > 0 ? 'visible' : ''}`;
@@ -1636,12 +1669,13 @@ export function TodayTasksTriageView(ctx) {
       return;
     }
 
+    container.classList.toggle('has-floating-bar', selectedCount > 0);
     let html = `
-      <div class="triage-view-inner">
+      <div class="triage-view-inner ${selectedCount > 0 ? 'has-floating-bar' : ''}">
         <!-- TOP BAR -->
         <header class="triage-header">
           <div class="triage-header-left">
-            <button class="btn secondary small triage-btn-back" onclick="if(window.location.hash==='#/triage') window.location.hash='#/'; else if(app.showView) app.showView('main');" title="${escapeAttr(t('triage.btnBackTooltip'))}">
+            <button class="btn primary small triage-btn-back" onclick="if(window.location.hash==='#/triage') window.location.hash='#/'; else if(app.showView) app.showView('main');" title="${escapeAttr(t('triage.btnBackTooltip'))}">
               ${t('triage.btnBack')}
             </button>
             <div class="triage-undo-redo-group">
@@ -1666,10 +1700,6 @@ export function TodayTasksTriageView(ctx) {
           </div>
 
           <div class="triage-header-right">
-            <button type="button" class="btn primary small triage-btn-add-task" id="triageBtnAddTask" onclick="app.openTriageNewTaskModal()" title="${escapeAttr(t('triage.btnAddTaskTooltip'))}">
-              ${t('triage.btnAddTask')}
-            </button>
-
             <div class="triage-sort-selector">
               <span class="triage-sort-label">${t('triage.sortLabel')}</span>
               ${sortButtons.map(b => `
@@ -1824,17 +1854,17 @@ export function TodayTasksTriageView(ctx) {
                 ⏸️ ${t('triage.btnPauseToMove')}
               </button>
             </div>
-            <div class="triage-move-sheet-grid">
-              <button type="button" class="triage-move-grid-btn" onclick="app.moveTriageTaskDirection(app.getActiveMoveSheetTaskId(), 'up')">
+            <div class="triage-move-sheet-grid" ondblclick="event.preventDefault()">
+              <button type="button" class="triage-move-grid-btn" onclick="app.moveTriageTaskDirection(app.getActiveMoveSheetTaskId(), 'up', event)" ondblclick="event.preventDefault()">
                 <span>${t('triage.moveUp')}</span>
               </button>
-              <button type="button" class="triage-move-grid-btn" onclick="app.moveTriageTaskDirection(app.getActiveMoveSheetTaskId(), 'down')">
+              <button type="button" class="triage-move-grid-btn" onclick="app.moveTriageTaskDirection(app.getActiveMoveSheetTaskId(), 'down', event)" ondblclick="event.preventDefault()">
                 <span>${t('triage.moveDown')}</span>
               </button>
-              <button type="button" class="triage-move-grid-btn" onclick="app.moveTriageTaskDirection(app.getActiveMoveSheetTaskId(), 'top')">
+              <button type="button" class="triage-move-grid-btn" onclick="app.moveTriageTaskDirection(app.getActiveMoveSheetTaskId(), 'top', event)" ondblclick="event.preventDefault()">
                 <span>${t('triage.moveToTop')}</span>
               </button>
-              <button type="button" class="triage-move-grid-btn" onclick="app.moveTriageTaskDirection(app.getActiveMoveSheetTaskId(), 'bottom')">
+              <button type="button" class="triage-move-grid-btn" onclick="app.moveTriageTaskDirection(app.getActiveMoveSheetTaskId(), 'bottom', event)" ondblclick="event.preventDefault()">
                 <span>${t('triage.moveToBottom')}</span>
               </button>
             </div>

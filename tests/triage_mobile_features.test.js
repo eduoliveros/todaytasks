@@ -134,7 +134,7 @@ describe('Triage Mobile Features & Task Creation (TDD)', () => {
   });
 
   describe('Add new task from Triage (Unified Edit Modal UX)', () => {
-    it('renderiza el botón en cabecera (PC) y FAB (Móvil) y elimina la barra inline y modal inferior redundante', () => {
+    it('renderiza el botón flotante FAB (+) para añadir tarea y elimina botones redundantes de cabecera', () => {
       triageView.renderTriageView();
 
       const pcBtn = container.querySelector('#triageBtnAddTask');
@@ -142,7 +142,7 @@ describe('Triage Mobile Features & Task Creation (TDD)', () => {
       const deskBar = container.querySelector('#triageAddBar');
       const mobileModal = container.querySelector('#triageMobileAddModal');
 
-      expect(pcBtn).not.toBeNull();
+      expect(pcBtn).toBeNull();
       expect(fabBtn).not.toBeNull();
       expect(deskBar).toBeNull();
       expect(mobileModal).toBeNull();

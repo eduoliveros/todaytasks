@@ -8,6 +8,11 @@
   box-sizing: border-box;
 }
 
+#view-triage.has-floating-bar,
+#view-triage:has(.triage-floating-bar.visible) {
+  padding-bottom: 130px;
+}
+
 .triage-view-inner {
   display: flex;
   flex-direction: column;
@@ -31,12 +36,35 @@
   gap: 14px;
 }
 
+/* Botón de acceso a Triaje (en ventana principal) y botón de regreso a Tablero (en ventana de triaje) */
+#triageViewBtn,
+.triage-btn-back {
+  background: var(--primary, #4F46E5) !important;
+  color: #FFFFFF !important;
+  font-weight: 600;
+  border: 1px solid transparent;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.28);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+#triageViewBtn:hover,
+.triage-btn-back:hover {
+  background: var(--primary-hover, #4338CA) !important;
+  color: #FFFFFF !important;
+  opacity: 0.95;
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.38);
+}
+
+#triageViewBtn:active,
+.triage-btn-back:active {
+  transform: scale(0.97);
+}
+
 .triage-btn-back {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  font-weight: 500;
   border-radius: var(--radius);
 }
 
@@ -403,12 +431,24 @@ body[data-theme="dark"] .triage-task-row.long-press-active {
 }
 
 
-.triage-task-cb {
+.triage-cb-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  width: 15px;
-  height: 15px;
+  flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.triage-task-cb,
+.triage-group-cb {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
   margin: 0;
   flex-shrink: 0;
+  accent-color: var(--primary, #4F46E5);
 }
 
 .triage-star-btn {
@@ -746,6 +786,10 @@ body[data-theme="dark"] .triage-task-time.tr-running {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .triage-batch-move-btn:last-child {
@@ -891,6 +935,10 @@ body[data-theme="dark"] .triage-task-time.tr-running {
   #view-triage {
     padding: 12px 12px 90px 12px;
   }
+  #view-triage.has-floating-bar,
+  #view-triage:has(.triage-floating-bar.visible) {
+    padding-bottom: 210px;
+  }
   .triage-header {
     flex-direction: column;
     align-items: flex-start;
@@ -906,11 +954,21 @@ body[data-theme="dark"] .triage-task-time.tr-running {
     flex-direction: column;
     align-items: flex-start;
     bottom: 12px;
-    padding: 10px 12px;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .triage-floating-left {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  .triage-floating-left .triage-link-btn {
+    margin-left: auto;
   }
   .triage-floating-actions {
     width: 100%;
-    justify-content: flex-end;
+    justify-content: flex-start;
+    gap: 6px;
   }
 }
 
@@ -1030,6 +1088,11 @@ body[data-theme="dark"] .triage-task-time.tr-running {
   transform: scale(0.95);
 }
 
+.triage-view-inner.has-floating-bar .triage-fab-add,
+.triage-view-inner:has(.triage-floating-bar.visible) .triage-fab-add {
+  bottom: 88px;
+}
+
 /* Modales inferiores / Bottom Sheets */
 .triage-bottom-modal {
   position: fixed;
@@ -1119,6 +1182,7 @@ body[data-theme="dark"] .triage-task-time.tr-running {
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-bottom: 14px;
+  touch-action: manipulation;
 }
 
 .triage-move-grid-btn {
@@ -1135,6 +1199,10 @@ body[data-theme="dark"] .triage-task-time.tr-running {
   justify-content: center;
   gap: 6px;
   transition: border-color 0.12s, background 0.12s;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .triage-move-grid-btn:hover {
@@ -1194,8 +1262,9 @@ body[data-theme="dark"] .triage-task-time.tr-running {
     bottom: 20px;
     right: 20px;
   }
+  .triage-view-inner.has-floating-bar .triage-fab-add,
   .triage-view-inner:has(.triage-floating-bar.visible) .triage-fab-add {
-    bottom: 84px;
+    bottom: 170px;
   }
 }
 
@@ -1212,4 +1281,113 @@ body[data-theme="dark"] .triage-task-time.tr-running {
   gap: 6px;
   margin-top: 8px;
 }
+
+/* Adaptación móvil ultra-compacta para Triaje (<= 640px):
+   Muestra exclusivamente checkbox, ID y nombre de la tarea */
+@media (max-width: 640px) {
+  #view-triage {
+    padding: 12px 12px 80px 12px;
+  }
+  #view-triage.has-floating-bar,
+  #view-triage:has(.triage-floating-bar.visible) {
+    padding-bottom: 230px;
+  }
+
+  .triage-floating-bar {
+    width: 96%;
+    padding: 8px 10px;
+    bottom: 10px;
+    border-radius: 12px;
+  }
+
+  .triage-floating-actions {
+    gap: 4px;
+  }
+
+  .triage-floating-actions .btn.small {
+    padding: 5px 7px;
+    font-size: 0.78rem;
+  }
+
+  .triage-view-inner.has-floating-bar .triage-fab-add,
+  .triage-view-inner:has(.triage-floating-bar.visible) .triage-fab-add {
+    bottom: 180px;
+  }
+
+  /* Ocultar contador de tareas en el título "Triaje Rápido" en móvil */
+  .triage-badge-count {
+    display: none !important;
+  }
+
+  /* Ocultar número de tareas en las cabeceras de las agrupaciones en móvil */
+  .triage-group-badge {
+    display: none !important;
+  }
+
+  .triage-task-row {
+    padding: 10px 8px;
+    gap: 8px;
+  }
+
+  /* Ocultar todo el lado derecho de la fila en móvil (urgencia, botones rápidos, copiar, completar, borrar) */
+  .triage-task-right {
+    display: none !important;
+  }
+
+  /* Ocultar elementos secundarios del lado izquierdo:
+     manija de arrastre, estrella, dependencias, duración, horarios, recurrencia y desbordamiento */
+  .triage-task-row .triage-drag-handle,
+  .triage-task-row .triage-star-btn,
+  .triage-task-row .task-dep-badge,
+  .triage-task-row .triage-task-duration,
+  .triage-task-row .triage-task-time,
+  .triage-task-row .triage-recurring-btn,
+  .triage-task-row .triage-recurring-icon,
+  .triage-task-row .triage-overflow-tag {
+    display: none !important;
+  }
+
+  .triage-task-left {
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .triage-cb-wrap {
+    min-width: 38px;
+    min-height: 38px;
+    padding: 8px;
+    margin: -8px -4px -8px -4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .triage-task-cb,
+  .triage-group-cb {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--primary, #4F46E5);
+  }
+
+  .task-id-badge {
+    flex-shrink: 0;
+  }
+
+  .triage-task-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+
 

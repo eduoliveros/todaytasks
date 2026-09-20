@@ -67,6 +67,7 @@ todaytasks/
 │       ├── popovers.js          # Control de popovers de tiempo, startAfter y recurrencia
 │       ├── shortcuts.js         # Manejo de atajos de teclado
 │       ├── tag-autocomplete.js  # Menú flotante y lógica de autocompletado case-insensitive de hashtags
+│       ├── task-detail-sheet.js # Bottom Sheet modal de detalle y acciones móviles para tareas
 │       ├── urgency-dropdown.js  # Menú desplegable y mapa de urgencia localizada
 │       └── weekly-schedule.js   # Gestión del horario semanal recurrente
 ├── css/
@@ -444,7 +445,33 @@ Implementado en la versión `v1.107` ([ADR 016](./adr/016-dependencias-entre-tar
 
 ---
 
-## 19. Directrices para Nuevos Desarrollos
+## 19. Vista Móvil Compacta y Bottom Sheet de Detalle (`task-detail-sheet.js`, `layout.css`, `triage.css`, `triage.js`)
+
+Implementado en las versiones `v1.114` y `v1.115` ([ADR 021](./adr/021-vista-movil-compacta-bottom-sheet.md)):
+
+* **Diseño Compacto en Tablero Principal y Triaje ($\le$ 640px):**
+  - Media queries en `layout.css` sintetizan la tarjeta de tarea (`.task-item`) ocultando elementos de saturación en pantallas estrechas (`.time-range`, `.meta`, `.task-actions`, `.icon-btn`, `.task-card-notes-panel`).
+  - Media queries en `triage.css` compactan la fila de triaje (`.triage-task-row`), ocultando los 5 botones de días rápidos (`.triage-quick-days-wrap`), copiar, completar, eliminar y horarios inline, dejando el ancho libre para el título con truncado elíptico limpio y el icono mínimo de urgencia (~28px).
+* **Bottom Sheet Desplegable al Pulsar (`#taskDetailSheet`):**
+  - Al pulsar una tarjeta en el tablero o una fila en triaje en móvil, se despliega el modal inferior con animación suave desde abajo (`taskDetailSlideUp`).
+  - En triaje móvil, pulsar la fila **no marca/selecciona** la tarea (la selección múltiple se realiza mediante el checkbox explícito `.triage-task-cb`), evitando selecciones accidentales.
+  - Presenta la información completa y detallada:
+    - Cabecera con identificador (`[W-1]`), título completo y estrella de destacada.
+    - Fila de pastillas: urgencia con color, estado, recurrencia, inicio condicional `startAfter` y rango de horario en tiempo real.
+    - Tiempos: duración estimada frente a tiempo consumido en vivo.
+    - Caja de notas renderizada con formato Markdown seguro y enlaces interactivos.
+    - Alerta de dependencias bloqueadoras pendientes si la tarea está bloqueada.
+    - Cuadrícula de botones de acción táctiles grandes ($\ge$ 44px) adaptados al estado de la tarea (Iniciar, Pausar, Reanudar, Completar, Reabrir, Editar, Destacar, Copiar referencia y Eliminar).
+    - **Sección de Posición:** Botones táctiles (`⤒ Inicio`, `▲ Subir`, `▼ Bajar`, `⤓ Fin`) para reordenar la cola en la jornada sin requerir arrastre táctil manual.
+    - **Sección de Reprogramación:** Fichas (*chips*) interactivas con los próximos 5 días laborables para trasladar la tarea de fecha con un solo toque.
+* **Cierre Flexible y Accesible:**
+  - Cierre al pulsar el fondo (*backdrop*), el botón `✕` superior, al seleccionar una acción o pulsando la tecla <kbd>Esc</kbd>.
+* **Invarianza de Escritorio:**
+  - En anchos superiores a 640px, tanto el tablero principal como la vista de triaje conservan todas sus acciones, botones y pastillas visibles, manteniendo el flujo y la selección rápida de escritorio intactos.
+
+---
+
+## 20. Directrices para Nuevos Desarrollos
 
 1. **Separación Estricta de Responsabilidades:**
    * Las vistas (`views/`) **no** deben mutar el estado directamente; deben delegar en las acciones (`actions/`).

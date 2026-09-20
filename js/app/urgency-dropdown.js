@@ -31,7 +31,19 @@ export function TodayTasksUrgencyDropdown(ctx) {
       if (!dropdown) return;
 
       const currentState = typeof getState === 'function' ? getState() : {};
-      const task = (currentState.tasks || []).find(x => String(x.id) === String(taskId));
+      let task = (currentState.tasks || []).find(x => String(x.id) === String(taskId));
+      if (!task && currentState.environments) {
+        const envKey = currentState.activeEnv || 'work';
+        const env = currentState.environments[envKey] || currentState.environments.work;
+        if (env && env.days) {
+          for (const d of Object.keys(env.days)) {
+            if (env.days[d] && Array.isArray(env.days[d].tasks)) {
+              const found = env.days[d].tasks.find(x => String(x.id) === String(taskId));
+              if (found) { task = found; break; }
+            }
+          }
+        }
+      }
       const currentUrgency = task ? (task.urgency || "days") : "days";
 
       // Highlight selected urgency item in menu
@@ -124,6 +136,11 @@ export function TodayTasksUrgencyDropdown(ctx) {
     } else if (currentUrgencyTaskId) {
       if (actionsModule && actionsModule.setTaskUrgency) {
         actionsModule.setTaskUrgency(currentUrgencyTaskId, urgency);
+      }
+      if (ctx.taskDetailSheetModule && ctx.taskDetailSheetModule.refreshIfOpen) {
+        ctx.taskDetailSheetModule.refreshIfOpen();
+      } else if (typeof window !== 'undefined' && window.app && window.app.refreshTaskDetailSheet) {
+        window.app.refreshTaskDetailSheet();
       }
     }
     closeUrgencyDropdown();

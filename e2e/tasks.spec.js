@@ -478,6 +478,128 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
     await expect(tasksList).toContainText('Comprar en el supermercado');
     await expect(tasksList).toContainText('Diseñar pantalla de login');
   });
+
+  test('Vista compacta en móvil (viewport <= 640px)', async ({ page }) => {
+    // 1. Crear tarea
+    await page.fill('#taskTitle', 'Tarea prueba móvil compacta');
+    await page.fill('#taskDuration', '30');
+    await page.click('#addTaskBtn');
+
+    const taskItem = page.locator('#tasksList .task-item').first();
+    await expect(taskItem).toContainText('Tarea prueba móvil compacta');
+
+    // En desktop (viewport predeterminado), .task-actions y .time-range son visibles
+    await expect(taskItem.locator('.task-actions')).toBeVisible();
+    await expect(taskItem.locator('.time-range')).toBeVisible();
+
+    // 2. Cambiar viewport a móvil (iPhone 375x812)
+    await page.setViewportSize({ width: 375, height: 812 });
+
+    // En móvil, el título permanece visible, pero .task-actions, .time-range, .meta y .icon-btn quedan ocultos
+    await expect(taskItem.locator('.title')).toBeVisible();
+    await expect(taskItem.locator('.task-actions')).not.toBeVisible();
+    await expect(taskItem.locator('.time-range')).not.toBeVisible();
+    await expect(taskItem.locator('.meta')).not.toBeVisible();
+    await expect(taskItem.locator('.icon-btn').first()).not.toBeVisible();
+
+    // 3. Hacer clic en la tarjeta compacta para abrir el bottom sheet de detalle
+    const sheet = page.locator('#taskDetailSheet');
+    await expect(sheet).not.toBeVisible();
+    await taskItem.click();
+    await expect(sheet).toBeVisible();
+    await expect(sheet.locator('#taskDetailSheetTitle')).toContainText('Tarea prueba móvil compacta');
+
+    // 4. Iniciar tarea desde el bottom sheet
+    const startBtn = sheet.locator('button:has-text("Iniciar")');
+    await expect(startBtn).toBeVisible();
+    await startBtn.click();
+
+    // El bottom sheet se cierra y la tarea pasa a "en curso"
+    await expect(sheet).not.toBeVisible();
+    await expect(taskItem).toHaveClass(/running/);
+
+    // 5. Volver a abrir el sheet haciendo clic en la tarea y pulsar pausar
+    await taskItem.click();
+    await expect(sheet).toBeVisible();
+    const pauseBtn = sheet.locator('button:has-text("Pausar")');
+    await expect(pauseBtn).toBeVisible();
+    await pauseBtn.click();
+    await expect(sheet).not.toBeVisible();
+    await expect(taskItem).toHaveClass(/paused/);
+
+    // 6. Volver a tamaño desktop
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await expect(taskItem.locator('.task-actions')).toBeVisible();
+    await expect(taskItem.locator('.time-range')).toBeVisible();
+  });
+
+  test('Vista compacta de Triaje en móvil (viewport <= 640px) y apertura de Bottom Sheet', async ({ page }) => {
+    // 1. Crear tarea de prueba
+    await page.fill('#taskTitle', 'Tarea prueba triaje móvil');
+    await page.fill('#taskDuration', '25');
+    await page.click('#addTaskBtn');
+
+    // 2. Navegar a la vista de Triaje
+    await page.evaluate(() => { window.location.hash = '#/triage'; });
+    await page.waitForSelector('#view-triage');
+
+    // Desplegar grupo colapsado si es necesario
+    const collapsedCard = page.locator('.triage-group-card.collapsed .triage-group-header').first();
+    if (await collapsedCard.isVisible()) {
+      await collapsedCard.click();
+    }
+
+    const triageRow = page.locator('#view-triage .triage-task-row').first();
+    await expect(triageRow).toBeVisible();
+
+    // En desktop: botones rápidos de días y completar están visibles
+    await expect(triageRow.locator('.triage-quick-days-wrap')).toBeVisible();
+    await expect(triageRow.locator('.triage-complete-btn')).toBeVisible();
+
+    // 3. Cambiar a móvil (375x812)
+    await page.setViewportSize({ width: 375, height: 812 });
+
+    // En móvil: se ocultan acciones derechas (urgencia, días, copiar, completar, borrar) y elementos secundarios (duración, manija, estrella)
+    await expect(triageRow.locator('.triage-task-right')).not.toBeVisible();
+    await expect(triageRow.locator('.triage-task-duration')).not.toBeVisible();
+    await expect(triageRow.locator('.triage-drag-handle')).not.toBeVisible();
+    await expect(triageRow.locator('.triage-star-btn')).not.toBeVisible();
+
+    // Solo quedan visibles: checkbox, ID y título
+    await expect(triageRow.locator('.triage-task-cb')).toBeVisible();
+    await expect(triageRow.locator('.task-id-badge')).toBeVisible();
+    await expect(triageRow.locator('.triage-task-title')).toBeVisible();
+
+    // 4. Pulsar en el cuerpo de la fila: NO marca la tarea, sino que abre el taskDetailSheet
+    const sheet = page.locator('#taskDetailSheet');
+    await expect(sheet).not.toBeVisible();
+    await triageRow.locator('.triage-task-title').click();
+    await expect(sheet).toBeVisible();
+    await expect(sheet.locator('#taskDetailSheetTitle')).toContainText('Tarea prueba triaje móvil');
+
+    // La fila no debe quedar marcada/seleccionada
+    await expect(triageRow).not.toHaveClass(/selected/);
+
+    // Las secciones de Posición y Reprogramar deben estar disponibles en el sheet
+    await expect(sheet.locator('#taskDetailSheetPosition')).toBeVisible();
+    await expect(sheet.locator('#taskDetailSheetReschedule')).toBeVisible();
+
+    // Cerrar el sheet
+    await sheet.locator('.close-modal-btn').click();
+    await expect(sheet).not.toBeVisible();
+
+    // 5. Pulsar el checkbox explícito: SÍ marca la tarea
+    const cb = triageRow.locator('.triage-task-cb');
+    await cb.click();
+    await expect(triageRow).toHaveClass(/selected/);
+
+    // Volver a pulsar el checkbox la desmarca
+    await cb.click();
+    await expect(triageRow).not.toHaveClass(/selected/);
+
+    // Restaurar viewport desktop
+    await page.setViewportSize({ width: 1280, height: 800 });
+  });
 });
 
 

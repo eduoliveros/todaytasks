@@ -49,6 +49,9 @@ export function TodayTasksViews(ctx){
     if(ctx.cloudModule && ctx.cloudModule.renderAuthArea){
       ctx.cloudModule.renderAuthArea();
     }
+    if(ctx.taskDetailSheetModule && ctx.taskDetailSheetModule.refreshIfOpen){
+      ctx.taskDetailSheetModule.refreshIfOpen();
+    }
   }
 
   function smartRender(){
@@ -69,6 +72,9 @@ export function TodayTasksViews(ctx){
     }
     if(ctx.pipModule && ctx.pipModule.updateAppPipButtons){
       ctx.pipModule.updateAppPipButtons();
+    }
+    if(ctx.taskDetailSheetModule && ctx.taskDetailSheetModule.refreshIfOpen){
+      ctx.taskDetailSheetModule.refreshIfOpen();
     }
   }
 

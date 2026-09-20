@@ -512,6 +512,11 @@ export default {
   'tasks.searchSectionCompleted': '✓ Tareas completadas ({count})',
   'tasks.searchNoCompletedMatch': 'Sin tareas completadas que coincidan.',
   'tasks.movedToTodaySuccess': 'Tarea trasladada a la jornada de Hoy',
+  'tasks.detailSheetTitle': 'Detalle de la tarea',
+  'tasks.detailActionsHeading': 'Acciones',
+  'tasks.detailPlanHeading': 'Planificación y horarios',
+  'tasks.detailSheetPosition': 'Posición en la jornada',
+  'tasks.detailSheetReschedule': 'Mover a otro día laborable',
 
   // Buscador Global (Command Palette Ctrl+K)
   'globalSearch.button': 'Buscar',

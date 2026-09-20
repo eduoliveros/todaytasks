@@ -512,6 +512,11 @@ export default {
   'tasks.searchSectionCompleted': '✓ Completed tasks ({count})',
   'tasks.searchNoCompletedMatch': 'No completed tasks matching.',
   'tasks.movedToTodaySuccess': 'Task moved to Today\'s schedule',
+  'tasks.detailSheetTitle': 'Task Details',
+  'tasks.detailActionsHeading': 'Actions',
+  'tasks.detailPlanHeading': 'Schedule & Planning',
+  'tasks.detailSheetPosition': 'Position in day',
+  'tasks.detailSheetReschedule': 'Move to working day',
 
   // Global Search (Command Palette Ctrl+K)
   'globalSearch.button': 'Search',
