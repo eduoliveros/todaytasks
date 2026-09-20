@@ -27,6 +27,10 @@ describe('Vista Móvil Compacta - Fase 1 (Tarjetas de Tareas en Tablero Principa
     expect(layoutCss).toMatch(/\.task-item:not\(\.editing\)[^{}]*\.icon-btn[^{}]*\{[^}]*display:\s*none/i);
   });
 
+  it('oculta la manija de arrastre (.drag-handle) en modo compacto móvil', () => {
+    expect(layoutCss).toMatch(/\.task-item:not\(\.editing\)[^{}]*\.drag-handle[^{}]*\{[^}]*display:\s*none/i);
+  });
+
   it('mantiene la edición visible (.task-item.editing .task-actions)', () => {
     expect(layoutCss).toMatch(/\.task-item\.editing\s+\.task-actions\s*\{[^}]*display:\s*flex/i);
   });
@@ -34,5 +38,9 @@ describe('Vista Móvil Compacta - Fase 1 (Tarjetas de Tareas en Tablero Principa
   it('aplica cursor pointer y truncado de texto al título en modo compacto', () => {
     expect(layoutCss).toMatch(/\.task-item:not\(\.editing\)\s*\{[^}]*cursor:\s*pointer/i);
     expect(layoutCss).toMatch(/\.task-item:not\(\.editing\)\s+\.title\s*\{[^}]*text-overflow:\s*ellipsis/i);
+  });
+
+  it('colapsa la rejilla .layout a minmax(0, 1fr) para evitar desbordamiento horizontal con títulos largos', () => {
+    expect(layoutCss).toMatch(/@media\s*\(max-width:\s*960px\)\s*\{[^}]*\.layout\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/i);
   });
 });

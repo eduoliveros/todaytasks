@@ -526,6 +526,11 @@
   color: var(--ink);
 }
 
+[data-theme="dark"] .task-item.long-press-active {
+  background: rgba(99, 102, 241, 0.18) !important;
+  box-shadow: 0 10px 24px -4px rgba(0, 0, 0, 0.6);
+}
+
 /* --- Dark Mode: Out-of-Workday Overflow Tasks --- */
 [data-theme="dark"] .task-item.task-overflow {
   border-left: 3.5px solid #F87171 !important;

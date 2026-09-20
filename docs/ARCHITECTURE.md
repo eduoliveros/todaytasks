@@ -457,7 +457,7 @@ Implementado en las versiones `v1.114` y `v1.115` ([ADR 021](./adr/021-vista-mov
   - En triaje móvil, pulsar la fila **no marca/selecciona** la tarea (la selección múltiple se realiza mediante el checkbox explícito `.triage-task-cb`), evitando selecciones accidentales.
   - Presenta la información completa y detallada:
     - Cabecera con identificador (`[W-1]`), título completo y estrella de destacada.
-    - Fila de pastillas: urgencia con color, estado, recurrencia, inicio condicional `startAfter` y rango de horario en tiempo real.
+    - Fila de pastillas: urgencia con color, estado, recurrencia, inicio condicional `startAfter` y rango de horario planificado (`HH:mm → HH:mm`) o en tiempo real si está en ejecución (`HH:mm → HH:mm (quedan Xm)`).
     - Tiempos: duración estimada frente a tiempo consumido en vivo.
     - Caja de notas renderizada con formato Markdown seguro y enlaces interactivos.
     - Alerta de dependencias bloqueadoras pendientes si la tarea está bloqueada.
@@ -466,6 +466,13 @@ Implementado en las versiones `v1.114` y `v1.115` ([ADR 021](./adr/021-vista-mov
     - **Sección de Reprogramación:** Fichas (*chips*) interactivas con los próximos 5 días laborables para trasladar la tarea de fecha con un solo toque.
 * **Cierre Flexible y Accesible:**
   - Cierre al pulsar el fondo (*backdrop*), el botón `✕` superior, al seleccionar una acción o pulsando la tecla <kbd>Esc</kbd>.
+* **Supresión de Zoom por Doble-Tap (`tap-zoom-guard.js`):**
+  - Los botones de acción táctil (reordenar `▲▼`, fechas, completar/eliminar, etc.) usan `touch-action: manipulation` como capa estándar, más un guard global `installTapZoomGuard()` que escucha `touchend` (`passive:false`), detecta el doble-tap (≤300 ms y ≤30 px) y cancela el zoom con `preventDefault()` re-disparando `click()` para no perder pulsaciones rápidas de reordenación. Cubre navegadores y WebViews donde `touch-action: manipulation` no es suficiente.
+* **Drag & Drop Táctil por Long-Press (`touch-drag.js`):** ([ADR 022](./adr/022-drag-drop-tactil-long-press.md))
+  - Motor compartido `createTouchDragEngine(options)` que encapsula el *state machine* de pulsación prolongada (420 ms en el cuerpo, 60 ms sobre la manija `⠿`), vibración háptica, detección de objetivo vía `document.elementFromPoint` y supresión del *click* sintético posterior (`wasRecentTouchDrag()`).
+  - Usado tanto por **triaje** (`.triage-task-row`, con soporte de multiselección) como por el **tablero principal** (`.task-item`, tarea única) reutilizando `reorderTaskByDrag`. En móvil la manija `⠿` se oculta; el arrastre se activa manteniendo pulsada la celda.
+* **Truncado de Títulos Largos:**
+  - La rejilla `.layout` colapsa a `minmax(0, 1fr)` (no `1fr`) en pantallas ≤960px para evitar que el contenido con `white-space: nowrap` expanda la columna horizontalmente; `.task-item .title` y `.triage-task-title` recortan con `text-overflow: ellipsis`.
 * **Invarianza de Escritorio:**
   - En anchos superiores a 640px, tanto el tablero principal como la vista de triaje conservan todas sus acciones, botones y pastillas visibles, manteniendo el flujo y la selección rápida de escritorio intactos.
 

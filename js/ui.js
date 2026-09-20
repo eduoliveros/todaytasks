@@ -125,6 +125,20 @@ export function scrollToElement(elementId) {
   return true;
 }
 
+export function flashTapFeedback(el) {
+  if (typeof document === "undefined" || !el) return;
+  el.classList.remove("tap-flash");
+  // Forzar reflow para reiniciar la animación de forma fiable en taps sucesivos
+  void el.offsetWidth;
+  el.classList.add("tap-flash");
+
+  if (el.__tapFlashTimer) clearTimeout(el.__tapFlashTimer);
+  el.__tapFlashTimer = setTimeout(() => {
+    el.classList.remove("tap-flash");
+    el.__tapFlashTimer = null;
+  }, 400);
+}
+
 /**
  * Posiciona un popover flotante (position: fixed) relativo a un elemento objetivo o centrado en viewport.
  * - Calcula coordenadas left/top y aplica bounds checking contra los bordes de la ventana.
@@ -199,7 +213,7 @@ export function positionPopover(target, popover, options = {}) {
   return { left, top, flipped };
 }
 
-export const TodayTasksUi = { escapeHtml, escapeAttr, renderNotesMarkdown, showToast, scrollToElement, positionPopover };
+export const TodayTasksUi = { escapeHtml, escapeAttr, renderNotesMarkdown, showToast, scrollToElement, positionPopover, flashTapFeedback };
 
 export default TodayTasksUi;
 

@@ -6,10 +6,11 @@ import {
   findTaskInEnvironment, isTaskBlocked, getTaskBlockingDetails, getTasksBlockedBy,
   matchesTaskSearch
 } from '../utils.js';
-import { escapeHtml, escapeAttr, showToast } from '../ui.js';
+import { escapeHtml, escapeAttr, showToast, flashTapFeedback } from '../ui.js';
 import { computeSchedule } from '../scheduler.js';
 import { t } from '../i18n.js';
 import { attachTagAutocomplete } from '../app/tag-autocomplete.js';
+import { createTouchDragEngine } from '../app/touch-drag.js';
 
 export function TodayTasksTriageView(ctx) {
   const { getState, saveState, renderAll, smartRender, actionsModule, getTaskEdit } = ctx;
@@ -466,6 +467,10 @@ export function TodayTasksTriageView(ctx) {
 
   function moveTriageTaskDirection(taskId, direction, event) {
     if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
+    if (event) {
+      const btn = event.currentTarget || (event.target && typeof event.target.closest === 'function' ? event.target.closest('.triage-move-grid-btn') : null);
+      flashTapFeedback(btn);
+    }
     const actions = getActions();
     if (actions && actions.moveTaskDirectly) {
       actions.moveTaskDirectly(taskId, direction, selectedTaskIds);
@@ -530,82 +535,30 @@ export function TodayTasksTriageView(ctx) {
     return activeMoveSheetTaskId;
   }
 
-  // TOUCH LONG PRESS & DRAG
-  let touchHoldTimer = null;
-  let touchStartX = 0;
-  let touchStartY = 0;
-  let touchSourceTaskId = null;
-  let touchSourceRowEl = null;
-  let isTouchDragging = false;
-  let currentTouchOverTaskId = null;
-  let didLongPressTrigger = false;
-  let touchDragJustEnded = false;
-
-  function handleTriageTouchStart(taskId, event) {
-    if (!event || !event.touches || event.touches.length === 0) return;
-    if (event.target.closest('button') || event.target.closest('input[type="checkbox"]') || event.target.closest('.triage-cb-wrap')) {
-      return;
-    }
-
-    const state = getState();
-    const targetDateStr = getTargetDateStr();
-    const activeTasks = getActiveTasks(targetDateStr);
-    const task = activeTasks.find(t => String(t.id) === String(taskId)) ||
-                 (state.tasks || []).find(t => String(t.id) === String(taskId));
-    const isDraggable = task ? (task.status === 'pending' || task.status === 'paused') : true;
-
-    const touch = event.touches[0];
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
-    touchSourceTaskId = String(taskId);
-    didLongPressTrigger = false;
-    isTouchDragging = false;
-    currentTouchOverTaskId = null;
-
-    const row = event.currentTarget || (event.target ? event.target.closest('.triage-task-row') : null);
-    touchSourceRowEl = row;
-
-    if (touchHoldTimer) {
-      clearTimeout(touchHoldTimer);
-      touchHoldTimer = null;
-    }
-
-    const isHandle = !!(event.target && event.target.closest('.triage-drag-handle'));
-
-    if (!isDraggable) {
-      // Si la tarea no es arrastrable (por ej. 'running'), permitimos pulsación larga
-      // para abrir el menú móvil informativo, pero sin activar arrastre libre
-      touchHoldTimer = setTimeout(() => {
-        touchHoldTimer = null;
-        didLongPressTrigger = true;
-        if (typeof navigator !== 'undefined' && navigator.vibrate) {
-          try { navigator.vibrate(45); } catch (e) {}
-        }
-        openMobileMoveSheet(taskId, event);
-      }, 450);
-      return;
-    }
-
-    // Si pulsó la manija ⠿ directamente, iniciamos arrastre muy rápido (60ms)
-    // Si pulsó en el cuerpo de la fila, requiere pulsación prolongada (~420ms)
-    const delay = isHandle ? 60 : 420;
-
-    touchHoldTimer = setTimeout(() => {
-      touchHoldTimer = null;
-      didLongPressTrigger = true;
-      isTouchDragging = true;
-
+  // TOUCH LONG PRESS & DRAG (motor compartido js/app/touch-drag.js)
+  const touchEngine = createTouchDragEngine({
+    rowSelector: '.triage-task-row',
+    handleSelector: '.triage-drag-handle',
+    shouldIgnoreStart: (event) => {
+      return !!(event.target && typeof event.target.closest === 'function' &&
+        (event.target.closest('button') || event.target.closest('input[type="checkbox"]') || event.target.closest('.triage-cb-wrap')));
+    },
+    isDraggable: (taskId) => {
+      const state = getState();
+      const targetDateStr = getTargetDateStr();
+      const activeTasks = getActiveTasks(targetDateStr);
+      const task = activeTasks.find(t => String(t.id) === String(taskId)) ||
+                   (state.tasks || []).find(t => String(t.id) === String(taskId));
+      return task ? (task.status === 'pending' || task.status === 'paused') : true;
+    },
+    getSelectedIds: () => selectedTaskIds,
+    onDragStart: (taskId, rowEl) => {
       if (triageClickTimer) {
         clearTimeout(triageClickTimer);
         triageClickTimer = null;
       }
-
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        try { navigator.vibrate(45); } catch (e) {}
-      }
-
-      if (touchSourceRowEl) {
-        touchSourceRowEl.classList.add('long-press-active', 'dragging');
+      if (rowEl) {
+        rowEl.classList.add('long-press-active', 'dragging');
       }
       if (selectedTaskIds.has(String(taskId))) {
         selectedTaskIds.forEach(id => {
@@ -613,116 +566,35 @@ export function TodayTasksTriageView(ctx) {
           if (r) r.classList.add('long-press-active', 'dragging');
         });
       }
-    }, delay);
+    },
+    onDrop: (sourceId, targetId, selectedIds) => {
+      const actions = getActions();
+      if (actions && actions.reorderTaskByDrag) {
+        actions.reorderTaskByDrag(sourceId, targetId, selectedIds);
+      } else if (actions && actions.taskDrop) {
+        actions.taskDrop({ preventDefault: () => {} }, targetId, selectedIds);
+      }
+      renderTriageView();
+    },
+    onLongPressNotDraggable: (taskId, event) => {
+      openMobileMoveSheet(taskId, event);
+    }
+  });
+
+  function handleTriageTouchStart(taskId, event) {
+    touchEngine.handleTouchStart(taskId, event);
   }
 
   function handleTriageTouchMove(event) {
-    if (!event || !event.touches || event.touches.length === 0) return;
-    const touch = event.touches[0];
-    const dx = Math.abs(touch.clientX - touchStartX);
-    const dy = Math.abs(touch.clientY - touchStartY);
-
-    if (!isTouchDragging) {
-      if (dx > 10 || dy > 10) {
-        if (touchHoldTimer) {
-          clearTimeout(touchHoldTimer);
-          touchHoldTimer = null;
-        }
-      }
-      return;
-    }
-
-    if (event.cancelable && typeof event.preventDefault === 'function') {
-      event.preventDefault();
-    }
-
-    if (typeof document !== 'undefined' && document.elementFromPoint) {
-      const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-      const overRow = targetEl ? targetEl.closest('.triage-task-row') : null;
-      const overTaskId = overRow ? overRow.getAttribute('data-task-id') : null;
-
-      document.querySelectorAll('.triage-task-row.drag-over').forEach(el => {
-        if (el !== overRow) el.classList.remove('drag-over');
-      });
-
-      if (overRow && overTaskId && overTaskId !== touchSourceTaskId) {
-        overRow.classList.add('drag-over');
-        currentTouchOverTaskId = overTaskId;
-      } else {
-        currentTouchOverTaskId = null;
-      }
-    }
+    touchEngine.handleTouchMove(event);
   }
 
   function handleTriageTouchEnd(event) {
-    if (touchHoldTimer) {
-      clearTimeout(touchHoldTimer);
-      touchHoldTimer = null;
-    }
-
-    const wasLongPress = didLongPressTrigger;
-    const wasDragging = isTouchDragging;
-    const sourceId = touchSourceTaskId;
-    const targetId = currentTouchOverTaskId;
-
-    if (touchSourceRowEl) {
-      touchSourceRowEl.classList.remove('long-press-active', 'dragging');
-    }
-    if (typeof document !== 'undefined') {
-      document.querySelectorAll('.triage-task-row.drag-over, .triage-task-row.long-press-active, .triage-task-row.dragging').forEach(el => {
-        el.classList.remove('drag-over', 'long-press-active', 'dragging');
-      });
-    }
-
-    touchSourceTaskId = null;
-    touchSourceRowEl = null;
-    isTouchDragging = false;
-    currentTouchOverTaskId = null;
-    didLongPressTrigger = false;
-
-    // Evitar que el navegador emita un click sintético tras soltar el gesto
-    if (wasLongPress || wasDragging) {
-      touchDragJustEnded = true;
-      setTimeout(() => { touchDragJustEnded = false; }, 400);
-      if (event && event.cancelable && typeof event.preventDefault === 'function') {
-        event.preventDefault();
-      }
-    }
-
-    if ((wasLongPress || wasDragging) && sourceId) {
-      if (targetId && (targetId !== sourceId || (wasDragging && selectedTaskIds.has(String(targetId)) && selectedTaskIds.size > 1))) {
-        // Reutilización directa del mecanismo de drag & drop existente con soporte multiselección
-        const actions = getActions();
-        if (actions && actions.reorderTaskByDrag) {
-          actions.reorderTaskByDrag(sourceId, targetId, selectedTaskIds);
-        } else if (actions && actions.taskDrop) {
-          actions.taskDrop(event || { preventDefault: () => {} }, targetId, selectedTaskIds);
-        }
-        renderTriageView();
-      } else if (wasLongPress && !wasDragging) {
-        openMobileMoveSheet(sourceId, event);
-      }
-    }
+    touchEngine.handleTouchEnd(event);
   }
 
   function handleTriageTouchCancel(event) {
-    if (touchHoldTimer) {
-      clearTimeout(touchHoldTimer);
-      touchHoldTimer = null;
-    }
-    if (touchSourceRowEl) {
-      touchSourceRowEl.classList.remove('long-press-active', 'dragging');
-    }
-    if (typeof document !== 'undefined') {
-      document.querySelectorAll('.triage-task-row.drag-over, .triage-task-row.long-press-active, .triage-task-row.dragging').forEach(el => {
-        el.classList.remove('drag-over', 'long-press-active', 'dragging');
-      });
-    }
-    touchSourceTaskId = null;
-    touchSourceRowEl = null;
-    isTouchDragging = false;
-    currentTouchOverTaskId = null;
-    didLongPressTrigger = false;
+    touchEngine.handleTouchCancel(event);
   }
 
   let triageClickTimer = null;
@@ -735,7 +607,7 @@ export function TodayTasksTriageView(ctx) {
   }
 
   function handleTriageRowClick(taskId, event) {
-    if (touchDragJustEnded) return;
+    if (touchEngine.wasJustDragged()) return;
     if (!event) return;
     // Si el clic vino de un botón, checkbox o manija de arrastre, no conmutar selección de fila
     if (event.target.closest('button') || event.target.closest('input[type="checkbox"]') || event.target.closest('.triage-cb-wrap') || event.target.closest('.drag-handle') || event.target.closest('.triage-drag-handle')) {
@@ -1189,7 +1061,7 @@ export function TodayTasksTriageView(ctx) {
       const blockingListStr = uncompletedBlockers.map(b => (b.displayId ? `[${b.displayId}] ` : '') + b.title).join(', ');
       triageDepBadges += `
         <button type="button" class="task-dep-badge blocked" onclick="event.stopPropagation(); app.goToTask('${escapeAttr(firstBlocker?.id || '')}', '${escapeAttr(blockerDate)}')" title="${escapeAttr(t('tasks.blockedTooltip'))}: ${escapeAttr(blockingListStr)}">
-          🔒 ${escapeHtml(t('tasks.blockedBadge'))} (${escapeHtml(blockerDisplay)}${escapeHtml(extraCount)})
+          ${escapeHtml(t('tasks.blockedBadge'))} (${escapeHtml(blockerDisplay)}${escapeHtml(extraCount)})
         </button>
       `;
     } else if (task.dependsOn && task.dependsOn.length > 0) {

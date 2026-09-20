@@ -94,6 +94,10 @@ export function TodayTasksViews(ctx){
     renderTasks:            tasksV.renderTasks,
     toggleTaskNotes:        tasksV.toggleTaskNotes,
     isTaskNotesExpanded:    tasksV.isTaskNotesExpanded,
+    handleTaskTouchStart:   tasksV.handleTaskTouchStart,
+    handleTaskTouchMove:    tasksV.handleTaskTouchMove,
+    handleTaskTouchEnd:     tasksV.handleTaskTouchEnd,
+    handleTaskTouchCancel:  tasksV.handleTaskTouchCancel,
     /* Board */
     renderBoard:            boardV.renderBoard,
     renderSummary:          boardV.renderSummary,

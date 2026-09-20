@@ -7,6 +7,7 @@ import {
 } from '../utils.js';
 import { escapeHtml, escapeAttr, renderNotesMarkdown } from '../ui.js';
 import { t } from '../i18n.js';
+import { createTouchDragEngine } from '../app/touch-drag.js';
 
 export function TodayTasksTasksView(ctx){
   const { getState, getTaskEdit } = ctx;
@@ -14,6 +15,45 @@ export function TodayTasksTasksView(ctx){
 
   function isTaskNotesExpanded(id) {
     return expandedNotesTasks.has(String(id));
+  }
+
+  // TOUCH LONG PRESS & DRAG (motor compartido js/app/touch-drag.js)
+  const touchEngine = createTouchDragEngine({
+    rowSelector: '.task-item',
+    handleSelector: '.drag-handle',
+    shouldIgnoreStart: (event) => {
+      return !!(event.target && typeof event.target.closest === 'function' &&
+        event.target.closest('button, a, input, textarea, select, .dep-chip-remove'));
+    },
+    isDraggable: (taskId) => {
+      const state = getState();
+      const task = (state.tasks || []).find(t => String(t.id) === String(taskId));
+      return !!(task && (task.status === 'pending' || task.status === 'paused'));
+    },
+    onDragStart: (taskId, rowEl) => {
+      if (rowEl) rowEl.classList.add('long-press-active', 'dragging');
+    },
+    onDrop: (sourceId, targetId) => {
+      if (ctx.actionsModule && ctx.actionsModule.reorderTaskByDrag) {
+        ctx.actionsModule.reorderTaskByDrag(sourceId, targetId, null);
+      }
+    }
+  });
+
+  function handleTaskTouchStart(taskId, event) {
+    touchEngine.handleTouchStart(taskId, event);
+  }
+
+  function handleTaskTouchMove(event) {
+    touchEngine.handleTouchMove(event);
+  }
+
+  function handleTaskTouchEnd(event) {
+    touchEngine.handleTouchEnd(event);
+  }
+
+  function handleTaskTouchCancel(event) {
+    touchEngine.handleTouchCancel(event);
   }
 
   function renderEditDependencyChips(deps, env) {
@@ -174,6 +214,12 @@ export function TodayTasksTasksView(ctx){
          ondrop="app.taskDrop(event, '${escapeAttr(task.id)}')"
          ondragend="app.taskDragEnd(event)"`
       : '';
+    const touchAttrs = isDraggable
+      ? `ontouchstart="app.handleTaskTouchStart('${escapeAttr(task.id)}', event)"
+         ontouchmove="app.handleTaskTouchMove(event)"
+         ontouchend="app.handleTaskTouchEnd(event)"
+         ontouchcancel="app.handleTaskTouchCancel(event)"`
+      : '';
     const dragHandle = isDraggable
       ? `<span class="drag-handle" title="${escapeAttr(t('tasks.dragHandleTooltip'))}" onmousedown="app.armTaskDrag()">⠿</span>`
       : '';
@@ -255,7 +301,7 @@ export function TodayTasksTasksView(ctx){
       const blockingListStr = uncompletedBlockers.map(b => (b.displayId ? `[${b.displayId}] ` : '') + b.title).join(', ');
       depBadges += `
         <button type="button" class="task-dep-badge blocked" onclick="event.stopPropagation(); app.goToTask('${escapeAttr(firstBlocker?.id || '')}', '${escapeAttr(blockerDate)}')" title="${escapeAttr(t('tasks.blockedTooltip'))}: ${escapeAttr(blockingListStr)}">
-          🔒 ${escapeHtml(t('tasks.blockedBadge'))} (${escapeHtml(blockerDisplay)}${escapeHtml(extraCount)})
+          ${escapeHtml(t('tasks.blockedBadge'))} (${escapeHtml(blockerDisplay)}${escapeHtml(extraCount)})
         </button>
       `;
     } else if (task.dependsOn && task.dependsOn.length > 0) {
@@ -283,7 +329,7 @@ export function TodayTasksTasksView(ctx){
     const blockedClass = isBlocked ? 'is-blocked' : '';
 
     return `
-      <div class="item task-item ${task.status} ${featuredClass} ${overflowClass} ${blockedClass}" id="task-item-${escapeAttr(task.id)}" data-task-id="${escapeAttr(task.id)}" onclick="if(window.app && window.app.handleTaskMobileClick) window.app.handleTaskMobileClick('${escapeAttr(task.id)}', event)" ondblclick="app.startEditTask('${escapeAttr(task.id)}')" ${dragAttrs}>
+      <div class="item task-item ${task.status} ${featuredClass} ${overflowClass} ${blockedClass}" id="task-item-${escapeAttr(task.id)}" data-task-id="${escapeAttr(task.id)}" onclick="if(window.app && window.app.handleTaskMobileClick) window.app.handleTaskMobileClick('${escapeAttr(task.id)}', event)" ondblclick="app.startEditTask('${escapeAttr(task.id)}')" ${dragAttrs} ${touchAttrs}>
         <div class="top">
           <div style="display:flex;align-items:flex-start;gap:6px;flex:1;min-width:0;">
             ${dragHandle}
@@ -543,7 +589,7 @@ export function TodayTasksTasksView(ctx){
     }
   }
 
-  return { renderTasks, renderTaskItem, renderCompletedSearchItem, toggleTaskNotes, isTaskNotesExpanded };
+  return { renderTasks, renderTaskItem, renderCompletedSearchItem, toggleTaskNotes, isTaskNotesExpanded, handleTaskTouchStart, handleTaskTouchMove, handleTaskTouchEnd, handleTaskTouchCancel };
 }
 
 export default TodayTasksTasksView;

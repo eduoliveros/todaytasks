@@ -476,6 +476,8 @@ body[data-theme="dark"] .triage-task-row.long-press-active {
   font-size: 0.85rem;
   font-weight: 500;
   color: var(--ink);
+  min-width: 0;
+  flex-shrink: 0.1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -498,7 +500,11 @@ body[data-theme="dark"] .triage-task-title.is-overflow {
   background: var(--bg);
   color: var(--ink-soft);
   border: 1px solid var(--line);
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .triage-task-time {
@@ -510,7 +516,9 @@ body[data-theme="dark"] .triage-task-title.is-overflow {
   background: var(--bg);
   color: var(--accent-pending, #4F46E5);
   border: 1px solid var(--line);
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -546,7 +554,10 @@ body[data-theme="dark"] .triage-task-time.tr-running {
   padding: 1px 5px;
   border-radius: 4px;
   border: 1px solid rgba(220, 38, 38, 0.2);
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .triage-recurring-btn {
@@ -554,7 +565,9 @@ body[data-theme="dark"] .triage-task-time.tr-running {
   padding: 1px 6px;
   line-height: 1.2;
   white-space: nowrap;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -1198,7 +1211,7 @@ body[data-theme="dark"] .triage-task-time.tr-running {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: border-color 0.12s, background 0.12s;
+  transition: border-color 0.12s, background 0.12s, transform 0.06s ease, box-shadow 0.12s;
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
@@ -1208,6 +1221,28 @@ body[data-theme="dark"] .triage-task-time.tr-running {
 .triage-move-grid-btn:hover {
   border-color: var(--primary, #4F46E5);
   background: var(--panel);
+}
+
+.triage-move-grid-btn:active {
+  transform: scale(0.96);
+  border-color: var(--primary, #4F46E5);
+  background: var(--panel);
+}
+
+.triage-move-grid-btn.tap-flash {
+  animation: triageTapFlash 0.4s ease-out;
+}
+
+@keyframes triageTapFlash {
+  0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.55); border-color: var(--primary, #4F46E5); }
+  100% { box-shadow: 0 0 0 12px rgba(79, 70, 229, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .triage-move-grid-btn.tap-flash {
+    animation: none;
+    outline: 2px solid var(--primary, #4F46E5);
+  }
 }
 
 .triage-move-sheet-dates {
@@ -1242,6 +1277,7 @@ body[data-theme="dark"] .triage-task-time.tr-running {
   color: var(--ink);
   cursor: pointer;
   transition: all 0.12s;
+  touch-action: manipulation;
 }
 
 .triage-move-date-chip:hover {
@@ -1307,6 +1343,19 @@ body[data-theme="dark"] .triage-task-time.tr-running {
   .triage-floating-actions .btn.small {
     padding: 5px 7px;
     font-size: 0.78rem;
+  }
+
+  /* El selector de ordenación se vuelve deslizable horizontalmente en móvil
+     para no desbordar el viewport (sus 4 botones + etiqueta no caben en 375px) */
+  .triage-sort-selector {
+    max-width: 100%;
+    overflow-x: auto;
+    flex-shrink: 1;
+    -webkit-overflow-scrolling: touch;
+  }
+  .triage-sort-selector .triage-sort-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 
   .triage-view-inner.has-floating-bar .triage-fab-add,

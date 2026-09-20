@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TodayTasksTaskDetailSheet } from '../js/app/task-detail-sheet.js';
 import { defaultState } from '../js/state.js';
+import { getTodayStr } from '../js/utils.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -249,4 +250,97 @@ describe('Task Detail Bottom Sheet - Móvil (Fase 2)', () => {
     // Debe ser exactamente la misma instancia del elemento DOM para evitar romper el flujo táctil del navegador
     expect(upBtnAfter).toBe(upBtnBefore);
   });
+
+  it('muestra un único candado y permite navegar al bloqueador con goToBlocker', () => {
+    const today = getTodayStr();
+    state.tasks = [
+      { id: 't-blocker', displayId: 'P-7', title: 'tttt', planned: 30, status: 'pending', order: 1 },
+      { id: 't-blocked', displayId: 'W-2', title: 'Tarea bloqueada', planned: 30, status: 'pending', urgency: 'today', dependsOn: ['t-blocker'] }
+    ];
+
+    const goToTaskSpy = vi.fn();
+    window.app.goToTask = goToTaskSpy;
+
+    detailSheet.openTaskDetailSheet('t-blocked');
+
+    const depsEl = document.getElementById('taskDetailSheetDeps');
+    expect(depsEl.style.display).toBe('block');
+
+    const box = depsEl.querySelector('.task-detail-blocked-box');
+    expect(box).not.toBeNull();
+
+    // Un solo candado en la etiqueta (no "🔒 🔒")
+    const label = box.querySelector('.task-detail-blocked-label');
+    expect(label.textContent.trim()).toBe('🔒 Bloqueada:');
+    expect((label.textContent.match(/🔒/g) || []).length).toBe(1);
+
+    // El bloqueador es un botón clickeable que navega a la tarea bloqueante
+    const blockerBtn = box.querySelector('.task-detail-blocker-btn');
+    expect(blockerBtn).not.toBeNull();
+    expect(blockerBtn.textContent).toContain('P-7');
+    expect(blockerBtn.getAttribute('onclick')).toContain("app.goToBlocker('t-blocker'");
+
+    // goToBlocker cierra el sheet y navega
+    detailSheet.goToBlocker('t-blocker', today);
+    expect(goToTaskSpy).toHaveBeenCalledWith('t-blocker', today);
+    expect(document.getElementById('taskDetailSheet').style.display).toBe('none');
+  });
+
+  it('muestra la información del horario planificado en tareas pendientes con proyección horaria', () => {
+    state.tasks = [
+      { id: 't-sched', displayId: 'W-10', title: 'Tarea planificada', planned: 45, status: 'pending', urgency: 'today' }
+    ];
+
+    // Mockeamos computeSchedule en ctx o scheduler
+    const ctxWithSched = {
+      getState: () => state,
+      computeSchedule: () => ({
+        segmentsByTask: {
+          't-sched': [{ start: 600, end: 645 }]
+        },
+        overflowIds: new Set()
+      })
+    };
+
+    const sheetWithSched = TodayTasksTaskDetailSheet(ctxWithSched);
+    sheetWithSched.openTaskDetailSheet('t-sched');
+
+    const metaEl = document.getElementById('taskDetailSheetMeta');
+    const timeTag = metaEl.querySelector('.task-detail-time-tag');
+    expect(timeTag).not.toBeNull();
+    expect(timeTag.textContent).toContain('10:00');
+    expect(timeTag.textContent).toContain('10:45');
+    expect(timeTag.textContent).toContain('→');
+  });
+
+  it('muestra el horario planificado en tarea pausada con múltiples segmentos divididos por reuniones', () => {
+    state.tasks = [
+      { id: 't-paused-split', displayId: 'W-11', title: 'Tarea pausada dividida', planned: 60, status: 'paused', urgency: 'today' }
+    ];
+
+    const ctxWithSched = {
+      getState: () => state,
+      computeSchedule: () => ({
+        segmentsByTask: {
+          't-paused-split': [
+            { start: 540, end: 570 },
+            { start: 600, end: 630 }
+          ]
+        },
+        overflowIds: new Set()
+      })
+    };
+
+    const sheetWithSched = TodayTasksTaskDetailSheet(ctxWithSched);
+    sheetWithSched.openTaskDetailSheet('t-paused-split');
+
+    const metaEl = document.getElementById('taskDetailSheetMeta');
+    const timeTag = metaEl.querySelector('.task-detail-time-tag');
+    expect(timeTag).not.toBeNull();
+    // Debe abarcar desde el inicio del primer segmento (09:00) hasta el final del último segmento (10:30)
+    expect(timeTag.textContent).toContain('09:00');
+    expect(timeTag.textContent).toContain('10:30');
+    expect(timeTag.textContent).toContain('→');
+  });
 });
+

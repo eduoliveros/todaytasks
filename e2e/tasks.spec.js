@@ -600,6 +600,88 @@ test.describe('Flujo de Tareas en la Web (E2E)', () => {
     // Restaurar viewport desktop
     await page.setViewportSize({ width: 1280, height: 800 });
   });
+
+  test('Pulsaciones rápidas en "Bajar en la cola" reordenan sin perder taps (guard anti-zoom)', async ({ page }) => {
+    // 1. Crear tres tareas (A, B, C en ese orden)
+    await page.fill('#taskTitle', 'Tarea A');
+    await page.click('#addTaskBtn');
+    await page.fill('#taskTitle', 'Tarea B');
+    await page.click('#addTaskBtn');
+    await page.fill('#taskTitle', 'Tarea C');
+    await page.click('#addTaskBtn');
+
+    const taskItems = page.locator('#tasksList .task-item');
+    await expect(taskItems).toHaveCount(3);
+    await expect(taskItems.first()).toContainText('Tarea A');
+
+    // 2. Cambiar a viewport móvil y abrir el bottom sheet de la primera tarea (A)
+    await page.setViewportSize({ width: 375, height: 812 });
+    await taskItems.first().click();
+
+    const sheet = page.locator('#taskDetailSheet');
+    await expect(sheet).toBeVisible();
+    await expect(sheet.locator('#taskDetailSheetTitle')).toContainText('Tarea A');
+
+    const downBtn = sheet.locator('.task-detail-grid-btn', { hasText: 'Bajar en la cola' });
+    await expect(downBtn).toBeVisible();
+
+    // 3. Pulsar "Bajar" dos veces de forma rápida
+    await downBtn.click();
+    await downBtn.click();
+
+    // El sheet debe permanecer abierto tras reordenar
+    await expect(sheet).toBeVisible();
+
+    // 4. La Tarea A debe haber bajado dos posiciones: orden final B, C, A
+    await expect(taskItems.first()).toContainText('Tarea B');
+    await expect(taskItems.nth(1)).toContainText('Tarea C');
+    await expect(taskItems.last()).toContainText('Tarea A');
+
+    // Restaurar viewport desktop
+    await page.setViewportSize({ width: 1280, height: 800 });
+  });
+
+  test('Los nombres de tarea muy largos se recortan con "..." sin desbordar a la derecha', async ({ page }) => {
+    // 1. Crear una tarea con un nombre muy largo
+    const longTitle = 'Esta es una tarea con un nombre extremadamente larguisimo que deberia recortarse con puntos suspensivos para no estirar la vista hacia la derecha';
+    await page.fill('#taskTitle', longTitle);
+    await page.click('#addTaskBtn');
+
+    // 2. Cambiar a viewport móvil (375x812)
+    await page.setViewportSize({ width: 375, height: 812 });
+
+    const titleEl = page.locator('#tasksList .task-item .title').first();
+    await expect(titleEl).toBeVisible();
+
+    // 3. El título debe truncarse: su contenido desborda su caja (scrollWidth > clientWidth)
+    const overflow = await titleEl.evaluate((el) => el.scrollWidth > el.clientWidth);
+    expect(overflow).toBe(true);
+
+    // 4. No debe haber desbordamiento horizontal a nivel de página
+    const pageOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    expect(pageOverflow).toBe(false);
+
+    // 5. En triaje el título también debe truncarse
+    await page.evaluate(() => { window.location.hash = '#/triage'; });
+    await page.waitForSelector('#view-triage');
+
+    const collapsedCard = page.locator('.triage-group-card.collapsed .triage-group-header').first();
+    if (await collapsedCard.isVisible()) {
+      await collapsedCard.click();
+    }
+
+    const triageTitle = page.locator('#view-triage .triage-task-title').first();
+    await expect(triageTitle).toBeVisible();
+    const triageOverflow = await triageTitle.evaluate((el) => el.scrollWidth > el.clientWidth);
+    expect(triageOverflow).toBe(true);
+
+    // En triaje tampoco debe haber desbordamiento horizontal de página
+    const triagePageOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    expect(triagePageOverflow).toBe(false);
+
+    // Restaurar viewport desktop
+    await page.setViewportSize({ width: 1280, height: 800 });
+  });
 });
 
 

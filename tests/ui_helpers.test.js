@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { escapeHtml, escapeAttr, showToast, scrollToElement, TodayTasksUi } from '../js/ui.js';
+import { escapeHtml, escapeAttr, showToast, scrollToElement, flashTapFeedback, TodayTasksUi } from '../js/ui.js';
 
 describe('UI Helpers (js/ui.js)', () => {
   beforeEach(() => {
@@ -65,6 +65,33 @@ describe('UI Helpers (js/ui.js)', () => {
   it('returns false in scrollToElement when element is not found', () => {
     const result = scrollToElement('nonExistentId');
     expect(result).toBe(false);
+  });
+
+  it('flashTapFeedback añade la clase tap-flash y la elimina tras 400ms', () => {
+    const el = document.getElementById('targetCard');
+    flashTapFeedback(el);
+    expect(el.classList.contains('tap-flash')).toBe(true);
+
+    vi.advanceTimersByTime(400);
+    expect(el.classList.contains('tap-flash')).toBe(false);
+  });
+
+  it('flashTapFeedback reinicia el temporizador en taps rápidos sin acumular residuos', () => {
+    const el = document.getElementById('targetCard');
+    flashTapFeedback(el);
+    vi.advanceTimersByTime(150);
+    flashTapFeedback(el);
+    expect(el.classList.contains('tap-flash')).toBe(true);
+
+    vi.advanceTimersByTime(399);
+    expect(el.classList.contains('tap-flash')).toBe(true);
+
+    vi.advanceTimersByTime(1);
+    expect(el.classList.contains('tap-flash')).toBe(false);
+  });
+
+  it('flashTapFeedback ignora elementos nulos sin lanzar errores', () => {
+    expect(() => flashTapFeedback(null)).not.toThrow();
   });
 
   it('localiza el botón de acción por defecto en showToast (Deshacer / Undo)', async () => {

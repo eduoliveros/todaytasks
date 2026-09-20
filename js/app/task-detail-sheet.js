@@ -4,8 +4,10 @@ import {
   formatRecurrenceRule, formatTitleWithTags, URGENCY_LEVELS, DEFAULT_URGENCY,
   findTaskInEnvironment, isTaskBlocked, getTaskBlockingDetails
 } from '../utils.js';
-import { escapeHtml, escapeAttr, renderNotesMarkdown } from '../ui.js';
+import { escapeHtml, escapeAttr, renderNotesMarkdown, flashTapFeedback } from '../ui.js';
 import { t } from '../i18n.js';
+import { computeSchedule } from '../scheduler.js';
+import { wasRecentTouchDrag } from './touch-drag.js';
 
 export function TodayTasksTaskDetailSheet(ctx) {
   let activeTaskId = null;
@@ -17,6 +19,8 @@ export function TodayTasksTaskDetailSheet(ctx) {
 
   function handleTaskClick(taskId, event) {
     if (!isMobileViewport()) return;
+    // Tras un drag/long-press táctil, no abrir el sheet con el click sintético residual
+    if (wasRecentTouchDrag()) return;
     // Si el clic fue en un botón, enlace o elemento interactivo interno, ignorar
     if (event && event.target && event.target.closest('button, a, input, textarea, select, .dep-chip-remove')) {
       return;
@@ -37,11 +41,13 @@ export function TodayTasksTaskDetailSheet(ctx) {
     // Buscar tarea activa o en histórico
     let task = (state.tasks || []).find(t => String(t.id) === String(taskId));
     let isHistorical = false;
+    let foundDayStr = null;
     if (!task && env) {
       const found = findTaskInEnvironment(env, taskId);
       if (found) {
         task = found.task;
         isHistorical = true;
+        foundDayStr = found.dateStr;
       }
     }
 
@@ -81,6 +87,40 @@ export function TodayTasksTaskDetailSheet(ctx) {
         timeRangeStr = `<span class="task-detail-time-tag">${fmt(task.runningStart)} → ${fmt(plannedEnd)} (${rem.text})</span>`;
       } else if (task.completedAt) {
         timeRangeStr = `<span class="task-detail-time-tag">✓ ${fmt(task.completedAt)}</span>`;
+      } else {
+        // Tarea pendiente o pausada: obtener proyección horaria
+        let sched = null;
+        if (ctx && typeof ctx.computeSchedule === 'function' && !isHistorical) {
+          sched = ctx.computeSchedule();
+        } else if (env && !isHistorical) {
+          const nowFn = (ctx && ctx.nowMinutes) ? ctx.nowMinutes : nowMinutes;
+          sched = computeSchedule(state, nowFn);
+        } else if (isHistorical && foundDayStr) {
+          const dayObj = env && env.days ? env.days[foundDayStr] : null;
+          const histTasks = dayObj && Array.isArray(dayObj.tasks) ? dayObj.tasks : [];
+          const histMeetings = dayObj && Array.isArray(dayObj.meetings) ? dayObj.meetings : [];
+          const schedState = {
+            ...state,
+            workStart: dayObj?.hasCustomHours && dayObj.workStart !== undefined ? dayObj.workStart : (state.workStart || 9 * 60),
+            workEnd: dayObj?.hasCustomHours && dayObj.workEnd !== undefined ? dayObj.workEnd : (state.workEnd || 18 * 60),
+            meetings: histMeetings,
+            tasks: histTasks,
+            selectedDate: foundDayStr,
+            planningMode: true,
+            autoBreakEnabled: state.autoBreakEnabled !== false,
+            autoBreakIntervalMin: state.autoBreakIntervalMin || 60,
+            autoBreakDurationMin: state.autoBreakDurationMin || 10
+          };
+          const nowFn = (ctx && ctx.nowMinutes) ? ctx.nowMinutes : nowMinutes;
+          sched = computeSchedule(schedState, nowFn);
+        }
+
+        const segs = (sched && sched.segmentsByTask && (sched.segmentsByTask[task.id] || sched.segmentsByTask[String(task.id)])) || [];
+        if (segs.length > 0) {
+          const startVal = fmt(segs[0].start);
+          const endVal = fmt(segs[segs.length - 1].end);
+          timeRangeStr = `<span class="task-detail-time-tag">${startVal} → ${endVal}</span>`;
+        }
       }
 
       const startAfterTag = (task.startAfter !== null && task.startAfter !== undefined && !isNaN(task.startAfter))
@@ -139,10 +179,14 @@ export function TodayTasksTaskDetailSheet(ctx) {
       if (isBlockedTask) {
         const blockingDetails = env ? getTaskBlockingDetails(task, env) : [];
         const uncompleted = blockingDetails.filter(d => !d.isCompleted);
-        const blockersListStr = uncompleted.map(b => (b.displayId ? `[${b.displayId}] ` : '') + b.title).join(', ');
         depsEl.innerHTML = `
           <div class="task-detail-blocked-box">
-            <span>🔒 ${escapeHtml(t('tasks.blockedBadge'))}: ${escapeHtml(blockersListStr)}</span>
+            <span class="task-detail-blocked-label">${escapeHtml(t('tasks.blockedBadge'))}:</span>
+            ${uncompleted.map(b => `
+              <button type="button" class="task-detail-blocker-btn" onclick="app.goToBlocker('${escapeAttr(b.id)}', '${escapeAttr(b.dateStr)}')" title="${escapeAttr(b.title)}">
+                ${b.displayId ? `[${escapeHtml(b.displayId)}] ` : ''}${escapeHtml(b.title)}
+              </button>
+            `).join('')}
           </div>
         `;
         depsEl.style.display = 'block';
@@ -301,6 +345,10 @@ export function TodayTasksTaskDetailSheet(ctx) {
     if (event && typeof event.stopPropagation === 'function') {
       event.stopPropagation();
     }
+    if (event) {
+      const btn = event.currentTarget || (event.target && typeof event.target.closest === 'function' ? event.target.closest('.task-detail-grid-btn') : null);
+      flashTapFeedback(btn);
+    }
     if (!activeTaskId) return;
     const id = activeTaskId;
     if (window.app && window.app.moveTaskDirectly) {
@@ -329,6 +377,14 @@ export function TodayTasksTaskDetailSheet(ctx) {
     }
   }
 
+  function goToBlocker(taskId, dateStr) {
+    if (!taskId) return;
+    closeTaskDetailSheet();
+    if (window.app && window.app.goToTask) {
+      window.app.goToTask(taskId, dateStr);
+    }
+  }
+
   function refreshIfOpen() {
     if (typeof document === 'undefined') return;
     const sheet = document.getElementById('taskDetailSheet');
@@ -346,6 +402,7 @@ export function TodayTasksTaskDetailSheet(ctx) {
     handleAction,
     handleMove,
     handleReschedule,
+    goToBlocker,
     refreshIfOpen
   };
 }

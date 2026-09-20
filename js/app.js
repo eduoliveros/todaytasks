@@ -22,6 +22,7 @@ import { TodayTasksHistoryMetrics } from './app/history-metrics.js';
 import { TodayTasksCommandPalette } from './app/command-palette.js';
 import { TodayTasksDependencies } from './app/dependencies.js';
 import { TodayTasksTaskDetailSheet } from './app/task-detail-sheet.js';
+import { installTapZoomGuard } from './app/tap-zoom-guard.js';
 import { attachTagAutocomplete } from './app/tag-autocomplete.js';
 import { exportOpenTasksCSV } from './app/export-csv.js';
 import { t, setLocale, translateDOM } from './i18n.js';
@@ -170,6 +171,8 @@ ctx.pipModule = pipModule;
 
 let taskDetailSheetModule = TodayTasksTaskDetailSheet(ctx);
 ctx.taskDetailSheetModule = taskDetailSheetModule;
+
+installTapZoomGuard();
 
 const { refreshNotifyBtn, requestNotificationPermission, checkRunningTaskNotification, checkMeetingNotifications } =
   TodayTasksNotifications({
@@ -895,11 +898,16 @@ function switchHeaderTab(target){
     dependencies: dependenciesModule,
     /* Mobile Task Detail Sheet */
     handleTaskMobileClick: (taskId, event) => taskDetailSheetModule && taskDetailSheetModule.handleTaskClick(taskId, event),
+    handleTaskTouchStart: (taskId, event) => viewsModule && viewsModule.handleTaskTouchStart && viewsModule.handleTaskTouchStart(taskId, event),
+    handleTaskTouchMove: (event) => viewsModule && viewsModule.handleTaskTouchMove && viewsModule.handleTaskTouchMove(event),
+    handleTaskTouchEnd: (event) => viewsModule && viewsModule.handleTaskTouchEnd && viewsModule.handleTaskTouchEnd(event),
+    handleTaskTouchCancel: (event) => viewsModule && viewsModule.handleTaskTouchCancel && viewsModule.handleTaskTouchCancel(event),
     openTaskDetailSheet: (taskId) => taskDetailSheetModule && taskDetailSheetModule.openTaskDetailSheet(taskId),
     closeTaskDetailSheet: () => taskDetailSheetModule && taskDetailSheetModule.closeTaskDetailSheet(),
     taskDetailSheetAction: (actionType) => taskDetailSheetModule && taskDetailSheetModule.handleAction(actionType),
     taskDetailSheetMove: (direction, event) => taskDetailSheetModule && taskDetailSheetModule.handleMove(direction, event),
     taskDetailSheetReschedule: (dateStr) => taskDetailSheetModule && taskDetailSheetModule.handleReschedule(dateStr),
+    goToBlocker: (taskId, dateStr) => taskDetailSheetModule && taskDetailSheetModule.goToBlocker(taskId, dateStr),
     refreshTaskDetailSheet: () => taskDetailSheetModule && taskDetailSheetModule.refreshIfOpen && taskDetailSheetModule.refreshIfOpen(),
     taskDetailSheet: taskDetailSheetModule
   };
