@@ -1463,7 +1463,7 @@ export function TodayTasksTriageView(ctx) {
         const urgencyLabel = t('urgency.' + editUrgency) || editUrgencyInfo.label;
 
         modalHost.innerHTML = `
-          <div class="modal-overlay" id="triageTaskEditModal" style="display:flex;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:100000;align-items:center;justify-content:center;" onclick="if(event.target===this) app.cancelEditTask()">
+          <div class="modal-overlay" id="triageTaskEditModal" style="display:flex;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:100000;align-items:center;justify-content:center;">
             <div class="modal-box triage-edit-modal-box" onclick="event.stopPropagation()">
               <div class="triage-edit-modal-header">
                 <h3><span>${modalIcon}</span> ${escapeHtml(modalTitle)}</h3>
@@ -1601,6 +1601,22 @@ export function TodayTasksTriageView(ctx) {
           </div>
         `;
         // Auto-focus en el título y conectar autocompletado
+        const modalEl = modalHost.querySelector('#triageTaskEditModal');
+        if (modalEl) {
+          modalEl.addEventListener('mousedown', (e) => {
+            modalEl._overlayMouseDown = (e.target === modalEl);
+          });
+          modalEl.addEventListener('click', (e) => {
+            if (e.target === modalEl && modalEl._overlayMouseDown) {
+              const actions = getActions();
+              if (actions && actions.cancelEditTask) {
+                actions.cancelEditTask();
+              }
+            }
+            modalEl._overlayMouseDown = false;
+          });
+        }
+
         setTimeout(() => {
           const input = document.getElementById('triageEditTitleInput');
           const notes = document.getElementById(`task-edit-notes-${taskEdit.id}`);

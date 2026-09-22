@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getNextWorkingDays } from '../js/utils.js';
+import { getNextWorkingDays, addDays } from '../js/utils.js';
 
 describe('Triage Utils & Working Days calculation', () => {
   it('calcula los próximos 7 días laborables saltándose fines de semana por defecto en trabajo', () => {
@@ -278,6 +278,7 @@ describe('TodayTasksTriageView (UI & Sorting & Selection)', () => {
     window.app = appObj;
     if (document.defaultView) document.defaultView.app = appObj;
     globalThis.app = appObj;
+    global.app = appObj;
   });
 
   it('renderiza la vista de triaje sin recuadro azul de ayuda y con el mismo orden que en la página principal, incluyendo manija de arrastre (puntitos)', () => {
@@ -736,12 +737,12 @@ describe('TodayTasksTriageView (UI & Sorting & Selection)', () => {
     // Tarea del día actual (hoy)
     actions.addTask('Tarea de Hoy', '30', false, null, true, 'today');
 
-    // Tarea de otro día (fecha futura)
-    const futureDate = '2026-09-10';
+    // Tarea de otro día (fecha futura dentro del rango válido de días)
+    const futureDate = addDays(state.selectedDate, 2);
     const env = state.environments[state.activeEnv || 'work'];
     env.days[futureDate] = {
       tasks: [
-        { id: 'task-future-1', title: 'Tarea del Futuro 10 Sep', planned: 45, urgency: 'today', status: 'pending' }
+        { id: 'task-future-1', title: 'Tarea del Futuro', planned: 45, urgency: 'today', status: 'pending' }
       ],
       meetings: []
     };
@@ -811,6 +812,38 @@ describe('TodayTasksTriageView (UI & Sorting & Selection)', () => {
     actions.saveEditTask(task.id);
     expect(state.tasks[0].urgency).toBe('week');
   });
+
+  it('no cierra el modal de edición al seleccionar texto dentro de un input y soltar el ratón fuera en el backdrop', () => {
+    actions.addTask('Tarea Seleccionar Texto', '30', false, null, true, 'today');
+    const task = state.tasks[0];
+    triageView.renderTriageView();
+
+    // Abrimos el modal de edición
+    triageView.handleTriageRowDblClick(task.id, { stopPropagation: () => {}, target: document.querySelector(`[data-task-id="${task.id}"]`) });
+
+    const modal = document.getElementById('triageTaskEditModal');
+    expect(modal).not.toBeNull();
+    const durationInput = document.getElementById('triageEditDurationInput');
+    expect(durationInput).not.toBeNull();
+
+    // Simular mousedown en el input para marcar texto
+    durationInput.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+
+    // Simular que el ratón sale del modal y el usuario suelta el clic sobre el overlay
+    modal.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+    modal.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    // El modal NO debe cerrarse porque el clic se originó dentro del modal
+    expect(document.getElementById('triageTaskEditModal')).not.toBeNull();
+
+    // En cambio, un clic iniciado y terminado en el backdrop sí debe cerrar el modal
+    modal.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    modal.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+    modal.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(document.getElementById('triageTaskEditModal')).toBeNull();
+  });
+
 
   it('el popover de cambio de urgencia individual en triaje no desborda la pantalla y se posiciona hacia arriba si está cerca del fondo', () => {
     actions.addTask('Tarea Urgencia Posición', '30', false, null, true, 'today');
