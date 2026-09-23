@@ -4,7 +4,7 @@ import { TodayTasksMeetingsView } from './views/meetings.js';
 import { TodayTasksTasksView } from './views/tasks.js';
 import { TodayTasksBoardView } from './views/board.js';
 import { TodayTasksFocusView } from './views/focus.js';
-import { TodayTasksTriageView } from './views/triage.js';
+import { TodayTasksTriageView } from './views/triage/index.js';
 
 export function TodayTasksViews(ctx){
   /* Instanciar sub-módulos */

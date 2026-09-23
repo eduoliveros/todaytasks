@@ -58,7 +58,15 @@ todaytasks/
 │   │   ├── meetings.js          # Renderizado de reuniones
 │   │   ├── board.js             # Tablero visual y resumen de planificación
 │   │   ├── focus.js             # Vistas de concentración de tarea e interrupciones
-│   │   └── triage.js            # Vista de triaje rápido, agrupación y operaciones masivas
+│   │   ├── triage.js            # Fachada de retrocompatibilidad que reexporta desde views/triage/
+│   │   └── triage/              # Módulo desacoplado de la vista de triaje rápido
+│   │       ├── index.js         # Orquestador principal de la vista de triaje y estado local
+│   │       ├── triage-data.js   # Filtrado, agrupación, ordenación y cálculo de horarios
+│   │       ├── triage-render.js # Renderizado de filas, grupos, modales y actualización selectiva del DOM
+│   │       ├── triage-batch.js  # Selección múltiple, acciones por lote y Undo/Redo
+│   │       ├── triage-dragdrop.js # Motor de arrastre táctil y de escritorio, y bottom sheet móvil
+│   │       ├── triage-events.js # Controladores de eventos de fila, clics, búsqueda y acciones individuales
+│   │       └── triage-task-modal.js # Modal de nueva tarea, recurrencias y barra rápida
 │   └── app/                     # Submódulos auxiliares de app.js
 │       ├── command-palette.js   # Command Palette modal y buscador global de tareas (Ctrl+K)
 │       ├── dependencies.js      # Gestión de dependencias entre tareas, chips, selector modal y confirmación de bloqueo
@@ -290,6 +298,15 @@ Para resolver la sobrecarga cognitiva cuando se acumulan decenas de tareas pendi
   - Banner informativo con recuento de tareas activas y completadas coincidentes.
   - Botón de limpieza rápida (✕), atajo de teclado <kbd>Esc</kbd> para vaciar la búsqueda, y atajo global <kbd>/</kbd> para enfocar el buscador de triaje desde cualquier punto de la vista.
   - Actualización selectiva del DOM en `oninput` para mantener intacto el foco del input y la interacción con los menús de autocompletado.
+* **Modularización y Desacoplamiento por Responsabilidades ([ADR 024](./adr/024-modularizacion-vista-triaje.md)):**
+  - Con el crecimiento de funcionalidades, el archivo original `triage.js` (95 KB / 1.992 líneas) se dividió en una suite de 6 submódulos altamente especializados bajo `js/views/triage/`, coordinados mediante `js/views/triage/index.js` e interconectados con inyección limpia de dependencias:
+    1. **`triage-data.js`:** Lógica de negocio y derivación de datos (cálculo de fecha objetivo, ordenación principal, filtros de tareas activas/completadas, cálculo de grupos por urgencia/viabilidad/duración/destacadas y conmutación de plegado).
+    2. **`triage-render.js`:** Generadores HTML de componentes visuales (chips de dependencias, filas de tareas completadas y activas, contenedor de grupos, barra flotante, bottom sheet, sincronización del modal de edición `#triageTaskEditModal` y actualización selectiva del DOM).
+    3. **`triage-batch.js`:** Gestión de selección múltiple (Set de IDs), apertura de menús flotantes, acciones en lote (mover a fecha, cambiar urgencia, destacar, completar, eliminar, reordenación masiva) y pila local de Undo/Redo.
+    4. **`triage-dragdrop.js`:** Motor de arrastre táctil con long-press (`touchEngine`), controladores de eventos de arrastre HTML5 de escritorio y control de apertura/cierre del bottom sheet móvil.
+    5. **`triage-events.js`:** Manejo de clics simples, dobles clics, atajos de búsqueda y operaciones unitarias rápidas (destacar, mover a fecha, completar, eliminar).
+    6. **`triage-task-modal.js`:** Modal de alta rápida de tareas, configuración de recurrencias periódicas y barra rápida de entrada.
+  - **Fachada de Compatibilidad (`js/views/triage.js`):** Reexporta la fábrica principal desde `js/views/triage/index.js`, garantizando paridad total y retrocompatibilidad con los tests unitarios y consumidores externos sin alterar ninguna signatura pública.
 
 ---
 

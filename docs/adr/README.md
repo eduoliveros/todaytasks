@@ -24,6 +24,12 @@ Un **Architecture Decision Record (ADR)** es un documento breve que captura una 
 * [016. Dependencias Direccionales entre Tareas (`dependsOn`), Detección de Ciclos y Desbloqueo Suave](./016-dependencias-entre-tareas.md)
 * [017. Aislamiento de Desviación Diaria y Métricas de Cabecera para Tareas Trasladadas (`initialElapsed`)](./017-aislamiento-desviacion-y-metricas-diarias.md)
 * [018. Búsqueda de Tareas en Triaje y Autocompletado de Etiquetas (#) y Menciones (@) en Edición](./018-triaje-busqueda-y-autocompletado-edicion.md)
+* [019. Triaje: Reordenación Masiva y Movimiento en Bloque de Tareas Multiseleccionadas](./019-triaje-reordenacion-masiva-bloque-seleccionado.md)
+* [020. Resiliencia de Sincronización en el Ciclo de Vida Móvil (Pestaña Oculta / Pantalla Bloqueada)](./020-resiliencia-sincronizacion-ciclo-de-vida-movil.md)
+* [021. Vista Móvil Compacta y Bottom Sheet Modal de Acciones Rápidas para Tareas](./021-vista-movil-compacta-bottom-sheet.md)
+* [022. Reordenación Táctil por Pulsación Prolongada (Long-Press) en Lista de Tareas](./022-drag-drop-tactil-long-press.md)
+* [023. Restricciones de Ordenación en Drag & Drop (Dependencias y `startAfter`)](./023-restricciones-ordenacion-dragdrop-dependencias-startafter.md)
+* [024. Modularización de la Vista de Triaje Rápido (`js/views/triage/`)](./024-modularizacion-vista-triaje.md)
 
 ## Plantilla sugerida para nuevos ADRs (`docs/adr/NNN-titulo.md`)
 

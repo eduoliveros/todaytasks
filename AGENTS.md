@@ -56,3 +56,4 @@ JavaScript Vanilla nativo con ES Modules.
 6. **Registro de Decisiones de Arquitectura (ADR):** Si se toma una decisión de diseño relevante o cambio estructural no trivial, documéntala en `docs/adr/` (Architecture Decision Records) detallando contexto, alternativas y justificación.
 7. **Registro de Cambios (`CHANGELOG.md`):** Al incrementar la versión por una funcionalidad importante, documenta las novedades, mejoras o correcciones en [CHANGELOG.md](./CHANGELOG.md).
 8. **Modelo de Datos (`docs/DATA_SCHEMA.md`):** Consulta y respeta la especificación en [docs/DATA_SCHEMA.md](./docs/DATA_SCHEMA.md) antes de añadir o modificar propiedades en el estado, tareas, reuniones o entornos.
+9. **Prevención de Bucles y Consumo Excesivo:** Si detectas que estás leyendo repetidamente las mismas líneas o fragmentos de un fichero (bucle de lectura), detén inmediatamente la ejecución e informa del problema al usuario para evitar un consumo de cuota excesivo.

@@ -4,6 +4,21 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.117] - 2026-09-23
+
+### Cambiado
+- **Refactorización y Modularización de la Vista de Triaje Rápido (`js/views/triage/`):**
+  - Descomposición del archivo monolítico original `js/views/triage.js` (95 KB / 1.992 líneas) en una suite desacoplada de submódulos bajo el directorio `js/views/triage/`:
+    - `index.js`: Coordinador principal de la vista, contenedor de estado local y ciclo de vida.
+    - `triage-data.js`: Lógica de datos, ordenación principal, agrupaciones y cálculo de horarios.
+    - `triage-render.js`: Componentes visuales, renderizado de filas de tareas, chips de dependencias, grupos, modales y actualización selectiva del DOM.
+    - `triage-batch.js`: Selección múltiple de tareas, menús desplegables contextuales, operaciones por lote (mover fecha, urgencia, estrella, completar, eliminar, reordenación direccional) y pila local de Undo/Redo.
+    - `triage-dragdrop.js`: Motor de arrastre táctil con detección de pulsación prolongada (`touchEngine`), drag & drop de escritorio y control del bottom sheet móvil.
+    - `triage-events.js`: Manejo de clics simples, dobles clics, atajos de búsqueda y operaciones unitarias rápidas.
+    - `triage-task-modal.js`: Modal de creación rápida de tareas, selector interactivo de recurrencias periódicas y barra rápida de entrada.
+  - Creación de una fachada de compatibilidad retroactiva en `js/views/triage.js` que reexporta desde `js/views/triage/index.js`, garantizando paridad total y retrocompatibilidad con los tests unitarios y consumidores externos sin alterar ninguna signatura pública.
+  - Documentación de arquitectura en `docs/ARCHITECTURE.md` y registro formal en [ADR 024](docs/adr/024-modularizacion-vista-triaje.md).
+
 ## [1.116] - 2026-09-20
 
 ### Añadido
