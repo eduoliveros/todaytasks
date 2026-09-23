@@ -30,6 +30,7 @@ Un **Architecture Decision Record (ADR)** es un documento breve que captura una 
 * [022. Reordenación Táctil por Pulsación Prolongada (Long-Press) en Lista de Tareas](./022-drag-drop-tactil-long-press.md)
 * [023. Restricciones de Ordenación en Drag & Drop (Dependencias y `startAfter`)](./023-restricciones-ordenacion-dragdrop-dependencias-startafter.md)
 * [024. Modularización de la Vista de Triaje Rápido (`js/views/triage/`)](./024-modularizacion-vista-triaje.md)
+* [025. Drag & Drop Híbrido por Pulsación Prolongada con Ratón (*Mouse Long-Press*) en Vistas Compactas](./025-drag-drop-hibrido-raton-long-press.md)
 
 ## Plantilla sugerida para nuevos ADRs (`docs/adr/NNN-titulo.md`)
 

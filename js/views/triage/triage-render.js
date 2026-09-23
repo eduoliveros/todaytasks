@@ -179,6 +179,7 @@ export function createTriageRender(ctx, state, deps) {
            ontouchmove="app.handleTriageTouchMove(event)"
            ontouchend="app.handleTriageTouchEnd(event)"
            ontouchcancel="app.handleTriageTouchCancel(event)"
+           onmousedown="app.handleTriageMouseDown('${escapeAttr(task.id)}', event)"
            ${dragAttrs}>
         <!-- LADO IZQUIERDO: PUNTITOS, CHECKBOX, ESTRELLA, NOMBRE + DURACIÓN (EN 1 LÍNEA) -->
         <div class="triage-task-left">

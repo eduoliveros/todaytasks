@@ -1,13 +1,18 @@
-/* app/touch-drag.js — Motor reutilizable de drag & drop táctil (long-press) para tareas.
+/* app/touch-drag.js — Motor reutilizable de drag & drop táctil y ratón (long-press) para tareas.
    Encapsula el state machine de pulsación prolongada y arrastre usado en triaje y tablero,
    delegando en callbacks las acciones específicas de cada vista. */
 
 let lastTouchDragEndAt = 0;
 
-// Indica si acaba de finalizar un gesto táctil de arrastre/long-press (útil para que
+// Indica si acaba de finalizar un gesto de arrastre/long-press (útil para que
 // otros módulos supriman el click sintético posterior sin acoplarse al motor).
 export function wasRecentTouchDrag(withinMs = 400) {
-  return (Date.now() - lastTouchDragEndAt) <= withinMs;
+  const diff = Date.now() - lastTouchDragEndAt;
+  return diff >= 0 && diff <= withinMs;
+}
+
+export function _resetTouchDragState() {
+  lastTouchDragEndAt = 0;
 }
 
 export function createTouchDragEngine(options = {}) {
@@ -23,6 +28,7 @@ export function createTouchDragEngine(options = {}) {
     isDropTargetAllowed = null,
     holdDelay = 420,
     handleHoldDelay = 60,
+    mouseHoldDelay = 250,
     longPressNotDraggableDelay = 450,
     vibrateMs = 45
   } = options;
@@ -32,11 +38,13 @@ export function createTouchDragEngine(options = {}) {
   let touchStartY = 0;
   let touchSourceTaskId = null;
   let touchSourceRowEl = null;
+  let originalDraggable = null;
   let isTouchDragging = false;
   let currentTouchOverTaskId = null;
   let didLongPressTrigger = false;
   let touchDragJustEnded = false;
   let touchDragJustEndedTimer = null;
+  let isMouseSession = false;
 
   function vibrate() {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -61,27 +69,50 @@ export function createTouchDragEngine(options = {}) {
     }
   }
 
+  function removeGlobalMouseListeners() {
+    if (typeof window !== 'undefined') {
+      try {
+        window.removeEventListener('mousemove', onGlobalMouseMove);
+        window.removeEventListener('mouseup', onGlobalMouseUp);
+      } catch (e) {}
+    }
+  }
+
+  function onGlobalMouseMove(event) {
+    handleMouseMove(event);
+  }
+
+  function onGlobalMouseUp(event) {
+    removeGlobalMouseListeners();
+    handleMouseUp(event);
+  }
+
   function resetState() {
+    if (touchSourceRowEl && originalDraggable !== null) {
+      try { touchSourceRowEl.setAttribute('draggable', originalDraggable); } catch (e) {}
+      originalDraggable = null;
+    }
     touchSourceTaskId = null;
     touchSourceRowEl = null;
     isTouchDragging = false;
     currentTouchOverTaskId = null;
     didLongPressTrigger = false;
+    isMouseSession = false;
+    removeGlobalMouseListeners();
   }
 
-  function handleTouchStart(taskId, event) {
-    if (!event || !event.touches || event.touches.length === 0) return;
+  function startHoldTimer(taskId, event, clientX, clientY, isMouse = false) {
     if (shouldIgnoreStart && shouldIgnoreStart(event)) return;
 
     const draggable = isDraggable ? !!isDraggable(taskId) : true;
 
-    const touch = event.touches[0];
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
+    touchStartX = clientX;
+    touchStartY = clientY;
     touchSourceTaskId = String(taskId);
     didLongPressTrigger = false;
     isTouchDragging = false;
     currentTouchOverTaskId = null;
+    isMouseSession = isMouse;
 
     const row = event.currentTarget || (event.target && typeof event.target.closest === 'function' ? event.target.closest(rowSelector) : null);
     touchSourceRowEl = row;
@@ -103,8 +134,9 @@ export function createTouchDragEngine(options = {}) {
       return;
     }
 
-    // Manija: arrastre inmediato (60ms). Cuerpo: requiere pulsación prolongada (~420ms).
-    const delay = isHandle ? handleHoldDelay : holdDelay;
+    // Manija: arrastre casi inmediato (60ms). Cuerpo: requiere pulsación prolongada (mouseHoldDelay o holdDelay).
+    const defaultDelay = isMouse ? mouseHoldDelay : holdDelay;
+    const delay = isHandle ? handleHoldDelay : defaultDelay;
 
     touchHoldTimer = setTimeout(() => {
       touchHoldTimer = null;
@@ -112,31 +144,47 @@ export function createTouchDragEngine(options = {}) {
       isTouchDragging = true;
       vibrate();
 
+      if (touchSourceRowEl) {
+        if (touchSourceRowEl.classList) {
+          touchSourceRowEl.classList.add('long-press-active', 'dragging');
+        }
+        if (touchSourceRowEl.getAttribute) {
+          originalDraggable = touchSourceRowEl.getAttribute('draggable');
+          try { touchSourceRowEl.setAttribute('draggable', 'false'); } catch (e) {}
+        }
+      }
+
       const selectedIds = getSelectedIds ? getSelectedIds(taskId) : null;
       if (onDragStart) onDragStart(taskId, touchSourceRowEl, selectedIds);
     }, delay);
+
+    if (isMouse && typeof window !== 'undefined') {
+      window.addEventListener('mousemove', onGlobalMouseMove, { passive: false });
+      window.addEventListener('mouseup', onGlobalMouseUp, { passive: false });
+    }
   }
 
-  function handleTouchMove(event) {
-    if (!event || !event.touches || event.touches.length === 0) return;
-    const touch = event.touches[0];
-    const dx = Math.abs(touch.clientX - touchStartX);
-    const dy = Math.abs(touch.clientY - touchStartY);
+  function processMove(clientX, clientY, event) {
+    const dx = Math.abs(clientX - touchStartX);
+    const dy = Math.abs(clientY - touchStartY);
 
     if (!isTouchDragging) {
       // Si el usuario desplaza antes de completar el long-press, cancelamos el arrastre
-      if (dx > 10 || dy > 10) {
+      if (dx > 8 || dy > 8) {
         clearHoldTimer();
+        if (isMouseSession) {
+          removeGlobalMouseListeners();
+        }
       }
       return;
     }
 
-    if (event.cancelable && typeof event.preventDefault === 'function') {
+    if (event && event.cancelable && typeof event.preventDefault === 'function') {
       event.preventDefault();
     }
 
     if (typeof document !== 'undefined' && document.elementFromPoint) {
-      const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+      const targetEl = document.elementFromPoint(clientX, clientY);
       const overRow = targetEl ? targetEl.closest(rowSelector) : null;
       const overTaskId = overRow ? overRow.getAttribute('data-task-id') : null;
 
@@ -160,8 +208,9 @@ export function createTouchDragEngine(options = {}) {
     }
   }
 
-  function handleTouchEnd(event) {
+  function processEnd(event) {
     clearHoldTimer();
+    removeGlobalMouseListeners();
 
     const wasLongPress = didLongPressTrigger;
     const wasDragging = isTouchDragging;
@@ -195,10 +244,48 @@ export function createTouchDragEngine(options = {}) {
     }
   }
 
+  function handleTouchStart(taskId, event) {
+    if (!event || !event.touches || event.touches.length === 0) return;
+    const touch = event.touches[0];
+    startHoldTimer(taskId, event, touch.clientX, touch.clientY, false);
+  }
+
+  function handleTouchMove(event) {
+    if (!event) return;
+    const clientX = (event.touches && event.touches[0]) ? event.touches[0].clientX : event.clientX;
+    const clientY = (event.touches && event.touches[0]) ? event.touches[0].clientY : event.clientY;
+    if (clientX === undefined || clientY === undefined) return;
+    processMove(clientX, clientY, event);
+  }
+
+  function handleTouchEnd(event) {
+    processEnd(event);
+  }
+
   function handleTouchCancel() {
     clearHoldTimer();
+    removeGlobalMouseListeners();
     cleanupClasses();
     resetState();
+  }
+
+  function handleMouseDown(taskId, event) {
+    if (!event || event.button !== 0) return;
+    const isHandle = !!(event.target && typeof event.target.closest === 'function' && event.target.closest(handleSelector));
+    if (isHandle) return;
+    startHoldTimer(taskId, event, event.clientX, event.clientY, true);
+  }
+
+  function handleMouseMove(event) {
+    if (!event) return;
+    const clientX = (event.touches && event.touches[0]) ? event.touches[0].clientX : event.clientX;
+    const clientY = (event.touches && event.touches[0]) ? event.touches[0].clientY : event.clientY;
+    if (clientX === undefined || clientY === undefined) return;
+    processMove(clientX, clientY, event);
+  }
+
+  function handleMouseUp(event) {
+    processEnd(event);
   }
 
   function wasJustDragged() {
@@ -210,6 +297,9 @@ export function createTouchDragEngine(options = {}) {
     handleTouchMove,
     handleTouchEnd,
     handleTouchCancel,
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
     wasJustDragged
   };
 }

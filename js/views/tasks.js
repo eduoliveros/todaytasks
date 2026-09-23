@@ -40,7 +40,7 @@ export function TodayTasksTasksView(ctx){
     },
     isDropTargetAllowed: (sourceId, targetId) => {
       if (ctx.actionsModule && typeof ctx.actionsModule.checkIsDropTargetAllowed === 'function') {
-        return ctx.actionsModule.checkIsDropTargetAllowed(targetId);
+        return ctx.actionsModule.checkIsDropTargetAllowed(targetId, sourceId);
       }
       return true;
     }
@@ -60,6 +60,10 @@ export function TodayTasksTasksView(ctx){
 
   function handleTaskTouchCancel(event) {
     touchEngine.handleTouchCancel(event);
+  }
+
+  function handleTaskMouseDown(taskId, event) {
+    touchEngine.handleMouseDown(taskId, event);
   }
 
   function renderEditDependencyChips(deps, env) {
@@ -224,7 +228,8 @@ export function TodayTasksTasksView(ctx){
       ? `ontouchstart="app.handleTaskTouchStart('${escapeAttr(task.id)}', event)"
          ontouchmove="app.handleTaskTouchMove(event)"
          ontouchend="app.handleTaskTouchEnd(event)"
-         ontouchcancel="app.handleTaskTouchCancel(event)"`
+         ontouchcancel="app.handleTaskTouchCancel(event)"
+         onmousedown="app.handleTaskMouseDown('${escapeAttr(task.id)}', event)"`
       : '';
     const dragHandle = isDraggable
       ? `<span class="drag-handle" title="${escapeAttr(t('tasks.dragHandleTooltip'))}" onmousedown="app.armTaskDrag()">⠿</span>`
@@ -595,7 +600,7 @@ export function TodayTasksTasksView(ctx){
     }
   }
 
-  return { renderTasks, renderTaskItem, renderCompletedSearchItem, toggleTaskNotes, isTaskNotesExpanded, handleTaskTouchStart, handleTaskTouchMove, handleTaskTouchEnd, handleTaskTouchCancel };
+  return { renderTasks, renderTaskItem, renderCompletedSearchItem, toggleTaskNotes, isTaskNotesExpanded, handleTaskTouchStart, handleTaskTouchMove, handleTaskTouchEnd, handleTaskTouchCancel, handleTaskMouseDown };
 }
 
 export default TodayTasksTasksView;

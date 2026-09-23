@@ -91,6 +91,13 @@ export function createTriageDragDrop(ctx, state, deps) {
       return task ? (task.status === 'pending' || task.status === 'paused') : true;
     },
     getSelectedIds: () => selectedTaskIds,
+    isDropTargetAllowed: (sourceId, targetId) => {
+      const actions = getActions();
+      if (actions && typeof actions.checkIsDropTargetAllowed === 'function') {
+        return actions.checkIsDropTargetAllowed(targetId, sourceId, selectedTaskIds);
+      }
+      return true;
+    },
     onDragStart: (taskId, rowEl) => {
       if (state.triageClickTimer) {
         clearTimeout(state.triageClickTimer);
@@ -144,13 +151,6 @@ export function createTriageDragDrop(ctx, state, deps) {
     },
     onLongPressNotDraggable: (taskId, event) => {
       openMobileMoveSheet(taskId, event);
-    },
-    isDropTargetAllowed: (sourceId, targetId) => {
-      const actions = getActions();
-      if (actions && typeof actions.checkIsDropTargetAllowed === 'function') {
-        return actions.checkIsDropTargetAllowed(targetId);
-      }
-      return true;
     }
   });
 
@@ -168,6 +168,10 @@ export function createTriageDragDrop(ctx, state, deps) {
 
   function handleTriageTouchCancel(event) {
     touchEngine.handleTouchCancel(event);
+  }
+
+  function handleTriageMouseDown(taskId, event) {
+    touchEngine.handleMouseDown(taskId, event);
   }
 
   function triageTaskDragStart(event, taskId) {
@@ -293,6 +297,7 @@ export function createTriageDragDrop(ctx, state, deps) {
     handleTriageTouchMove,
     handleTriageTouchEnd,
     handleTriageTouchCancel,
+    handleTriageMouseDown,
     wasJustDragged: () => touchEngine.wasJustDragged(),
     triageTaskDragStart,
     triageGroupDragOver,

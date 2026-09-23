@@ -98,6 +98,7 @@ export function TodayTasksViews(ctx){
     handleTaskTouchMove:    tasksV.handleTaskTouchMove,
     handleTaskTouchEnd:     tasksV.handleTaskTouchEnd,
     handleTaskTouchCancel:  tasksV.handleTaskTouchCancel,
+    handleTaskMouseDown:    tasksV.handleTaskMouseDown,
     /* Board */
     renderBoard:            boardV.renderBoard,
     renderSummary:          boardV.renderSummary,
@@ -152,6 +153,7 @@ export function TodayTasksViews(ctx){
     handleTriageTouchMove:        triageV.handleTriageTouchMove,
     handleTriageTouchEnd:         triageV.handleTriageTouchEnd,
     handleTriageTouchCancel:      triageV.handleTriageTouchCancel,
+    handleTriageMouseDown:        triageV.handleTriageMouseDown,
     triageTaskDragStart:          triageV.triageTaskDragStart,
     triageTaskDrop:               triageV.triageTaskDrop,
     triageGroupDragOver:          triageV.triageGroupDragOver,

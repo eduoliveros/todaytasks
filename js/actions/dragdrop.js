@@ -140,19 +140,22 @@ export function TodayTasksDragDrop(ctx, helpers = {}){
     }
   }
 
-  function checkIsDropTargetAllowed(targetId) {
-    if (draggedTaskId === null || !targetId) return true;
+  function checkIsDropTargetAllowed(targetId, optSourceId = null, optSelectedIds = null) {
+    const activeTaskId = (optSourceId !== null && optSourceId !== undefined) ? optSourceId : draggedTaskId;
+    if (activeTaskId === null || !targetId) return true;
     const state = getState();
     const queue = (state.tasks || []).filter(t => t.status === "pending" || t.status === "paused")
                                     .sort((a,b) => (a.order || 0) - (b.order || 0));
-    const activeSelectedIds = draggedSelectedIds;
-    const isGroup = activeSelectedIds && activeSelectedIds.has(String(draggedTaskId)) && activeSelectedIds.size > 1;
+    const activeSelectedIds = (optSelectedIds !== null && optSelectedIds !== undefined)
+      ? normalizeSelectedIds(optSelectedIds)
+      : draggedSelectedIds;
+    const isGroup = activeSelectedIds && activeSelectedIds.has(String(activeTaskId)) && activeSelectedIds.size > 1;
 
     let movingTasks = [];
     if (isGroup) {
       movingTasks = queue.filter(t => activeSelectedIds.has(String(t.id)));
     } else {
-      const single = queue.find(t => String(t.id) === String(draggedTaskId));
+      const single = queue.find(t => String(t.id) === String(activeTaskId));
       if (single) movingTasks = [single];
     }
     if (movingTasks.length === 0) return true;
@@ -160,7 +163,7 @@ export function TodayTasksDragDrop(ctx, helpers = {}){
     const movingIds = new Set(movingTasks.map(t => String(t.id)));
     const remainingQueue = queue.filter(t => !movingIds.has(String(t.id)));
 
-    const fromIdx = queue.findIndex(t => String(t.id) === String(draggedTaskId));
+    const fromIdx = queue.findIndex(t => String(t.id) === String(activeTaskId));
     const toIdx = queue.findIndex(t => String(t.id) === String(targetId));
 
     let targetIdxInRemaining = remainingQueue.findIndex(t => String(t.id) === String(targetId));
