@@ -249,10 +249,13 @@ input:focus, button:focus, select:focus { outline: 2px solid var(--accent-pendin
 
 /* Blocked state on task card */
 .task-item.is-blocked {
-  border-left: 3px solid #F59E0B;
+  border-left: 3px solid #6366F1;
+}
+.task-item.featured-task.is-blocked {
+  border-left: 3px solid #6366F1 !important;
 }
 .btn.is-blocked {
-  border: 1px solid #FCD34D;
+  border: 1px solid #C7D2FE;
 }
 
 /* Form dependencies row */

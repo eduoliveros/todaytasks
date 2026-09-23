@@ -345,6 +345,7 @@ body[data-theme="dark"] .triage-badge-count {
   -webkit-touch-callout: none;
   touch-action: pan-y;
   border-bottom: 1px solid var(--line);
+  border-left: 3px solid transparent;
   transition: background 0.12s, border-left-color 0.12s;
   box-sizing: border-box;
 }
@@ -361,9 +362,21 @@ body[data-theme="dark"] .triage-task-row:hover {
   background: rgba(79, 70, 229, 0.12);
 }
 
+.triage-task-row.featured-task {
+  border-left-color: #F59E0B;
+}
+
+.triage-task-row.is-blocked {
+  border-left-color: #6366F1;
+}
+
+.triage-task-row.featured-task.is-blocked {
+  border-left-color: #6366F1;
+}
+
 .triage-task-row.selected {
   background: rgba(79, 70, 229, 0.08);
-  border-left: 3px solid var(--primary, #4F46E5);
+  border-left-color: var(--primary, #4F46E5);
 }
 
 body[data-theme="dark"] .triage-task-row.selected {

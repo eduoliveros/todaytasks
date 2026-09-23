@@ -282,6 +282,17 @@ describe('Task Dependencies UI & Views (Parity in Main Form and Triage)', () => 
       expect(depBadge.textContent).toContain('W-1');
     });
 
+    it('en la lista de triaje la tarea destacada recibe .featured-task y la bloqueada .is-blocked', () => {
+      state.environments.work.days['2026-09-02'].tasks[0].featured = true;
+      triageView.renderTriageView();
+
+      const rowTask1 = document.querySelector('.triage-task-row[data-task-id="task-1"]');
+      const rowTask2 = document.querySelector('.triage-task-row[data-task-id="task-2"]');
+      expect(rowTask1.classList.contains('featured-task')).toBe(true);
+      expect(rowTask1.classList.contains('is-blocked')).toBe(false);
+      expect(rowTask2.classList.contains('is-blocked')).toBe(true);
+    });
+
     it('en el modal de edición de triaje (#triageTaskEditModal) renderiza la sección de dependencias', () => {
       actions.startEditTask('task-2');
       triageView.renderTriageView();

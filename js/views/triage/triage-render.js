@@ -169,8 +169,10 @@ export function createTriageRender(ctx, state, deps) {
       `;
     }
 
+    const featuredClass = task.featured ? 'featured-task' : '';
+
     return `
-      <div class="triage-task-row ${isSelected ? 'selected' : ''} ${isRecurring ? 'is-recurring' : ''} ${isBlocked ? 'is-blocked' : ''}" data-task-id="${escapeAttr(task.id)}"
+      <div class="triage-task-row ${isSelected ? 'selected' : ''} ${isRecurring ? 'is-recurring' : ''} ${isBlocked ? 'is-blocked' : ''} ${featuredClass}" data-task-id="${escapeAttr(task.id)}"
            onclick="app.handleTriageRowClick('${escapeAttr(task.id)}', event)"
            ondblclick="app.handleTriageRowDblClick('${escapeAttr(task.id)}', event)"
            ontouchstart="app.handleTriageTouchStart('${escapeAttr(task.id)}', event)"

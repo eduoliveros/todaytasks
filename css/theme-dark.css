@@ -644,13 +644,29 @@
 }
 
 [data-theme="dark"] .task-item.is-blocked {
-  background: rgba(245, 158, 11, 0.04);
+  background: rgba(99, 102, 241, 0.04);
+  border-left-color: #818cf8;
+}
+
+[data-theme="dark"] .task-item.featured-task.is-blocked {
+  border-left-color: #818cf8 !important;
+}
+
+[data-theme="dark"] .triage-task-row.featured-task {
   border-left-color: #f59e0b;
 }
 
-[data-theme="dark"] .triage-row.is-blocked {
-  background: rgba(245, 158, 11, 0.04);
-  border-left: 3px solid #f59e0b;
+[data-theme="dark"] .triage-task-row.is-blocked {
+  background: rgba(99, 102, 241, 0.04);
+  border-left-color: #818cf8;
+}
+
+[data-theme="dark"] .triage-task-row.featured-task.is-blocked {
+  border-left-color: #818cf8;
+}
+
+[data-theme="dark"] .btn.is-blocked {
+  border-color: rgba(129, 140, 248, 0.4);
 }
 
 [data-theme="dark"] .dep-chip {
