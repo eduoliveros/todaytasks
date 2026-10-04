@@ -51,6 +51,7 @@ export function defaultState() {
     autoBreakDurationMin: 10,
     themeMode: "auto",
     language: detectInitialLanguage(),
+    taskSortMode: "priority",
     nextId: 1
   };
   return wrapState(raw);
@@ -69,6 +70,10 @@ export function wrapState(rawState) {
 
   if (typeof rawState.activeEnv !== "string" || !["work", "personal"].includes(rawState.activeEnv)) {
     rawState.activeEnv = "work";
+  }
+
+  if (typeof rawState.taskSortMode !== "string" || !["priority", "chronological"].includes(rawState.taskSortMode)) {
+    rawState.taskSortMode = "priority";
   }
 
   if (!rawState.environments || typeof rawState.environments !== "object") {

@@ -27,6 +27,7 @@ export function TodayTasksTasksView(ctx){
     },
     isDraggable: (taskId) => {
       const state = getState();
+      if (state && state.taskSortMode === 'chronological') return false;
       const task = (state.tasks || []).find(t => String(t.id) === String(taskId));
       return !!(task && (task.status === 'pending' || task.status === 'paused'));
     },
@@ -110,9 +111,14 @@ export function TodayTasksTasksView(ctx){
     }
   }
 
-  function renderTaskItem(task, schedule, taskEdit){
+  function renderTaskItem(task, schedule, taskEdit, options = {}){
     const urgencyKey = task.urgency || DEFAULT_URGENCY;
     const urgencyInfo = URGENCY_LEVELS[urgencyKey] || URGENCY_LEVELS[DEFAULT_URGENCY];
+
+    const isFirstTask = !!options.isFirstTask;
+    const isDeferred = !!options.isDeferred;
+    const firstTaskClass = isFirstTask ? 'is-first-task' : '';
+    const deferredClass = isDeferred ? 'is-deferred' : '';
 
     const isOverflow = (schedule && schedule.overflowIds) ? schedule.overflowIds.has(task.id) : false;
     const state = typeof getState === 'function' ? getState() : {};
@@ -215,7 +221,8 @@ export function TodayTasksTasksView(ctx){
       trClass = "tr-pending";
     }
 
-    const isDraggable = (task.status === "pending" || task.status === "paused");
+    const isChrono = (state && state.taskSortMode === "chronological");
+    const isDraggable = !isChrono && (task.status === "pending" || task.status === "paused");
     const dragAttrs = isDraggable
       ? `draggable="true"
          ondragstart="app.taskDragStart(event, '${escapeAttr(task.id)}')"
@@ -340,7 +347,7 @@ export function TodayTasksTasksView(ctx){
     const blockedClass = isBlocked ? 'is-blocked' : '';
 
     return `
-      <div class="item task-item ${task.status} ${featuredClass} ${overflowClass} ${blockedClass}" id="task-item-${escapeAttr(task.id)}" data-task-id="${escapeAttr(task.id)}" onclick="if(window.app && window.app.handleTaskMobileClick) window.app.handleTaskMobileClick('${escapeAttr(task.id)}', event)" ondblclick="app.startEditTask('${escapeAttr(task.id)}')" ${dragAttrs} ${touchAttrs}>
+      <div class="item task-item ${task.status} ${featuredClass} ${overflowClass} ${blockedClass} ${firstTaskClass} ${deferredClass}" id="task-item-${escapeAttr(task.id)}" data-task-id="${escapeAttr(task.id)}" onclick="if(window.app && window.app.handleTaskMobileClick) window.app.handleTaskMobileClick('${escapeAttr(task.id)}', event)" ondblclick="app.startEditTask('${escapeAttr(task.id)}')" ${dragAttrs} ${touchAttrs}>
         <div class="top">
           <div style="display:flex;align-items:flex-start;gap:6px;flex:1;min-width:0;">
             ${dragHandle}
@@ -382,10 +389,12 @@ export function TodayTasksTasksView(ctx){
           ${task.status==="pending" ? `
             <button class="btn small run ${isBlocked ? 'is-blocked' : ''}" onclick="app.startTask('${escapeAttr(task.id)}')">${isBlocked ? '🔒 ' : ''}${t('tasks.btnStart')}</button>
             <button class="btn small done" onclick="app.completeTask('${escapeAttr(task.id)}')">${t('tasks.btnComplete')}</button>
+            ${!isChrono ? `
             <div class="order-controls">
               <button class="icon-btn" title="${escapeAttr(t('tasks.btnMoveUp'))}" data-action="move-up" data-task-id="${escapeAttr(task.id)}" onclick="app.moveTask('${escapeAttr(task.id)}',-1,event)">▲</button>
               <button class="icon-btn" title="${escapeAttr(t('tasks.btnMoveDown'))}" data-action="move-down" data-task-id="${escapeAttr(task.id)}" onclick="app.moveTask('${escapeAttr(task.id)}',1,event)">▼</button>
             </div>
+            ` : ''}
           ` : ""}
           ${task.status==="running" ? `
             <a href="#/task/${escapeAttr(task.id)}" class="btn small secondary focus-link" title="${escapeAttr(t('tasks.btnFocusTooltip'))}">${t('tasks.btnFocus')}</a>
@@ -395,10 +404,12 @@ export function TodayTasksTasksView(ctx){
           ${task.status==="paused" ? `
             <button class="btn small run ${isBlocked ? 'is-blocked' : ''}" onclick="app.resumeTask('${escapeAttr(task.id)}')">${isBlocked ? '🔒 ' : ''}${t('tasks.btnResume')}</button>
             <button class="btn small done" onclick="app.completeTask('${escapeAttr(task.id)}')">${t('tasks.btnComplete')}</button>
+            ${!isChrono ? `
             <div class="order-controls">
               <button class="icon-btn" title="${escapeAttr(t('tasks.btnMoveUp'))}" data-action="move-up" data-task-id="${escapeAttr(task.id)}" onclick="app.moveTask('${escapeAttr(task.id)}',-1,event)">▲</button>
               <button class="icon-btn" title="${escapeAttr(t('tasks.btnMoveDown'))}" data-action="move-down" data-task-id="${escapeAttr(task.id)}" onclick="app.moveTask('${escapeAttr(task.id)}',1,event)">▼</button>
             </div>
+            ` : ''}
           ` : ""}
         </div>
       </div>
@@ -524,10 +535,45 @@ export function TodayTasksTasksView(ctx){
     const taskEdit = getTaskEdit();
     const searchQuery = (ctx.getTaskSearchQuery ? ctx.getTaskSearchQuery() : "").trim();
 
+    const sortPriorityBtn = document.getElementById("taskSortPriorityBtn");
+    const sortChronoBtn = document.getElementById("taskSortChronoBtn");
+    const sortMode = state.taskSortMode || "priority";
+    const isChrono = (sortMode === "chronological");
+    if (sortPriorityBtn) sortPriorityBtn.classList.toggle("active", !isChrono);
+    if (sortChronoBtn) sortChronoBtn.classList.toggle("active", isChrono);
+
+    // Identificar primera tarea programada cronológicamente entre las pendientes/pausadas
+    let firstScheduledTaskId = null;
+    let minScheduledStart = Infinity;
+    const eligiblePending = (state.tasks || []).filter(t => t.status === "pending" || t.status === "paused");
+    for (const t of eligiblePending) {
+      const segs = (schedule && schedule.segmentsByTask && schedule.segmentsByTask[t.id]) ? schedule.segmentsByTask[t.id] : [];
+      if (segs.length > 0 && segs[0].start < minScheduledStart) {
+        minScheduledStart = segs[0].start;
+        firstScheduledTaskId = t.id;
+      }
+    }
+
+    const startThreshold = state.planningMode ? (state.workStart ?? 540) : nowMinutes();
+
+    const getTaskOptions = (t) => {
+      const isFirstTask = (firstScheduledTaskId !== null && String(t.id) === String(firstScheduledTaskId) && t.status !== "running");
+      const hasStartAfter = (t.startAfter !== null && t.startAfter !== undefined && !isNaN(t.startAfter));
+      const isDeferred = (t.status === "pending" || t.status === "paused") && hasStartAfter && (t.startAfter > startThreshold);
+      return { isFirstTask, isDeferred };
+    };
+
     const active = (state.tasks || []).filter(t => t.status !== "completed")
                                .sort((a,b)=>{
                                  if(a.status==="running") return -1;
                                  if(b.status==="running") return 1;
+                                 if(isChrono){
+                                   const segsA = (schedule && schedule.segmentsByTask && schedule.segmentsByTask[a.id]) || [];
+                                   const segsB = (schedule && schedule.segmentsByTask && schedule.segmentsByTask[b.id]) || [];
+                                   const startA = segsA.length > 0 ? segsA[0].start : Infinity;
+                                   const startB = segsB.length > 0 ? segsB[0].start : Infinity;
+                                   if(startA !== startB) return startA - startB;
+                                 }
                                  return a.order-b.order;
                                });
 
@@ -535,7 +581,7 @@ export function TodayTasksTasksView(ctx){
       if(active.length === 0){
         el.innerHTML = `<div class="empty">${t('tasks.empty')}</div>`;
       } else {
-        el.innerHTML = active.map(t => renderTaskItem(t, schedule, taskEdit)).join("");
+        el.innerHTML = active.map(t => renderTaskItem(t, schedule, taskEdit, getTaskOptions(t))).join("");
       }
     } else {
       // Búsqueda inteligente activa (título, urgencia y destacado)
@@ -567,7 +613,7 @@ export function TodayTasksTasksView(ctx){
           </div>
         `;
         if(matchingActive.length > 0){
-          html += matchingActive.map(t => renderTaskItem(t, schedule, taskEdit)).join("");
+          html += matchingActive.map(t => renderTaskItem(t, schedule, taskEdit, getTaskOptions(t))).join("");
         } else {
           html += `<div class="empty empty-subtle">${t('tasks.searchNoActiveMatch')}</div>`;
         }

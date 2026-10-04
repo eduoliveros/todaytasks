@@ -1038,6 +1038,71 @@ input:focus, button:focus, select:focus { outline: 2px solid var(--accent-pendin
   white-space: nowrap;
 }
 
+/* --- Primera tarea ejecutable / planificada --- */
+.task-item.is-first-task {
+  border: 2px solid #10B981 !important;
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.25), 0 2px 8px rgba(16, 185, 129, 0.08);
+}
+.task-item.is-first-task::before {
+  background: #10B981 !important;
+  width: 5px;
+}
+
+/* --- Tareas diferidas por hora posterior (startAfter) --- */
+.task-item.is-deferred {
+  opacity: 0.72;
+  border-style: dashed !important;
+}
+.task-item.is-deferred:hover {
+  opacity: 0.95;
+}
+
+/* --- Barra de conmutación de orden de tareas (Prioridad vs Cronológico) --- */
+.task-list-sort-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 8px;
+  margin-top: 4px;
+}
+.task-list-sort-label {
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+.task-sort-toggle-group {
+  display: inline-flex;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+.task-sort-btn {
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+.task-sort-btn:hover {
+  color: var(--ink);
+}
+.task-sort-btn.active {
+  background: var(--panel);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
 .task-form-urgency-wrap {
   display: inline-flex;
   align-items: center;

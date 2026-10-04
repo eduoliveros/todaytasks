@@ -23,6 +23,7 @@ interface State {
   autoBreakDurationMin: number;         // Duración del descanso automático en minutos (def: 10)
   themeMode: "auto" | "light" | "dark"; // Tema visual (def: "auto")
   language: string;                     // Idioma de la interfaz: "es" | "en" (def: según navegador)
+  taskSortMode: "priority" | "chronological"; // Modo de ordenación en la lista de tareas (def: "priority")
   nextId: number;                       // Contador incremental para fallback de IDs (def: 1)
 
   // Metadatos de sincronización en Firestore:

@@ -4,6 +4,17 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.118] - 2026-10-04
+
+### Añadido
+- **Modos de Presentación y Resaltado de la Primera Tarea del Día (Opción B + C):**
+  - **Marco Verde en Primera Tarea Ejecutable (`.task-item.is-first-task`):** Resaltado visual con marco verde esmeralda (`#10B981`) en la primera tarea ejecutable según el horario planificado del día (`computeSchedule`), facilitando identificar inmediatamente por dónde empezar la jornada sin necesidad de escanear todas las horas ni añadir etiquetas redundantes.
+  - **Atenuado de Tareas Diferidas (`.task-item.is-deferred`):** Las tareas con hora fijada de inicio (`startAfter`) posterior al umbral de inicio (jornada o momento actual) se muestran atenuadas con borde punteado sutil para comunicar que están a la espera sin sobrecargar visualmente la tarjeta.
+  - **Selector de Vista de Lista (Prioridad vs Cronológico):** Nuevo control conmutador en la cabecera de la lista de tareas (`⭐ Prioridad` vs `⏰ Cronológico`):
+    - **Prioridad (por defecto):** Conserva el orden manual y jerárquico fijado por el usuario.
+    - **Cronológico:** Reordena dinámicamente las tareas según su hora de inicio calculada por el motor de planificación (`segmentsByTask[id][0].start`), situando la primera tarea del día al frente y adaptando los controles de arrastre.
+  - Persistencia del modo seleccionado (`state.taskSortMode: "priority" | "chronological"`) en el estado global y almacenamiento local.
+
 ## [1.117] - 2026-09-23
 
 ### Cambiado

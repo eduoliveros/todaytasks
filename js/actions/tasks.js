@@ -1104,12 +1104,21 @@ export function TodayTasksTasks(ctx, helpers){
     return true;
   }
 
+  function setTaskSortMode(mode){
+    if (!["priority", "chronological"].includes(mode)) return;
+    const state = getState();
+    if (state.taskSortMode === mode) return;
+    state.taskSortMode = mode;
+    saveState();
+    smartRender ? smartRender() : renderAll();
+  }
+
   return {
     materializeRecurringTasks,
     addTask, deleteTask, deleteRecurringTaskInstance, startEditTask, startNewTask, updateTaskEditField,
     cancelEditTask, saveEditTask, updateTaskTimeFast, moveTask,
     setTaskUrgency, setTasksUrgency, setTaskFeatured, setTasksFeatured, toggleTaskFeatured, resolveFeaturedLimit,
-    setTaskStartAfter, deleteTasks, applyAutoOrder,
+    setTaskStartAfter, deleteTasks, applyAutoOrder, setTaskSortMode,
     addDependency, removeDependency,
     addEditTaskDependency, removeEditTaskDependency
   };

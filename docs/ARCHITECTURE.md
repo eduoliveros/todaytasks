@@ -500,6 +500,23 @@ Implementado en las versiones `v1.114` y `v1.115` ([ADR 021](./adr/021-vista-mov
 
 ---
 
+## 19. Modos de Presentación de Tareas y Resaltado de la Primera Tarea (`js/views/tasks.js`, `js/actions/tasks.js`)
+
+Para resolver la desconexión visual entre la jerarquía de prioridad del usuario y la hora real en que se debe ejecutar cada tarea (especialmente cuando hay tareas al principio con `startAfter` más tarde en el día), TodayTasks implementa un sistema visual no intrusivo y adaptable:
+
+* **Marco Verde en Primera Tarea Ejecutable (`.task-item.is-first-task`):**
+  - Identifica la tarea pendiente o pausada que posee el tramo horario más temprano en `schedule.segmentsByTask`.
+  - Recibe un marco verde esmeralda (`border: 2px solid #10B981`) con indicador lateral distintivo. No añade textos ni badges redundantes, preservando la estética minimalista.
+* **Atenuado de Tareas Diferidas (`.task-item.is-deferred`):**
+  - Cuando una tarea tiene hora fijada `startAfter` superior al umbral de inicio (jornada en modo planificación o momento actual en directo), se aplica una ligera atenuación con borde discontinuo (`border-style: dashed`), indicando visualmente que está en espera.
+* **Selector de Modo de Ordenación (`state.taskSortMode: "priority" | "chronological"`):**
+  - Barra compacta situada sobre la lista de tareas (`#taskListSortBar`).
+  - **Modo Prioridad (por defecto):** Respeta el orden manual fijado por el usuario (`order`) y permite reordenar con arrastre y flechas `▲▼`.
+  - **Modo Cronológico:** Ordena la lista de tareas según su hora de inicio calculada (`segs[0].start`), situando la primera tarea del día al frente y desactivando los controles de orden manual mientras esté activo.
+  - Persistido en `state` y en `localStorage`.
+
+---
+
 ## 20. Directrices para Nuevos Desarrollos
 
 1. **Separación Estricta de Responsabilidades:**

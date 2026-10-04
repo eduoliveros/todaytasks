@@ -172,6 +172,7 @@ export function TodayTasksActions(ctx) {
     deleteTasks:            tasks.deleteTasks,
     deleteRecurringTaskInstance: tasks.deleteRecurringTaskInstance,
     applyAutoOrder:         tasks.applyAutoOrder,
+    setTaskSortMode:        tasks.setTaskSortMode,
     addDependency:          tasks.addDependency,
     removeDependency:       tasks.removeDependency,
     addEditTaskDependency:  tasks.addEditTaskDependency,

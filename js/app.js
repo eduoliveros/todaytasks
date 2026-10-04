@@ -625,6 +625,7 @@ function switchHeaderTab(target){
     deleteRecurringTaskInstance: (ruleId, dateStr) => actionsModule.deleteRecurringTaskInstance && actionsModule.deleteRecurringTaskInstance(ruleId, dateStr),
     moveTask: actionsModule.moveTask,
     applyAutoOrder: actionsModule.applyAutoOrder,
+    setTaskSortMode: actionsModule.setTaskSortMode,
     startTask: actionsModule.startTask,
     pauseTask: actionsModule.pauseTask,
     resumeTask: actionsModule.resumeTask,

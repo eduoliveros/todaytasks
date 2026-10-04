@@ -18,7 +18,7 @@
   <!-- Barra superior: logo + switcher + pestañas -->
   <div class="topbar-title-row">
     <div class="brand">
-      <h1><span data-i18n="app.title">TodayTasks</span> <span class="app-version">v1.117</span></h1>
+      <h1><span data-i18n="app.title">TodayTasks</span> <span class="app-version">v1.118</span></h1>
       <span class="db-status-badge" id="appModeLabel" data-i18n="app.localDbBadge" title="Tipo de base de datos en uso">💾 local · persistente</span>
       <button type="button" class="topbar-global-search-btn" id="globalSearchBtn" onclick="app.openCommandPalette()" data-i18n-title="globalSearch.openTooltip" title="Buscar en todos los días (Ctrl+K)">
         <span class="search-btn-icon" aria-hidden="true">🔍</span>
@@ -288,6 +288,17 @@
         <span class="task-search-icon" aria-hidden="true">🔍</span>
         <input type="text" id="taskSearchInput" class="task-search-input" data-i18n-placeholder="tasks.searchPlaceholder" data-i18n-title="tasks.searchTooltip" placeholder="Buscar tareas..." autocomplete="off" spellcheck="false" title="Buscar en tareas activas y completadas del día (Atajo: /)">
         <button type="button" id="taskSearchClearBtn" class="task-search-clear-btn" data-i18n-title="tasks.searchClearTooltip" data-i18n-aria="tasks.searchClearAria" title="Limpiar búsqueda" style="display:none;" aria-label="Limpiar búsqueda">✕</button>
+      </div>
+      <div class="task-list-sort-bar" id="taskListSortBar">
+        <span class="task-list-sort-label" data-i18n="tasks.sortLabel">Ver por:</span>
+        <div class="task-sort-toggle-group" role="group" aria-label="Modo de ordenación de tareas">
+          <button type="button" class="task-sort-btn active" id="taskSortPriorityBtn" onclick="app.setTaskSortMode('priority')" data-i18n-title="tasks.sortPriorityTooltip" title="Ordenar por prioridad y orden manual">
+            <span>⭐</span> <span data-i18n="tasks.sortPriority">Prioridad</span>
+          </button>
+          <button type="button" class="task-sort-btn" id="taskSortChronoBtn" onclick="app.setTaskSortMode('chronological')" data-i18n-title="tasks.sortChronoTooltip" title="Ordenar según el horario planificado del día">
+            <span>⏰</span> <span data-i18n="tasks.sortChronological">Cronológico</span>
+          </button>
+        </div>
       </div>
       <div id="tasksAutoMoveBanner" style="display:none;margin-bottom:12px;"></div>
       <div id="tasksList"></div>
