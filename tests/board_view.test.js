@@ -98,4 +98,21 @@ describe('TodayTasksBoardView - Internacionalización (i18n)', () => {
     expect(boardEl.textContent).toContain('The workday has ended.');
     setLocale('es');
   });
+
+  it('ordena las tareas pendientes de la agenda cronológicamente según la planificación', () => {
+    state.tasks = [
+      { id: 't-afternoon', title: 'Tarea Tarde 16:00', planned: 30, status: 'pending', order: 1, startAfter: 960 },
+      { id: 't-morning', title: 'Tarea Mañana 09:00', planned: 45, status: 'pending', order: 2 }
+    ];
+    state.planningMode = true;
+    const schedule = computeSchedule(state, () => 540);
+
+    boardView.renderSummary(schedule);
+
+    const pendingEl = document.getElementById('pendingList');
+    const rows = pendingEl.querySelectorAll('.summary-row');
+    expect(rows.length).toBe(2);
+    expect(rows[0].textContent).toContain('Tarea Mañana 09:00');
+    expect(rows[1].textContent).toContain('Tarea Tarde 16:00');
+  });
 });

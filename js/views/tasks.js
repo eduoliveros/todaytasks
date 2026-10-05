@@ -8,6 +8,7 @@ import {
 import { escapeHtml, escapeAttr, renderNotesMarkdown } from '../ui.js';
 import { t } from '../i18n.js';
 import { createTouchDragEngine } from '../app/touch-drag.js';
+import { sortTasksChronologically } from '../scheduler.js';
 
 export function TodayTasksTasksView(ctx){
   const { getState, getTaskEdit } = ctx;
@@ -563,19 +564,14 @@ export function TodayTasksTasksView(ctx){
       return { isFirstTask, isDeferred };
     };
 
-    const active = (state.tasks || []).filter(t => t.status !== "completed")
-                               .sort((a,b)=>{
-                                 if(a.status==="running") return -1;
-                                 if(b.status==="running") return 1;
-                                 if(isChrono){
-                                   const segsA = (schedule && schedule.segmentsByTask && schedule.segmentsByTask[a.id]) || [];
-                                   const segsB = (schedule && schedule.segmentsByTask && schedule.segmentsByTask[b.id]) || [];
-                                   const startA = segsA.length > 0 ? segsA[0].start : Infinity;
-                                   const startB = segsB.length > 0 ? segsB[0].start : Infinity;
-                                   if(startA !== startB) return startA - startB;
-                                 }
-                                 return a.order-b.order;
-                               });
+    const activeTasks = (state.tasks || []).filter(t => t.status !== "completed");
+    const active = isChrono
+      ? sortTasksChronologically(activeTasks, schedule)
+      : activeTasks.sort((a,b)=>{
+          if(a.status==="running") return -1;
+          if(b.status==="running") return 1;
+          return a.order-b.order;
+        });
 
     if(!searchQuery){
       if(active.length === 0){

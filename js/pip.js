@@ -1,5 +1,6 @@
 /* js/pip.js — Módulo Document Picture-in-Picture (PiP) para TodayTasks */
 import { nowMinutes, fmt, fmtDur, getTaskElapsed } from './utils.js';
+import { computeSchedule, sortTasksChronologically } from './scheduler.js';
 import { escapeHtml, escapeAttr } from './ui.js';
 import { t } from './i18n.js';
 
@@ -174,6 +175,23 @@ export function TodayTasksPiP(ctx) {
     }
   }
 
+  function getSchedule(state) {
+    if (ctx && typeof ctx.computeSchedule === 'function') {
+      try {
+        return ctx.computeSchedule();
+      } catch (e) {
+        console.warn('Error in ctx.computeSchedule:', e);
+      }
+    }
+    return computeSchedule(state, nowMinutes);
+  }
+
+  function getChronologicalUncompletedTasks(state) {
+    const uncompleted = (state.tasks || []).filter(t => t && t.status !== 'completed');
+    const schedule = getSchedule(state);
+    return sortTasksChronologically(uncompleted, schedule);
+  }
+
   /* ---------------- Renderizado y Lógica del Widget ---------------- */
 
   function render() {
@@ -197,10 +215,8 @@ export function TodayTasksPiP(ctx) {
       return;
     }
 
-    // 3. Si no hay ninguna en marcha, obtener la primera tarea no completada según el orden del tablero
-    const uncompletedTasks = (state.tasks || [])
-      .filter(t => t.status !== 'completed')
-      .sort((a, b) => (a.order || 0) - (b.order || 0));
+    // 3. Si no hay ninguna en marcha, obtener la primera tarea no completada según la planificación cronológica
+    const uncompletedTasks = getChronologicalUncompletedTasks(state);
     const firstTask = uncompletedTasks.length > 0 ? uncompletedTasks[0] : null;
 
     if (firstTask && firstTask.status === 'paused') {
@@ -428,9 +444,7 @@ export function TodayTasksPiP(ctx) {
     const pipDoc = pipWindow.document;
     let nextTask = firstTask;
     if (nextTask === null || nextTask === undefined) {
-      const pendingTasks = (state.tasks || [])
-        .filter(task => task.status !== 'completed')
-        .sort((a, b) => (a.order || 0) - (b.order || 0));
+      const pendingTasks = getChronologicalUncompletedTasks(state);
       nextTask = pendingTasks.length > 0 ? pendingTasks[0] : null;
     }
 

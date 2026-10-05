@@ -1,7 +1,7 @@
 /* views/board.js — Tablero visual (timeline) y resumen del día */
 import { nowMinutes, fmt, fmtDur, fmtRemaining, getTaskElapsed, getTodayStr, formatDateFriendly } from '../utils.js';
 import { escapeHtml, escapeAttr } from '../ui.js';
-import { computeMeetingClusters } from '../scheduler.js';
+import { computeMeetingClusters, sortTasksChronologically } from '../scheduler.js';
 import { t } from '../i18n.js';
 
 export function computeCalendarLayout(events, calStartMin, PX_PER_MIN) {
@@ -336,11 +336,10 @@ export function TodayTasksBoardView(ctx){
     const state = getState();
     const meetings = [...(state.meetings || [])].sort((a,b)=>a.start-b.start);
     const completed = (state.tasks || []).filter(t=>t.status==="completed").sort((a,b)=>a.completedAt-b.completedAt);
-    const pending = (state.tasks || []).filter(t=>t.status!=="completed").sort((a,b)=>{
-      if(a.status === "running") return -1;
-      if(b.status === "running") return 1;
-      return a.order - b.order;
-    });
+    const pending = sortTasksChronologically(
+      (state.tasks || []).filter(t => t.status !== "completed"),
+      schedule
+    );
 
     const meetingsEl = document.getElementById("meetingsSummaryList");
     if (meetingsEl) {

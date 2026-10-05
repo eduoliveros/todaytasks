@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TodayTasksScheduler, computeSchedule, blockedIntervals } from '../js/scheduler.js';
+import { TodayTasksScheduler, computeSchedule, blockedIntervals, sortTasksChronologically } from '../js/scheduler.js';
 import { defaultState } from '../js/state.js';
 
 describe('TodayTasksScheduler (ES Module)', () => {
@@ -141,6 +141,60 @@ describe('TodayTasksScheduler (ES Module)', () => {
     const schedule = computeSchedule(state, mockNowMins);
 
     expect(schedule.overflowIds.has('t_run')).toBe(true);
+  });
+
+  describe('sortTasksChronologically', () => {
+    it('exporta sortTasksChronologically en el módulo y en el objeto TodayTasksScheduler', () => {
+      expect(typeof sortTasksChronologically).toBe('function');
+      expect(typeof TodayTasksScheduler.sortTasksChronologically).toBe('function');
+    });
+
+    it('sitúa la tarea en ejecución (running) al principio de la lista', () => {
+      const tasks = [
+        { id: 1, title: 'Tarea pendiente', status: 'pending', order: 1 },
+        { id: 2, title: 'Tarea en ejecución', status: 'running', order: 2 }
+      ];
+      const schedule = {
+        segmentsByTask: {
+          1: [{ start: 540, end: 600 }],
+          2: [{ start: 570, end: 630 }]
+        }
+      };
+
+      const sorted = sortTasksChronologically(tasks, schedule);
+      expect(sorted[0].id).toBe(2);
+      expect(sorted[1].id).toBe(1);
+    });
+
+    it('ordena tareas pendientes según el inicio de su primer segmento planificado', () => {
+      const tasks = [
+        { id: 't_late', title: 'Tarea Tarde', status: 'pending', order: 1 },
+        { id: 't_early', title: 'Tarea Temprana', status: 'pending', order: 2 }
+      ];
+      const schedule = {
+        segmentsByTask: {
+          t_late: [{ start: 960, end: 990 }],
+          t_early: [{ start: 540, end: 585 }]
+        }
+      };
+
+      const sorted = sortTasksChronologically(tasks, schedule);
+      expect(sorted[0].id).toBe('t_early');
+      expect(sorted[1].id).toBe('t_late');
+    });
+
+    it('desempata por orden de prioridad cuando tienen el mismo inicio o no están planificadas', () => {
+      const tasks = [
+        { id: 't2', title: 'Tarea 2', status: 'pending', order: 2 },
+        { id: 't1', title: 'Tarea 1', status: 'pending', order: 1 }
+      ];
+      // Ambas sin segmentos planificados
+      const schedule = { segmentsByTask: {} };
+
+      const sorted = sortTasksChronologically(tasks, schedule);
+      expect(sorted[0].id).toBe('t1');
+      expect(sorted[1].id).toBe('t2');
+    });
   });
 });
 

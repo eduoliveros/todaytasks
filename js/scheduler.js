@@ -270,7 +270,31 @@ export function computeSchedule(state, nowMinutes) {
   return { segmentsByTask, overflowIds, blocked, breaks, now, viewStart };
 }
 
-export const TodayTasksScheduler = { computeSchedule, blockedIntervals, computeMeetingClusters };
+/**
+ * Ordena tareas cronológicamente según la planificación generada (schedule.segmentsByTask).
+ * Las tareas en curso (running) tienen máxima prioridad y se sitúan al principio.
+ * Para tareas pendientes o en pausa, se utiliza el inicio del primer segmento planificado.
+ * Si no están planificadas o tienen el mismo inicio, se desempata por su orden de prioridad (order).
+ */
+export function sortTasksChronologically(tasks, schedule) {
+  if (!Array.isArray(tasks) || tasks.length <= 1) return tasks || [];
+  return [...tasks].sort((a, b) => {
+    if (a.status === "running") return -1;
+    if (b.status === "running") return 1;
+
+    const segsA = (schedule && schedule.segmentsByTask && (schedule.segmentsByTask[a.id] || schedule.segmentsByTask[String(a.id)])) || [];
+    const segsB = (schedule && schedule.segmentsByTask && (schedule.segmentsByTask[b.id] || schedule.segmentsByTask[String(b.id)])) || [];
+    const startA = segsA.length > 0 ? segsA[0].start : Infinity;
+    const startB = segsB.length > 0 ? segsB[0].start : Infinity;
+
+    if (startA !== startB) {
+      return startA - startB;
+    }
+    return (a.order || 0) - (b.order || 0);
+  });
+}
+
+export const TodayTasksScheduler = { computeSchedule, blockedIntervals, computeMeetingClusters, sortTasksChronologically };
 
 export default TodayTasksScheduler;
 

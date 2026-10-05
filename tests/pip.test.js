@@ -190,6 +190,69 @@ describe('TodayTasksPiP (Document Picture-in-Picture Mini-Widget)', () => {
     expect(mockActions.startTask).toHaveBeenCalledWith('task-next');
   });
 
+  it('selecciona la primera tarea cronológica en la planificación en lugar de la primera por prioridad (order)', async () => {
+    state.workStart = 540;
+    state.planningMode = true;
+    state.tasks = [
+      { id: 'task-priority-high', title: 'Tarea Prioritaria pero Tarde', status: 'pending', planned: 30, order: 1, startAfter: 960 },
+      { id: 'task-chrono-first', title: 'Tarea Temprana Planificada', status: 'pending', planned: 45, order: 2 }
+    ];
+
+    const pip = TodayTasksPiP(ctx);
+    await pip.openPiP();
+
+    const body = mockPipWindow.document.body;
+    expect(body.textContent).toContain('Tarea Temprana Planificada');
+    expect(body.textContent).not.toContain('Tarea Prioritaria pero Tarde');
+
+    const startBtn = mockPipWindow.document.getElementById('pipStartNextBtn');
+    expect(startBtn).toBeTruthy();
+    startBtn.click();
+    expect(mockActions.startTask).toHaveBeenCalledWith('task-chrono-first');
+  });
+
+  it('selecciona la tarea previa requerida por dependencias como primera cronológica aunque tenga peor order', async () => {
+    state.workStart = 540;
+    state.planningMode = true;
+    state.tasks = [
+      { id: 'task-depends', title: 'Tarea Principal Bloqueada', status: 'pending', planned: 30, order: 1, dependsOn: ['task-dependency'] },
+      { id: 'task-dependency', title: 'Tarea Bloqueante Prerrequisito', status: 'pending', planned: 45, order: 2 }
+    ];
+
+    const pip = TodayTasksPiP(ctx);
+    await pip.openPiP();
+
+    const body = mockPipWindow.document.body;
+    expect(body.textContent).toContain('Tarea Bloqueante Prerrequisito');
+    expect(body.textContent).not.toContain('Tarea Principal Bloqueada');
+
+    const startBtn = mockPipWindow.document.getElementById('pipStartNextBtn');
+    expect(startBtn).toBeTruthy();
+    startBtn.click();
+    expect(mockActions.startTask).toHaveBeenCalledWith('task-dependency');
+  });
+
+  it('no muestra una tarea pausada si cronológicamente en la planificación hay otra tarea anterior', async () => {
+    state.workStart = 540;
+    state.planningMode = true;
+    state.tasks = [
+      { id: 'task-paused-later', title: 'Tarea Pausada de la Tarde', status: 'paused', planned: 30, order: 1, elapsedBefore: 10, startAfter: 960 },
+      { id: 'task-pending-morning', title: 'Tarea Pendiente de la Mañana', status: 'pending', planned: 45, order: 2 }
+    ];
+
+    const pip = TodayTasksPiP(ctx);
+    await pip.openPiP();
+
+    const body = mockPipWindow.document.body;
+    expect(body.textContent).toContain('Tarea Pendiente de la Mañana');
+    expect(body.textContent).not.toContain('Tarea Pausada de la Tarde');
+
+    const startBtn = mockPipWindow.document.getElementById('pipStartNextBtn');
+    expect(startBtn).toBeTruthy();
+    startBtn.click();
+    expect(mockActions.startTask).toHaveBeenCalledWith('task-pending-morning');
+  });
+
   it('selecciona la primera tarea según su orden (order) en modo reposo aunque el array no esté ordenado físicamente', async () => {
     state.tasks = [
       { id: 'task-afternoon', title: 'Tarea tarde 16:25', status: 'pending', planned: 30, order: 5 },
