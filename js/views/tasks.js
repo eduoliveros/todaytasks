@@ -372,6 +372,9 @@ export function TodayTasksTasksView(ctx){
               ${splitNote}
             </div>
           </div>
+          ${task.status === "running" ? `
+            <a href="#/task/${escapeAttr(task.id)}" class="task-compact-focus-btn" title="${escapeAttr(t("tasks.btnFocusTooltip"))}" onclick="event.stopPropagation()">${t("tasks.btnFocusMobile")}</a>
+          ` : ""}
           <div style="display:flex;align-items:center;gap:2px;">
             <button class="icon-btn star-btn ${task.featured ? 'is-featured' : ''}" title="${escapeAttr(task.featured ? t('tasks.unstarTooltip') : t('tasks.starTooltip'))}" onclick="app.toggleTaskFeatured('${escapeAttr(task.id)}')">${task.featured ? '⭐' : '☆'}</button>
             <button type="button" class="icon-btn copy-ref-btn" title="${escapeAttr(t('tasks.copyReferenceTooltip', { id: task.displayId || '' }))}" onclick="app.copyTaskReference('${escapeAttr(task.id)}', event)"><svg class="copy-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>

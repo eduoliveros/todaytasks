@@ -538,7 +538,23 @@ Implementado en `v1.119` ([ADR 026](./adr/026-adaptacion-movil-horario-semanal-y
 
 ---
 
-## 21. Directrices para Nuevos Desarrollos
+## 21. Acceso a Modo Enfoque (Focus) en Dispositivos Móviles (ADR 027)
+
+Implementado en `v1.120` ([ADR 027](./adr/027-acceso-modo-focus-movil.md)):
+
+* **Acceso Directo en Tarjeta Móvil (`.task-compact-focus-btn`):**
+  - En pantallas móviles (≤ 640px), la tarea activa (`status === "running"`) muestra un botón `🎯 Foco` en la fila superior de la tarjeta compacta.
+  - Oculto en escritorio mediante CSS (`display: none !important`), donde se sigue utilizando la barra de acciones clásica (`.task-actions .focus-link`).
+  - Al pulsarlo, `event.stopPropagation()` intercepta el toque evitando la apertura del bottom sheet y navega directamente a `#/task/:id` en 1 solo tap.
+* **Acceso desde el Task Detail Bottom Sheet (`.task-detail-btn-focus`):**
+  - Para tareas en ejecución (`running`) o en pausa (`paused`), el modal inferior de acciones (`js/app/task-detail-sheet.js`) incorpora un botón destacado `🎯 Modo Enfoque` ocupando el ancho completo (`grid-column: span 2`).
+  - La acción `case "focus"` en `handleAction()` cierra el sheet y actualiza `window.location.hash = "#/task/" + id`.
+* **Optimización de Pantalla Focus en Móvil (`css/focus.css`):**
+  - Se adapta el padding superior de `#view-task` a `20px 16px 40px` en terminales móviles para eliminar espacios muertos y presentar el temporizador circular SVG centrado y cómodo.
+
+---
+
+## 22. Directrices para Nuevos Desarrollos
 
 1. **Separación Estricta de Responsabilidades:**
    * Las vistas (`views/`) **no** deben mutar el estado directamente; deben delegar en las acciones (`actions/`).

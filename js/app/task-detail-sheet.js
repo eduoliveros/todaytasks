@@ -207,9 +207,11 @@ export function TodayTasksTaskDetailSheet(ctx) {
           html += `<button type="button" class="btn run task-detail-btn" onclick="app.taskDetailSheetAction('start')">${isBlockedTask ? '🔒 ' : ''}${t('tasks.btnStart')}</button>`;
           html += `<button type="button" class="btn done task-detail-btn" onclick="app.taskDetailSheetAction('complete')">${t('tasks.btnComplete')}</button>`;
         } else if (task.status === 'running') {
+          html += `<button type="button" class="btn task-detail-btn task-detail-btn-focus" onclick="app.taskDetailSheetAction('focus')">${t('tasks.btnFocusSheet')}</button>`;
           html += `<button type="button" class="btn pause task-detail-btn" onclick="app.taskDetailSheetAction('pause')">${t('tasks.btnPause')}</button>`;
           html += `<button type="button" class="btn done task-detail-btn" onclick="app.taskDetailSheetAction('complete')">${t('tasks.btnComplete')}</button>`;
         } else if (task.status === 'paused') {
+          html += `<button type="button" class="btn task-detail-btn task-detail-btn-focus" onclick="app.taskDetailSheetAction('focus')">${t('tasks.btnFocusSheet')}</button>`;
           html += `<button type="button" class="btn run task-detail-btn" onclick="app.taskDetailSheetAction('resume')">${isBlockedTask ? '🔒 ' : ''}${t('tasks.btnResume')}</button>`;
           html += `<button type="button" class="btn done task-detail-btn" onclick="app.taskDetailSheetAction('complete')">${t('tasks.btnComplete')}</button>`;
         }
@@ -309,6 +311,11 @@ export function TodayTasksTaskDetailSheet(ctx) {
     if (!window.app) return;
 
     switch (actionType) {
+      case 'focus':
+        if (typeof window !== 'undefined') {
+          window.location.hash = '#/task/' + id;
+        }
+        break;
       case 'start':
         if (window.app.startTask) window.app.startTask(id);
         break;

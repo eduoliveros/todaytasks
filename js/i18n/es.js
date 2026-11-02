@@ -522,6 +522,8 @@ export default {
   'tasks.btnMoveDown': 'Bajar',
   'tasks.btnFocus': '◎ Foco [F]',
   'tasks.btnFocusTooltip': "Abrir vista de foco (Tecla 'F')",
+  'tasks.btnFocusMobile': '🎯 Foco',
+  'tasks.btnFocusSheet': '🎯 Modo Enfoque',
   'tasks.btnPause': '⏸ Pausar',
   'tasks.btnResume': '▶ Reanudar',
   'tasks.tagCompleted': 'Completada',

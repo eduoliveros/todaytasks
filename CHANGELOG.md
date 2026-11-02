@@ -4,6 +4,15 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.120] - 2026-11-02
+
+### Añadido
+- **Acceso Completo al Modo Enfoque (Focus) en Dispositivos Móviles (Combo 1 + 2):**
+  - **Botón Directo en Tarjeta Activa (`.task-compact-focus-btn`):** En pantallas móviles (≤ 640px), la tarea en ejecución (`running`) muestra un botón táctil destacado `🎯 Foco` en la fila superior, permitiendo acceder a la pantalla de enfoque a pantalla completa en 1 solo toque directamente desde el tablero principal sin abrir menús intermedios.
+  - **Botón de Modo Enfoque en Bottom Sheet (`.task-detail-btn-focus`):** Al abrir el detalle de cualquier tarea en curso (`running`) o pausada (`paused`) en el *Task Detail Bottom Sheet*, se incorpora un botón prominente `🎯 Modo Enfoque` a ancho completo que navega inmediatamente a `#/task/:id`.
+  - **Optimización de Vista Focus en Móvil:** En `css/focus.css`, se adaptó el espaciado y padding del contenedor de enfoque para dispositivos móviles (≤ 640px), evitando scrolls y aprovechando al máximo la pantalla vertical.
+  - **Internacionalización y Pruebas:** Nuevas claves traducidas `tasks.btnFocusMobile` y `tasks.btnFocusSheet` en español e inglés, con suite de pruebas unitarias dedicada en `tests/mobile_focus.test.js` y documentación en el ADR 027.
+
 ## [1.119] - 2026-11-02
 
 ### Añadido

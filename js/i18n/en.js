@@ -522,6 +522,8 @@ export default {
   'tasks.btnMoveDown': 'Move down',
   'tasks.btnFocus': '◎ Focus [F]',
   'tasks.btnFocusTooltip': "Open focus view (Key 'F')",
+  'tasks.btnFocusMobile': '🎯 Focus',
+  'tasks.btnFocusSheet': '🎯 Focus Mode',
   'tasks.btnPause': '⏸ Pause',
   'tasks.btnResume': '▶ Resume',
   'tasks.tagCompleted': 'Completed',

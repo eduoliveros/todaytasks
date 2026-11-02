@@ -236,3 +236,18 @@
   color: var(--ink-soft);
   opacity: 0.5;
 }
+
+/* Optimización móvil para pantalla de Focus */
+@media (max-width: 640px) {
+  #view-task {
+    padding: 20px 16px 40px;
+    min-height: calc(100vh - 60px);
+  }
+  .focus-view {
+    gap: 20px;
+  }
+  .focus-actions .btn {
+    padding: 12px 24px;
+    font-size: 14px;
+  }
+}

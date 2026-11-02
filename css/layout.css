@@ -1489,6 +1489,11 @@ footer {
   text-align: center; color: var(--ink-soft); font-size: 12px; padding: 10px 0 30px;
 }
 
+/* Botón compacto de Focus en tarjeta (oculto en desktop) */
+.task-compact-focus-btn {
+  display: none !important;
+}
+
 /* =========================================================
    Vista Móvil Compacta para Tareas (Fase 1 - max-width: 640px)
    ========================================================= */
@@ -1556,6 +1561,32 @@ footer {
   /* Asegurar que cuando se edita la tarea, el formulario y sus acciones se mantengan visibles */
   .task-item.editing .task-actions {
     display: flex !important;
+  }
+
+  /* Botón directo de Focus en la tarjeta de tarea activa */
+  .task-item.running .task-compact-focus-btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 3px 8px;
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.2;
+    border-radius: 6px;
+    background: var(--primary, #4F46E5);
+    color: #ffffff;
+    text-decoration: none;
+    flex-shrink: 0;
+    touch-action: manipulation;
+    border: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  }
+
+  .task-item.running .task-compact-focus-btn:hover,
+  .task-item.running .task-compact-focus-btn:active {
+    background: #4338CA;
+    color: #ffffff;
   }
 }
 
@@ -1715,6 +1746,21 @@ footer {
   cursor: pointer;
   box-sizing: border-box;
   touch-action: manipulation;
+}
+
+.task-detail-btn-focus {
+  grid-column: span 2;
+  background: var(--primary, #4F46E5);
+  color: #ffffff;
+  font-weight: 700;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.25);
+}
+
+.task-detail-btn-focus:hover,
+.task-detail-btn-focus:active {
+  background: #4338CA;
+  color: #ffffff;
 }
 
 .task-detail-section {
