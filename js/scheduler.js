@@ -294,7 +294,115 @@ export function sortTasksChronologically(tasks, schedule) {
   });
 }
 
-export const TodayTasksScheduler = { computeSchedule, blockedIntervals, computeMeetingClusters, sortTasksChronologically };
+/**
+ * Proyecta un feed cronológico unificado de tareas, reuniones, buffers y descansos,
+ * garantizando una secuencia temporal matemática idéntica al tablero del calendar.
+ * Las tareas divididas en varios tramos generan un elemento por cada segmento planificado.
+ */
+export function buildChronologicalFeed(state, schedule) {
+  if (!state) return [];
+  const sched = schedule || computeSchedule(state, 540);
+  const tasks = Array.isArray(state.tasks) ? state.tasks.filter(t => t && t.status !== "completed") : [];
+  const meetings = Array.isArray(state.meetings) ? state.meetings : [];
+  const segmentsByTask = (sched && sched.segmentsByTask) ? sched.segmentsByTask : {};
+  const overflowIds = (sched && sched.overflowIds) ? sched.overflowIds : new Set();
+  const autoBreakEnabled = state.autoBreakEnabled !== false;
+  const clusters = computeMeetingClusters(meetings, autoBreakEnabled);
+  const breaks = (sched && Array.isArray(sched.breaks)) ? sched.breaks : [];
+  const workEnd = (state.workEnd !== null && state.workEnd !== undefined) ? state.workEnd : 18 * 60;
+
+  const items = [];
+  const unassignedTasks = [];
+
+  // 1. Tareas y sus segmentos calculados
+  for (const t of tasks) {
+    const segs = segmentsByTask[t.id] || segmentsByTask[String(t.id)] || [];
+    if (segs.length === 0) {
+      unassignedTasks.push(t);
+      continue;
+    }
+    const totalParts = segs.length;
+    segs.forEach((s, partIndex) => {
+      const isOverflow = s.end > workEnd || overflowIds.has(t.id) || overflowIds.has(String(t.id));
+      items.push({
+        type: "task",
+        start: s.start,
+        end: s.end,
+        task: t,
+        partIndex,
+        totalParts,
+        segment: s,
+        isOverflow,
+        order: t.order || 0,
+        status: t.status
+      });
+    });
+  }
+
+  // 2. Reuniones
+  for (const m of meetings) {
+    items.push({
+      type: "meeting",
+      start: m.start,
+      end: m.end,
+      meeting: m
+    });
+  }
+
+  // 3. Buffers post-reunión
+  for (const c of clusters) {
+    if (c.breakDuration > 0) {
+      items.push({
+        type: "buffer",
+        start: c.end,
+        end: c.blockedEnd,
+        duration: c.breakDuration,
+        cluster: c
+      });
+    }
+  }
+
+  // 4. Descansos automáticos (breaks)
+  for (const b of breaks) {
+    items.push({
+      type: "break",
+      start: b.start,
+      end: b.end,
+      duration: b.duration,
+      breakItem: b
+    });
+  }
+
+  // Ordenación idéntica al calendar (board.js: visible.sort((a,b) => a.start - b.start || a.end - b.end))
+  items.sort((a, b) => {
+    if (a.start !== b.start) return a.start - b.start;
+    if (a.type === "task" && a.status === "running") return -1;
+    if (b.type === "task" && b.status === "running") return 1;
+    if (a.end !== b.end) return a.end - b.end;
+    const typeOrder = { meeting: 0, buffer: 1, break: 2, task: 3 };
+    return (typeOrder[a.type] ?? 9) - (typeOrder[b.type] ?? 9);
+  });
+
+  // Tareas sin tramos asignados van al final del feed
+  for (const t of unassignedTasks) {
+    items.push({
+      type: "task",
+      start: Infinity,
+      end: Infinity,
+      task: t,
+      partIndex: 0,
+      totalParts: 1,
+      segment: null,
+      isOverflow: true,
+      order: t.order || 0,
+      status: t.status
+    });
+  }
+
+  return items;
+}
+
+export const TodayTasksScheduler = { computeSchedule, blockedIntervals, computeMeetingClusters, sortTasksChronologically, buildChronologicalFeed };
 
 export default TodayTasksScheduler;
 

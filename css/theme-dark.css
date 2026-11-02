@@ -849,3 +849,27 @@
   background: rgba(239, 68, 68, 0.16);
   opacity: 0.85;
 }
+
+/* --- Vista Cronológica Unificada / Dark Theme --- */
+[data-theme="dark"] .chrono-timeline-feed::before {
+  background: var(--line);
+}
+[data-theme="dark"] .tag-meeting-badge {
+  background: rgba(99, 102, 241, 0.22) !important;
+  color: #A5B4FC !important;
+  border-color: rgba(99, 102, 241, 0.4) !important;
+}
+[data-theme="dark"] .task-part-badge {
+  background: rgba(245, 158, 11, 0.2);
+  color: #FCD34D;
+  border-color: rgba(245, 158, 11, 0.4);
+}
+[data-theme="dark"] .chrono-timeline-buffer,
+[data-theme="dark"] .chrono-timeline-break {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--line);
+  color: var(--ink-soft);
+}
+[data-theme="dark"] .chrono-timeline-node::before {
+  background: var(--bg-card);
+}

@@ -8,10 +8,10 @@ import {
 import { escapeHtml, escapeAttr, renderNotesMarkdown } from '../ui.js';
 import { t } from '../i18n.js';
 import { createTouchDragEngine } from '../app/touch-drag.js';
-import { sortTasksChronologically } from '../scheduler.js';
+import { sortTasksChronologically, buildChronologicalFeed } from '../scheduler.js';
 
 export function TodayTasksTasksView(ctx){
-  const { getState, getTaskEdit } = ctx;
+  const { getState, getTaskEdit, getMeetingEdit } = ctx;
   const expandedNotesTasks = new Set();
 
   function isTaskNotesExpanded(id) {
@@ -112,7 +112,7 @@ export function TodayTasksTasksView(ctx){
     }
   }
 
-  function renderTaskItem(task, schedule, taskEdit, options = {}){
+  function renderTaskItem(task, schedule, taskEdit, options = {}, segmentInfo = null){
     const urgencyKey = task.urgency || DEFAULT_URGENCY;
     const urgencyInfo = URGENCY_LEVELS[urgencyKey] || URGENCY_LEVELS[DEFAULT_URGENCY];
 
@@ -208,10 +208,21 @@ export function TodayTasksTasksView(ctx){
       trClass = "tr-running";
       const rem = fmtRemaining(plannedEnd, nowMinutes());
       remainingChip = `<span class="remaining-chip ${rem.overrun ? 'overrun' : ''}">${escapeHtml(rem.text)}</span>`;
+    } else if(segmentInfo && segmentInfo.start !== Infinity){
+      startVal = fmt(segmentInfo.start);
+      endVal = fmt(segmentInfo.end);
+      trClass = task.status === "paused" ? "tr-paused" : "tr-pending";
+      if(segmentInfo.totalParts > 1){
+        if(segmentInfo.partIndex === 0){
+          splitNote = `<div class="meta split-info" style="color:#B45309;">⚠️ ${t('tasks.splitPartNext', { time: fmt(segmentInfo.end) })}</div>`;
+        } else {
+          splitNote = `<div class="meta split-info" style="color:var(--ink-soft);">↳ ${t('tasks.splitPartContinuation', { time: fmt(segmentInfo.start) })}</div>`;
+        }
+      }
     } else if(segs.length > 0){
       startVal = fmt(segs[0].start);
       endVal = fmt(segs[segs.length-1].end);
-      trClass = "tr-pending";
+      trClass = task.status === "paused" ? "tr-paused" : "tr-pending";
       if(segs.length > 1){
         const parts = segs.map(s => `${fmt(s.start)}-${fmt(s.end)}`).join(", ");
         splitNote = `<div class="meta" style="color:#B45309">${t('tasks.splitByMeetings', { parts })}</div>`;
@@ -346,9 +357,18 @@ export function TodayTasksTasksView(ctx){
     }
 
     const blockedClass = isBlocked ? 'is-blocked' : '';
+    const partBadge = (segmentInfo && segmentInfo.totalParts > 1)
+      ? `<span class="task-part-badge" title="${escapeAttr(t('tasks.partBadgeTooltip', { current: segmentInfo.partIndex + 1, total: segmentInfo.totalParts }))}">🧩 ${t('tasks.partBadge', { current: segmentInfo.partIndex + 1, total: segmentInfo.totalParts })}</span>`
+      : '';
+    const cardId = (segmentInfo && segmentInfo.partIndex > 0)
+      ? `task-item-${escapeAttr(task.id)}-part-${segmentInfo.partIndex + 1}`
+      : `task-item-${escapeAttr(task.id)}`;
+    const splitAttr = (segmentInfo && segmentInfo.totalParts > 1)
+      ? ` data-task-split-id="${escapeAttr(task.id)}"`
+      : '';
 
     return `
-      <div class="item task-item ${task.status} ${featuredClass} ${overflowClass} ${blockedClass} ${firstTaskClass} ${deferredClass}" id="task-item-${escapeAttr(task.id)}" data-task-id="${escapeAttr(task.id)}" onclick="if(window.app && window.app.handleTaskMobileClick) window.app.handleTaskMobileClick('${escapeAttr(task.id)}', event)" ondblclick="app.startEditTask('${escapeAttr(task.id)}')" ${dragAttrs} ${touchAttrs}>
+      <div class="item task-item ${task.status} ${featuredClass} ${overflowClass} ${blockedClass} ${firstTaskClass} ${deferredClass}" id="${cardId}" data-task-id="${escapeAttr(task.id)}"${splitAttr} onclick="if(window.app && window.app.handleTaskMobileClick) window.app.handleTaskMobileClick('${escapeAttr(task.id)}', event)" ondblclick="app.startEditTask('${escapeAttr(task.id)}')" ${dragAttrs} ${touchAttrs}>
         <div class="top">
           <div style="display:flex;align-items:flex-start;gap:6px;flex:1;min-width:0;">
             ${dragHandle}
@@ -356,6 +376,7 @@ export function TodayTasksTasksView(ctx){
               <div class="title">${task.displayId ? `<button type="button" class="task-id-badge" onclick="app.copyTaskId('${escapeAttr(task.id)}', event)" title="${escapeAttr(t('tasks.copyIdTooltip', { id: task.displayId }))}">${escapeHtml(task.displayId)}</button>` : ''}${formatTitleWithTags(task.title, 'app.filterByTag')}</div>
               <div class="time-range ${trClass}">
                 ${urgencyPill}
+                ${partBadge}
                 ${startAfterPill}
                 ${notesPill}
                 ${depBadges}
@@ -488,6 +509,98 @@ export function TodayTasksTasksView(ctx){
     `;
   }
 
+  function attachSplitHoverListeners(container) {
+    if (!container || container._hasSplitHoverListeners) return;
+    container._hasSplitHoverListeners = true;
+    container.addEventListener('mouseover', (e) => {
+      const card = e.target.closest('[data-task-split-id]');
+      if (!card) return;
+      const splitId = card.getAttribute('data-task-split-id');
+      container.querySelectorAll(`[data-task-split-id="${splitId}"]`).forEach(sibling => {
+        sibling.classList.add('split-partner-hover');
+      });
+    });
+    container.addEventListener('mouseout', (e) => {
+      const card = e.target.closest('[data-task-split-id]');
+      if (!card) return;
+      const splitId = card.getAttribute('data-task-split-id');
+      container.querySelectorAll(`[data-task-split-id="${splitId}"]`).forEach(sibling => {
+        sibling.classList.remove('split-partner-hover');
+      });
+    });
+  }
+
+  function renderChronoMeetingItem(m) {
+    const state = getState();
+    const meetingEdit = typeof getMeetingEdit === 'function' ? getMeetingEdit() : null;
+
+    if (meetingEdit && String(meetingEdit.id) === String(m.id)) {
+      const modeLabel = meetingEdit.mode === "instance" ? t('meetings.editModeInstance') : (meetingEdit.mode === "series" ? t('meetings.editModeSeries') : "");
+      return `
+        <div class="item chrono-meeting-item editing" id="chrono-meeting-item-${escapeAttr(m.id)}">
+          <div class="row" style="font-size:0.8rem;color:#4F46E5;font-weight:600;margin-bottom:4px;">
+            ${t('meetings.editingMeeting')}${modeLabel}
+          </div>
+          <div class="row">
+            <input type="text" value="${escapeAttr(meetingEdit.title)}" oninput="app.updateMeetingEditField('title', this.value)" placeholder="${escapeAttr(t('meetings.inputTitlePlaceholder'))}">
+          </div>
+          <div class="row">
+            <input type="time" value="${escapeAttr(meetingEdit.start)}" style="flex:1" oninput="app.updateMeetingEditField('start', this.value)">
+            <input type="time" value="${escapeAttr(meetingEdit.end)}" style="flex:1" oninput="app.updateMeetingEditField('end', this.value)">
+          </div>
+          <div class="task-actions">
+            <button class="btn small done" onclick="app.saveEditMeeting('${escapeAttr(m.id)}')">${t('action.save')}</button>
+            <button class="btn small secondary" onclick="app.cancelEditMeeting()">${t('action.cancel')}</button>
+          </div>
+        </div>
+      `;
+    }
+
+    let recurringTag = '';
+    if (m.isRecurring) {
+      let ruleTooltip = m.isModifiedInstance ? t('meetings.recurringTagModifiedTooltip') : t('meetings.recurringTagSeriesTooltip');
+      if (m.ruleId) {
+        const envKey = state.activeEnv || 'work';
+        const env = state.environments ? (state.environments[envKey] || state.environments.work) : null;
+        const rule = env && Array.isArray(env.recurringMeetings) ? env.recurringMeetings.find(r => String(r.id) === String(m.ruleId)) : null;
+        if (rule) {
+          const formatted = formatRecurrenceRule(rule);
+          ruleTooltip = t('meetings.recurringRuleTooltip', {
+            summary: formatted.summaryText,
+            range: formatted.dateRangeText,
+            mod: m.isModifiedInstance ? t('meetings.modifiedToday') : ''
+          });
+        }
+      }
+      recurringTag = `<button type="button" class="tag recurring-tag-btn" onclick="app.openRecurringInfoPopover('${escapeAttr(m.id)}', event, 'meeting')" title="${escapeAttr(ruleTooltip)}" aria-label="${escapeAttr(t('meetings.recurringTagAria'))}">${t('meetings.recurringTagLabel')}${m.isModifiedInstance ? ' ✎' : ''}</button>`;
+    }
+
+    return `
+      <div class="item chrono-meeting-item tr-meeting" id="chrono-meeting-item-${escapeAttr(m.id)}">
+        <div class="top">
+          <div style="display:flex;align-items:flex-start;gap:8px;flex:1;min-width:0;">
+            <span class="chrono-meeting-icon" aria-hidden="true">📅</span>
+            <div style="flex:1;min-width:0;">
+              <div class="title" style="color:var(--ink);">${escapeHtml(m.title)}</div>
+              <div class="time-range tr-meeting">
+                <span class="tag tag-meeting-badge">🟣 ${t('tasks.timelineMeetingTag')}</span>
+                ${fmt(m.start)}<span class="arrow">→</span>${fmt(m.end)}
+                <span class="tag mono" style="font-size:0.75rem;">${fmtDur(m.end - m.start)}</span>
+                ${recurringTag}
+                <span class="tag" style="margin-left:4px;background:rgba(79,70,229,0.08);color:#4F46E5;border-color:rgba(79,70,229,0.2);" title="${escapeAttr(t('meetings.alertsTooltip', { before: fmt(m.start-2), onTime: fmt(m.start) }))}">${t('meetings.alertsTag')}</span>
+              </div>
+              <div class="meta" style="color:var(--ink-soft);">${t('meetings.bufferUntil', { time: fmt(m.end+10) })}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:2px;">
+            <button class="icon-btn" title="${escapeAttr(t('action.edit'))}" onclick="app.startEditMeeting('${escapeAttr(m.id)}')">✎</button>
+            <button class="icon-btn" title="${escapeAttr(t('action.delete'))}" onclick="app.deleteMeeting('${escapeAttr(m.id)}')">✕</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   function renderTasks(schedule){
     if (typeof document === "undefined") return;
     const el = document.getElementById("tasksList");
@@ -577,10 +690,55 @@ export function TodayTasksTasksView(ctx){
         });
 
     if(!searchQuery){
-      if(active.length === 0){
-        el.innerHTML = `<div class="empty">${t('tasks.empty')}</div>`;
+      if (isChrono) {
+        const feed = buildChronologicalFeed(state, schedule);
+        if (feed.length === 0) {
+          el.innerHTML = `<div class="empty">${t('tasks.timelineEmpty') || t('tasks.empty')}</div>`;
+        } else {
+          el.innerHTML = `
+            <div class="chrono-timeline-feed">
+              ${feed.map(item => {
+                if (item.type === 'task') {
+                  const taskOpts = getTaskOptions(item.task);
+                  const segmentInfo = {
+                    partIndex: item.partIndex,
+                    totalParts: item.totalParts,
+                    start: item.start,
+                    end: item.end
+                  };
+                  const nodeClass = 'node-task node-task-' + item.task.status;
+                  return `<div class="chrono-timeline-node ${nodeClass}">${renderTaskItem(item.task, schedule, taskEdit, taskOpts, segmentInfo)}</div>`;
+                } else if (item.type === 'meeting') {
+                  return `<div class="chrono-timeline-node node-meeting">${renderChronoMeetingItem(item.meeting)}</div>`;
+                } else if (item.type === 'buffer') {
+                  return `
+                    <div class="chrono-timeline-node node-buffer">
+                      <div class="chrono-timeline-buffer">
+                        <span class="chrono-buffer-icon">☕</span>
+                        <span class="mono">${fmt(item.start)} → ${fmt(item.end)}</span> · <span>${t('tasks.timelineBuffer', { duration: item.duration })}</span>
+                      </div>
+                    </div>`;
+                } else if (item.type === 'break') {
+                  return `
+                    <div class="chrono-timeline-node node-break">
+                      <div class="chrono-timeline-break">
+                        <span class="chrono-break-icon">☕</span>
+                        <span class="mono">${fmt(item.start)} → ${fmt(item.end)}</span> · <span>${t('tasks.timelineBreak', { duration: item.duration })}</span>
+                      </div>
+                    </div>`;
+                }
+                return '';
+              }).join('')}
+            </div>
+          `;
+          attachSplitHoverListeners(el);
+        }
       } else {
-        el.innerHTML = active.map(t => renderTaskItem(t, schedule, taskEdit, getTaskOptions(t))).join("");
+        if(active.length === 0){
+          el.innerHTML = `<div class="empty">${t('tasks.empty')}</div>`;
+        } else {
+          el.innerHTML = active.map(t => renderTaskItem(t, schedule, taskEdit, getTaskOptions(t))).join("");
+        }
       }
     } else {
       // Búsqueda inteligente activa (título, urgencia y destacado)
@@ -645,7 +803,7 @@ export function TodayTasksTasksView(ctx){
     }
   }
 
-  return { renderTasks, renderTaskItem, renderCompletedSearchItem, toggleTaskNotes, isTaskNotesExpanded, handleTaskTouchStart, handleTaskTouchMove, handleTaskTouchEnd, handleTaskTouchCancel, handleTaskMouseDown };
+  return { renderTasks, renderTaskItem, renderChronoMeetingItem, renderCompletedSearchItem, toggleTaskNotes, isTaskNotesExpanded, handleTaskTouchStart, handleTaskTouchMove, handleTaskTouchEnd, handleTaskTouchCancel, handleTaskMouseDown };
 }
 
 export default TodayTasksTasksView;

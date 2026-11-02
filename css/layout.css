@@ -1103,6 +1103,129 @@ input:focus, button:focus, select:focus { outline: 2px solid var(--accent-pendin
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
+/* --- Vista Cronológica Unificada / Timeline Feed (Opción D) --- */
+.chrono-timeline-feed {
+  position: relative;
+  padding-left: 22px;
+  margin-top: 6px;
+}
+.chrono-timeline-feed::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 6px;
+  width: 2px;
+  background: var(--line);
+  border-radius: 2px;
+}
+.chrono-timeline-node {
+  position: relative;
+  margin-bottom: 10px;
+}
+.chrono-timeline-node::before {
+  content: "";
+  position: absolute;
+  left: -21px;
+  top: 13px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 2px solid #0284c7;
+  box-sizing: border-box;
+  z-index: 2;
+  transition: all 0.2s ease;
+}
+.chrono-timeline-node.node-task-running::before {
+  border-color: #10B981;
+  background: #10B981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+.chrono-timeline-node.node-task-paused::before {
+  border-color: #F59E0B;
+  background: var(--bg-card);
+}
+.chrono-timeline-node.node-task-pending::before {
+  border-color: #0284c7;
+  background: var(--bg-card);
+}
+.chrono-timeline-node.node-meeting::before {
+  border-color: #6366F1;
+  background: #6366F1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+.chrono-timeline-node.node-buffer::before,
+.chrono-timeline-node.node-break::before {
+  border-color: #F59E0B;
+  background: var(--bg-card);
+  width: 7px;
+  height: 7px;
+  left: -19px;
+  top: 8px;
+}
+
+/* Tarjeta de reunión en el timeline cronológico */
+.chrono-meeting-item {
+  border-left: 4px solid #6366F1 !important;
+  background: var(--bg-card);
+}
+.chrono-meeting-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  margin-top: 1px;
+}
+.tag-meeting-badge {
+  background: rgba(99, 102, 241, 0.12) !important;
+  color: #4F46E5 !important;
+  border-color: rgba(99, 102, 241, 0.25) !important;
+  font-weight: 600 !important;
+}
+
+/* Insignia de parte para tareas divididas */
+.task-part-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #B45309;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: "IBM Plex Mono", monospace;
+  vertical-align: middle;
+}
+.split-info {
+  margin-top: 3px;
+  font-size: 0.73rem;
+  font-family: "IBM Plex Mono", monospace;
+}
+.task-item[data-task-split-id].split-partner-hover {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+}
+
+/* Divisores de buffer y descansos en el feed */
+.chrono-timeline-buffer,
+.chrono-timeline-break {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px dashed var(--line);
+  font-family: "IBM Plex Mono", monospace;
+}
+.chrono-buffer-icon,
+.chrono-break-icon {
+  font-size: 0.85rem;
+}
+
 .task-form-urgency-wrap {
   display: inline-flex;
   align-items: center;

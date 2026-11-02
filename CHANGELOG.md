@@ -4,6 +4,21 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.122] - 2026-11-02
+
+### Añadido
+- **Vista Cronológica Unificada de Tareas y Reuniones (Opción D - Timeline Integrado):**
+  - **Paridad 1:1 con el Tablero del Calendar:** En la vista de tareas en modo *⏰ Cronológico* (`state.taskSortMode === "chronological"`), las tareas y las reuniones se presentan juntas en un feed temporal continuo, siguiendo exactamente el mismo orden secuencial proyectado en el tablero del calendario.
+  - **Motor Canónico `buildChronologicalFeed` (`js/scheduler.js`):** Función pura que unifica la proyección temporal de tareas (por tramos), reuniones, pausas automáticas y colchones post-reunión, garantizando consistencia matemática absoluta entre la lista y el timeline canvas.
+  - **Manejo de Tareas Divididas en Múltiples Tramos:** Si una tarea es fragmentada por reuniones intermedias o descansos, se desdobla en el feed en tarjetas físicas correspondientes a cada tramo con:
+    - Insignias de parte: `🧩 Parte X/Y` (`.task-part-badge`).
+    - Avisos contextuales: aviso de pausa por reunión (`⚠️ Se pausa a las HH:MM por reunión`) en el primer tramo y nota de continuidad (`↳ Continuación del tramo anterior`) en tramos subsiguientes.
+    - Sincronización visual al pasar el ratón (`split-partner-hover`): al posicionar el cursor sobre cualquier tramo de la tarea, se resaltan automáticamente todos los tramos hermanos.
+  - **Tarjetas Integradas de Reuniones en el Feed:** Cada reunión aparece intercalada en su hora exacta con borde distintivo índigo, etiqueta `🟣 Reunión`, duración, avisos automáticos y botones rápidos para editar o eliminar.
+  - **Divisores Temporales de Descansos y Buffers:** Bloques compactos indicativos (`☕ HH:MM → HH:MM`) que explican visualmente los intervalos de transición entre reuniones y tareas.
+  - **Estilos y Temas:** Nueva estructura CSS con riel temporal vertical (`.chrono-timeline-feed`) y nodos de estado (`.chrono-timeline-node`), con soporte completo para temas claro y oscuro (`[data-theme="dark"]`).
+  - **Registro de Arquitectura y Pruebas:** Documentación en el ADR 028 (`docs/adr/028-vista-cronologica-unificada-tareas-y-reuniones.md`) y suite de pruebas unitarias en `tests/chronological_feed.test.js`.
+
 ## [1.121] - 2026-11-02
 
 ### Añadido
