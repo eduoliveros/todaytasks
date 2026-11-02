@@ -43,6 +43,37 @@ describe('Chronological Feed & Timeline View (Opción D)', () => {
       expect(feed[1].end).toBe(630);
     });
 
+    it('no debe incluir reuniones pasadas (end <= now), solo actuales (start <= now < end) o futuras (start > now)', () => {
+      // Hora actual simulada: 11:00 (660)
+      const now = 660;
+      state.meetings = [
+        { id: 'm-past', title: 'Reunión Pasada', start: 540, end: 600 },    // 09:00 - 10:00 (terminó antes de now)
+        { id: 'm-curr', title: 'Reunión En Curso', start: 630, end: 690 },   // 10:30 - 11:30 (actualmente activa)
+        { id: 'm-fut', title: 'Reunión Futura', start: 720, end: 750 }      // 12:00 - 12:30 (futura)
+      ];
+      state.tasks = [
+        { id: 't1', title: 'Tarea Tarde', planned: 30, status: 'pending', order: 1 }
+      ];
+
+      const schedule = {
+        now: 660,
+        segmentsByTask: {
+          't1': [{ start: 750, end: 780 }]
+        },
+        overflowIds: new Set(),
+        breaks: []
+      };
+
+      const feed = buildChronologicalFeed(state, schedule);
+      const meetingIds = feed.filter(f => f.type === 'meeting').map(f => f.meeting.id);
+
+      // La reunión pasada (m-past) no debe aparecer
+      expect(meetingIds).not.toContain('m-past');
+      // Las reuniones actual (m-curr) y futura (m-fut) sí deben aparecer
+      expect(meetingIds).toContain('m-curr');
+      expect(meetingIds).toContain('m-fut');
+    });
+
     it('desdobla una tarea dividida por una reunión en múltiples partes (Parte 1, Reunión, Buffer, Parte 2)', () => {
       // Tarea de 90 min iniciada a las 09:30 (570) con reunión a las 10:30 (630 - 660)
       state.tasks = [
@@ -140,6 +171,33 @@ describe('Chronological Feed & Timeline View (Opción D)', () => {
       const meetingCards = container.querySelectorAll('.chrono-meeting-item');
       expect(meetingCards.length).toBe(1);
       expect(meetingCards[0].textContent).toContain('Reunión Sprint');
+    });
+
+    it('no renderiza reuniones pasadas en el feed cronológico DOM, solo actuales y futuras', () => {
+      state.taskSortMode = 'chronological';
+      state.tasks = [
+        { id: 't1', title: 'Tarea Tarde', planned: 30, status: 'pending', order: 1 }
+      ];
+      state.meetings = [
+        { id: 'm-past', title: 'Reunión Pasada', start: 540, end: 600 },
+        { id: 'm-fut', title: 'Reunión Futura', start: 720, end: 750 }
+      ];
+
+      const schedule = {
+        now: 660,
+        segmentsByTask: {
+          't1': [{ start: 660, end: 690 }]
+        },
+        overflowIds: new Set(),
+        breaks: []
+      };
+
+      tasksView.renderTasks(schedule);
+
+      const meetingCards = container.querySelectorAll('.chrono-meeting-item');
+      expect(meetingCards.length).toBe(1);
+      expect(meetingCards[0].textContent).toContain('Reunión Futura');
+      expect(container.textContent).not.toContain('Reunión Pasada');
     });
 
     it('en tareas divididas renderiza las insignias de parte [Parte 1/2] y [Parte 2/2] con horas correspondientes', () => {

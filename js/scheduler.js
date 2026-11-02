@@ -1,4 +1,4 @@
-import { findTaskInEnvironment } from './utils.js';
+import { findTaskInEnvironment, nowMinutes, getTodayStr } from './utils.js';
 
 export function computeMeetingClusters(meetings, autoBreakEnabled = true) {
   if (!meetings || meetings.length === 0) return [];
@@ -311,6 +311,14 @@ export function buildChronologicalFeed(state, schedule) {
   const breaks = (sched && Array.isArray(sched.breaks)) ? sched.breaks : [];
   const workEnd = (state.workEnd !== null && state.workEnd !== undefined) ? state.workEnd : 18 * 60;
 
+  const todayStr = typeof getTodayStr === "function" ? getTodayStr() : "";
+  const selectedDate = (state && state.selectedDate) ? state.selectedDate : todayStr;
+  const isPastDate = !!(todayStr && selectedDate < todayStr);
+  const isFutureDate = !!(todayStr && selectedDate > todayStr);
+  const nowVal = (sched && typeof sched.now === "number")
+    ? sched.now
+    : (typeof nowMinutes === "function" ? nowMinutes() : 0);
+
   const items = [];
   const unassignedTasks = [];
 
@@ -339,8 +347,10 @@ export function buildChronologicalFeed(state, schedule) {
     });
   }
 
-  // 2. Reuniones
+  // 2. Reuniones (solo actuales o futuras)
   for (const m of meetings) {
+    const isPast = !isFutureDate && (isPastDate || m.end <= nowVal);
+    if (isPast) continue;
     items.push({
       type: "meeting",
       start: m.start,
@@ -349,9 +359,11 @@ export function buildChronologicalFeed(state, schedule) {
     });
   }
 
-  // 3. Buffers post-reunión
+  // 3. Buffers post-reunión (solo si no han concluido)
   for (const c of clusters) {
     if (c.breakDuration > 0) {
+      const isPast = !isFutureDate && (isPastDate || c.blockedEnd <= nowVal);
+      if (isPast) continue;
       items.push({
         type: "buffer",
         start: c.end,
@@ -362,8 +374,10 @@ export function buildChronologicalFeed(state, schedule) {
     }
   }
 
-  // 4. Descansos automáticos (breaks)
+  // 4. Descansos automáticos (breaks) (solo si no han concluido)
   for (const b of breaks) {
+    const isPast = !isFutureDate && (isPastDate || b.end <= nowVal);
+    if (isPast) continue;
     items.push({
       type: "break",
       start: b.start,

@@ -691,7 +691,11 @@ export function TodayTasksTasksView(ctx){
 
     if(!searchQuery){
       if (isChrono) {
-        const feed = buildChronologicalFeed(state, schedule);
+        const currentNow = typeof ctx.nowMinutes === "function" ? ctx.nowMinutes() : nowMinutes();
+        const schedWithNow = (schedule && typeof schedule.now === "number")
+          ? schedule
+          : Object.assign({}, schedule || {}, { now: currentNow });
+        const feed = buildChronologicalFeed(state, schedWithNow);
         if (feed.length === 0) {
           el.innerHTML = `<div class="empty">${t('tasks.timelineEmpty') || t('tasks.empty')}</div>`;
         } else {
