@@ -1,4 +1,4 @@
-/* app/weekly-schedule.js — Horario semanal (modal y lógica de derivación) */
+/* app/weekly-schedule.js — Horario semanal (modal, lógica de derivación y presets móviles) */
 import { t } from '../i18n.js';
 
 export function TodayTasksWeeklySchedule(appCtx){
@@ -61,6 +61,95 @@ export function TodayTasksWeeklySchedule(appCtx){
              4:{start:9*60,end:18*60}, 5:{start:9*60,end:18*60}, 6:null, 7:null };
   }
 
+  function applyPreset(presetKey) {
+    const modal = document.getElementById('weeklyScheduleModal');
+    if (modal) {
+      if (presetKey === 'personal-summer') {
+        modal.dataset.syncWorkAllFree = 'true';
+      } else {
+        delete modal.dataset.syncWorkAllFree;
+      }
+    }
+
+    const newSched = {};
+    if (presetKey === 'work-standard') {
+      for (let d = 1; d <= 5; d++) newSched[d] = { start: 9 * 60, end: 18 * 60 };
+      newSched[6] = null;
+      newSched[7] = null;
+    } else if (presetKey === 'work-intensive') {
+      for (let d = 1; d <= 5; d++) newSched[d] = { start: 8 * 60, end: 15 * 60 };
+      newSched[6] = null;
+      newSched[7] = null;
+    } else if (presetKey === 'work-vacation') {
+      for (let d = 1; d <= 7; d++) newSched[d] = null;
+    } else if (presetKey === 'personal-summer') {
+      for (let d = 1; d <= 7; d++) newSched[d] = { start: 9 * 60, end: 23 * 60 };
+    } else if (presetKey === 'personal-afterwork') {
+      for (let d = 1; d <= 5; d++) newSched[d] = { start: 18 * 60, end: 23 * 60 };
+      newSched[6] = { start: 9 * 60, end: 23 * 60 };
+      newSched[7] = { start: 9 * 60, end: 23 * 60 };
+    } else if (presetKey === 'personal-nights') {
+      for (let d = 1; d <= 7; d++) newSched[d] = { start: 20 * 60, end: 23 * 60 };
+    }
+
+    renderWeeklyScheduleRows(newSched);
+
+    const presetsContainer = document.getElementById('weeklySchedulePresets');
+    if (presetsContainer) {
+      presetsContainer.querySelectorAll('.weekly-preset-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.preset === presetKey);
+      });
+    }
+  }
+
+  function renderWeeklySchedulePresets(envKey) {
+    if (typeof document === "undefined") return;
+    const presetsContainer = document.getElementById('weeklySchedulePresets');
+    if (!presetsContainer) return;
+
+    let presetsHtml = `
+      <div class="weekly-presets-header">
+        <span>${t('weeklySchedule.presetsTitle')}</span>
+      </div>
+      <div class="weekly-presets-list">
+    `;
+
+    if (envKey === 'personal') {
+      presetsHtml += `
+        <button type="button" class="weekly-preset-btn highlight" data-preset="personal-summer">
+          ${t('weeklySchedule.presetPersonalSummer')}
+        </button>
+        <button type="button" class="weekly-preset-btn" data-preset="personal-afterwork">
+          ${t('weeklySchedule.presetPersonalAfterwork')}
+        </button>
+        <button type="button" class="weekly-preset-btn" data-preset="personal-nights">
+          ${t('weeklySchedule.presetPersonalNights')}
+        </button>
+      `;
+    } else {
+      presetsHtml += `
+        <button type="button" class="weekly-preset-btn highlight" data-preset="work-standard">
+          ${t('weeklySchedule.presetWorkStandard')}
+        </button>
+        <button type="button" class="weekly-preset-btn" data-preset="work-intensive">
+          ${t('weeklySchedule.presetWorkIntensive')}
+        </button>
+        <button type="button" class="weekly-preset-btn" data-preset="work-vacation">
+          ${t('weeklySchedule.presetWorkVacation')}
+        </button>
+      `;
+    }
+
+    presetsHtml += `</div>`;
+    presetsContainer.innerHTML = presetsHtml;
+
+    presetsContainer.querySelectorAll('.weekly-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        applyPreset(btn.dataset.preset);
+      });
+    });
+  }
+
   function renderWeeklyScheduleRows(schedule) {
     if (typeof document === "undefined") return;
     const container = document.getElementById('weeklyScheduleRows');
@@ -73,16 +162,27 @@ export function TodayTasksWeeklySchedule(appCtx){
       const endVal = (!isFree && slot) ? fmt(slot.end) : '18:00';
       html += `
         <div class="weekly-schedule-row${isFree ? ' is-free' : ''}" data-day="${d}">
-          <span class="weekly-day-name">${getDayName(d)}</span>
-          <div class="weekly-time-inputs">
-            <input type="time" class="weekly-time-input weekly-start" value="${startVal}" ${isFree ? 'disabled' : ''}>
-            <span class="weekly-time-sep">→</span>
-            <input type="time" class="weekly-time-input weekly-end" value="${endVal}" ${isFree ? 'disabled' : ''}>
+          <div class="weekly-schedule-row-header">
+            <span class="weekly-day-name ws-day-name">${getDayName(d)}</span>
+            <label class="weekly-free-label ws-free-label">
+              <input type="checkbox" class="weekly-free-check" ${isFree ? 'checked' : ''}>
+              <span>${t('weeklySchedule.dayOffLabel')}</span>
+            </label>
           </div>
-          <label class="weekly-free-label">
-            <input type="checkbox" class="weekly-free-check" ${isFree ? 'checked' : ''}>
-            ${t('weeklySchedule.dayOffLabel')}
-          </label>
+          <div class="weekly-time-inputs ws-times">
+            <div class="weekly-time-field">
+              <span class="weekly-field-label">${t('weeklySchedule.startTime')}</span>
+              <input type="time" class="weekly-time-input weekly-start" value="${startVal}" ${isFree ? 'disabled' : ''}>
+            </div>
+            <span class="weekly-time-sep ws-sep">→</span>
+            <div class="weekly-time-field">
+              <span class="weekly-field-label">${t('weeklySchedule.endTime')}</span>
+              <input type="time" class="weekly-time-input weekly-end" value="${endVal}" ${isFree ? 'disabled' : ''}>
+            </div>
+          </div>
+          <div class="weekly-free-badge${isFree ? '' : ' hidden'}">
+            ${t('weeklySchedule.dayOffNotice')}
+          </div>
         </div>
       `;
     }
@@ -93,6 +193,8 @@ export function TodayTasksWeeklySchedule(appCtx){
         const isChecked = e.target.checked;
         row.classList.toggle('is-free', isChecked);
         row.querySelectorAll('.weekly-time-input').forEach(inp => { inp.disabled = isChecked; });
+        const badge = row.querySelector('.weekly-free-badge');
+        if (badge) badge.classList.toggle('hidden', !isChecked);
       });
     });
   }
@@ -129,6 +231,7 @@ export function TodayTasksWeeklySchedule(appCtx){
     const envKey = state.activeEnv;
     const modal = document.getElementById('weeklyScheduleModal');
     if (!modal) return;
+    delete modal.dataset.syncWorkAllFree;
     const titleEl = document.getElementById('weeklyScheduleTitle');
     const badgeEl = document.getElementById('weeklyScheduleEnvBadge');
     if (titleEl) titleEl.textContent = t('modal.weeklyScheduleTitle');
@@ -136,6 +239,7 @@ export function TodayTasksWeeklySchedule(appCtx){
       badgeEl.textContent = envKey === 'work' ? `💼 ${t('env.work')}` : `🏠 ${t('env.personal')}`;
       badgeEl.className = 'weekly-env-badge ' + envKey;
     }
+    renderWeeklySchedulePresets(envKey);
     const schedule = getOrDeriveWeeklySchedule(envKey);
     renderWeeklyScheduleRows(schedule);
     modal.style.display = 'flex';
@@ -144,7 +248,10 @@ export function TodayTasksWeeklySchedule(appCtx){
   function closeWeeklyScheduleModal() {
     if (typeof document === "undefined") return;
     const modal = document.getElementById('weeklyScheduleModal');
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+      delete modal.dataset.syncWorkAllFree;
+      modal.style.display = 'none';
+    }
   }
 
   if (typeof document !== "undefined") {
@@ -182,19 +289,45 @@ export function TodayTasksWeeklySchedule(appCtx){
         const newSched = readWeeklyScheduleFromModal(envKey);
         if (!newSched) return;
         state.environments[envKey].weeklySchedule = newSched;
-        if (envKey === 'work') syncPersonalFromWork();
+
+        const modal = document.getElementById('weeklyScheduleModal');
+        const isSummerSync = modal && modal.dataset.syncWorkAllFree === 'true';
+
+        if (isSummerSync) {
+          state.environments.work.weeklySchedule = {
+            1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 7: null
+          };
+          delete modal.dataset.syncWorkAllFree;
+        } else if (envKey === 'work') {
+          syncPersonalFromWork();
+        }
+
         saveState();
-        if(viewsModule) {
+        if (viewsModule) {
           viewsModule.syncFormInputsFromState();
           viewsModule.renderAll();
         }
         closeWeeklyScheduleModal();
-        showToast(t('weeklySchedule.savedToast'));
+
+        if (isSummerSync) {
+          showToast(t('weeklySchedule.presetSummerSavedToast'));
+        } else {
+          showToast(t('weeklySchedule.savedToast'));
+        }
       });
     }
   }
 
-  return { derivePersonalFromWork, syncPersonalFromWork, getOrDeriveWeeklySchedule, openWeeklyScheduleModal, closeWeeklyScheduleModal };
+  return {
+    derivePersonalFromWork,
+    syncPersonalFromWork,
+    getOrDeriveWeeklySchedule,
+    openWeeklyScheduleModal,
+    closeWeeklyScheduleModal,
+    applyPreset,
+    renderWeeklySchedulePresets,
+    renderWeeklyScheduleRows
+  };
 }
 
 export default TodayTasksWeeklySchedule;

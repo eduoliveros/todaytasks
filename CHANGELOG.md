@@ -4,6 +4,18 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.119] - 2026-11-02
+
+### Añadido
+- **Adaptación Móvil del Horario Semanal y Plantillas Rápidas Contextuales (Presets):**
+  - **Diseño Adaptable en 2 Niveles para Móvil (≤ 600px):** Las filas del modal de horario semanal se transforman en tarjetas de dos renglones que eliminan el desbordamiento horizontal: el primer renglón aloja el nombre del día y el control de «Día libre», mientras que el segundo renglón provee selectores de hora táctiles confortables (altura mínima 40px) y tipografía monospace, o un badge indicativo «🏖️ Día no laborable / descanso» cuando está libre.
+  - **Barra de Plantillas Rápidas (Presets Contextuales):** Permite configurar la jornada semanal con un solo toque según el entorno activo:
+    - **Trabajo (💼):** *Estándar (L-V 9-18)*, *Intensiva Verano (L-V 8-15)* y *Vacaciones (L-D libre)*.
+    - **Personal (🏠):** *Verano / Todo Libre (L-D 09:00 - 23:00 y Trabajo libre)*, *Tardes + Fin de semana (18-23 / 9-23)* y *Solo noches (20-23)*.
+  - **Sincronización de Horario de Verano Personal:** Al guardar con la plantilla de verano en el entorno Personal, se sincroniza automáticamente el entorno Trabajo marcando todos sus días como libres/vacaciones.
+  - **Conservación de la Vista Desktop (≥ 600px):** Los usuarios en ordenador continúan disfrutando de la presentación compacta clásica en una sola línea horizontal por día.
+  - **Documentación:** Registro de la decisión en el ADR 026 (`docs/adr/026-adaptacion-movil-horario-semanal-y-presets.md`) y actualización de `docs/ARCHITECTURE.md`.
+
 ## [1.118] - 2026-10-04
 
 ### Añadido

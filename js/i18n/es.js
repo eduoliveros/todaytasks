@@ -746,6 +746,17 @@ export default {
   'weeklySchedule.invalidRangeToast': '⚠️ Horario inválido para el {day}: la hora de inicio debe ser anterior a la de fin.',
   'weeklySchedule.savedToast': '📅 Horario semanal guardado',
   'weeklySchedule.dayOffLabel': 'Día libre',
+  'weeklySchedule.presetsTitle': '⚡ Plantillas rápidas:',
+  'weeklySchedule.presetWorkStandard': '💼 Estándar (L-V 9-18)',
+  'weeklySchedule.presetWorkIntensive': '☀️ Intensiva (L-V 8-15)',
+  'weeklySchedule.presetWorkVacation': '🏖️ Vacaciones (L-D libre)',
+  'weeklySchedule.presetPersonalSummer': '☀️ Verano (L-D 09:00 - 23:00 y Trabajo libre)',
+  'weeklySchedule.presetPersonalAfterwork': '🏠 Tardes + Finde (18-23 / 9-23)',
+  'weeklySchedule.presetPersonalNights': '🌙 Solo noches (20-23)',
+  'weeklySchedule.presetSummerSavedToast': '📅 Horario de verano guardado y trabajo configurado como libre',
+  'weeklySchedule.dayOffNotice': '🏖️ Día no laborable / descanso',
+  'weeklySchedule.startTime': 'Inicio',
+  'weeklySchedule.endTime': 'Fin',
 
   // Histórico y Métricas (History View)
   'history.btnBack': '← Volver al Tablero',

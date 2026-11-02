@@ -412,22 +412,75 @@
 [data-theme="dark"] .weekly-schedule-row {
   border-bottom-color: #2D3748;
 }
+[data-theme="dark"] .weekly-day-name,
 [data-theme="dark"] .ws-day-name {
   color: #E2E8F0;
 }
+[data-theme="dark"] .weekly-schedule-row.is-free .weekly-day-name,
 [data-theme="dark"] .weekly-schedule-row.is-free-day .ws-day-name {
   color: #718096;
 }
+[data-theme="dark"] .weekly-free-label,
 [data-theme="dark"] .ws-free-label {
   color: #A0AEC0;
 }
+[data-theme="dark"] .weekly-time-input,
 [data-theme="dark"] .ws-times input[type="time"] {
   background: #252D3D;
   color: #E2E8F0;
   border-color: #2D3748;
 }
+[data-theme="dark"] .weekly-time-input:disabled {
+  background: #1A202C;
+  color: #718096;
+}
+[data-theme="dark"] .weekly-time-sep,
 [data-theme="dark"] .ws-sep {
   color: #718096;
+}
+[data-theme="dark"] .weekly-schedule-presets {
+  background: #1A202C;
+  border-color: #2D3748;
+}
+[data-theme="dark"] .weekly-preset-btn {
+  background: #252D3D;
+  border-color: #374151;
+  color: #E2E8F0;
+}
+[data-theme="dark"] .weekly-preset-btn:hover {
+  background: rgba(129,140,248,0.18);
+  border-color: #818CF8;
+  color: #A5B4FC;
+}
+[data-theme="dark"] .weekly-preset-btn.highlight {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #FBBF24;
+}
+[data-theme="dark"] .weekly-preset-btn.active {
+  background: #6366F1;
+  border-color: #6366F1;
+  color: #FFFFFF;
+}
+[data-theme="dark"] .weekly-env-badge.work {
+  background: rgba(129,140,248,0.15);
+  color: #A5B4FC;
+  border-color: rgba(129,140,248,0.25);
+}
+[data-theme="dark"] .weekly-env-badge.personal {
+  background: rgba(245, 158, 11, 0.15);
+  color: #FBBF24;
+  border-color: rgba(245, 158, 11, 0.25);
+}
+@media (max-width: 600px) {
+  [data-theme="dark"] .weekly-schedule-row {
+    background: #1E293B;
+    border-color: #334155;
+  }
+  [data-theme="dark"] .weekly-schedule-row.is-free {
+    background: #161F2E;
+    border-color: #243042;
+  }
 }
 [data-theme="dark"] .weekly-schedule-hint {
   background: rgba(129,140,248,0.06);

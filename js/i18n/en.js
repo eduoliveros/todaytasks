@@ -746,6 +746,17 @@ export default {
   'weeklySchedule.invalidRangeToast': '⚠️ Invalid schedule for {day}: start time must be before end time.',
   'weeklySchedule.savedToast': '📅 Weekly schedule saved',
   'weeklySchedule.dayOffLabel': 'Day off',
+  'weeklySchedule.presetsTitle': '⚡ Quick presets:',
+  'weeklySchedule.presetWorkStandard': '💼 Standard (Mon-Fri 9-18)',
+  'weeklySchedule.presetWorkIntensive': '☀️ Intensive (Mon-Fri 8-15)',
+  'weeklySchedule.presetWorkVacation': '🏖️ Vacations (All days off)',
+  'weeklySchedule.presetPersonalSummer': '☀️ Summer (Mon-Sun 09:00 - 23:00 & Work off)',
+  'weeklySchedule.presetPersonalAfterwork': '🏠 Evenings + Weekend (18-23 / 9-23)',
+  'weeklySchedule.presetPersonalNights': '🌙 Nights only (20-23)',
+  'weeklySchedule.presetSummerSavedToast': '📅 Summer schedule saved and work set as day off',
+  'weeklySchedule.dayOffNotice': '🏖️ Non-working day / off',
+  'weeklySchedule.startTime': 'Start',
+  'weeklySchedule.endTime': 'End',
 
   // History & Metrics View
   'history.btnBack': '← Back to Board',

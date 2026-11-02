@@ -518,7 +518,27 @@ Para resolver la desconexión visual entre la jerarquía de prioridad del usuari
 
 ---
 
-## 20. Directrices para Nuevos Desarrollos
+## 20. Horario Semanal Adaptable a Móvil y Presets Contextuales (`weekly-schedule.js`, ADR 026)
+
+Implementado en `v1.119` ([ADR 026](./adr/026-adaptacion-movil-horario-semanal-y-presets.md)):
+
+* **Plantillas Rápidas Contextuales (*Presets*):**
+  - Situadas en la parte superior del modal (`#weeklySchedulePresets`) sobre los 7 días.
+  - Se adaptan dinámicamente según el entorno activo (`work` o `personal`):
+    - **En Trabajo (💼):** *Estándar (L-V 9-18)*, *Intensiva Verano (L-V 8-15)* y *Vacaciones (L-D libre)*.
+    - **En Personal (🏠):** *Verano (L-D 09:00 - 23:00 y Trabajo libre)*, *Tardes + Fin de semana (18-23 / 9-23)* y *Solo noches (20-23)*.
+  - Al pulsar una plantilla, actualiza inmediatamente las 7 filas del modal permitiendo retocar cualquier día en particular antes de guardar.
+  - **Sincronización Especial Verano Personal:** Si se aplica el preset de verano en el entorno Personal, al guardar se asegura automáticamente que `work.weeklySchedule` quede configurado como 100% libre/vacaciones, manteniendo la coherencia de disponibilidad diaria entre ambientes.
+* **Presentación Adaptable Móvil vs Escritorio:**
+  - **En Móvil (≤ 600px):** Cada día se transforma en una tarjeta de dos niveles:
+    - *Renglón superior:* Nombre del día a la izquierda y selector de «Día libre» a la derecha para fácil acceso con el pulgar.
+    - *Renglón inferior:* Selectores de hora de inicio y fin táctiles con altura mínima de 40px y tipografía monospace, o indicativo claro de descanso («🏖️ Día no laborable / descanso») cuando el día está marcado como libre.
+    - Modal con `max-height: 88vh` y scroll vertical suave para no desbordar en terminales compactos.
+  - **En Escritorio (≥ 600px):** Cada día se mantiene en una única línea horizontal compacta y limpia, conservando el flujo clásico.
+
+---
+
+## 21. Directrices para Nuevos Desarrollos
 
 1. **Separación Estricta de Responsabilidades:**
    * Las vistas (`views/`) **no** deben mutar el estado directamente; deben delegar en las acciones (`actions/`).
