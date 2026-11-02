@@ -43,3 +43,6 @@ Esto provocaba dos inconsistencias lógicas en el flujo de trabajo:
 * **Verificación:**
   - Suite de pruebas unitarias en `tests/dragdrop_constraints.test.js`.
   - Validación de paridad i18n en `tests/i18n_parity.test.js`.
+
+
+> **Nota de actualización posterior:** Con la evolución del planificador hacia el soporte de prioridades explícitas y la vista cronológica diferenciada, la restricción de orden temporal forzoso entre tareas con `startAfter` fue desestimada en favor de la libertad total de priorización manual y triaje, preservando únicamente la invariante de dependencias (`dependsOn`).

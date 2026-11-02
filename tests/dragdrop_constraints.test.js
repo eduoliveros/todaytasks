@@ -74,9 +74,9 @@ describe('Drag and Drop Constraints - Dependencies & startAfter (js/actions/drag
   });
 
   describe('startAfter constraints', () => {
-    it('does not allow a task with later startAfter to precede a task with earlier startAfter', () => {
+    it('permite reordenar tareas con hora de inicio programada (startAfter) con cualquier prioridad', () => {
       // task-5 tiene startAfter: 960 (16:00), task-4 tiene startAfter: 600 (10:00)
-      // Intentar arrastrar task-5 a la posición de task-4 (arriba de ella)
+      // Mover task-5 a la posición de task-4 (arriba de ella) ahora debe permitirse libremente por prioridad
       dragDrop.armTaskDrag();
       dragDrop.taskDragStart({
         preventDefault: vi.fn(),
@@ -88,8 +88,8 @@ describe('Drag and Drop Constraints - Dependencies & startAfter (js/actions/drag
 
       const t4 = state.tasks.find(t => t.id === 'task-4');
       const t5 = state.tasks.find(t => t.id === 'task-5');
-      // task-4 debe seguir antes que task-5
-      expect(t4.order).toBeLessThan(t5.order);
+      // task-5 ahora puede quedar antes que task-4 según la prioridad definida por el usuario
+      expect(t5.order).toBeLessThan(t4.order);
     });
 
     it('allows a free task without startAfter to be moved anywhere (before, between, or after startAfter tasks)', () => {
@@ -172,7 +172,7 @@ describe('Drag and Drop Constraints - Dependencies & startAfter (js/actions/drag
 
       expect(showToast).toHaveBeenCalledWith(expect.stringContaining('W-1'));
 
-      // 2. Intentar mover task-5 (startAfter 16:00) antes de task-4 (startAfter 10:00)
+      // 2. Mover task-5 (startAfter 16:00) antes de task-4 (startAfter 10:00) es libre por prioridad
       showToast.mockClear();
       customDragDrop.armTaskDrag();
       customDragDrop.taskDragStart({
@@ -182,7 +182,8 @@ describe('Drag and Drop Constraints - Dependencies & startAfter (js/actions/drag
       }, 'task-5');
       customDragDrop.taskDrop({ preventDefault: vi.fn() }, 'task-4');
 
-      expect(showToast).toHaveBeenCalledWith(expect.stringContaining('10:00'));
+      // No debe mostrar toast de error/bloqueo de hora porque el reordenamiento por prioridad está permitido
+      expect(showToast).not.toHaveBeenCalled();
 
       // 3. Botón de mover arriba directamente bloqueado por dependencia
       showToast.mockClear();
@@ -196,9 +197,9 @@ describe('Drag and Drop Constraints - Dependencies & startAfter (js/actions/drag
       expect(movedTop).toBe(false);
       expect(showToast).toHaveBeenCalledWith('La tarea ya está en la primera posición');
 
-      // 5. Mover hacia abajo cuando la tarea ya está en la última posición
+      // 5. Mover hacia abajo cuando la tarea ya está en la última posición (task-4 quedó al final tras el paso 2)
       showToast.mockClear();
-      const movedBottom = customDragDrop.moveTaskDirectly('task-5', 'down');
+      const movedBottom = customDragDrop.moveTaskDirectly('task-4', 'down');
       expect(movedBottom).toBe(false);
       expect(showToast).toHaveBeenCalledWith('La tarea ya está en la última posición');
 
@@ -230,6 +231,63 @@ describe('Drag and Drop Constraints - Dependencies & startAfter (js/actions/drag
       expect(state.tasks[0].id).toBe('sa-2');
       expect(state.tasks[1].id).toBe('sa-1');
       expect(showToast).not.toHaveBeenCalled();
+    });
+  });
+  describe('Triaje y movimiento de tareas con hora de inicio', () => {
+    it('permite mover tareas con startAfter entre diferentes niveles de urgencia sin bloqueo por hora', () => {
+      // Simulación de escenario real de triaje:
+      // Tarea con hora tardía (20:30, startAfter: 1230) con alta prioridad (order: 1)
+      // Tarea con hora temprana (17:00, startAfter: 1020) que se mueve hacia abajo (order posterior)
+      state.tasks = [
+        { id: 't-late', displayId: 'W-LATE', title: 'Cierre nocturno', status: 'pending', order: 1, urgency: 'today', startAfter: 20 * 60 + 30 },
+        { id: 't-early', displayId: 'W-EARLY', title: 'Llamada tarde', status: 'pending', order: 2, urgency: 'today', startAfter: 17 * 60 },
+        { id: 't-normal', displayId: 'W-NORM', title: 'Otra tarea', status: 'pending', order: 3, urgency: 'days' }
+      ];
+
+      const showToast = vi.fn();
+      const customDragDrop = TodayTasksDragDrop(ctx, { showToast });
+
+      // Mover t-early después de t-normal (por ejemplo a urgencia days en triaje)
+      const allowed = customDragDrop.checkIsDropTargetAllowed('t-normal', 't-early');
+      expect(allowed).toBe(true);
+
+      customDragDrop.armTaskDrag();
+      customDragDrop.taskDragStart({
+        preventDefault: vi.fn(),
+        dataTransfer: { effectAllowed: null, setData: vi.fn() },
+        currentTarget: { classList: { add: vi.fn() } }
+      }, 't-early');
+      customDragDrop.taskDrop({ preventDefault: vi.fn() }, 't-normal');
+
+      expect(showToast).not.toHaveBeenCalled();
+      const tLate = state.tasks.find(t => t.id === 't-late');
+      const tEarly = state.tasks.find(t => t.id === 't-early');
+      const tNormal = state.tasks.find(t => t.id === 't-normal');
+
+      // t-early debe quedar después de t-normal sin saltar el error de 20:30
+      expect(tLate.order).toBe(1);
+      expect(tNormal.order).toBe(2);
+      expect(tEarly.order).toBe(3);
+    });
+
+    it('permite mover una tarea con startAfter hacia arriba (prioridad más alta) que otra tarea con startAfter anterior', () => {
+      state.tasks = [
+        { id: 't-10', displayId: 'W-10', title: 'Tarea 10:00', status: 'pending', order: 1, startAfter: 10 * 60 },
+        { id: 't-18', displayId: 'W-18', title: 'Tarea 18:00 prioritaria', status: 'pending', order: 2, startAfter: 18 * 60 }
+      ];
+
+      const showToast = vi.fn();
+      const customDragDrop = TodayTasksDragDrop(ctx, { showToast });
+
+      // Mover t-18 directamente arriba
+      const moved = customDragDrop.moveTaskDirectly('t-18', 'up');
+      expect(moved).toBe(true);
+      expect(showToast).not.toHaveBeenCalled();
+
+      const t10 = state.tasks.find(t => t.id === 't-10');
+      const t18 = state.tasks.find(t => t.id === 't-18');
+      expect(t18.order).toBe(1);
+      expect(t10.order).toBe(2);
     });
   });
 });

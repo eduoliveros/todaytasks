@@ -26,8 +26,9 @@ export function TodayTasksDragDrop(ctx, helpers = {}){
    * Calcula los índices mínimo y máximo permitidos (en la cola sin la tarea o bloque)
    * para cumplir con:
    * 1. Dependencias (no estar antes de sus dependencias en la cola, ni después de tareas que dependen de ella).
-   * 2. startAfter (no estar antes de tareas con startAfter menor/igual, ni después de tareas con startAfter mayor).
-   * Las tareas sin startAfter no imponen restricciones de hora.
+   * Las horas mínimas de inicio (startAfter) no imponen restricciones de orden en la cola,
+   * ya que 'order' representa la prioridad del usuario y el planificador (scheduler.js) se encarga
+   * de programar los horarios respetando startAfter.
    */
   function getTaskOrderingBounds(movingTasks, remainingQueue) {
     let minAllowedIdx = 0;
@@ -67,41 +68,6 @@ export function TodayTasksDragDrop(ctx, helpers = {}){
         }
       }
     });
-
-    // 3. Restricción startAfter:
-    // Solo aplica entre tareas que ambas tengan startAfter definido (número no nulo)
-    const movingStartAfters = movingTasks
-      .map(t => t.startAfter)
-      .filter(s => s !== null && s !== undefined && !isNaN(s));
-
-    if (movingStartAfters.length > 0) {
-      const minMovingStartAfter = Math.min(...movingStartAfters);
-      const maxMovingStartAfter = Math.max(...movingStartAfters);
-
-      // No puede ir antes de tareas restantes que tengan un startAfter MENOR
-      remainingQueue.forEach((t, idx) => {
-        if (t.startAfter !== null && t.startAfter !== undefined && !isNaN(t.startAfter)) {
-          if (t.startAfter < minMovingStartAfter) {
-            if (idx + 1 > minAllowedIdx) {
-              minAllowedIdx = idx + 1;
-              minReason = { type: 'startAfter', time: t.startAfter };
-            }
-          }
-        }
-      });
-
-      // No puede ir después de tareas restantes que tengan un startAfter MAYOR
-      remainingQueue.forEach((t, idx) => {
-        if (t.startAfter !== null && t.startAfter !== undefined && !isNaN(t.startAfter)) {
-          if (t.startAfter > maxMovingStartAfter) {
-            if (idx < maxAllowedIdx) {
-              maxAllowedIdx = idx;
-              maxReason = { type: 'startAfter_reverse', time: t.startAfter };
-            }
-          }
-        }
-      });
-    }
 
     return { minAllowedIdx, maxAllowedIdx, minReason, maxReason };
   }
