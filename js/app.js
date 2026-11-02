@@ -453,7 +453,7 @@ function switchHeaderTab(target){
   }
 
   /* ---------------- Shortcuts sub-module ---------------- */
-  TodayTasksShortcuts({
+  const shortcutsModule = TodayTasksShortcuts({
     getState: () => state,
     getMeetingEdit: () => meetingEdit,
     getTaskEdit: () => taskEdit,

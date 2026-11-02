@@ -4,6 +4,23 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.121] - 2026-11-02
+
+### Añadido
+- **Pestaña de Código de Colores en el Modal de Ayuda (?):**
+  - Incorporación de selector de pestañas en la cabecera del modal de ayuda: **⌨️ Atajos** y **🎨 Colores**.
+  - Por defecto, al abrir la ayuda con la tecla `?` o el botón de la cabecera, se muestran los atajos de teclado.
+  - La nueva pestaña de colores detalla el significado de los bordes y estados de las tarjetas en la lista de tareas:
+    - 🟢 *Próxima a realizar* (primera ejecutable con contorno verde esmeralda).
+    - ⭐ *Tarea destacada* (borde izquierdo ámbar).
+    - ⚠️ *Fuera de jornada* (borde rojo y fondo rosado si no cabe en el día).
+    - 🔒 *Con dependencia pendiente* (borde índigo).
+    - ⏰ *Pospuesta* (borde discontinuo atenuado con hora mínima `startAfter`).
+    - ⚠️ *Fuera de jornada con hora de inicio* (borde punteado y lateral rojo cuando desborda el día y tiene hora mínima `startAfter`).
+    - ▶ *En ejecución* (borde lateral ámbar y cronómetro activo).
+    - ⏸ *En pausa* (borde lateral malva).
+  - Soporte completo para tema oscuro (`[data-theme="dark"]`) e internacionalización (`es` y `en`).
+
 ## [1.120] - 2026-11-02
 
 ### Añadido

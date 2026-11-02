@@ -106,4 +106,62 @@ describe('Modal de ayuda de atajos de teclado', () => {
     expect(kRow).toBeDefined();
     expect(kRow.textContent.toLowerCase()).toMatch(/buscador|global|search/);
   });
+  it("muestra por defecto la pestaña de atajos de teclado al abrir el modal", () => {
+    const helpBtn = document.getElementById("helpBtn");
+    const shortcutsBody = document.getElementById("shortcutsHelpTabBody");
+    const colorsBody = document.getElementById("colorsHelpTabBody");
+    const shortcutsBtn = document.getElementById("helpTabShortcutsBtn");
+    const colorsBtn = document.getElementById("helpTabColorsBtn");
+
+    helpBtn.click();
+    expect(shortcutsBody.style.display).toBe("flex");
+    expect(colorsBody.style.display).toBe("none");
+    expect(shortcutsBtn.classList.contains("active")).toBe(true);
+    expect(colorsBtn.classList.contains("active")).toBe(false);
+  });
+
+  it("permite alternar entre la pestaña de atajos y la de código de colores", () => {
+    const helpBtn = document.getElementById("helpBtn");
+    const shortcutsBody = document.getElementById("shortcutsHelpTabBody");
+    const colorsBody = document.getElementById("colorsHelpTabBody");
+    const shortcutsBtn = document.getElementById("helpTabShortcutsBtn");
+    const colorsBtn = document.getElementById("helpTabColorsBtn");
+
+    helpBtn.click();
+
+    // Cambiar a la pestaña de colores
+    colorsBtn.click();
+    expect(shortcutsBody.style.display).toBe("none");
+    expect(colorsBody.style.display).toBe("flex");
+    expect(colorsBtn.classList.contains("active")).toBe(true);
+    expect(shortcutsBtn.classList.contains("active")).toBe(false);
+
+    // Contiene los elementos descriptivos de colores de la lista de tareas
+    const colorItems = colorsBody.querySelectorAll(".help-color-item");
+    expect(colorItems.length).toBeGreaterThanOrEqual(7);
+
+    // Volver a la pestaña de atajos
+    shortcutsBtn.click();
+    expect(shortcutsBody.style.display).toBe("flex");
+    expect(colorsBody.style.display).toBe("none");
+    expect(shortcutsBtn.classList.contains("active")).toBe(true);
+  });
+
+  it("vuelve a mostrar la pestaña de atajos si se abre tras haber estado en la pestaña de colores", () => {
+    const helpBtn = document.getElementById("helpBtn");
+    const closeBtn = document.getElementById("closeShortcutsBtn");
+    const shortcutsBody = document.getElementById("shortcutsHelpTabBody");
+    const colorsBody = document.getElementById("colorsHelpTabBody");
+    const colorsBtn = document.getElementById("helpTabColorsBtn");
+
+    helpBtn.click();
+    colorsBtn.click();
+    expect(colorsBody.style.display).toBe("flex");
+
+    closeBtn.click();
+
+    helpBtn.click();
+    expect(shortcutsBody.style.display).toBe("flex");
+    expect(colorsBody.style.display).toBe("none");
+  });
 });

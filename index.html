@@ -18,7 +18,7 @@
   <!-- Barra superior: logo + switcher + pestañas -->
   <div class="topbar-title-row">
     <div class="brand">
-      <h1><span data-i18n="app.title">TodayTasks</span> <span class="app-version">v1.120</span></h1>
+      <h1><span data-i18n="app.title">TodayTasks</span> <span class="app-version">v1.121</span></h1>
       <span class="db-status-badge" id="appModeLabel" data-i18n="app.localDbBadge" title="Tipo de base de datos en uso">💾 local · persistente</span>
       <button type="button" class="topbar-global-search-btn" id="globalSearchBtn" onclick="app.openCommandPalette()" data-i18n-title="globalSearch.openTooltip" title="Buscar en todos los días (Ctrl+K)">
         <span class="search-btn-icon" aria-hidden="true">🔍</span>
@@ -618,10 +618,13 @@
 <div class="modal-overlay" id="shortcutsModal" role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle">
   <div class="modal-box shortcuts-modal-box">
     <div class="shortcuts-header">
-      <h3 id="shortcutsTitle" data-i18n="shortcuts.title">⌨️ Atajos de Teclado</h3>
+      <div class="help-modal-tabs" role="tablist" aria-label="Secciones de ayuda">
+        <button type="button" class="help-modal-tab-btn active" id="helpTabShortcutsBtn" role="tab" aria-selected="true" aria-controls="shortcutsHelpTabBody" data-i18n="shortcuts.tabShortcuts">⌨️ Atajos</button>
+        <button type="button" class="help-modal-tab-btn" id="helpTabColorsBtn" role="tab" aria-selected="false" aria-controls="colorsHelpTabBody" data-i18n="shortcuts.tabColors">🎨 Colores</button>
+      </div>
       <button class="close-modal-btn" id="closeShortcutsBtn" data-i18n-title="action.closeTooltip" data-i18n-aria="action.close" title="Cerrar (Esc)" aria-label="Cerrar">&times;</button>
     </div>
-    <div class="shortcuts-body">
+    <div class="shortcuts-body" id="shortcutsHelpTabBody">
       <div class="shortcuts-group">
         <div class="shortcut-row"><kbd class="shortcut-key">1</kbd><span class="shortcut-desc" data-i18n="shortcuts.summaryPanel">Panel Resumen</span></div>
         <div class="shortcut-row"><kbd class="shortcut-key">2</kbd><span class="shortcut-desc" data-i18n="shortcuts.timePanel">Panel Tiempo</span></div>
@@ -651,6 +654,68 @@
         <div class="shortcut-row"><kbd class="shortcut-key">Ctrl</kbd>+<kbd class="shortcut-key">Y</kbd><span class="shortcut-desc" data-i18n="shortcuts.redo">Rehacer acción</span></div>
         <div class="shortcut-row"><kbd class="shortcut-key">?</kbd><span class="shortcut-desc" data-i18n="shortcuts.help">Abrir / cerrar esta ayuda</span></div>
         <div class="shortcut-row"><kbd class="shortcut-key">Esc</kbd><span class="shortcut-desc" data-i18n="shortcuts.escape">Cancelar edición, salir o desenfocar</span></div>
+      </div>
+    </div>
+    <!-- Pestaña de Código de Colores (Lista de tareas) -->
+    <div class="shortcuts-body" id="colorsHelpTabBody" style="display:none;">
+      <p class="help-colors-desc" data-i18n="shortcuts.colorsDesc">Bordes y distintivos aplicados a las tarjetas según su estado y prioridad:</p>
+      <div class="help-colors-list">
+        <div class="help-color-item">
+          <div class="help-color-preview preview-first" aria-hidden="true"></div>
+          <div class="help-color-info">
+            <span class="help-color-title" data-i18n="shortcuts.colorFirstTitle">🟢 Próxima a realizar</span>
+            <span class="help-color-text" data-i18n="shortcuts.colorFirstDesc">Primera tarea ejecutable del día (contorno verde)</span>
+          </div>
+        </div>
+        <div class="help-color-item">
+          <div class="help-color-preview preview-featured" aria-hidden="true"></div>
+          <div class="help-color-info">
+            <span class="help-color-title" data-i18n="shortcuts.colorFeaturedTitle">⭐ Tarea destacada</span>
+            <span class="help-color-text" data-i18n="shortcuts.colorFeaturedDesc">Borde izquierdo ámbar (máximo 5 al día)</span>
+          </div>
+        </div>
+        <div class="help-color-item">
+          <div class="help-color-preview preview-overflow" aria-hidden="true"></div>
+          <div class="help-color-info">
+            <span class="help-color-title" data-i18n="shortcuts.colorOverflowTitle">⚠️ Fuera de jornada</span>
+            <span class="help-color-text" data-i18n="shortcuts.colorOverflowDesc">No cabe en el horario de hoy (borde rojo y fondo rosado)</span>
+          </div>
+        </div>
+        <div class="help-color-item">
+          <div class="help-color-preview preview-blocked" aria-hidden="true"></div>
+          <div class="help-color-info">
+            <span class="help-color-title" data-i18n="shortcuts.colorBlockedTitle">🔒 Con dependencia pendiente</span>
+            <span class="help-color-text" data-i18n="shortcuts.colorBlockedDesc">Bloqueada por otra tarea que debe completarse antes (borde índigo)</span>
+          </div>
+        </div>
+        <div class="help-color-item">
+          <div class="help-color-preview preview-deferred" aria-hidden="true"></div>
+          <div class="help-color-info">
+            <span class="help-color-title" data-i18n="shortcuts.colorDeferredTitle">⏰ Pospuesta (a partir de una hora)</span>
+            <span class="help-color-text" data-i18n="shortcuts.colorDeferredDesc">Tiene hora mínima configurada (borde discontinuo atenuado)</span>
+          </div>
+        </div>
+        <div class="help-color-item">
+          <div class="help-color-preview preview-overflow-deferred" aria-hidden="true"></div>
+          <div class="help-color-info">
+            <span class="help-color-title" data-i18n="shortcuts.colorOverflowDeferredTitle">⚠️ Fuera de jornada con hora de inicio</span>
+            <span class="help-color-text" data-i18n="shortcuts.colorOverflowDeferredDesc">No cabe en el día y tiene hora mínima fijada (borde punteado y lateral rojo)</span>
+          </div>
+        </div>
+        <div class="help-color-item">
+          <div class="help-color-preview preview-running" aria-hidden="true"></div>
+          <div class="help-color-info">
+            <span class="help-color-title" data-i18n="shortcuts.colorRunningTitle">▶ En ejecución / en curso</span>
+            <span class="help-color-text" data-i18n="shortcuts.colorRunningDesc">Borde lateral ámbar y temporizador activo</span>
+          </div>
+        </div>
+        <div class="help-color-item">
+          <div class="help-color-preview preview-paused" aria-hidden="true"></div>
+          <div class="help-color-info">
+            <span class="help-color-title" data-i18n="shortcuts.colorPausedTitle">⏸ En pausa</span>
+            <span class="help-color-text" data-i18n="shortcuts.colorPausedDesc">Iniciada previamente y pausada (borde lateral malva)</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>

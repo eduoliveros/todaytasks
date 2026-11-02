@@ -8,6 +8,30 @@ export function TodayTasksShortcuts(appCtx){
   function getMeetingEdit() { return appCtx.getMeetingEdit ? appCtx.getMeetingEdit() : null; }
   function getTaskEdit() { return appCtx.getTaskEdit ? appCtx.getTaskEdit() : null; }
 
+  function switchHelpTab(tabName){
+    if (typeof document === "undefined") return;
+    const shortcutsBtn = document.getElementById("helpTabShortcutsBtn");
+    const colorsBtn = document.getElementById("helpTabColorsBtn");
+    const shortcutsBody = document.getElementById("shortcutsHelpTabBody");
+    const colorsBody = document.getElementById("colorsHelpTabBody");
+
+    const isShortcuts = tabName === "shortcuts";
+    if (shortcutsBtn) {
+      shortcutsBtn.classList.toggle("active", isShortcuts);
+      shortcutsBtn.setAttribute("aria-selected", isShortcuts ? "true" : "false");
+    }
+    if (colorsBtn) {
+      colorsBtn.classList.toggle("active", !isShortcuts);
+      colorsBtn.setAttribute("aria-selected", !isShortcuts ? "true" : "false");
+    }
+    if (shortcutsBody) {
+      shortcutsBody.style.display = isShortcuts ? "flex" : "none";
+    }
+    if (colorsBody) {
+      colorsBody.style.display = !isShortcuts ? "flex" : "none";
+    }
+  }
+
   function toggleShortcutsModal(show){
     if (typeof document === "undefined") return;
     const modal = document.getElementById("shortcutsModal");
@@ -15,6 +39,9 @@ export function TodayTasksShortcuts(appCtx){
     const isVisible = modal.style.display === "flex";
     const nextState = typeof show === "boolean" ? show : !isVisible;
     modal.style.display = nextState ? "flex" : "none";
+    if (nextState) {
+      switchHelpTab("shortcuts");
+    }
   }
 
   if (typeof document !== "undefined") {
@@ -23,6 +50,12 @@ export function TodayTasksShortcuts(appCtx){
 
     const closeShortcutsBtn = document.getElementById("closeShortcutsBtn");
     if(closeShortcutsBtn) closeShortcutsBtn.addEventListener("click", () => toggleShortcutsModal(false));
+
+    const helpTabShortcutsBtn = document.getElementById("helpTabShortcutsBtn");
+    if(helpTabShortcutsBtn) helpTabShortcutsBtn.addEventListener("click", () => switchHelpTab("shortcuts"));
+
+    const helpTabColorsBtn = document.getElementById("helpTabColorsBtn");
+    if(helpTabColorsBtn) helpTabColorsBtn.addEventListener("click", () => switchHelpTab("colors"));
 
     const shortcutsModalEl = document.getElementById("shortcutsModal");
     if(shortcutsModalEl){
@@ -366,7 +399,7 @@ export function TodayTasksShortcuts(appCtx){
     });
   }
 
-  return { toggleShortcutsModal };
+  return { toggleShortcutsModal, switchHelpTab };
 }
 
 export default TodayTasksShortcuts;
