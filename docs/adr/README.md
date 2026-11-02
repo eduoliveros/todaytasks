@@ -34,6 +34,7 @@ Un **Architecture Decision Record (ADR)** es un documento breve que captura una 
 * [026. Adaptación Móvil de Horario Semanal y Plantillas Rápidas Contextuales (Presets)](./026-adaptacion-movil-horario-semanal-y-presets.md)
 * [027. Acceso al Modo Enfoque (Focus) en Dispositivos Móviles](./027-acceso-modo-focus-movil.md)
 * [028. Vista Cronológica Unificada de Tareas y Reuniones (Opción D)](./028-vista-cronologica-unificada-tareas-y-reuniones.md)
+* [029. Secuencia Cronológica en "Viabilidad hoy" de Triaje (Opción D), Chip Interactivo `startAfter` y Conmutador de Reuniones](./029-triaje-viabilidad-cronologica-y-chip-startafter.md)
 
 ## Plantilla sugerida para nuevos ADRs (`docs/adr/NNN-titulo.md`)
 

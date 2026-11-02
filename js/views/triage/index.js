@@ -13,6 +13,7 @@ export function TodayTasksTriageView(ctx) {
   const { getState, getTaskEdit } = ctx;
 
   let currentSort = 'urgency'; // 'urgency' | 'viability' | 'duration' | 'featured'
+  let showTriageMeetings = true;
   const collapsedGroups = new Set(['days', 'week', 'later']); // por defecto 'today' abierto, resto plegados
   const selectedTaskIds = new Set();
   let activeSingleUrgencyTaskId = null;
@@ -30,7 +31,9 @@ export function TodayTasksTriageView(ctx) {
     {
       collapsedGroups,
       get currentSort() { return currentSort; },
-      set currentSort(val) { currentSort = val; }
+      set currentSort(val) { currentSort = val; },
+      get showTriageMeetings() { return showTriageMeetings; },
+      set showTriageMeetings(val) { showTriageMeetings = val; }
     },
     {
       renderTriageView: triggerRender
@@ -44,11 +47,15 @@ export function TodayTasksTriageView(ctx) {
     getAllTasks,
     getActiveTasks,
     formatShortDuration,
+    getDayScheduleContext,
     getEffectiveSchedule,
     getGroups,
     setTriageSortMode,
     toggleTriageGroup,
-    toggleAllTriageGroups
+    toggleAllTriageGroups,
+    getShowTriageMeetings,
+    setShowTriageMeetings,
+    toggleTriageMeetings
   } = dataModule;
 
   const batchModule = createTriageBatch(
@@ -70,6 +77,7 @@ export function TodayTasksTriageView(ctx) {
   const {
     toggleTriageTaskSelect,
     toggleTriageGroupSelect,
+    selectTriageOverflowTasks,
     clearTriageSelection,
     openTriageSingleUrgency,
     applyTriageSingleUrgency,
@@ -184,16 +192,19 @@ export function TodayTasksTriageView(ctx) {
     ctx,
     {
       selectedTaskIds,
-      collapsedGroups
+      collapsedGroups,
+      get currentSort() { return currentSort; }
     },
     {
       getTargetDateStr,
       getActiveTasks,
+      getDayScheduleContext,
       getEffectiveSchedule,
       formatShortDuration,
       setTriageSearchQuery,
       clearTriageSearch,
-      getActions
+      getActions,
+      getShowTriageMeetings
     }
   );
 
@@ -303,10 +314,14 @@ export function TodayTasksTriageView(ctx) {
     setTriageSortMode,
     toggleTriageGroup,
     toggleAllTriageGroups,
+    toggleTriageMeetings,
+    getShowTriageMeetings,
+    setShowTriageMeetings,
     handleTriageRowClick,
     handleTriageRowDblClick,
     toggleTriageTaskSelect,
     toggleTriageGroupSelect,
+    selectTriageOverflowTasks,
     clearTriageSelection,
     toggleTriageTaskStar,
     moveTriageTaskToDate,

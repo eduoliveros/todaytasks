@@ -4,6 +4,16 @@ Todos los cambios notables en **TodayTasks** se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.123] - 2026-11-02
+
+### Añadido
+- **Secuencia Cronológica Continua en Triaje ("Viabilidad hoy" - Opción D), Chip Interactivo `startAfter` y Conmutador de Reuniones:**
+  - **Píldora Interactiva `⏰ HH:MM+ ▾` en Triaje (`.triage-start-after-btn`):** Todas las vistas de Triaje muestran ahora explícitamente la restricción de hora mínima (`startAfter`) en cada fila y un borde lateral ámbar distintivo (`.has-start-after`), conectada directamente con `#startAfterPopover` para cambiar o eliminar la hora en 1 clic sin abrir el modal de edición.
+  - **Orden Cronológico Real en "⏱️ Viabilidad hoy":** Dentro de la vista *Viabilidad hoy*, las tareas que caben y las que desbordan se ordenan estrictamente por su hora de inicio proyectada (`sortTasksChronologically`), eliminando los saltos visuales hacia atrás provocados por el *gap-filling* y mostrando el badge `#1, #2...` (`.triage-priority-rank`) con la posición original de la tarea en la cola de prioridad.
+  - **Flujo Unificado con Barrera de Corte "Fin de Jornada" (`#triageWorkdayCutoffBanner`):** Presenta el día como una secuencia continua atravesada por el divisor `🏁 LÍMITE FIN DE JORNADA (HH:MM)` y el botón directo `☑️ Seleccionar desbordadas (N)` (`#triageSelectOverflowBtn`) para marcar en 1 clic todas las tareas en *overflow* y reprogramarlas en lote.
+  - **Reuniones Fijas en 1 Línea y Botón para Ocultarlas/Mostrarlas (`#triageToggleMeetingsBtn`):** Intercala por defecto las reuniones del día (`.triage-meeting-row`) con indicación de duración y colchón post-reunión (`+buffer HH:MM`) para explicar los huecos del horario, e incorpora en cabecera el botón `📅 Ocultar reuniones` / `📅 Mostrar reuniones` (`app.toggleTriageMeetings()`).
+  - **Documentación y Pruebas:** Documentado en el ADR 029 (`docs/adr/029-triaje-viabilidad-cronologica-y-chip-startafter.md`) y cubierto por nuevas pruebas unitarias en `tests/triage.test.js` y `tests/i18n_parity.test.js`.
+
 ## [1.122] - 2026-11-02
 
 ### Añadido

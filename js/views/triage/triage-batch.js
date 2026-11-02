@@ -29,6 +29,16 @@ export function createTriageBatch(ctx, state, deps) {
     if (event) event.stopPropagation();
     const targetDateStr = getTargetDateStr();
     const activeTasks = getActiveTasks(targetDateStr);
+    if (groupId === 'all') {
+      const allSelected = activeTasks.length > 0 && activeTasks.every(task => selectedTaskIds.has(String(task.id)));
+      activeTasks.forEach(task => {
+        const strId = String(task.id);
+        if (allSelected) selectedTaskIds.delete(strId);
+        else selectedTaskIds.add(strId);
+      });
+      renderTriageView();
+      return;
+    }
     const groups = getGroups(activeTasks, targetDateStr);
     const group = groups.find(g => g.id === groupId);
     if (!group) return;
@@ -40,6 +50,10 @@ export function createTriageBatch(ctx, state, deps) {
       else selectedTaskIds.add(strId);
     });
     renderTriageView();
+  }
+
+  function selectTriageOverflowTasks(event) {
+    toggleTriageGroupSelect('overflow', event);
   }
 
   function clearTriageSelection() {
@@ -271,6 +285,7 @@ export function createTriageBatch(ctx, state, deps) {
   return {
     toggleTriageTaskSelect,
     toggleTriageGroupSelect,
+    selectTriageOverflowTasks,
     clearTriageSelection,
     openTriageSingleUrgency,
     applyTriageSingleUrgency,

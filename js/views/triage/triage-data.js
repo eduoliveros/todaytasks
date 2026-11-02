@@ -2,7 +2,7 @@
 import {
   nowMinutes, getTodayStr, DEFAULT_URGENCY
 } from '../../utils.js';
-import { computeSchedule } from '../../scheduler.js';
+import { computeSchedule, sortTasksChronologically, computeMeetingClusters } from '../../scheduler.js';
 import { t } from '../../i18n.js';
 
 export function createTriageData(ctx, state, deps) {
@@ -21,6 +21,26 @@ export function createTriageData(ctx, state, deps) {
     } else {
       state.currentSort = val;
     }
+  }
+
+  function getShowTriageMeetings() {
+    if (typeof state.showTriageMeetings === 'function') return state.showTriageMeetings();
+    return state.showTriageMeetings !== false;
+  }
+
+  function setShowTriageMeetings(val) {
+    const boolVal = !!val;
+    if (typeof state.setShowTriageMeetings === 'function') {
+      state.setShowTriageMeetings(boolVal);
+    } else {
+      state.showTriageMeetings = boolVal;
+    }
+  }
+
+  function toggleTriageMeetings(forceVal) {
+    const nextVal = typeof forceVal === 'boolean' ? forceVal : !getShowTriageMeetings();
+    setShowTriageMeetings(nextVal);
+    renderTriageView();
   }
 
   function getActions() {
@@ -69,17 +89,8 @@ export function createTriageData(ctx, state, deps) {
     return `${h}h ${m}m`;
   }
 
-  function getEffectiveSchedule(targetDateStr, activeTasks) {
+  function getDayScheduleContext(targetDateStr) {
     const currentState = getState ? getState() : (ctx.getState ? ctx.getState() : {});
-    const isToday = targetDateStr === getTodayStr();
-
-    if (ctx && typeof ctx.computeSchedule === 'function' && (currentState.selectedDate || getTodayStr()) === targetDateStr) {
-      const sched = ctx.computeSchedule();
-      if (sched && sched.overflowIds && sched.segmentsByTask) {
-        return sched;
-      }
-    }
-
     const envKey = currentState.activeEnv || 'work';
     const env = currentState.environments ? (currentState.environments[envKey] || currentState.environments.work) : null;
     const dayObj = env && env.days ? env.days[targetDateStr] : null;
@@ -98,11 +109,39 @@ export function createTriageData(ctx, state, deps) {
       if (Array.isArray(dayObj.meetings)) {
         meetings = dayObj.meetings;
       }
+    } else if (dayObj && Array.isArray(dayObj.meetings) && (!Array.isArray(meetings) || meetings.length === 0)) {
+      meetings = dayObj.meetings;
     }
 
     if (workStart === null || workStart === undefined) workStart = 9 * 60;
     if (workEnd === null || workEnd === undefined) workEnd = 18 * 60;
     if (!Array.isArray(meetings)) meetings = [];
+
+    const autoBreakEnabled = currentState.autoBreakEnabled !== false;
+    const clusters = computeMeetingClusters(meetings, autoBreakEnabled);
+    const sortedMeetings = [...meetings].sort((a, b) => a.start - b.start || a.end - b.end);
+
+    return {
+      workStart,
+      workEnd,
+      meetings: sortedMeetings,
+      clusters,
+      autoBreakEnabled
+    };
+  }
+
+  function getEffectiveSchedule(targetDateStr, activeTasks) {
+    const currentState = getState ? getState() : (ctx.getState ? ctx.getState() : {});
+    const isToday = targetDateStr === getTodayStr();
+
+    if (ctx && typeof ctx.computeSchedule === 'function' && (currentState.selectedDate || getTodayStr()) === targetDateStr) {
+      const sched = ctx.computeSchedule();
+      if (sched && sched.overflowIds && sched.segmentsByTask) {
+        return sched;
+      }
+    }
+
+    const { workStart, workEnd, meetings, autoBreakEnabled } = getDayScheduleContext(targetDateStr);
 
     const schedState = {
       ...currentState,
@@ -112,7 +151,7 @@ export function createTriageData(ctx, state, deps) {
       tasks: activeTasks,
       selectedDate: targetDateStr,
       planningMode: isToday ? !!currentState.planningMode : true,
-      autoBreakEnabled: currentState.autoBreakEnabled !== false,
+      autoBreakEnabled,
       autoBreakIntervalMin: currentState.autoBreakIntervalMin || 60,
       autoBreakDurationMin: currentState.autoBreakDurationMin || 10
     };
@@ -135,6 +174,14 @@ export function createTriageData(ctx, state, deps) {
       return false;
     }
 
+    const prioritySorted = [...activeTasks].sort(compareTasksMainOrder);
+    const priorityRankMap = new Map();
+    prioritySorted.forEach((task, idx) => {
+      if (task && task.id !== undefined) {
+        priorityRankMap.set(String(task.id), idx + 1);
+      }
+    });
+
     const sortMode = getCurrentSort();
 
     if (sortMode === 'urgency') {
@@ -147,7 +194,7 @@ export function createTriageData(ctx, state, deps) {
       activeTasks.forEach(task => {
         const u = task.urgency || DEFAULT_URGENCY;
         const g = groups.find(x => x.id === u) || groups[1];
-        g.tasks.push({ ...task, overflow: isTaskOverflow(task) });
+        g.tasks.push({ ...task, overflow: isTaskOverflow(task), priorityRank: priorityRankMap.get(String(task.id)) || 1 });
       });
       groups.forEach(g => g.tasks.sort(compareTasksMainOrder));
       return groups;
@@ -161,13 +208,15 @@ export function createTriageData(ctx, state, deps) {
       ];
       activeTasks.forEach(task => {
         const isOverflow = isTaskOverflow(task);
+        const rank = priorityRankMap.get(String(task.id)) || 1;
         if (!isOverflow) {
-          groups[0].tasks.push({ ...task, overflow: false });
+          groups[0].tasks.push({ ...task, overflow: false, priorityRank: rank });
         } else {
-          groups[1].tasks.push({ ...task, overflow: true });
+          groups[1].tasks.push({ ...task, overflow: true, priorityRank: rank });
         }
       });
-      groups.forEach(g => g.tasks.sort(compareTasksMainOrder));
+      groups[0].tasks = sortTasksChronologically(groups[0].tasks, schedule);
+      groups[1].tasks = sortTasksChronologically(groups[1].tasks, schedule);
       return groups;
     }
 
@@ -249,10 +298,14 @@ export function createTriageData(ctx, state, deps) {
     getAllTasks,
     getActiveTasks,
     formatShortDuration,
+    getDayScheduleContext,
     getEffectiveSchedule,
     getGroups,
     setTriageSortMode,
     toggleTriageGroup,
     toggleAllTriageGroups,
+    getShowTriageMeetings,
+    setShowTriageMeetings,
+    toggleTriageMeetings,
   };
 }

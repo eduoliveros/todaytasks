@@ -771,6 +771,18 @@ export default {
   'triage.touchDragHint': 'Mantén pulsado para mover o reordenar',
   'triage.runningTaskMoveNotice': 'Tarea en curso activo. Paúsala si deseas reordenarla en la jornada.',
   'triage.btnPauseToMove': 'Pausar tarea',
+  'triage.showMeetingsBtn': '📅 Mostrar reuniones',
+  'triage.hideMeetingsBtn': '📅 Ocultar reuniones',
+  'triage.toggleMeetingsTooltip': 'Mostrar u ocultar las reuniones fijas del día en la vista de viabilidad',
+  'triage.meetingBadge': 'Reunión fija',
+  'triage.meetingBuffer': '(+buffer {time})',
+  'triage.priorityRankTooltip': 'Posición en la cola de prioridad: #{rank}',
+  'triage.chronoOrderLockTooltip': 'Ordenado cronológicamente según el horario proyectado',
+  'triage.cutoffBannerTitle': 'LÍMITE FIN DE JORNADA ({time})',
+  'triage.cutoffBannerOverflowSummary': { one: '— 1 tarea inferior desborda el horario ({duration})', other: '— Las {count} tareas inferiores desbordan el horario ({duration})' },
+  'triage.cutoffBannerAllFit': 'Todas las tareas caben antes de las {time}',
+  'triage.selectOverflowBtn': 'Seleccionar desbordadas ({count})',
+  'triage.deselectOverflowBtn': 'Deseleccionar desbordadas ({count})',
 
   // Horario semanal (Weekly Schedule Modal)
   'weeklySchedule.invalidRangeToast': '⚠️ Horario inválido para el {day}: la hora de inicio debe ser anterior a la de fin.',

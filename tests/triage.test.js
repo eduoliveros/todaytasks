@@ -990,6 +990,103 @@ describe('TodayTasksTriageView (UI & Sorting & Selection)', () => {
   });
 });
 
+describe('Triage Viability Option D & StartAfter Chip', () => {
+  let state;
+  let actions;
+  let triageView;
+
+  beforeEach(() => {
+    document.body.innerHTML = `<div id="view-triage"></div>`;
+    state = defaultState();
+    state.workStart = 540; // 09:00
+    state.workEnd = 1080;  // 18:00
+    state.planningMode = true;
+
+    const ctx = {
+      getState: () => state,
+      setState: (s) => { state = s; },
+      saveState: vi.fn(),
+      renderAll: vi.fn(),
+      smartRender: vi.fn(),
+      showToast: vi.fn(),
+      nowMinutes: () => 540,
+      newId: () => 'id_' + Math.random().toString(36).slice(2, 9),
+      undoModule: { pushSnapshot: vi.fn(), undo: vi.fn(), redo: vi.fn(), canUndo: () => false, canRedo: () => false }
+    };
+
+    actions = TodayTasksActions(ctx);
+    ctx.actionsModule = actions;
+    triageView = TodayTasksTriageView(ctx);
+  });
+
+  it('muestra el chip interactivo startAfter (⏰ HH:MM+) en las tareas con hora mínima definida', () => {
+    actions.addTask('Tarea Diferida Tarde', '30', false, null, true, 'today', false, '16:00');
+    actions.addTask('Tarea Flexible Mañana', '30', false, null, true, 'today', false, null);
+
+    triageView.renderTriageView();
+
+    const container = document.getElementById('view-triage');
+    const startAfterBtns = container.querySelectorAll('.triage-start-after-btn');
+    expect(startAfterBtns.length).toBe(1);
+    expect(startAfterBtns[0].textContent).toContain('16:00+');
+  });
+
+  it('Opción D en Viabilidad hoy: ordena cronológicamente mezclando tareas con startAfter y sin startAfter, muestra línea de corte y permite ocultar/mostrar reuniones', () => {
+    // #1 en prioridad, pero startAfter 16:00 (960)
+    actions.addTask('Llamar proveedor USA', '30', true, null, true, 'today', true, '16:00');
+    // #2 en prioridad, sin startAfter -> gap-filling la programa a las 09:00
+    actions.addTask('Revisar PR urgente', '45', false, null, true, 'today', false, null);
+    // #3 en prioridad, startAfter 17:45 (45m -> acaba 18:30 -> desborda)
+    actions.addTask('Cierre LATAM', '45', false, null, true, 'today', false, '17:45');
+
+    // Añadimos una reunión fija de 11:30 a 12:00
+    state.meetings = [{ id: 'm1', title: 'Daily Sync', start: 690, end: 720 }];
+
+    triageView.setTriageSortMode('viability');
+
+    const container = document.getElementById('view-triage');
+    const fitsSection = container.querySelector('#triage-group-fits');
+    expect(fitsSection).not.toBeNull();
+
+    // En la sección que cabe, 'Revisar PR urgente' (09:00) debe aparecer ANTES que 'Llamar proveedor USA' (16:00)
+    const fitsTitles = Array.from(fitsSection.querySelectorAll('.triage-task-title')).map(el => el.textContent.trim());
+    expect(fitsTitles).toEqual(['Revisar PR urgente', 'Llamar proveedor USA']);
+
+    // Se muestran los badges de prioridad original (#2 y #1)
+    const priorityBadges = Array.from(fitsSection.querySelectorAll('.triage-priority-rank')).map(el => el.textContent.trim());
+    expect(priorityBadges).toEqual(['#2', '#1']);
+
+    // Por defecto se muestra la reunión intercalada y el botón para ocultarla está visible
+    expect(fitsSection.querySelectorAll('.triage-meeting-row').length).toBe(1);
+    expect(fitsSection.textContent).toContain('Daily Sync');
+    const toggleMeetingsBtn = container.querySelector('#triageToggleMeetingsBtn');
+    expect(toggleMeetingsBtn).not.toBeNull();
+    expect(toggleMeetingsBtn.style.display).not.toBe('none');
+
+    // Ocultamos las reuniones con toggleTriageMeetings()
+    triageView.toggleTriageMeetings();
+    expect(triageView.getShowTriageMeetings()).toBe(false);
+    expect(container.querySelectorAll('.triage-meeting-row').length).toBe(0);
+
+    // Volvemos a mostrarlas
+    triageView.toggleTriageMeetings();
+    expect(triageView.getShowTriageMeetings()).toBe(true);
+    expect(container.querySelectorAll('.triage-meeting-row').length).toBe(1);
+
+    // La barrera de corte Fin de Jornada (18:00) aparece con botón para seleccionar las desbordadas
+    const cutoffBanner = container.querySelector('#triageWorkdayCutoffBanner');
+    expect(cutoffBanner).not.toBeNull();
+    expect(cutoffBanner.textContent).toContain('18:00');
+
+    const selectOverflowBtn = container.querySelector('#triageSelectOverflowBtn');
+    expect(selectOverflowBtn).not.toBeNull();
+
+    // Seleccionar desbordadas marca 'Cierre LATAM'
+    triageView.selectTriageOverflowTasks();
+    expect(triageView.getSelectedTaskIds().size).toBe(1);
+  });
+});
+
 describe('Triage Keyboard Shortcut X', () => {
   it('alterna hacia #/triage y vuelve a #/ al pulsar la tecla X', () => {
     window.location.hash = '#/';

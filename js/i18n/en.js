@@ -771,6 +771,18 @@ export default {
   'triage.touchDragHint': 'Hold to move or reorder',
   'triage.runningTaskMoveNotice': 'Task is currently running. Pause it to reorder within workday.',
   'triage.btnPauseToMove': 'Pause task',
+  'triage.showMeetingsBtn': '📅 Show meetings',
+  'triage.hideMeetingsBtn': '📅 Hide meetings',
+  'triage.toggleMeetingsTooltip': 'Show or hide fixed daily meetings in the viability view',
+  'triage.meetingBadge': 'Fixed meeting',
+  'triage.meetingBuffer': '(+buffer {time})',
+  'triage.priorityRankTooltip': 'Priority queue position: #{rank}',
+  'triage.chronoOrderLockTooltip': 'Sorted chronologically by projected schedule',
+  'triage.cutoffBannerTitle': 'END OF WORKDAY LIMIT ({time})',
+  'triage.cutoffBannerOverflowSummary': { one: '— 1 task below exceeds the schedule ({duration})', other: '— {count} tasks below exceed the schedule ({duration})' },
+  'triage.cutoffBannerAllFit': 'All tasks fit before {time}',
+  'triage.selectOverflowBtn': 'Select overflowing ({count})',
+  'triage.deselectOverflowBtn': 'Deselect overflowing ({count})',
 
   // Weekly Schedule Modal
   'weeklySchedule.invalidRangeToast': '⚠️ Invalid schedule for {day}: start time must be before end time.',

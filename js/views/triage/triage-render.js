@@ -11,15 +11,21 @@ export function createTriageRender(ctx, state, deps) {
   const {
     getTargetDateStr,
     getActiveTasks,
+    getDayScheduleContext,
     getEffectiveSchedule,
     formatShortDuration,
     setTriageSearchQuery,
     clearTriageSearch,
-    getActions
+    getActions,
+    getShowTriageMeetings
   } = deps;
 
   const selectedTaskIds = state.selectedTaskIds;
   const collapsedGroups = state.collapsedGroups;
+
+  function getCurrentSort() {
+    return typeof state.currentSort === 'function' ? state.currentSort() : (state.currentSort || 'urgency');
+  }
 
   function renderTriageDependencyChips(depsList, env) {
     if (!depsList || depsList.length === 0) {
@@ -70,13 +76,39 @@ export function createTriageRender(ctx, state, deps) {
     `;
   }
 
-  function renderTriageTaskRow(task, env, quick5Days, schedule) {
+  function renderTriageMeetingRow(meeting, bufferEnd) {
+    const durMins = Math.max(0, (meeting.end || 0) - (meeting.start || 0));
+    const isRecurring = !!(meeting.isRecurring || meeting.ruleId);
+    const hasBuffer = bufferEnd !== undefined && bufferEnd !== null && bufferEnd > meeting.end;
+    const bufferHtml = hasBuffer
+      ? ` <span class="triage-meeting-buffer">${escapeHtml(t('triage.meetingBuffer', { time: fmt(bufferEnd) }))}</span>`
+      : '';
+    return `
+      <div class="triage-meeting-row" data-meeting-id="${escapeAttr(meeting.id)}">
+        <div class="triage-meeting-left">
+          <span class="triage-meeting-icon" aria-hidden="true">📅</span>
+          <span class="triage-meeting-badge">${escapeHtml(t('triage.meetingBadge'))}</span>
+          <span class="triage-meeting-title" title="${escapeAttr(meeting.title)}">${escapeHtml(meeting.title)}</span>
+          <span class="triage-task-duration">${formatShortDuration(durMins)}</span>
+          ${isRecurring ? `<span class="triage-recurring-icon" title="${escapeAttr(t('meetings.recurringTagLabel'))}">🔁</span>` : ''}
+        </div>
+        <div class="triage-meeting-right">
+          <span class="triage-meeting-time">${fmt(meeting.start)}<span class="arrow">→</span>${fmt(meeting.end)}${bufferHtml}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderTriageTaskRow(task, env, quick5Days, schedule, options = {}) {
     const currentState = getState ? getState() : (ctx.getState ? ctx.getState() : {});
     const isSelected = selectedTaskIds.has(String(task.id));
     const urgencyKey = task.urgency || DEFAULT_URGENCY;
     const uInfo = URGENCY_LEVELS[urgencyKey] || URGENCY_LEVELS[DEFAULT_URGENCY];
     const urgencyLabel = t('urgency.' + urgencyKey) || uInfo.label;
     const isRecurring = !!(task.isRecurring || task.ruleId);
+    const isViabilityMode = !!options.isViabilityMode;
+    const priorityRank = options.priorityRank || task.priorityRank || null;
+    const hasStartAfter = (task.startAfter !== null && task.startAfter !== undefined && !isNaN(task.startAfter));
 
     const effSched = schedule || getEffectiveSchedule(getTargetDateStr(), getActiveTasks(getTargetDateStr()));
     const segs = (effSched && effSched.segmentsByTask && (effSched.segmentsByTask[task.id] || effSched.segmentsByTask[String(task.id)])) || [];
@@ -95,7 +127,16 @@ export function createTriageRender(ctx, state, deps) {
       endVal = "—";
       trClass = "tr-pending";
     }
-    const timeRangeHtml = `<span class="triage-task-time ${trClass}">${startVal}<span class="arrow">→</span>${endVal}</span>`;
+
+    const startAfterChipHtml = hasStartAfter ? `
+      <button type="button" class="triage-start-after-btn" onclick="event.stopPropagation(); if(window.app && window.app.openStartAfterPopover) window.app.openStartAfterPopover('${escapeAttr(task.id)}', event);" title="${escapeAttr(t('tasks.startAfterPillTooltip', { time: fmt(task.startAfter) }))}" aria-label="${escapeAttr(t('tasks.startAfterPillAria', { time: fmt(task.startAfter) }))}">
+        <span class="triage-start-after-icon" aria-hidden="true">⏰</span>
+        <span class="triage-start-after-label">${fmt(task.startAfter)}+</span>
+        <span class="triage-chevron-mini" aria-hidden="true">▾</span>
+      </button>
+    ` : '';
+
+    const timeRangeHtml = `<span class="triage-task-time ${trClass} ${hasStartAfter ? 'has-start-after' : ''}">${startVal}<span class="arrow">→</span>${endVal}</span>`;
 
     let recurringTag = '';
     if (isRecurring) {
@@ -117,7 +158,7 @@ export function createTriageRender(ctx, state, deps) {
       `;
     }
 
-    const isDraggable = task.status === "pending" || task.status === "paused";
+    const isDraggable = !isViabilityMode && (task.status === "pending" || task.status === "paused");
     const dragAttrs = isDraggable
       ? `draggable="true"
          ondragstart="app.triageTaskDragStart(event, '${escapeAttr(task.id)}')"
@@ -126,8 +167,14 @@ export function createTriageRender(ctx, state, deps) {
          ondrop="app.triageTaskDrop(event, '${escapeAttr(task.id)}')"
          ondragend="app.taskDragEnd(event)"`
       : `ondragover="app.taskDragOver(event)" ondrop="app.triageTaskDrop(event, '${escapeAttr(task.id)}')"` ;
-    const dragHandle = isDraggable
-      ? `<span class="drag-handle triage-drag-handle" title="${escapeAttr(t('triage.touchDragHint'))}" onmousedown="app.armTaskDrag()">⠿</span>`
+    const dragHandle = isViabilityMode
+      ? `<span class="triage-chrono-icon" title="${escapeAttr(t('triage.chronoOrderLockTooltip'))}" aria-hidden="true">🕒</span>`
+      : (isDraggable
+        ? `<span class="drag-handle triage-drag-handle" title="${escapeAttr(t('triage.touchDragHint'))}" onmousedown="app.armTaskDrag()">⠿</span>`
+        : '');
+
+    const priorityRankHtml = (isViabilityMode && priorityRank)
+      ? `<span class="triage-priority-rank" title="${escapeAttr(t('triage.priorityRankTooltip', { rank: priorityRank }))}">#${priorityRank}</span>`
       : '';
 
     const isBlocked = env ? isTaskBlocked(task, env) : false;
@@ -170,9 +217,10 @@ export function createTriageRender(ctx, state, deps) {
     }
 
     const featuredClass = task.featured ? 'featured-task' : '';
+    const startAfterRowClass = hasStartAfter ? 'has-start-after' : '';
 
     return `
-      <div class="triage-task-row ${isSelected ? 'selected' : ''} ${isRecurring ? 'is-recurring' : ''} ${isBlocked ? 'is-blocked' : ''} ${featuredClass}" data-task-id="${escapeAttr(task.id)}"
+      <div class="triage-task-row ${isSelected ? 'selected' : ''} ${isRecurring ? 'is-recurring' : ''} ${isBlocked ? 'is-blocked' : ''} ${featuredClass} ${startAfterRowClass}" data-task-id="${escapeAttr(task.id)}"
            onclick="app.handleTriageRowClick('${escapeAttr(task.id)}', event)"
            ondblclick="app.handleTriageRowDblClick('${escapeAttr(task.id)}', event)"
            ontouchstart="app.handleTriageTouchStart('${escapeAttr(task.id)}', event)"
@@ -190,12 +238,14 @@ export function createTriageRender(ctx, state, deps) {
           <button type="button" class="triage-star-btn ${task.featured ? 'is-featured' : ''}" onclick="app.toggleTriageTaskStar('${escapeAttr(task.id)}', event)" title="${task.featured ? escapeAttr(t('triage.unstarTooltip')) : escapeAttr(t('triage.starTooltip'))}">
             ${task.featured ? '⭐' : '☆'}
           </button>
+          ${priorityRankHtml}
           ${task.displayId ? `<button type="button" class="task-id-badge" onclick="app.copyTaskId('${escapeAttr(task.id)}', event)" title="${escapeAttr(t('tasks.copyIdTooltip', { id: task.displayId }))}">${escapeHtml(task.displayId)}</button>` : ''}
           ${triageDepBadges}
           <span class="triage-task-title ${task.overflow ? 'is-overflow' : ''}" title="${escapeAttr(task.title)}">
             ${formatTitleWithTags(task.title, 'app.filterByTag')}
           </span>
           <span class="triage-task-duration" title="${escapeAttr(t('triage.durationTooltip'))}">${formatShortDuration(task.planned || 0)}</span>
+          ${startAfterChipHtml}
           ${timeRangeHtml}
           ${recurringTag}
           ${task.overflow ? `<span class="triage-overflow-tag" title="${escapeAttr(t('triage.overflowTooltip'))}">${t('triage.overflowTag')}</span>` : ''}
@@ -272,49 +322,199 @@ export function createTriageRender(ctx, state, deps) {
     }
 
     // Grupos de tareas activas
-    groups.forEach(g => {
-      const groupDuration = g.tasks.reduce((sum, task) => sum + (task.planned || 0), 0);
-      const isCollapsed = collapsedGroups.has(g.id);
-      const allSelected = g.tasks.length > 0 && g.tasks.every(task => selectedTaskIds.has(String(task.id)));
-      const someSelected = g.tasks.some(task => selectedTaskIds.has(String(task.id))) && !allSelected;
+    if (getCurrentSort() === 'viability' && groups.length >= 2) {
+      const fitsGroup = groups.find(g => g.id === 'fits') || groups[0];
+      const overflowGroup = groups.find(g => g.id === 'overflow') || groups[1];
+      const targetDateStr = getTargetDateStr();
+      const dayCtx = getDayScheduleContext ? getDayScheduleContext(targetDateStr) : { workEnd: 18 * 60, meetings: [], clusters: [] };
+      const workEnd = dayCtx.workEnd ?? (18 * 60);
+      const showMeetings = getShowTriageMeetings ? getShowTriageMeetings() : true;
+      const effSched = schedule || getEffectiveSchedule(targetDateStr, activeTasks);
+      const viewStart = (effSched && typeof effSched.viewStart === 'number') ? effSched.viewStart : 0;
+
+      const getTaskStartMin = (task) => {
+        if (task.status === 'running') return task.runningStart ?? 0;
+        const segs = (effSched && effSched.segmentsByTask && (effSched.segmentsByTask[task.id] || effSched.segmentsByTask[String(task.id)])) || [];
+        if (segs.length > 0) return segs[0].start;
+        return Infinity;
+      };
+
+      const getBufferEndForMeeting = (m) => {
+        const clusters = dayCtx.clusters || [];
+        const cluster = clusters.find(c => Array.isArray(c.meetings) && c.meetings.some(cm => String(cm.id) === String(m.id)));
+        if (cluster && cluster.meetings.length > 0 && String(cluster.meetings[cluster.meetings.length - 1].id) === String(m.id)) {
+          return cluster.blockedEnd;
+        }
+        return m.end;
+      };
+
+      const visibleMeetings = showMeetings
+        ? (dayCtx.meetings || []).filter(m => {
+            if (!m || m.end <= viewStart) return false;
+            if (isSearching && searchQuery) {
+              return (m.title || '').toLowerCase().includes(searchQuery.toLowerCase());
+            }
+            return true;
+          })
+        : [];
+
+      const fitsMeetings = visibleMeetings.filter(m => m.start < workEnd);
+      const overflowMeetings = visibleMeetings.filter(m => m.start >= workEnd);
+
+      const buildInterleavedList = (taskList, meetingList) => {
+        const items = [];
+        taskList.forEach((task, idx) => {
+          items.push({
+            kind: 'task',
+            startMin: getTaskStartMin(task),
+            isRunning: task.status === 'running',
+            orderIdx: idx,
+            task
+          });
+        });
+        meetingList.forEach((meeting, idx) => {
+          items.push({
+            kind: 'meeting',
+            startMin: meeting.start ?? 0,
+            isRunning: false,
+            orderIdx: idx,
+            meeting,
+            bufferEnd: getBufferEndForMeeting(meeting)
+          });
+        });
+        items.sort((a, b) => {
+          if (a.isRunning && !b.isRunning) return -1;
+          if (!a.isRunning && b.isRunning) return 1;
+          if (a.startMin !== b.startMin) return a.startMin - b.startMin;
+          if (a.kind !== b.kind) return a.kind === 'meeting' ? -1 : 1;
+          return a.orderIdx - b.orderIdx;
+        });
+        return items;
+      };
+
+      const fitsItems = buildInterleavedList(fitsGroup.tasks, fitsMeetings);
+      const overflowItems = buildInterleavedList(overflowGroup.tasks, overflowMeetings);
+
+      const totalDuration = activeTasks.reduce((sum, task) => sum + (task.planned || 0), 0);
+      const overflowDuration = overflowGroup.tasks.reduce((sum, task) => sum + (task.planned || 0), 0);
+      const isCollapsed = collapsedGroups.has('fits');
+      const allSelected = activeTasks.length > 0 && activeTasks.every(task => selectedTaskIds.has(String(task.id)));
+      const someSelected = activeTasks.some(task => selectedTaskIds.has(String(task.id))) && !allSelected;
+      const allOverflowSelected = overflowGroup.tasks.length > 0 && overflowGroup.tasks.every(task => selectedTaskIds.has(String(task.id)));
 
       html += `
-        <div class="triage-group-card ${isCollapsed ? 'collapsed' : ''}" id="triage-group-${escapeAttr(g.id)}"
-             ondragover="app.triageGroupDragOver(event, '${escapeAttr(g.id)}')">
-          <!-- CABECERA DE GRUPO -->
-          <div class="triage-group-header" onclick="app.toggleTriageGroup('${escapeAttr(g.id)}')"
-               ondragover="app.triageGroupDragOver(event, '${escapeAttr(g.id)}')')"
-               ondrop="app.triageGroupDrop(event, '${escapeAttr(g.id)}')">
+        <div class="triage-group-card triage-viability-stream-card ${isCollapsed ? 'collapsed' : ''}" id="triage-group-viability">
+          <!-- CABECERA UNIFICADA DE VIABILIDAD (OPCIÓN D) -->
+          <div class="triage-group-header" onclick="app.toggleTriageGroup('fits')">
             <div class="triage-group-header-left">
               <button type="button" class="triage-chevron-btn" title="${isCollapsed ? escapeAttr(t('triage.groupExpandTooltip')) : escapeAttr(t('triage.groupCollapseTooltip'))}">
                 ▾
               </button>
               <label class="triage-cb-wrap" onclick="event.stopPropagation()">
-                <input type="checkbox" class="triage-group-cb" ${allSelected ? 'checked' : ''} ${someSelected ? 'data-indeterminate="true"' : ''} onclick="app.toggleTriageGroupSelect('${escapeAttr(g.id)}', event)" title="${escapeAttr(t('triage.groupSelectAllTooltip'))}">
+                <input type="checkbox" class="triage-group-cb" ${allSelected ? 'checked' : ''} ${someSelected ? 'data-indeterminate="true"' : ''} onclick="app.toggleTriageGroupSelect('all', event)" title="${escapeAttr(t('triage.groupSelectAllTooltip'))}">
               </label>
-              <span class="triage-group-icon">${g.icon}</span>
-              <span class="triage-group-title">${escapeHtml(g.title)}</span>
-              <span class="triage-group-badge">${t('triage.groupTaskCount', { count: g.tasks.length })}</span>
+              <span class="triage-group-icon">🕒</span>
+              <span class="triage-group-title">${escapeHtml(fitsGroup.title)}</span>
+              <span class="triage-group-badge">${t('triage.groupTaskCount', { count: activeTasks.length })}</span>
             </div>
             <div class="triage-group-header-right">
-              <span class="triage-group-duration">⏱️ ${formatShortDuration(groupDuration)}</span>
+              <span class="triage-group-duration">⏱️ ${formatShortDuration(totalDuration)}</span>
             </div>
           </div>
 
-          <!-- CONTENIDO PLEGABLE DEL GRUPO -->
-          <div class="triage-group-body" style="${isCollapsed ? 'display:none;' : ''}"
-               ondragover="app.triageGroupDragOver(event, '${escapeAttr(g.id)}')">
-            ${g.tasks.length === 0 ? `
-              <div class="triage-group-empty" ondragover="app.triageGroupDragOver(event, '${escapeAttr(g.id)}')">${t('triage.groupEmpty')}</div>
-            ` : `
-              <div class="triage-tasks-list">
-                ${g.tasks.map(task => renderTriageTaskRow(task, env, quick5Days, schedule)).join('')}
+          <!-- FLUJO CONTINUO: TAREAS QUE CABEN + BARRERA DE CORTE + OVERFLOW -->
+          <div class="triage-group-body" style="${isCollapsed ? 'display:none;' : ''}">
+            <div class="triage-viability-section fits-section" id="triage-group-fits">
+              ${fitsItems.length === 0 ? `
+                <div class="triage-group-empty">${t('triage.groupEmpty')}</div>
+              ` : `
+                <div class="triage-tasks-list">
+                  ${fitsItems.map(item => item.kind === 'meeting'
+                    ? renderTriageMeetingRow(item.meeting, item.bufferEnd)
+                    : renderTriageTaskRow(item.task, env, quick5Days, effSched, { isViabilityMode: true, priorityRank: item.task.priorityRank })
+                  ).join('')}
+                </div>
+              `}
+            </div>
+
+            <!-- LÍNEA DE CORTE FIN DE JORNADA -->
+            <div class="triage-workday-cutoff-banner ${overflowGroup.tasks.length > 0 ? 'has-overflow' : 'all-fit'}" id="triageWorkdayCutoffBanner">
+              <div class="triage-cutoff-left">
+                <span class="triage-cutoff-title">🏁 ${escapeHtml(t('triage.cutoffBannerTitle', { time: fmt(workEnd) }))}</span>
+                <span class="triage-cutoff-summary">
+                  ${overflowGroup.tasks.length > 0
+                    ? escapeHtml(t('triage.cutoffBannerOverflowSummary', { count: overflowGroup.tasks.length, duration: formatShortDuration(overflowDuration) }))
+                    : '✅ ' + escapeHtml(t('triage.cutoffBannerAllFit', { time: fmt(workEnd) }))}
+                </span>
               </div>
-            `}
+              ${overflowGroup.tasks.length > 0 ? `
+                <div class="triage-cutoff-right">
+                  <button type="button" class="triage-select-overflow-btn ${allOverflowSelected ? 'is-selected' : ''}" id="triageSelectOverflowBtn" onclick="event.stopPropagation(); app.toggleTriageGroupSelect('overflow', event)">
+                    <span>☑️</span>
+                    <span>${escapeHtml(t(allOverflowSelected ? 'triage.deselectOverflowBtn' : 'triage.selectOverflowBtn', { count: overflowGroup.tasks.length }))}</span>
+                  </button>
+                </div>
+              ` : ''}
+            </div>
+
+            <div class="triage-viability-section overflow-section" id="triage-group-overflow">
+              ${overflowItems.length > 0 ? `
+                <div class="triage-tasks-list">
+                  ${overflowItems.map(item => item.kind === 'meeting'
+                    ? renderTriageMeetingRow(item.meeting, item.bufferEnd)
+                    : renderTriageTaskRow(item.task, env, quick5Days, effSched, { isViabilityMode: true, priorityRank: item.task.priorityRank })
+                  ).join('')}
+                </div>
+              ` : ''}
+            </div>
           </div>
         </div>
       `;
-    });
+    } else {
+      groups.forEach(g => {
+        const groupDuration = g.tasks.reduce((sum, task) => sum + (task.planned || 0), 0);
+        const isCollapsed = collapsedGroups.has(g.id);
+        const allSelected = g.tasks.length > 0 && g.tasks.every(task => selectedTaskIds.has(String(task.id)));
+        const someSelected = g.tasks.some(task => selectedTaskIds.has(String(task.id))) && !allSelected;
+
+        html += `
+          <div class="triage-group-card ${isCollapsed ? 'collapsed' : ''}" id="triage-group-${escapeAttr(g.id)}"
+               ondragover="app.triageGroupDragOver(event, '${escapeAttr(g.id)}')">
+            <!-- CABECERA DE GRUPO -->
+            <div class="triage-group-header" onclick="app.toggleTriageGroup('${escapeAttr(g.id)}')"
+                 ondragover="app.triageGroupDragOver(event, '${escapeAttr(g.id)}')')"
+                 ondrop="app.triageGroupDrop(event, '${escapeAttr(g.id)}')">
+              <div class="triage-group-header-left">
+                <button type="button" class="triage-chevron-btn" title="${isCollapsed ? escapeAttr(t('triage.groupExpandTooltip')) : escapeAttr(t('triage.groupCollapseTooltip'))}">
+                  ▾
+                </button>
+                <label class="triage-cb-wrap" onclick="event.stopPropagation()">
+                  <input type="checkbox" class="triage-group-cb" ${allSelected ? 'checked' : ''} ${someSelected ? 'data-indeterminate="true"' : ''} onclick="app.toggleTriageGroupSelect('${escapeAttr(g.id)}', event)" title="${escapeAttr(t('triage.groupSelectAllTooltip'))}">
+                </label>
+                <span class="triage-group-icon">${g.icon}</span>
+                <span class="triage-group-title">${escapeHtml(g.title)}</span>
+                <span class="triage-group-badge">${t('triage.groupTaskCount', { count: g.tasks.length })}</span>
+              </div>
+              <div class="triage-group-header-right">
+                <span class="triage-group-duration">⏱️ ${formatShortDuration(groupDuration)}</span>
+              </div>
+            </div>
+
+            <!-- CONTENIDO PLEGABLE DEL GRUPO -->
+            <div class="triage-group-body" style="${isCollapsed ? 'display:none;' : ''}"
+                 ondragover="app.triageGroupDragOver(event, '${escapeAttr(g.id)}')">
+              ${g.tasks.length === 0 ? `
+                <div class="triage-group-empty" ondragover="app.triageGroupDragOver(event, '${escapeAttr(g.id)}')">${t('triage.groupEmpty')}</div>
+              ` : `
+                <div class="triage-tasks-list">
+                  ${g.tasks.map(task => renderTriageTaskRow(task, env, quick5Days, schedule)).join('')}
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+      });
+    }
 
     // Sección de tareas completadas coincidentes (solo si se está buscando)
     if (isSearching && matchingCompleted.length > 0) {
@@ -749,6 +949,13 @@ export function createTriageRender(ctx, state, deps) {
         btn.className = `triage-sort-btn ${currentSort === mode ? 'active' : ''}`;
       }
     });
+    const toggleMeetingsBtn = container.querySelector('#triageToggleMeetingsBtn');
+    if (toggleMeetingsBtn) {
+      const showM = getShowTriageMeetings ? getShowTriageMeetings() : true;
+      toggleMeetingsBtn.style.display = currentSort === 'viability' ? 'inline-flex' : 'none';
+      toggleMeetingsBtn.className = `btn secondary small triage-toggle-meetings-btn ${showM ? 'active' : ''}`;
+      toggleMeetingsBtn.innerHTML = showM ? t('triage.hideMeetingsBtn') : t('triage.showMeetingsBtn');
+    }
     const searchInpEl = document.getElementById('triageSearchInput');
     if (searchInpEl && searchInpEl.value !== triageSearchQuery) {
       searchInpEl.value = triageSearchQuery;
@@ -827,6 +1034,9 @@ export function createTriageRender(ctx, state, deps) {
             </div>
 
             <div class="triage-collapse-tools">
+              <button type="button" class="btn secondary small triage-toggle-meetings-btn ${(getShowTriageMeetings ? getShowTriageMeetings() : true) ? 'active' : ''}" id="triageToggleMeetingsBtn" onclick="app.toggleTriageMeetings()" style="display:${currentSort === 'viability' ? 'inline-flex' : 'none'};" title="${escapeAttr(t('triage.toggleMeetingsTooltip'))}">
+                ${(getShowTriageMeetings ? getShowTriageMeetings() : true) ? t('triage.hideMeetingsBtn') : t('triage.showMeetingsBtn')}
+              </button>
               <button class="btn secondary small" onclick="app.toggleAllTriageGroups(false)" title="${escapeAttr(t('triage.collapseAllTooltip'))}">${t('triage.collapseAll')}</button>
               <button class="btn secondary small" onclick="app.toggleAllTriageGroups(true)" title="${escapeAttr(t('triage.expandAllTooltip'))}">${t('triage.expandAll')}</button>
               <button class="btn secondary small" id="triageAutoOrderBtn" onclick="app.applyAutoOrder()" title="${escapeAttr(t('triage.autoOrderTooltip'))}">${t('triage.autoOrder')}</button>
